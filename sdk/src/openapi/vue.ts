@@ -28,6 +28,28 @@ export function useGwreload() {
   return { data, loading, error, execute };
 }
 
+export function useOpenapiv1authwhoami() {
+  const data = ref<any | null>(null);
+  const loading = ref(false);
+  const error = ref<Error | null>(null);
+
+  const execute = async () => {
+    loading.value = true;
+    error.value = null;
+    try {
+      data.value = await systemApi.openapiv1authwhoami();
+      return data.value;
+    } catch (e) {
+      error.value = e as Error;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  return { data, loading, error, execute };
+}
+
 export function useOpenapiv1info() {
   const data = ref<any | null>(null);
   const loading = ref(false);
@@ -170,6 +192,28 @@ export function useOpenapiv1flowlist() {
     error.value = null;
     try {
       data.value = await flowApi.openapiv1flowlist(body);
+      return data.value;
+    } catch (e) {
+      error.value = e as Error;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  return { data, loading, error, execute };
+}
+
+export function useOpenapiv1flownodes() {
+  const data = ref<any | null>(null);
+  const loading = ref(false);
+  const error = ref<Error | null>(null);
+
+  const execute = async (body: components["schemas"]["FlowNodesReq"]) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      data.value = await flowApi.openapiv1flownodes(body);
       return data.value;
     } catch (e) {
       error.value = e as Error;

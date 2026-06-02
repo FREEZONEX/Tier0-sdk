@@ -63,10 +63,10 @@ function generateClient(): string {
 // Do not edit manually
 
 export interface ClientConfig {
-  baseURL?: string;
+  apiHost?: string;
   apiKey?: string;
+  getApiHost?: () => string | undefined;
   getApiKey?: () => string | undefined;
-  getBaseURL?: () => string | undefined;
 }
 
 function getEnvVar(key: string): string | undefined {
@@ -91,8 +91,8 @@ function getEnvVar(key: string): string | undefined {
   return undefined;
 }
 
+const defaultGetApiHost = () => getEnvVar('TIER0_API_HOST');
 const defaultGetApiKey = () => getEnvVar('TIER0_API_KEY');
-const defaultGetBaseURL = () => getEnvVar('TIER0_BASE_URL');
 
 class HttpClient {
   private config: ClientConfig;
@@ -102,11 +102,11 @@ class HttpClient {
   }
 
   private getBaseURL(): string {
-    const url = this.config.baseURL || this.config.getBaseURL?.() || defaultGetBaseURL();
-    if (!url) {
-      throw new Error('Tier0 SDK: baseURL is required. Set it via ClientConfig or TIER0_BASE_URL environment variable.');
+    const host = this.config.apiHost || this.config.getApiHost?.() || defaultGetApiHost();
+    if (!host) {
+      throw new Error('Tier0 SDK: apiHost is required. Set it via ClientConfig or TIER0_API_HOST environment variable.');
     }
-    return url.replace(/\\/$/, '');
+    return \`http://\${host}\`;
   }
 
   private getApiKey(): string | undefined {
@@ -191,6 +191,7 @@ function generateApi(swagger: SwaggerDoc): string {
       let module = 'common';
       if (pathStr.includes('/flow/')) module = 'flow';
       else if (pathStr.includes('/uns/')) module = 'uns';
+      else if (pathStr.includes('/auth/')) module = 'system';
       else if (pathStr.includes('/info')) module = 'system';
       else if (pathStr.includes('/reload')) module = 'system';
 
@@ -227,8 +228,9 @@ function generateApi(swagger: SwaggerDoc): string {
     code += `export const ${apiName} = {\n`;
 
     for (const fn of fns) {
-      const args = fn.bodyType ? `body: components["schemas"]["${fn.bodyType}"]` : '';
-      const bodyArg = fn.bodyType ? ', body' : '';
+      const needsBody = fn.method === 'post' || fn.method === 'put' || fn.method === 'patch';
+      const args = fn.bodyType ? `body: components["schemas"]["${fn.bodyType}"]` : (needsBody ? 'body?: any' : '');
+      const bodyArg = fn.bodyType ? ', body' : (needsBody ? ', body' : '');
       const respType = fn.responseType === 'any' ? 'any' : fn.responseType;
       code += `  ${fn.name}: (${args}) => getClient().${fn.method}<${respType}>('${fn.path}'${bodyArg}),\n`;
     }
@@ -251,6 +253,7 @@ function generateReact(swagger: SwaggerDoc): string {
       let module = 'common';
       if (pathStr.includes('/flow/')) module = 'flow';
       else if (pathStr.includes('/uns/')) module = 'uns';
+      else if (pathStr.includes('/auth/')) module = 'system';
       else if (pathStr.includes('/info')) module = 'system';
       else if (pathStr.includes('/reload')) module = 'system';
 
@@ -311,6 +314,7 @@ function generateVue(swagger: SwaggerDoc): string {
       let module = 'common';
       if (pathStr.includes('/flow/')) module = 'flow';
       else if (pathStr.includes('/uns/')) module = 'uns';
+      else if (pathStr.includes('/auth/')) module = 'system';
       else if (pathStr.includes('/info')) module = 'system';
       else if (pathStr.includes('/reload')) module = 'system';
 

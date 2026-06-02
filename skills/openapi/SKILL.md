@@ -28,7 +28,7 @@ metadata:
 
 ## 不可违反规则
 
-1. **必须先配置环境变量或客户端** — 未设置 `TIER0_BASE_URL` / `TIER0_API_KEY`（或未调用 `configureClient`）时调用 API 会抛出错误
+1. **必须先配置环境变量或客户端** — 未设置 `TIER0_API_HOST` / `TIER0_API_KEY`（或未调用 `configureClient`）时调用 API 会抛出错误
 2. **API 返回类型从 swagger.json 生成** — 不要手动构造响应类型，使用 `components["schemas"]["xxx"]` 或从 `types.ts` 导入
 3. **React Hooks 需安装 @tanstack/react-query** — 未安装时 import `@tier0/sdk/openapi/react` 会报错
 4. **Vue3 Composables 需安装 vue** — 未安装时 import `@tier0/sdk/openapi/vue` 会报错
@@ -49,6 +49,7 @@ metadata:
 |------|---------|------|
 | `GET /gw/reload` | `references/reload.md` | 网关重载 |
 | `POST /openapi/v1/info` | `references/info.md` | 服务信息 |
+| `POST /openapi/v1/auth/whoami` | `references/auth/whoami.md` | API Key 身份/权限诊断 |
 
 ### Flow 端点
 
@@ -60,6 +61,7 @@ metadata:
 | `POST /openapi/v1/flow/flowdata` | `references/flow/flowdata.md` | 获取 Flow 画布数据 |
 | `POST /openapi/v1/flow/get` | `references/flow/get.md` | 获取 Flow 详情 |
 | `POST /openapi/v1/flow/list` | `references/flow/list.md` | 列出 Flow |
+| `POST /openapi/v1/flow/nodes` | `references/flow/nodes.md` | 可用节点查询 |
 | `POST /openapi/v1/flow/update` | `references/flow/update.md` | 更新 Flow |
 
 ### UNS 端点
@@ -85,6 +87,7 @@ import { systemApi, flowApi, unsApi } from '@tier0/sdk/openapi';
 | 模块 | 端点 | 说明 |
 |------|------|------|
 | `systemApi` | `gwreload()` | 网关重载 |
+| `systemApi` | `openapiv1authwhoami(body?)` | API Key 身份/权限诊断 |
 | `systemApi` | `openapiv1info(body)` | 服务信息 |
 | `flowApi` | `openapiv1flowcreate(body)` | 创建 Flow |
 | `flowApi` | `openapiv1flowdelete(body)` | 删除 Flow |
@@ -92,6 +95,7 @@ import { systemApi, flowApi, unsApi } from '@tier0/sdk/openapi';
 | `flowApi` | `openapiv1flowflowdata(body)` | 获取 Flow 画布数据 |
 | `flowApi` | `openapiv1flowget(body)` | 获取 Flow 详情 |
 | `flowApi` | `openapiv1flowlist(body)` | 列出 Flow |
+| `flowApi` | `openapiv1flownodes(body)` | 可用节点查询 |
 | `flowApi` | `openapiv1flowupdate(body)` | 更新 Flow |
 | `unsApi` | `openapiv1unsbrowse(body)` | 浏览命名空间 |
 | `unsApi` | `openapiv1unscreate(body)` | 创建节点 |

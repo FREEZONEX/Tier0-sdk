@@ -10,18 +10,21 @@ description: "MQ 模块快速开始：环境变量配置、订阅、发布、取
 
 | 变量 | 必需 | 说明 |
 |------|------|------|
-| `TIER0_MQTT_URL` / `VITE_TIER0_MQTT_URL` | 是 | MQTT WebSocket 地址，如 `wss://mqtt.tier0.cloud` |
+| `TIER0_MQTT_HOST` / `VITE_TIER0_MQTT_HOST` | 是 | MQTT Broker 地址，如 `mqtt.tier0.cloud` |
+| `TIER0_MQTT_PORT` / `VITE_TIER0_MQTT_PORT` | 否 | MQTT WebSocket 端口（默认 8084） |
 | `TIER0_API_KEY` / `VITE_TIER0_API_KEY` | 是 | 认证密钥（作为 MQTT password） |
 
 ### .env 文件示例
 
 ```bash
 # Node.js
-TIER0_MQTT_URL=wss://mqtt.tier0.cloud
+TIER0_MQTT_HOST=mqtt.tier0.cloud
+TIER0_MQTT_PORT=8084
 TIER0_API_KEY=your-api-key
 
 # Vite 前端
-VITE_TIER0_MQTT_URL=wss://mqtt.tier0.cloud
+VITE_TIER0_MQTT_HOST=mqtt.tier0.cloud
+VITE_TIER0_MQTT_PORT=8084
 VITE_TIER0_API_KEY=your-api-key
 ```
 
@@ -31,7 +34,8 @@ VITE_TIER0_API_KEY=your-api-key
 import { Tier0MQClient } from '@tier0/sdk/mq';
 
 const client = new Tier0MQClient({
-  url: 'wss://mqtt.tier0.cloud',
+  host: 'emqx.default.svc',
+  port: 8084,
   password: 'your-api-key',
 });
 ```

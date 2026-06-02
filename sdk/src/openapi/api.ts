@@ -6,6 +6,7 @@ import type { components } from './types.js';
 
 export const systemApi = {
   gwreload: () => getClient().get<any>('/gw/reload'),
+  openapiv1authwhoami: (body?: any) => getClient().post<any>('/openapi/v1/auth/whoami', body),
   openapiv1info: (body: components["schemas"]["InfoReq"]) => getClient().post<any>('/openapi/v1/info', body),
 };
 
@@ -16,6 +17,7 @@ export const flowApi = {
   openapiv1flowflowdata: (body: components["schemas"]["FlowGetReq"]) => getClient().post<any>('/openapi/v1/flow/flowdata', body),
   openapiv1flowget: (body: components["schemas"]["FlowGetReq"]) => getClient().post<any>('/openapi/v1/flow/get', body),
   openapiv1flowlist: (body: components["schemas"]["FlowListReq"]) => getClient().post<any>('/openapi/v1/flow/list', body),
+  openapiv1flownodes: (body: components["schemas"]["FlowNodesReq"]) => getClient().post<any>('/openapi/v1/flow/nodes', body),
   openapiv1flowupdate: (body: components["schemas"]["FlowUpdateReq"]) => getClient().post<any>('/openapi/v1/flow/update', body),
 };
 

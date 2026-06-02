@@ -2,10 +2,10 @@
 // Do not edit manually
 
 export interface ClientConfig {
-  baseURL?: string;
+  apiHost?: string;
   apiKey?: string;
+  getApiHost?: () => string | undefined;
   getApiKey?: () => string | undefined;
-  getBaseURL?: () => string | undefined;
 }
 
 function getEnvVar(key: string): string | undefined {
@@ -30,8 +30,8 @@ function getEnvVar(key: string): string | undefined {
   return undefined;
 }
 
+const defaultGetApiHost = () => getEnvVar('TIER0_API_HOST');
 const defaultGetApiKey = () => getEnvVar('TIER0_API_KEY');
-const defaultGetBaseURL = () => getEnvVar('TIER0_BASE_URL');
 
 class HttpClient {
   private config: ClientConfig;
@@ -41,11 +41,11 @@ class HttpClient {
   }
 
   private getBaseURL(): string {
-    const url = this.config.baseURL || this.config.getBaseURL?.() || defaultGetBaseURL();
-    if (!url) {
-      throw new Error('Tier0 SDK: baseURL is required. Set it via ClientConfig or TIER0_BASE_URL environment variable.');
+    const host = this.config.apiHost || this.config.getApiHost?.() || defaultGetApiHost();
+    if (!host) {
+      throw new Error('Tier0 SDK: apiHost is required. Set it via ClientConfig or TIER0_API_HOST environment variable.');
     }
-    return url.replace(/\/$/, '');
+    return `http://${host}`;
   }
 
   private getApiKey(): string | undefined {

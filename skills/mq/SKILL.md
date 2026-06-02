@@ -28,7 +28,7 @@ metadata:
 
 ## 不可违反规则
 
-1. **URL 和认证从环境变量读取** — 代码中不直接传 `url` / `password`，除非覆盖
+1. **Host 和认证从环境变量读取** — 代码中不直接传 `host` / `password`，除非覆盖
 2. **订阅 QoS 固定为 1** — 内部自动使用 `qos: 1`，publish 默认 `qos: 0`（可覆盖）
 3. **handler 接收 (topic, payload) 字符串** — payload 已由 Buffer 转为 string，JSON 需自行 `JSON.parse`
 4. **通配符只支持 # 和 +** — `#` 匹配多层，`+` 匹配单层，不支持其他通配符
@@ -44,7 +44,8 @@ metadata:
 
 | 变量 | 必需 | 说明 |
 |------|------|------|
-| `TIER0_MQTT_URL` / `VITE_TIER0_MQTT_URL` | 是 | MQTT WebSocket 地址，如 `wss://mqtt.tier0.cloud` |
+| `TIER0_MQTT_HOST` / `VITE_TIER0_MQTT_HOST` | 是 | MQTT Broker 地址，如 `mqtt.tier0.cloud` |
+| `TIER0_MQTT_PORT` / `VITE_TIER0_MQTT_PORT` | 否 | MQTT WebSocket 端口（默认 8084） |
 | `TIER0_API_KEY` / `VITE_TIER0_API_KEY` | 是 | 认证密钥（作为 MQTT password） |
 
 ## 核心概念

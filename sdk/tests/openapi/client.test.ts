@@ -13,12 +13,12 @@ describe('HttpClient', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('should throw error when baseURL is not provided', async () => {
+  it('should throw error when apiHost is not provided', async () => {
     const client = new HttpClient();
-    await expect(client.get('/test')).rejects.toThrow('Tier0 SDK: baseURL is required');
+    await expect(client.get('/test')).rejects.toThrow('Tier0 SDK: apiHost is required');
   });
 
-  it('should use baseURL from config', async () => {
+  it('should use apiHost from config', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -26,32 +26,15 @@ describe('HttpClient', () => {
     } as Response);
     globalThis.fetch = mockFetch;
 
-    const client = new HttpClient({ baseURL: 'https://api.example.com' });
+    const client = new HttpClient({ apiHost: 'api.example.com' });
     await client.get('/test');
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/test',
+      'http://api.example.com/test',
       expect.objectContaining({
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       })
-    );
-  });
-
-  it('should strip trailing slash from baseURL', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({}),
-    } as Response);
-    globalThis.fetch = mockFetch;
-
-    const client = new HttpClient({ baseURL: 'https://api.example.com/' });
-    await client.get('/test');
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/test',
-      expect.any(Object)
     );
   });
 
@@ -64,7 +47,7 @@ describe('HttpClient', () => {
     globalThis.fetch = mockFetch;
 
     const client = new HttpClient({
-      baseURL: 'https://api.example.com',
+      apiHost: 'api.example.com',
       apiKey: 'test-api-key',
     });
     await client.get('/test');
@@ -89,7 +72,7 @@ describe('HttpClient', () => {
     globalThis.fetch = mockFetch;
 
     const client = new HttpClient({
-      baseURL: 'https://api.example.com',
+      apiHost: 'api.example.com',
       getApiKey: () => 'dynamic-key',
     });
     await client.get('/test');
@@ -113,7 +96,7 @@ describe('HttpClient', () => {
     globalThis.fetch = mockFetch;
 
     const client = new HttpClient({
-      baseURL: 'https://api.example.com',
+      apiHost: 'api.example.com',
       apiKey: 'direct-key',
       getApiKey: () => 'dynamic-key',
     });
@@ -137,12 +120,12 @@ describe('HttpClient', () => {
     } as Response);
     globalThis.fetch = mockFetch;
 
-    const client = new HttpClient({ baseURL: 'https://api.example.com' });
+    const client = new HttpClient({ apiHost: 'api.example.com' });
     const body = { name: 'test' };
     await client.post('/items', body);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/items',
+      'http://api.example.com/items',
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify(body),
@@ -158,11 +141,11 @@ describe('HttpClient', () => {
     } as Response);
     globalThis.fetch = mockFetch;
 
-    const client = new HttpClient({ baseURL: 'https://api.example.com' });
+    const client = new HttpClient({ apiHost: 'api.example.com' });
     await client.put('/items/1', { name: 'updated' });
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/items/1',
+      'http://api.example.com/items/1',
       expect.objectContaining({ method: 'PUT' })
     );
   });
@@ -175,11 +158,11 @@ describe('HttpClient', () => {
     } as Response);
     globalThis.fetch = mockFetch;
 
-    const client = new HttpClient({ baseURL: 'https://api.example.com' });
+    const client = new HttpClient({ apiHost: 'api.example.com' });
     await client.patch('/items/1', { name: 'patched' });
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/items/1',
+      'http://api.example.com/items/1',
       expect.objectContaining({ method: 'PATCH' })
     );
   });
@@ -192,11 +175,11 @@ describe('HttpClient', () => {
     } as Response);
     globalThis.fetch = mockFetch;
 
-    const client = new HttpClient({ baseURL: 'https://api.example.com' });
+    const client = new HttpClient({ apiHost: 'api.example.com' });
     await client.delete('/items/1');
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.example.com/items/1',
+      'http://api.example.com/items/1',
       expect.objectContaining({ method: 'DELETE' })
     );
   });
@@ -209,7 +192,7 @@ describe('HttpClient', () => {
     } as Response);
     globalThis.fetch = mockFetch;
 
-    const client = new HttpClient({ baseURL: 'https://api.example.com' });
+    const client = new HttpClient({ apiHost: 'api.example.com' });
     await expect(client.get('/missing')).rejects.toThrow('HTTP 404: Not Found');
   });
 
@@ -220,7 +203,7 @@ describe('HttpClient', () => {
     } as Response);
     globalThis.fetch = mockFetch;
 
-    const client = new HttpClient({ baseURL: 'https://api.example.com' });
+    const client = new HttpClient({ apiHost: 'api.example.com' });
     const result = await client.delete('/items/1');
     expect(result).toBeUndefined();
   });
@@ -234,14 +217,14 @@ describe('HttpClient', () => {
     } as Response);
     globalThis.fetch = mockFetch;
 
-    const client = new HttpClient({ baseURL: 'https://api.example.com' });
+    const client = new HttpClient({ apiHost: 'api.example.com' });
     const result = await client.get('/items/1');
     expect(result).toEqual(mockData);
   });
 
-  it('should use environment variable for baseURL', async () => {
-    const originalEnv = process.env.TIER0_BASE_URL;
-    process.env.TIER0_BASE_URL = 'https://env.example.com';
+  it('should use environment variable for apiHost', async () => {
+    const originalEnv = process.env.TIER0_API_HOST;
+    process.env.TIER0_API_HOST = 'env.example.com';
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -254,11 +237,11 @@ describe('HttpClient', () => {
     await client.get('/test');
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://env.example.com/test',
+      'http://env.example.com/test',
       expect.any(Object)
     );
 
-    process.env.TIER0_BASE_URL = originalEnv;
+    process.env.TIER0_API_HOST = originalEnv;
   });
 
   it('should use environment variable for apiKey', async () => {
@@ -272,7 +255,7 @@ describe('HttpClient', () => {
     } as Response);
     globalThis.fetch = mockFetch;
 
-    const client = new HttpClient({ baseURL: 'https://api.example.com' });
+    const client = new HttpClient({ apiHost: 'api.example.com' });
     await client.get('/test');
 
     expect(mockFetch).toHaveBeenCalledWith(
@@ -297,12 +280,12 @@ describe('configureClient / getClient', () => {
     } as Response);
     globalThis.fetch = mockFetch;
 
-    configureClient({ baseURL: 'https://configured.example.com' });
+    configureClient({ apiHost: 'configured.example.com' });
     const client = getClient();
     await client.get('/test');
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://configured.example.com/test',
+      'http://configured.example.com/test',
       expect.any(Object)
     );
   });

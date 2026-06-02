@@ -12,6 +12,12 @@ export function useGwreload() {
   });
 }
 
+export function useOpenapiv1authwhoami() {
+  return useMutation<any, Error, void>({
+    mutationFn: systemApi.openapiv1authwhoami,
+  });
+}
+
 export function useOpenapiv1info() {
   return useMutation<any, Error, components["schemas"]["InfoReq"]>({
     mutationFn: systemApi.openapiv1info,
@@ -51,6 +57,12 @@ export function useOpenapiv1flowget() {
 export function useOpenapiv1flowlist() {
   return useMutation<any, Error, components["schemas"]["FlowListReq"]>({
     mutationFn: flowApi.openapiv1flowlist,
+  });
+}
+
+export function useOpenapiv1flownodes() {
+  return useMutation<any, Error, components["schemas"]["FlowNodesReq"]>({
+    mutationFn: flowApi.openapiv1flownodes,
   });
 }
 

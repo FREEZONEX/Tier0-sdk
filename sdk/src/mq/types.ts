@@ -1,8 +1,10 @@
 export interface MQTTConfig {
-  url: string;
+  host?: string;
+  port?: number;
   clientId?: string;
   username?: string;
   password?: string;
+  keepAlive?: number;
   reconnectPeriod?: number;
   connectTimeout?: number;
   clean?: boolean;

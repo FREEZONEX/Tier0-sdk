@@ -6,7 +6,7 @@ describe('API modules', () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
-    configureClient({ baseURL: 'https://api.example.com' });
+    configureClient({ apiHost: 'api.example.com' });
     vi.restoreAllMocks();
   });
 
@@ -30,7 +30,7 @@ describe('API modules', () => {
       expect(result).toEqual({ success: true });
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        'https://api.example.com/gw/reload',
+        'http://api.example.com/gw/reload',
         expect.objectContaining({ method: 'GET' })
       );
     });
@@ -42,7 +42,7 @@ describe('API modules', () => {
       expect(result).toEqual({ message: 'ok' });
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        'https://api.example.com/openapi/v1/info',
+        'http://api.example.com/openapi/v1/info',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify(body),
@@ -59,7 +59,7 @@ describe('API modules', () => {
       expect(result).toEqual({ id: 1 });
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        'https://api.example.com/openapi/v1/flow/create',
+        'http://api.example.com/openapi/v1/flow/create',
         expect.objectContaining({ method: 'POST' })
       );
     });
@@ -71,7 +71,7 @@ describe('API modules', () => {
       expect(result).toEqual({ list: [] });
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        'https://api.example.com/openapi/v1/flow/list',
+        'http://api.example.com/openapi/v1/flow/list',
         expect.objectContaining({ method: 'POST' })
       );
     });
@@ -120,7 +120,7 @@ describe('API modules', () => {
       expect(result).toEqual([]);
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        'https://api.example.com/openapi/v1/uns/browse',
+        'http://api.example.com/openapi/v1/uns/browse',
         expect.objectContaining({ method: 'POST' })
       );
     });

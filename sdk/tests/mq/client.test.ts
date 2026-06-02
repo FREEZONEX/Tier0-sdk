@@ -55,7 +55,7 @@ describe('Tier0MQClient', () => {
 
   it('should throw error when URL is not provided on connect', async () => {
     const client = new Tier0MQClient();
-    await expect(client.connect()).rejects.toThrow('MQTT URL is required');
+    await expect(client.connect()).rejects.toThrow('MQTT host is required');
   });
 
   it('should throw error when URL is not provided on subscribe', async () => {
@@ -66,14 +66,14 @@ describe('Tier0MQClient', () => {
   });
 
   it('should connect with config URL', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
     const connectPromise = client.connect();
 
     emit('connect');
     await connectPromise;
 
     expect(mqtt.connect).toHaveBeenCalledWith(
-      'ws://localhost:8080',
+      'ws://localhost:8080/mqtt',
       expect.objectContaining({
         reconnectPeriod: 5000,
         connectTimeout: 30000,
@@ -85,7 +85,8 @@ describe('Tier0MQClient', () => {
   it('should connect with override config', async () => {
     const client = new Tier0MQClient();
     const connectPromise = client.connect({
-      url: 'wss://mqtt.example.com',
+      host: 'mqtt.example.com',
+      port: 443,
       clientId: 'test-client',
       username: 'user',
       password: 'pass',
@@ -98,7 +99,7 @@ describe('Tier0MQClient', () => {
     await connectPromise;
 
     expect(mqtt.connect).toHaveBeenCalledWith(
-      'wss://mqtt.example.com',
+      'ws://mqtt.example.com:443/mqtt',
       expect.objectContaining({
         clientId: 'test-client',
         username: 'user',
@@ -111,7 +112,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should reject on connection error', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
     const connectPromise = client.connect();
 
     const error = new Error('Connection refused');
@@ -121,8 +122,10 @@ describe('Tier0MQClient', () => {
   });
 
   it('should use env variable for URL', async () => {
-    const originalEnv = process.env.TIER0_MQTT_URL;
-    process.env.TIER0_MQTT_URL = 'ws://env.example.com';
+    const originalHost = process.env.TIER0_MQTT_HOST;
+    const originalPort = process.env.TIER0_MQTT_PORT;
+    process.env.TIER0_MQTT_HOST = 'env.example.com';
+    process.env.TIER0_MQTT_PORT = '8080';
 
     const client = new Tier0MQClient();
     const connectPromise = client.connect();
@@ -130,18 +133,19 @@ describe('Tier0MQClient', () => {
     await connectPromise;
 
     expect(mqtt.connect).toHaveBeenCalledWith(
-      'ws://env.example.com',
+      'ws://env.example.com:8080/mqtt',
       expect.any(Object)
     );
 
-    process.env.TIER0_MQTT_URL = originalEnv;
+    process.env.TIER0_MQTT_HOST = originalHost;
+    process.env.TIER0_MQTT_PORT = originalPort;
   });
 
   it('should use env variable for password', async () => {
     const originalKey = process.env.TIER0_API_KEY;
     process.env.TIER0_API_KEY = 'mqtt-password';
 
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
     const connectPromise = client.connect();
     emit('connect');
     await connectPromise;
@@ -157,7 +161,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should auto-connect on subscribe', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const handler = vi.fn();
     client.subscribe('test/topic', handler);
@@ -168,7 +172,7 @@ describe('Tier0MQClient', () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(mqtt.connect).toHaveBeenCalledWith(
-      'ws://localhost:8080',
+      'ws://localhost:8080/mqtt',
       expect.any(Object)
     );
     expect(mockMqttClient.subscribe).toHaveBeenCalledWith(
@@ -179,7 +183,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should subscribe with qos 1', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     client.subscribe('test/topic', () => {});
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -195,7 +199,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should dispatch message to handler with (topic, payload)', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const handler = vi.fn();
     client.subscribe('test/topic', handler);
@@ -209,7 +213,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should dispatch JSON payload as string', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const handler = vi.fn();
     client.subscribe('sensor/temp', handler);
@@ -224,7 +228,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should not dispatch to handler of different topic', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const handler = vi.fn();
     client.subscribe('test/topic', handler);
@@ -238,7 +242,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should support wildcard # subscription', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const handler = vi.fn();
     client.subscribe('home/room/#', handler);
@@ -254,7 +258,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should support wildcard + subscription', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const handler = vi.fn();
     client.subscribe('home/+/temp', handler);
@@ -272,7 +276,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should allow multiple handlers on same topic', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const handler1 = vi.fn();
     const handler2 = vi.fn();
@@ -289,7 +293,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should deduplicate same handler on same topic', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const handler = vi.fn();
     client.subscribe('test/topic', handler);
@@ -306,7 +310,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should auto-connect on publish', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const publishPromise = client.publish('test/topic', 'hello');
 
@@ -316,7 +320,7 @@ describe('Tier0MQClient', () => {
     await publishPromise;
 
     expect(mqtt.connect).toHaveBeenCalledWith(
-      'ws://localhost:8080',
+      'ws://localhost:8080/mqtt',
       expect.any(Object)
     );
     expect(mockMqttClient.publish).toHaveBeenCalledWith(
@@ -327,7 +331,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should publish string message', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const connectPromise = client.connect();
     emit('connect');
@@ -345,7 +349,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should publish object message as JSON', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const connectPromise = client.connect();
     emit('connect');
@@ -364,7 +368,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should publish with custom qos and retain', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const connectPromise = client.connect();
     emit('connect');
@@ -382,7 +386,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should unsubscribe specific handler from topic', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const connectPromise = client.connect();
     emit('connect');
@@ -403,7 +407,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should unsubscribe all handlers from topic', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const connectPromise = client.connect();
     emit('connect');
@@ -426,7 +430,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should not send broker unsubscribe if other handlers remain', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const connectPromise = client.connect();
     emit('connect');
@@ -446,7 +450,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should disconnect and clear state', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const connectPromise = client.connect();
     emit('connect');
@@ -464,7 +468,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should handle connect event', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
     const handler = vi.fn();
     client.on('connect', handler);
 
@@ -476,7 +480,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should handle disconnect event', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
     const handler = vi.fn();
     client.on('disconnect', handler);
 
@@ -490,7 +494,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should handle error event', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
     const handler = vi.fn();
     client.on('error', handler);
 
@@ -503,7 +507,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should remove event listener with off', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
     const handler = vi.fn();
     client.on('connect', handler);
     client.off('connect', handler);
@@ -516,7 +520,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should report isConnected correctly', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
     expect(client.isConnected).toBe(false);
 
     const connectPromise = client.connect();
@@ -528,7 +532,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should resubscribe all topics on reconnect', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     // 首次连接并订阅
     const connectPromise1 = client.connect();
@@ -560,7 +564,7 @@ describe('Tier0MQClient', () => {
   });
 
   it('should resubscribe only unique topics on reconnect', async () => {
-    const client = new Tier0MQClient({ url: 'ws://localhost:8080' });
+    const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
 
     const connectPromise = client.connect();
     emit('connect');
@@ -587,9 +591,11 @@ describe('Tier0MQClient', () => {
     );
   });
 
-  it('should use env URL for lazy connect', async () => {
-    const originalEnv = process.env.TIER0_MQTT_URL;
-    process.env.TIER0_MQTT_URL = 'ws://lazy.example.com';
+  it('should use env host for lazy connect', async () => {
+    const originalHost = process.env.TIER0_MQTT_HOST;
+    const originalPort = process.env.TIER0_MQTT_PORT;
+    process.env.TIER0_MQTT_HOST = 'lazy.example.com';
+    process.env.TIER0_MQTT_PORT = '8084';
 
     const client = new Tier0MQClient();
 
@@ -600,18 +606,21 @@ describe('Tier0MQClient', () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(mqtt.connect).toHaveBeenCalledWith(
-      'ws://lazy.example.com',
+      'ws://lazy.example.com:8084/mqtt',
       expect.any(Object)
     );
 
-    process.env.TIER0_MQTT_URL = originalEnv;
+    process.env.TIER0_MQTT_HOST = originalHost;
+    process.env.TIER0_MQTT_PORT = originalPort;
   });
 
   it('should use env API_KEY for lazy connect password', async () => {
     const originalKey = process.env.TIER0_API_KEY;
-    const originalUrl = process.env.TIER0_MQTT_URL;
+    const originalHost = process.env.TIER0_MQTT_HOST;
+    const originalPort = process.env.TIER0_MQTT_PORT;
     process.env.TIER0_API_KEY = 'lazy-key';
-    process.env.TIER0_MQTT_URL = 'ws://lazy.example.com';
+    process.env.TIER0_MQTT_HOST = 'lazy.example.com';
+    process.env.TIER0_MQTT_PORT = '8084';
 
     const client = new Tier0MQClient();
 
@@ -628,6 +637,7 @@ describe('Tier0MQClient', () => {
     );
 
     process.env.TIER0_API_KEY = originalKey;
-    process.env.TIER0_MQTT_URL = originalUrl;
+    process.env.TIER0_MQTT_HOST = originalHost;
+    process.env.TIER0_MQTT_PORT = originalPort;
   });
 });

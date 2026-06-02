@@ -26,6 +26,41 @@ function getEnvVar(key: string): string | undefined {
 
 export type TopicHandler = (topic: string, payload: string) => void;
 
+function parseWorkspaceIDFromApiKey(apiKey: string): string | undefined {
+  apiKey = apiKey.trim();
+  const parts = apiKey.split('-');
+  if (parts.length !== 3 || parts[0] !== 'sk') {
+    return undefined;
+  }
+  const payload = parts[2];
+  if (!payload.startsWith('ws')) {
+    return undefined;
+  }
+  const sepIndex = payload.indexOf('_');
+  if (sepIndex <= 2) {
+    return undefined;
+  }
+  const workspaceID36 = payload.slice(2, sepIndex);
+  try {
+    const workspaceID = parseInt(workspaceID36, 36);
+    if (workspaceID <= 0 || isNaN(workspaceID)) {
+      return undefined;
+    }
+    return String(workspaceID);
+  } catch {
+    return undefined;
+  }
+}
+
+function generateRandomString(length = 8): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 interface Subscription {
   topic: string;
   handler: TopicHandler;
@@ -40,12 +75,32 @@ export class Tier0MQClient {
   private _connected = false;
 
   constructor(config?: MQTTConfig) {
-    const envUrl = getEnvVar('TIER0_MQTT_URL');
+    const envHost = getEnvVar('TIER0_MQTT_HOST');
+    const envPort = getEnvVar('TIER0_MQTT_PORT');
+
+    const host = config?.host || envHost || '';
+    const port = config?.port || parseInt(envPort || '8084') || 8084;
+    const password = config?.password || getEnvVar('TIER0_API_KEY') || '';
+
+    // 从 apiKey 解析 workspaceID，自动生成 clientId 和 username
+    const workspaceID = config?.clientId && config?.username
+      ? undefined
+      : parseWorkspaceIDFromApiKey(password);
+
+    const autoClientId = workspaceID
+      ? `${workspaceID}&${generateRandomString(8)}`
+      : `enterprise&${generateRandomString(8)}`;
+    const autoUsername = workspaceID
+      ? `${workspaceID}&open`
+      : 'enterprise&open';
+
     this.config = {
-      url: config?.url || envUrl || '',
-      clientId: config?.clientId,
-      username: config?.username,
-      password: config?.password || getEnvVar('TIER0_API_KEY'),
+      host,
+      port,
+      clientId: config?.clientId || autoClientId,
+      username: config?.username || autoUsername,
+      password,
+      keepAlive: config?.keepAlive ?? 60,
       reconnectPeriod: config?.reconnectPeriod ?? 5000,
       connectTimeout: config?.connectTimeout ?? 30000,
       clean: config?.clean ?? true,
@@ -53,16 +108,20 @@ export class Tier0MQClient {
     };
   }
 
+  private get mqttUrl(): string {
+    const { host, port } = this.config;
+    if (!host) {
+      throw new Error(
+        'MQTT host is required. Provide it via MQTTConfig or TIER0_MQTT_HOST environment variable.'
+      );
+    }
+    return `ws://${host}:${port}/mqtt`;
+  }
+
   // 内部确保已连接（懒连接）
   private async ensureConnected(): Promise<void> {
     if (this._connected) return;
     if (this.connectingPromise) return this.connectingPromise;
-
-    if (!this.config.url) {
-      throw new Error(
-        'MQTT URL is required. Provide it via ClientConfig or TIER0_MQTT_URL environment variable.'
-      );
-    }
 
     this.connectingPromise = this.doConnect();
     return this.connectingPromise;
@@ -74,12 +133,13 @@ export class Tier0MQClient {
         clientId: this.config.clientId,
         username: this.config.username,
         password: this.config.password,
+        keepalive: this.config.keepAlive,
         reconnectPeriod: this.config.reconnectPeriod,
         connectTimeout: this.config.connectTimeout,
         clean: this.config.clean,
       };
 
-      this.client = mqtt.connect(this.config.url, options);
+      this.client = mqtt.connect(this.mqttUrl, options);
 
       this.client.on('connect', () => {
         this._connected = true;

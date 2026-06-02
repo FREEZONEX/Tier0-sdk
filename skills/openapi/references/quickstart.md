@@ -12,8 +12,8 @@ SDK 优先从环境变量读取配置，无需代码中硬编码。
 
 | 变量 | 必需 | 说明 |
 |------|------|------|
-| `TIER0_BASE_URL` / `VITE_TIER0_BASE_URL` | 是 | API 基础地址，如 `https://api.tier0.cloud` |
-| `TIER0_API_KEY` / `VITE_TIER0_API_KEY` | 是 | JWT Bearer Token |
+| `TIER0_API_HOST` / `VITE_TIER0_API_HOST` | 是 | OpenAPI 服务地址（gwsvr），如 `api.tier0.cloud` |
+| `TIER0_API_KEY` / `VITE_TIER0_API_KEY` | 是 | API 认证密钥 |
 
 ### 运行时传入（覆盖环境变量）
 
@@ -21,7 +21,7 @@ SDK 优先从环境变量读取配置，无需代码中硬编码。
 import { configureClient } from '@tier0/sdk/openapi';
 
 configureClient({
-  baseURL: 'https://api.tier0.cloud',
+  apiHost: 'gwsvr.default.svc',
   apiKey: 'your-api-key',
 });
 ```
@@ -32,7 +32,7 @@ configureClient({
 import { configureClient } from '@tier0/sdk/openapi';
 
 configureClient({
-  getBaseURL: () => process.env.TIER0_BASE_URL,
+  getApiHost: () => process.env.TIER0_API_HOST,
   getApiKey: () => {
     // 从安全存储或认证服务获取
     return localStorage.getItem('tier0_api_key') || undefined;
