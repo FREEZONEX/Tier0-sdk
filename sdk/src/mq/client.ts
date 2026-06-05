@@ -1,28 +1,7 @@
 import mqtt from 'mqtt';
 import type { MqttClient, IClientOptions } from 'mqtt';
+import { getEnvVar } from '../runtime-env.js';
 import type { MQTTConfig, MQTTEventMap } from './types.js';
-
-function getEnvVar(key: string): string | undefined {
-  try {
-    if (typeof process !== 'undefined' && process.env) {
-      return process.env[key];
-    }
-  } catch {
-    // ignore
-  }
-  try {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    if (typeof import.meta !== 'undefined' && import.meta.env) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      return import.meta.env[key] || import.meta.env[`VITE_${key}`];
-    }
-  } catch {
-    // ignore
-  }
-  return undefined;
-}
 
 export type TopicHandler = (topic: string, payload: string) => void;
 
@@ -115,7 +94,13 @@ export class Tier0MQClient {
         'MQTT host is required. Provide it via MQTTConfig or TIER0_MQTT_HOST environment variable.'
       );
     }
-    return `ws://${host}:${port}/mqtt`;
+    const normalizedHost = host.trim().replace(/\/+$/, '');
+    if (/^wss?:\/\//i.test(normalizedHost)) {
+      return normalizedHost.endsWith('/mqtt')
+        ? normalizedHost
+        : `${normalizedHost}/mqtt`;
+    }
+    return `ws://${normalizedHost}:${port}/mqtt`;
   }
 
   // 内部确保已连接（懒连接）

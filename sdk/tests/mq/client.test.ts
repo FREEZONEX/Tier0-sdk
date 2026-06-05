@@ -82,6 +82,19 @@ describe('Tier0MQClient', () => {
     );
   });
 
+  it('should not duplicate protocol when MQTT host includes ws scheme', async () => {
+    const client = new Tier0MQClient({ host: 'wss://mqtt.example.com/' });
+    const connectPromise = client.connect();
+
+    emit('connect');
+    await connectPromise;
+
+    expect(mqtt.connect).toHaveBeenCalledWith(
+      'wss://mqtt.example.com/mqtt',
+      expect.any(Object)
+    );
+  });
+
   it('should connect with override config', async () => {
     const client = new Tier0MQClient();
     const connectPromise = client.connect({

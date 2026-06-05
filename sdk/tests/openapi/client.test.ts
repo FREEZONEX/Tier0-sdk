@@ -38,6 +38,23 @@ describe('HttpClient', () => {
     );
   });
 
+  it('should not duplicate protocol when apiHost includes http scheme', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ data: 'ok' }),
+    } as Response);
+    globalThis.fetch = mockFetch;
+
+    const client = new HttpClient({ apiHost: 'https://api.example.com/' });
+    await client.get('/test');
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.example.com/test',
+      expect.objectContaining({ method: 'GET' })
+    );
+  });
+
   it('should inject Authorization header with apiKey', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,

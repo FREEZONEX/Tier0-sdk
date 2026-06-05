@@ -1,31 +1,45 @@
 {
   "name": "@tier0/sdk",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Tier0 SDK - OpenAPI REST client and MQTT over WebSocket client for TypeScript/JavaScript",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
     },
     "./openapi": {
-      "import": "./dist/openapi/index.js",
-      "require": "./dist/openapi/index.js",
-      "types": "./dist/openapi/index.d.ts"
+      "types": "./dist/esm/openapi/index.d.ts",
+      "import": "./dist/esm/openapi/index.js",
+      "require": "./dist/cjs/openapi/index.js"
+    },
+    "./openapi/react": {
+      "types": "./dist/esm/openapi/react.d.ts",
+      "import": "./dist/esm/openapi/react.js",
+      "require": "./dist/cjs/openapi/react.js"
+    },
+    "./openapi/vue": {
+      "types": "./dist/esm/openapi/vue.d.ts",
+      "import": "./dist/esm/openapi/vue.js",
+      "require": "./dist/cjs/openapi/vue.js"
     },
     "./mq": {
-      "import": "./dist/mq/index.js",
-      "require": "./dist/mq/index.js",
-      "types": "./dist/mq/index.d.ts"
+      "types": "./dist/esm/mq/index.d.ts",
+      "import": "./dist/esm/mq/index.js",
+      "require": "./dist/cjs/mq/index.js"
     }
   },
   "files": [
     "dist/"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && node scripts/finalize-build.mjs",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
     "generate": "bash scripts/generate-openapi.sh",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -52,7 +66,14 @@
     "type": "git",
     "url": "git+https://github.com/FREEZONEX/Tier0-sdk.git"
   },
-  "keywords": ["tier0", "sdk", "openapi", "mqtt", "uns", "iot"],
+  "keywords": [
+    "tier0",
+    "sdk",
+    "openapi",
+    "mqtt",
+    "uns",
+    "iot"
+  ],
   "engines": {
     "node": ">=18.0.0"
   }
