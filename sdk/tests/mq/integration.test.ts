@@ -15,11 +15,12 @@ run('MQ Integration Tests', () => {
   let client: Tier0MQClient;
 
   beforeAll(() => {
+    // clientId 不可随意自定义：broker 要求 `{workspaceID}&xxx` 格式，
+    // 留空让 SDK 从 apiKey 解析 workspaceID 自动生成
     client = new Tier0MQClient({
       host: mqttHost,
       port: mqttPort,
       password: apiKey,
-      clientId: `sdk-test-${Date.now()}`,
     });
   });
 

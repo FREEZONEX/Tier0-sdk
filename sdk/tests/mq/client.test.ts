@@ -17,6 +17,10 @@ describe('Tier0MQClient', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // 隔离外部环境变量，避免本机配置影响单元测试
+    vi.stubEnv('TIER0_MQTT_HOST', undefined);
+    vi.stubEnv('TIER0_MQTT_PORT', undefined);
+    vi.stubEnv('TIER0_API_KEY', undefined);
     eventHandlers = {};
     subscribeCallbacks = [];
 
@@ -46,6 +50,7 @@ describe('Tier0MQClient', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   function emit(event: string, ...args: any[]) {

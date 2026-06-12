@@ -32,7 +32,7 @@ run('OpenAPI Integration Tests', () => {
     const result = await unsApi.openapiv1unsbrowse({});
     expect(result).toBeDefined();
     expect(result.code).toBe(200);
-    expect(Array.isArray(result.data?.list || result.data)).toBe(true);
+    expect(Array.isArray(result.data?.tree)).toBe(true);
   });
 
   it('should list flows', async () => {

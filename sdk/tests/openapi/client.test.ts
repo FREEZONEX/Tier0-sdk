@@ -7,10 +7,14 @@ describe('HttpClient', () => {
   beforeEach(() => {
     configureClient({});
     vi.restoreAllMocks();
+    // 隔离外部环境变量，避免本机配置影响单元测试
+    vi.stubEnv('TIER0_API_HOST', undefined);
+    vi.stubEnv('TIER0_API_KEY', undefined);
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
+    vi.unstubAllEnvs();
   });
 
   it('should throw error when apiHost is not provided', async () => {
@@ -75,6 +79,7 @@ describe('HttpClient', () => {
         headers: {
           'Content-Type': 'application/json',
           Authorization: 'Bearer test-api-key',
+          'X-API-Key': 'test-api-key',
         },
       })
     );
