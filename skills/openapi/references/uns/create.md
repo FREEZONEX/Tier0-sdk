@@ -27,7 +27,7 @@ const result = await unsApi.openapiv1unscreate(body);
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `name` | string | **是** | 单段节点名，不含 `/`，如 `"Production"`、`"mixing_tank_01"` |
-| `type` | string | **是** | 节点类型：`"path"`（目录）/ `"topic"`（数据点叶子节点） |
+| `type` | string | **是（不可省略）** | 节点类型：`"path"`（目录）/ `"topic"`（数据点），**大小写不敏感**（`PATH`/`path` 均可） |
 | `topicType` | string | topic 必填 | `"metric"` / `"action"` / `"state"`（小写） |
 | `displayName` | string | 否 | 显示名称 |
 | `description` | string | 否 | 描述，action/state 节点强烈建议写示例 payload |
