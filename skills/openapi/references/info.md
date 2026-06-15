@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-info
-version: 0.2.0
+version: 0.3.0
 description: "POST /openapi/v1/info — 获取 Tier0 服务信息（连通性验证）"
 ---
 
@@ -27,9 +27,10 @@ const result = await systemApi.openapiv1info({});
   code: number;
   msg: string;
   data: {
-    version: string;      // 服务版本号
-    buildTime?: string;   // 构建时间
-    env?: string;         // 运行环境
+    name: string;           // 服务名称，如 "Tier0 UNS OpenAPI"
+    version: string;        // API 版本，如 "v1"
+    capabilities: string[]; // 支持的操作列表，如 ["read","write","browse","search","create","update","delete"]
+    mqttBroker: string;     // MQTT Broker 地址，如 "mqtt.pre.tier0.dev"
   };
 }
 ```
@@ -43,7 +44,11 @@ import { systemApi } from '@tier0/sdk/openapi';
 
 try {
   const result = await systemApi.openapiv1info({});
-  console.log('连接成功，版本:', result.data.version);
+  console.log('连接成功');
+  console.log('  服务:', result.data.name);      // "Tier0 UNS OpenAPI"
+  console.log('  版本:', result.data.version);    // "v1"
+  console.log('  能力:', result.data.capabilities.join(', '));
+  console.log('  MQTT Broker:', result.data.mqttBroker);
 } catch (error) {
   if (error instanceof Error) {
     // "HTTP 401" → API Key 无效

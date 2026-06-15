@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-search
-version: 0.2.0
+version: 0.3.0
 description: "POST /openapi/v1/uns/search — 按关键词搜索 UNS 节点"
 ---
 
@@ -22,32 +22,28 @@ const result = await unsApi.openapiv1unssearch(body);
 |------|------|------|------|
 | `keyword` | string | 否 | 关键词（模糊匹配节点名称/路径），留空则返回所有节点 |
 | `path_prefix` | string | 否 | 限制搜索范围到指定路径前缀，如 `"Plant/Line1"` |
-| `topicType` | string | 否 | 按数据类型过滤：`METRIC` / `ACTION` / `STATE`（仅叶子节点） |
-| `include_metadata` | boolean | 否 | 返回 fields、description 等元数据 |
-| `include_leaf_value` | boolean | 否 | 返回叶子节点的当前 VQT 值 |
+| `topicType` | string | 否 | 按数据类型过滤：`Metric` / `Action` / `State`（仅叶子节点） |
 | `page` | integer | 否 | 页码，默认 1 |
 | `size` | integer | 否 | 每页条数，默认 20 |
 
 ## 响应结构
+
+> ⚠️ search 响应使用 `data.objects[]`，**不是** `data.results[]` 也不是 `data.list[]`。
 
 ```typescript
 {
   code: number;
   msg: string;
   data: {
-    total: number;
+    total: number;  // 总匹配数
     page: number;
     size: number;
-    list: Array<{
-      topic: string;
-      type: 'path' | 'file';
-      topicType?: 'METRIC' | 'ACTION' | 'STATE';
-      displayName?: string;
-      description?: string;
-      fields?: Array<{ name: string; type: string; unit?: string }>;
-      value?: Record<string, unknown>;
-      quality?: string;
-      timeStamp?: number;
+    objects: Array<{
+      id: number;           // 节点 ID（数字型）
+      name: string;         // 节点短名称（最后一段）
+      path: string;         // 完整路径，如 "Plant/Line1/Metric/Temperature"
+      topicType: string;    // "Metric" | "Action" | "State" | ""
+      type: 'folder' | 'file';
     }>;
   };
 }
@@ -61,44 +57,41 @@ const result = await unsApi.openapiv1unssearch(body);
 import { unsApi } from '@tier0/sdk/openapi';
 
 const result = await unsApi.openapiv1unssearch({
-  keyword: 'Temperature',
+  keyword: 'mixing',
 });
 
-for (const node of result.data.list) {
-  console.log(node.topic, node.topicType);
-  // Plant/Line1/Metric/Temperature  METRIC
-  // Plant/Line2/Metric/Temperature  METRIC
+console.log('共找到', result.data.total, '个节点');
+for (const obj of result.data.objects) {
+  console.log(obj.path, obj.topicType, obj.type);
+  // "Choco_Factory/Production/State/mixing_tank_01"  "State"  "file"
 }
 ```
 
-### 在指定路径下搜索 METRIC 节点
+### 在指定路径下搜索 State 节点
 
 ```typescript
 const result = await unsApi.openapiv1unssearch({
-  keyword: 'temp',
-  path_prefix: 'Plant/Line1',
-  topicType: 'METRIC',
-  include_metadata: true,
+  keyword: 'tank',
+  path_prefix: 'Choco_Factory/Production',
+  topicType: 'State',
 });
 
-for (const node of result.data.list) {
-  console.log(node.topic, node.fields);
+for (const obj of result.data.objects) {
+  console.log(obj.path);
 }
 ```
 
-### 分页搜索所有节点
+### 分页获取所有节点
 
 ```typescript
 let page = 1;
 const size = 50;
-let total = Infinity;
-const allNodes = [];
+let allObjects: typeof result.data.objects = [];
 
-while (allNodes.length < total) {
+while (true) {
   const result = await unsApi.openapiv1unssearch({ page, size });
-  total = result.data.total;
-  allNodes.push(...result.data.list);
-  if (result.data.list.length < size) break;
+  allObjects.push(...result.data.objects);
+  if (allObjects.length >= result.data.total) break;
   page++;
 }
 ```

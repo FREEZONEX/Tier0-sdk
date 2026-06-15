@@ -46,8 +46,8 @@ HTTP 200 + 外层 `code:200` **不代表写入全部成功**，必须检查 `dat
     results: Array<{
       success: boolean; // 单项是否成功
       topic: string;
-      result: null;
-      error?: { code: number; message: string }; // 失败时才有
+      // 成功时无额外字段；失败时有 error
+      error?: { code: number; message: string };
     }>;
   };
 }
@@ -108,7 +108,7 @@ const browse = await unsApi.openapiv1unsbrowse({
   path: 'Plant/Line1/Metric/Temperature',
   include_metadata: true,
 });
-// browse.data.results[0].result.metadata.fields 包含字段定义
+// browse.data.tree[0].fields 包含字段定义（include_metadata: true 时）
 
 // 2. 按 fields 构造 value 再写入
 await unsApi.openapiv1unswrite({

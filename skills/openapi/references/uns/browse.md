@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-browse
-version: 0.2.0
+version: 0.3.0
 description: "POST /openapi/v1/uns/browse — 浏览 UNS 命名空间树形结构"
 ---
 
@@ -21,35 +21,47 @@ const result = await unsApi.openapiv1unsbrowse(body);
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `path` | string | 否 | 起始路径。留空或不传则从根节点浏览 |
-| `include_metadata` | boolean | 否 | 返回节点的 topicType、fields、description 等元数据。**首次了解 topic 结构时建议开启** |
+| `include_metadata` | boolean | 否 | 返回节点的 displayName、fields、description 等元数据。**首次了解 topic 结构时建议开启** |
 | `include_leaf_value` | boolean | 否 | 同时返回叶子节点（数据点）的当前 VQT 值 |
 | `max_depth` | integer | 否 | 最大递归深度，默认 1（只展开下一层） |
 
 ## 响应结构
+
+> ⚠️ browse 响应使用 `data.tree[]`，**不是** `data.results[]`。
 
 ```typescript
 {
   code: number;
   msg: string;
   data: {
-    success: boolean;
-    results: Array<{
-      success: boolean;
-      topic: string;  // 节点完整路径
-      result?: {
-        type: 'path' | 'file';   // path = 目录，file = 数据点
-        topicType?: 'METRIC' | 'ACTION' | 'STATE';  // 仅 file 节点有
-        displayName?: string;
-        description?: string;
-        fields?: Array<{ name: string; type: string; unit?: string }>;  // include_metadata: true 时
-        value?: Record<string, unknown>;    // include_leaf_value: true 时
-        quality?: string;                   // include_leaf_value: true 时
-        timeStamp?: number;                 // include_leaf_value: true 时
-        children?: Array<...>;             // 子节点（max_depth > 1 时）
-      };
-      error?: { code: number; message: string };
-    }>;
+    tree: Array<TreeNode>;
   };
+}
+
+interface TreeNode {
+  id: number;           // 节点 ID（数字型）
+  name: string;         // 节点短名称（最后一段）
+  path: string;         // 完整路径，如 "Plant/Line1/Metric/Temperature"
+  topicType: string;    // "Metric" | "Action" | "State" | ""（目录节点为空）
+  type: 'folder' | 'file';  // folder = 目录，file = 数据点（叶子）
+  children: TreeNode[]; // 子节点（max_depth > 1 或默认展开时返回）
+
+  // 以下字段仅在 include_metadata: true 时返回
+  alias?: string;
+  displayName?: string;
+  description?: string;
+  enableHistory?: number;   // 1 = 开启历史, 2 = 关闭
+  extendProperties?: Record<string, unknown>;
+  fields?: Array<{
+    name: string;
+    type: 'STRING' | 'FLOAT' | 'INT' | 'BOOLEAN' | 'DATETIME';  // 大写
+    unit: string;
+  }>;
+
+  // 以下字段仅在 include_leaf_value: true 时返回（仅 file 节点）
+  value?: Record<string, unknown>;
+  quality?: 'Good' | 'Uncertain' | 'Bad';
+  timeStamp?: number;  // UNIX 毫秒
 }
 ```
 
@@ -61,14 +73,11 @@ const result = await unsApi.openapiv1unsbrowse(body);
 import { unsApi } from '@tier0/sdk/openapi';
 
 const result = await unsApi.openapiv1unsbrowse({});
-// 或 { path: '' }
 
-for (const item of result.data.results) {
-  if (item.success) {
-    console.log(item.topic, item.result?.type);
-    // Plant  path
-    // Warehouse  path
-  }
+for (const node of result.data.tree) {
+  console.log(node.path, node.type);
+  // "Choco_Factory"  folder
+  // "Plant"          folder
 }
 ```
 
@@ -76,32 +85,36 @@ for (const item of result.data.results) {
 
 ```typescript
 const result = await unsApi.openapiv1unsbrowse({
-  path: 'Plant/Line1',
+  path: 'Choco_Factory/Production',
   include_metadata: true,
   max_depth: 2,
 });
 
-for (const item of result.data.results) {
-  if (!item.success) continue;
-  const node = item.result!;
-  if (node.type === 'file') {
-    console.log(item.topic, node.topicType, node.fields);
-    // Plant/Line1/Metric/Temperature  METRIC  [{ name: 'temperature', type: 'float', unit: '°C' }]
+function walk(nodes: typeof result.data.tree) {
+  for (const node of nodes) {
+    if (node.type === 'file') {
+      console.log(node.path, node.topicType, node.fields);
+      // "Choco_Factory/Production/State/mixing_tank_01"
+      //   "State"
+      //   [{ name: "status", type: "STRING", unit: "" }, ...]
+    }
+    if (node.children?.length) walk(node.children);
   }
 }
+walk(result.data.tree);
 ```
 
-### 查看某节点当前值（browse + leaf value）
+### 查看叶子节点当前值（browse + leaf value）
 
 ```typescript
 const result = await unsApi.openapiv1unsbrowse({
-  path: 'Plant/Line1/Metric',
+  path: 'Choco_Factory/Production/State',
   include_leaf_value: true,
 });
 
-for (const item of result.data.results) {
-  if (item.success && item.result?.value) {
-    console.log(item.topic, item.result.value, item.result.quality);
+for (const node of result.data.tree) {
+  if (node.type === 'file' && node.value) {
+    console.log(node.path, node.value, node.quality, node.timeStamp);
   }
 }
 ```
