@@ -30,8 +30,14 @@ metadata:
 
 1. **必须先配置环境变量或客户端** — 未设置 `TIER0_API_HOST` / `TIER0_API_KEY`（或未调用 `configureClient`）时调用 API 会抛出错误
 2. **API 返回类型从 swagger.json 生成** — 不要手动构造响应类型，使用 `components["schemas"]["xxx"]` 或从 `types.ts` 导入
-3. **React Hooks 需安装 @tanstack/react-query** — 未安装时 import `@tier0/sdk/openapi/react` 会报错
-4. **Vue3 Composables 需安装 vue** — 未安装时 import `@tier0/sdk/openapi/vue` 会报错
+3. **批量接口 HTTP 200 ≠ 每项成功** — `read`/`write`/`history`/`browse`/`create`/`delete` 等批量端点，HTTP 200 + 外层 `code:200` 仅代表请求到达，**必须检查 `data.success`（整体）和 `data.results[i].success`（逐项）**
+4. **write 的 value 必须是对象** — 写入格式 `{ topic, value: { field: val } }`；直接写 `value: 27.5` 或 `value: "ok"` 等标量会被 schema 校验拒绝
+5. **禁止在 value 里写 `_timestamp`** — `_timestamp` 是系统落库时间字段，不属于业务数据；如需传采集时刻，用 WriteItem 的 `timeStamp` 字段（毫秒）
+6. **先 browse/search 定位路径，再 read/write** — 不要猜测 topic 完整路径；`read`/`write` 只接受叶子节点（数据点），中间路径只能 browse
+7. **history 时间格式是 ISO 8601 字符串** — `start_time`/`end_time` 传 `"2026-01-01T00:00:00Z"` 格式，不要传毫秒整数
+8. **write 前先确认 schema** — 通过 `browse` + `include_metadata: true` 获取 `fields` 定义，再构造 `value`，避免字段名错误
+9. **React Hooks 需安装 @tanstack/react-query** — 未安装时 import `@tier0/sdk/openapi/react` 会报错
+10. **Vue3 Composables 需安装 vue** — 未安装时 import `@tier0/sdk/openapi/vue` 会报错
 
 ## 子技能路由
 
@@ -39,7 +45,7 @@ metadata:
 
 | 意图 | 加载文件 | 说明 |
 |------|---------|------|
-| 客户端配置与基础使用 | `references/quickstart.md` | 环境变量、configureClient、基础调用 |
+| 客户端配置与基础使用 | `references/quickstart.md` | 环境变量、configureClient、基础调用、真实响应结构 |
 | React Hooks 使用 | `references/react.md` | useMutation 风格、QueryClient 配置 |
 | Vue3 Composables 使用 | `references/vue.md` | ref/reactive 风格、响应式数据 |
 

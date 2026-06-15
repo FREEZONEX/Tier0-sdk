@@ -1,10 +1,12 @@
 ---
 name: tier0-sdk-openapi-restore
-version: 0.1.0
-description: "POST /openapi/v1/uns/restore — NodeRestoreReq"
+version: 0.2.0
+description: "POST /openapi/v1/uns/restore — 恢复软删除的 UNS 节点"
 ---
 
 # restore — `POST /openapi/v1/uns/restore`
+
+将软删除（`hard_delete: false`）的节点恢复到可用状态。**硬删除的节点无法恢复**。
 
 ## SDK 调用
 
@@ -16,21 +18,35 @@ const result = await unsApi.openapiv1unsrestore(body);
 
 ## 请求参数
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `path` | string |  **required** |
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `path` | string | **是** | 要恢复的节点完整路径（必须处于软删除状态） |
 
-## 响应类型
+## 响应结构
 
-`{ code: number, msg: string }`
+```typescript
+{
+  code: number;
+  msg: string;
+  data: { success: boolean };
+}
+```
 
 ## 使用示例
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
 
+// 前提：该节点之前通过 delete（hard_delete: false）进行了软删除
 const result = await unsApi.openapiv1unsrestore({
-  // 根据实际业务填写参数
+  path: 'Plant/Line1/Metric/Temperature',
 });
-console.log(result);
+
+if (result.data.success) {
+  console.log('节点已恢复');
+} else {
+  console.error('恢复失败，节点可能已被硬删除或路径不存在');
+}
 ```
+
+> **注意**：如果尝试恢复一个从未被删除或已被硬删除的节点，接口会返回错误。

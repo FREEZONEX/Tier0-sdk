@@ -50,7 +50,14 @@ import { unsApi } from '@tier0/sdk/openapi';
 const result = await unsApi.openapiv1unsread({
   topics: ['Plant/Line1/Metric/Temperature'],
 });
-// result: components["schemas"]["NamespaceNode"][]
+
+// ⚠️ HTTP 200 不代表每项成功，必须检查 results[i].success
+const item = result.data.results[0];
+if (item.success && item.result?.quality === 'Good') {
+  // item.result.value — 业务数据对象，如 { temperature: 27.5, unit: 'C' }
+  // item.result.timeStamp — 数据采集时间（毫秒）
+  console.log(item.result.value);
+}
 ```
 
 ### 浏览命名空间
@@ -69,14 +76,23 @@ const nodes = await unsApi.openapiv1unsbrowse({
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
 
-await unsApi.openapiv1unswrite({
+// value 必须是对象（字段名→值），不能是裸数字/字符串
+// 如需记录采集时刻，用 timeStamp（毫秒），禁止在 value 里写 _timestamp
+const result = await unsApi.openapiv1unswrite({
   writes: [
     {
       topic: 'Plant/Line1/Metric/Temperature',
       value: { temperature: 27.5, unit: 'C' },
+      timeStamp: Date.now(),
     },
   ],
 });
+
+// 检查写入结果
+if (!result.data.success) {
+  result.data.results.filter(r => !r.success)
+    .forEach(r => console.error(r.topic, r.error?.message));
+}
 ```
 
 ### 列出 Flow
@@ -102,14 +118,28 @@ type FlowInfo = components['schemas']['FlowInfo'];
 
 ## 错误处理
 
+SDK 有两层错误需要处理：
+
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
 
+// 层级 1：网络/认证错误 → try/catch
 try {
-  const result = await unsApi.openapiv1unsread({ topics: ['invalid'] });
+  const result = await unsApi.openapiv1unsread({
+    topics: ['Plant/Line1/Metric/Temperature'],
+  });
+
+  // 层级 2：批量接口业务错误 → 检查 results[i].success
+  // HTTP 200 不代表每项成功！
+  for (const item of result.data.results) {
+    if (!item.success) {
+      console.error(`${item.topic} 失败: ${item.error?.message}`);
+    }
+  }
 } catch (error) {
   if (error instanceof Error) {
-    console.error(error.message); // "HTTP 404: ..."
+    // HTTP 4xx/5xx 或网络错误
+    console.error(error.message); // "HTTP 401: Unauthorized"
   }
 }
 ```
