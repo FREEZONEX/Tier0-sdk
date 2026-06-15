@@ -43,7 +43,7 @@ const result = await unsApi.openapiv1unssearch(body);
       name: string;         // 节点短名称（最后一段）
       path: string;         // 完整路径，如 "Plant/Line1/Metric/Temperature"
       topicType: string;    // "Metric" | "Action" | "State" | ""
-      type: 'folder' | 'file';
+      type: 'PATH' | 'TOPIC';  // PATH = 目录节点，TOPIC = 数据点（叶子）
     }>;
   };
 }
@@ -63,7 +63,7 @@ const result = await unsApi.openapiv1unssearch({
 console.log('共找到', result.data.total, '个节点');
 for (const obj of result.data.objects) {
   console.log(obj.path, obj.topicType, obj.type);
-  // "Choco_Factory/Production/State/mixing_tank_01"  "State"  "file"
+  // "Choco_Factory/Production/State/mixing_tank_01"  "State"  "TOPIC"
 }
 ```
 

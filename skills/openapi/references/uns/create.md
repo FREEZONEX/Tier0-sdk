@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-create
-version: 0.2.0
+version: 0.3.0
 description: "POST /openapi/v1/uns/create — 创建 UNS 命名空间节点"
 ---
 
@@ -18,34 +18,35 @@ const result = await unsApi.openapiv1unscreate(body);
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `namespace` | NamespaceNode[] | **是** | 节点树数组，支持嵌套 `children` 批量建树 |
+| `namespace` | NamespaceNode[] | **是** | 节点树数组，通过 `children` 嵌套构建层级 |
 
 ### NamespaceNode 结构
 
+> ⚠️ `name` 是**单段名称**，不含 `/`。多层路径通过 `children` 嵌套表达，不要把完整路径放进 `name`。
+
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `topic` | string | **是** | 节点路径（完整路径或相对路径，配合 `parent` 使用） |
-| `type` | string | **是** | 节点类型：`topic`（数据点叶子节点）/ `path`（目录） |
-| `topicType` | string | 叶子必填 | 数据类型：`METRIC`（时序）/ `ACTION`（下行命令）/ `STATE`（上行状态） |
+| `name` | string | **是** | 单段节点名，不含 `/`，如 `"Production"`、`"mixing_tank_01"` |
+| `type` | string | **是** | 节点类型：`"path"`（目录）/ `"topic"`（数据点叶子节点） |
+| `topicType` | string | topic 必填 | `"metric"` / `"action"` / `"state"`（小写） |
 | `displayName` | string | 否 | 显示名称 |
-| `description` | string | 否 | 描述，action/state 节点建议写示例 payload |
-| `fields` | FieldDef[] | METRIC 推荐 | 字段定义（仅 METRIC 类型有意义，action/state 可省略） |
-| `parent` | string | 否 | 父路径（用于在已有路径下追加节点） |
+| `description` | string | 否 | 描述，action/state 节点强烈建议写示例 payload |
+| `fields` | FieldDef[] | 否 | 字段定义（METRIC 节点推荐填写） |
 | `children` | NamespaceNode[] | 否 | 子节点，用于一次性建多层结构 |
 
-### FieldDef 结构（METRIC fields）
+### FieldDef 结构
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `name` | string | 字段名，不能是 `_timestamp`（系统保留） |
-| `type` | string | `int` / `float` / `string` / `bool` |
+| `type` | string | `"int"` / `"float"` / `"string"` / `"bool"` |
 | `unit` | string | 单位（可选），如 `"°C"`、`"bar"` |
 
-> **路径约定（强制）**：叶子节点路径的倒数第二段必须与 topicType 对应：
-> - `Plant/Line1/Metric/Temperature` ✓（topicType: METRIC）
-> - `Plant/WMS/Action/StockOut` ✓（topicType: ACTION）
-> - `Plant/MES/State/OrderStatus` ✓（topicType: STATE）
-> - `Plant/Line1/Temperature`（缺少类型目录）✗
+> **路径约定（强制）**：数据点路径的倒数第二段必须是类型目录：
+> - `Plant/Line1/Metric/Temperature` ✓（topicType: metric）
+> - `Plant/WMS/Action/StockOut` ✓（topicType: action）
+> - `Plant/MES/State/OrderStatus` ✓（topicType: state）
+> - `Plant/Line1/Temperature` ✗（缺少类型目录）
 
 ## 响应结构
 
@@ -68,7 +69,7 @@ const result = await unsApi.openapiv1unscreate(body);
 
 ## 使用示例
 
-### 创建单个 METRIC 数据点
+### 创建单个 Metric 数据点
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -76,46 +77,29 @@ import { unsApi } from '@tier0/sdk/openapi';
 const result = await unsApi.openapiv1unscreate({
   namespace: [
     {
-      topic: 'Plant/Line1/Metric/Temperature',
-      type: 'topic',
-      topicType: 'METRIC',
-      displayName: '产线1温度',
-      fields: [
-        { name: 'temperature', type: 'float', unit: '°C' },
-        { name: 'unit', type: 'string' },
-      ],
-    },
-  ],
-});
-```
-
-### 一次性建整棵产线树
-
-```typescript
-const result = await unsApi.openapiv1unscreate({
-  namespace: [
-    {
-      topic: 'Plant/Line1',
+      name: 'Plant',
       type: 'path',
-      displayName: '产线1',
       children: [
         {
-          topic: 'Metric/Temperature',
-          type: 'topic',
-          topicType: 'METRIC',
-          fields: [{ name: 'temperature', type: 'float', unit: '°C' }],
-        },
-        {
-          topic: 'Metric/Pressure',
-          type: 'topic',
-          topicType: 'METRIC',
-          fields: [{ name: 'pressure', type: 'float', unit: 'bar' }],
-        },
-        {
-          topic: 'Action/EmergencyStop',
-          type: 'topic',
-          topicType: 'ACTION',
-          description: '急停指令。payload: { "command": "stop", "reason": "string" }',
+          name: 'Line1',
+          type: 'path',
+          children: [
+            {
+              name: 'Metric',
+              type: 'path',
+              children: [
+                {
+                  name: 'Temperature',
+                  type: 'topic',
+                  topicType: 'metric',
+                  displayName: '产线1温度',
+                  fields: [
+                    { name: 'temperature', type: 'float', unit: '°C' },
+                  ],
+                },
+              ],
+            },
+          ],
         },
       ],
     },
@@ -123,23 +107,66 @@ const result = await unsApi.openapiv1unscreate({
 });
 
 if (!result.data.success) {
-  result.data.results
-    .filter(r => !r.success)
-    .forEach(r => console.error(`创建失败 ${r.topic}: ${r.error?.message}`));
+  for (const item of result.data.results) {
+    if (!item.success) {
+      console.error(`创建失败 ${item.topic}: ${item.error?.message}`);
+    }
+  }
 }
 ```
 
-### 在已有路径下追加节点
+### 一次性建完整产线树（含多种 topicType）
 
 ```typescript
-await unsApi.openapiv1unscreate({
+const result = await unsApi.openapiv1unscreate({
   namespace: [
     {
-      parent: 'Plant/Line1',
-      topic: 'Metric/Humidity',
-      type: 'topic',
-      topicType: 'METRIC',
-      fields: [{ name: 'humidity', type: 'float', unit: '%' }],
+      name: 'Choco_Factory',
+      type: 'path',
+      children: [
+        {
+          name: 'Production',
+          type: 'path',
+          children: [
+            {
+              name: 'Metric',
+              type: 'path',
+              children: [
+                {
+                  name: 'OvenTemp',
+                  type: 'topic',
+                  topicType: 'metric',
+                  fields: [{ name: 'temperature', type: 'float', unit: '°C' }],
+                },
+              ],
+            },
+            {
+              name: 'Action',
+              type: 'path',
+              children: [
+                {
+                  name: 'StartBatch',
+                  type: 'topic',
+                  topicType: 'action',
+                  description: '启动批次指令。示例: {"batch_id":"B-001","recipe":"dark_choco","qty":500}',
+                },
+              ],
+            },
+            {
+              name: 'State',
+              type: 'path',
+              children: [
+                {
+                  name: 'BatchStatus',
+                  type: 'topic',
+                  topicType: 'state',
+                  description: '批次状态回报。示例: {"batch_id":"B-001","status":"running","progress":42}',
+                },
+              ],
+            },
+          ],
+        },
+      ],
     },
   ],
 });

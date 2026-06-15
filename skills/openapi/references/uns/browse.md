@@ -28,6 +28,7 @@ const result = await unsApi.openapiv1unsbrowse(body);
 ## 响应结构
 
 > ⚠️ browse 响应使用 `data.tree[]`，**不是** `data.results[]`。
+> ⚠️ `type` 在**响应**中是大写 `'PATH' | 'TOPIC'`；在 create **请求**中是小写 `'path' | 'topic'`，两者不同。
 
 ```typescript
 {
@@ -43,7 +44,7 @@ interface TreeNode {
   name: string;         // 节点短名称（最后一段）
   path: string;         // 完整路径，如 "Plant/Line1/Metric/Temperature"
   topicType: string;    // "Metric" | "Action" | "State" | ""（目录节点为空）
-  type: 'folder' | 'file';  // folder = 目录，file = 数据点（叶子）
+  type: 'PATH' | 'TOPIC';   // PATH = 目录节点，TOPIC = 数据点（叶子）
   children: TreeNode[]; // 子节点（max_depth > 1 或默认展开时返回）
 
   // 以下字段仅在 include_metadata: true 时返回
@@ -76,8 +77,8 @@ const result = await unsApi.openapiv1unsbrowse({});
 
 for (const node of result.data.tree) {
   console.log(node.path, node.type);
-  // "Choco_Factory"  folder
-  // "Plant"          folder
+  // "Choco_Factory"  PATH
+  // "Plant"          PATH
 }
 ```
 
@@ -92,7 +93,7 @@ const result = await unsApi.openapiv1unsbrowse({
 
 function walk(nodes: typeof result.data.tree) {
   for (const node of nodes) {
-    if (node.type === 'file') {
+    if (node.type === 'TOPIC') {
       console.log(node.path, node.topicType, node.fields);
       // "Choco_Factory/Production/State/mixing_tank_01"
       //   "State"
@@ -113,7 +114,7 @@ const result = await unsApi.openapiv1unsbrowse({
 });
 
 for (const node of result.data.tree) {
-  if (node.type === 'file' && node.value) {
+  if (node.type === 'TOPIC' && node.value) {
     console.log(node.path, node.value, node.quality, node.timeStamp);
   }
 }
