@@ -26,9 +26,9 @@ const result = await unsApi.openapiv1unsrestore(body);
 
 ```typescript
 {
-  code: number;
-  msg: string;
-  data: { success: boolean };
+  code: number;   // 200 = 成功
+  msg: string;    // "success"
+  data: {};       // 空对象，成功与否依靠外层 code/msg 判断
 }
 ```
 
@@ -42,10 +42,10 @@ const result = await unsApi.openapiv1unsrestore({
   path: 'Plant/Line1/Metric/Temperature',
 });
 
-if (result.data.success) {
+if (result.code === 200) {
   console.log('节点已恢复');
 } else {
-  console.error('恢复失败，节点可能已被硬删除或路径不存在');
+  console.error('恢复失败:', result.msg, '（节点可能已被硬删除或路径不存在）');
 }
 ```
 

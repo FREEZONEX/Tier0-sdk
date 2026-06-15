@@ -40,9 +40,9 @@ const result = await unsApi.openapiv1unsupdate(body);
 
 ```typescript
 {
-  code: number;
-  msg: string;
-  data: { success: boolean };
+  code: number;   // 200 = 成功
+  msg: string;    // "success"
+  data: {};       // 空对象，成功与否依靠外层 code/msg 判断
 }
 ```
 

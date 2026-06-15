@@ -27,16 +27,9 @@ const result = await unsApi.openapiv1unsdelete(body);
 
 ```typescript
 {
-  code: number;
-  msg: string;
-  data: {
-    success: boolean;
-    results: Array<{
-      success: boolean;
-      topic: string;
-      error?: { code: number; message: string };
-    }>;
-  };
+  code: number;   // 200 = 成功
+  msg: string;    // "success"
+  data: {};       // 空对象，成功与否依靠外层 code/msg 判断
 }
 ```
 
@@ -52,9 +45,8 @@ const result = await unsApi.openapiv1unsdelete({
   // hard_delete 默认 false，即软删除
 });
 
-if (!result.data.success) {
-  result.data.results.filter(r => !r.success)
-    .forEach(r => console.error(`删除失败 ${r.topic}: ${r.error?.message}`));
+if (result.code !== 200) {
+  console.error('删除失败:', result.msg);
 }
 ```
 
@@ -78,7 +70,6 @@ const result = await unsApi.openapiv1unsdelete({
   ],
 });
 
-for (const item of result.data.results) {
-  console.log(item.topic, item.success ? '已删除' : `失败: ${item.error?.message}`);
-}
+// 批量删除：成功与否统一看 code === 200
+console.log(result.code === 200 ? '全部删除成功' : `失败: ${result.msg}`);
 ```
