@@ -1,7 +1,0 @@
-node_modules/
-dist/
-*.tgz
-.npmrc
-.DS_Store
-.vscode/
-coverage/

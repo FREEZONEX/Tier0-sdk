@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-flow-list
-version: 0.2.0
+version: 0.4.0
 description: "POST /openapi/v1/flow/list — 列出 Flow"
 ---
 
@@ -69,7 +69,7 @@ const result = await flowApi.openapiv1flowlist({
 });
 ```
 
-### 按名称搜索
+### 按名称搜索（常与 UNS 关联查询）
 
 ```typescript
 const result = await flowApi.openapiv1flowlist({
@@ -79,4 +79,13 @@ const flow = result.data.list[0];
 if (flow) {
   console.log(`找到 Flow id=${flow.id}, 状态=${flow.flowStatus}`);
 }
+```
+
+用户按名称询问某设备/数据时，Flow 名称与 UNS topic 通常同名，应同时查询两侧：
+
+```typescript
+const [unsResult, flowResult] = await Promise.all([
+  unsApi.openapiv1unssearch({ keyword: 'Line1', topicType: 'Metric' }),
+  flowApi.openapiv1flowlist({ keyword: 'Line1' }),
+]);
 ```

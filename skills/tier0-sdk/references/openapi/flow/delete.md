@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-flow-delete
-version: 0.2.0
+version: 0.4.0
 description: "POST /openapi/v1/flow/delete — 删除 Flow（停止 Node-RED 容器）"
 ---
 

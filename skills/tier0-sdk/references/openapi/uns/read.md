@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-read
-version: 0.2.0
+version: 0.4.0
 description: "POST /openapi/v1/uns/read — 读取 UNS topic 当前值（VQT 结构）"
 ---
 

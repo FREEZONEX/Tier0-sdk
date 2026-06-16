@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-flow-get
-version: 0.2.0
+version: 0.4.0
 description: "POST /openapi/v1/flow/get — 获取单个 Flow 详情"
 ---
 

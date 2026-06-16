@@ -1,6 +1,6 @@
 {
   "name": "@tier0/sdk",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "Tier0 SDK - OpenAPI REST client and MQTT over WebSocket client for TypeScript/JavaScript",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -34,8 +34,14 @@
     }
   },
   "files": [
-    "dist/"
+    "dist/",
+    "skills/"
   ],
+  "agents": {
+    "skills": [
+      { "name": "tier0-sdk", "path": "./skills/tier0-sdk" }
+    ]
+  },
   "scripts": {
     "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && node scripts/finalize-build.mjs",
     "build:esm": "tsc -p tsconfig.esm.json",

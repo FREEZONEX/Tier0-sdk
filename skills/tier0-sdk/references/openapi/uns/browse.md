@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-browse
-version: 0.3.0
+version: 0.4.0
 description: "POST /openapi/v1/uns/browse — 浏览 UNS 命名空间树形结构"
 ---
 
@@ -119,3 +119,22 @@ for (const node of result.data.tree) {
   }
 }
 ```
+
+## UNS ↔ Flow 关联查询
+
+UNS topic 路径与 Flow 名称**通常同名**。浏览到某个路径后，如果用户想了解数据来源（谁在采集/处理），应同时查询对应的 Flow：
+
+```typescript
+// 1. browse 发现 topic 路径
+const browse = await unsApi.openapiv1unsbrowse({
+  path: 'Plant/Line1',
+  max_depth: 2,
+});
+
+// 2. 同名查 Flow（SourceFlow 负责采集，EventFlow 负责处理）
+const flows = await flowApi.openapiv1flowlist({
+  keyword: 'Line1',
+});
+```
+
+> ⚠️ 目前 API 尚无显式关联字段，`topicmeta` 接口后续版本将提供 Flow ↔ topic 映射。

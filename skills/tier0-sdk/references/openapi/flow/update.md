@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-flow-update
-version: 0.2.0
+version: 0.4.0
 description: "POST /openapi/v1/flow/update — 更新 Flow 元数据（名称/描述/收藏）"
 ---
 

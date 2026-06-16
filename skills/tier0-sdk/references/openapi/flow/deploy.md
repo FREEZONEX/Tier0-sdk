@@ -1,12 +1,16 @@
 ---
 name: tier0-sdk-openapi-flow-deploy
-version: 0.2.0
+version: 0.4.0
 description: "POST /openapi/v1/flow/deploy — 部署 Node-RED 画布（全量替换，不可撤销）"
 ---
 
 # deploy — `POST /openapi/v1/flow/deploy`
 
-> ⚠️ **高风险操作**：deploy 会**全量替换** Node-RED 画布配置，覆盖所有节点，**不可撤销**。**必须先调用 flowdata 备份当前画布**。
+> ⚠️ **高风险操作**：deploy 会**全量替换** Node-RED 画布配置，覆盖所有节点，Node-RED 实例会立即重新加载，**不可撤销**。**执行前必须**：
+> 1. 通过 `flowApi.openapiv1flowflowdata()` 备份当前画布
+> 2. 确认目标 Flow ID 正确（先用 `flowApi.openapiv1flowget()` 核实）
+> 3. 确认 flowsJson 格式有效
+> 4. 代码层向用户展示变更内容并获得明确确认后再执行
 
 ## SDK 调用
 

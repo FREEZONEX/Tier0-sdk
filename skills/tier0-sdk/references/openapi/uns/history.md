@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-history
-version: 0.2.0
+version: 0.4.0
 description: "POST /openapi/v1/uns/history — 查询 UNS topic 历史数据"
 ---
 
@@ -35,7 +35,7 @@ const result = await unsApi.openapiv1unshistory(body);
 | `interval` | string | **是** | 聚合时间窗口：`1m`（分钟）/ `1h`（小时）/ `1d`（天） |
 | `field` | string | 否 | 聚合字段名（value 对象内的某个字段，如 `"temperature"`） |
 
-> **时间格式注意**：`start_time`/`end_time` 必须是 ISO 8601 字符串，**不能传毫秒整数**。
+> **时间格式注意**：`start_time`/`end_time` 必须是 ISO 8601 字符串，**不能传毫秒整数**。CLI 支持相对时间表达式（如 `-1h`、`-7d`），但 SDK 直接调用 API，需要自行在代码中把相对时间转换为 ISO 8601 字符串。
 
 ## 响应结构
 

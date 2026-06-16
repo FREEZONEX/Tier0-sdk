@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-delete
-version: 0.2.0
+version: 0.4.0
 description: "POST /openapi/v1/uns/delete — 删除 UNS 节点（软删除/硬删除）"
 ---
 

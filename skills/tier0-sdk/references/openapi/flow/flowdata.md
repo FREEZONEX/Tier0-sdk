@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-flow-flowdata
-version: 0.2.0
+version: 0.4.0
 description: "POST /openapi/v1/flow/flowdata — 获取 Flow 的 Node-RED 画布 JSON"
 ---
 

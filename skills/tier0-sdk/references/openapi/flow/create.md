@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-flow-create
-version: 0.2.0
+version: 0.4.0
 description: "POST /openapi/v1/flow/create — 创建 Flow（系统自动生成 MQTT 凭据）"
 ---
 
@@ -67,3 +67,23 @@ const result = await flowApi.openapiv1flowcreate({
 ```
 
 > **创建后的典型流程**：create → flowdata（获取初始画布，含 MQTT broker 节点） → 修改画布 → deploy
+
+### 从已有 Flow 克隆
+
+```typescript
+// 1. 导出参考 Flow 的画布
+const { data: { flows } } = await flowApi.openapiv1flowflowdata({ id: 1 });
+
+// 2. 创建新 Flow
+const { data: { id: newId } } = await flowApi.openapiv1flowcreate({
+  flowName: 'modbus-line2',
+  flowType: 'source',
+  description: '从 line1 克隆的采集 Flow',
+});
+
+// 3. 将模板画布部署到新 Flow（deploy 前需向用户确认）
+await flowApi.openapiv1flowdeploy({
+  id: newId,
+  flowsJson: JSON.stringify(flows),
+});
+```

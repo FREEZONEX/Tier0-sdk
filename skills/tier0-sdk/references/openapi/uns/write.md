@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-write
-version: 0.2.0
+version: 0.4.0
 description: "POST /openapi/v1/uns/write — 向 UNS topic 写入数据点（VQT）"
 ---
 
@@ -20,7 +20,7 @@ const result = await unsApi.openapiv1unswrite(body);
 |------|------|------|------|
 | `writes` | WriteItem[] | **是** | 写入项列表，每项对应一个 topic |
 | `qos` | integer | 否 | MQTT QoS（0/1/2），默认 0，作用于本次全部写入 |
-| `retain` | boolean | 否 | 是否设置 MQTT retain 标志，默认 false |
+| `retain` | boolean | 否 | 是否设置 MQTT retain 标志，默认 false。设置为 true 时，新订阅者连接后会立即收到该 topic 最后一条 retained 消息 |
 
 ### WriteItem 结构
 
@@ -32,6 +32,8 @@ const result = await unsApi.openapiv1unswrite(body);
 | `timeStamp` | integer | 否 | 数据采集时间，**毫秒**时间戳。不传则服务端用当前时间填充 |
 
 > ⚠️ **禁止在 `value` 中写 `_timestamp`** — `_timestamp` 是系统落库时间字段，如需记录采集时刻请用 `timeStamp`（WriteItem 顶层字段）。
+>
+> **注意**：写入成功仅代表 MQTT Broker 已收到，不代表下游执行完成。如需确认执行结果，请用 `read` 查对应的 State topic。
 
 ## 响应结构
 

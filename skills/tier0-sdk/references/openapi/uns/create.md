@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-create
-version: 0.3.0
+version: 0.4.0
 description: "POST /openapi/v1/uns/create — 创建 UNS 命名空间节点"
 ---
 
@@ -27,11 +27,12 @@ const result = await unsApi.openapiv1unscreate(body);
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `name` | string | **是** | 单段节点名，不含 `/`，如 `"Production"`、`"mixing_tank_01"` |
-| `type` | string | **是（不可省略）** | 节点类型：`"path"`（目录）/ `"topic"`（数据点），**大小写不敏感**（`PATH`/`path` 均可） |
+| `type` | string | **是（不可省略）** | 节点类型：`"path"`（目录）/ `"topic"`（数据点），**大小写不敏感**（`PATH`/`path` 均可）。后端兼容旧值 `path/topic/folder/file`，但新契约建议用 `PATH`/`TOPIC` |
 | `topicType` | string | topic 必填 | `"metric"` / `"action"` / `"state"`（小写） |
 | `displayName` | string | 否 | 显示名称 |
 | `description` | string | 否 | 描述，action/state 节点强烈建议写示例 payload |
 | `fields` | FieldDef[] | 否 | 字段定义（METRIC 节点推荐填写） |
+| `enableHistory` | boolean | 否 | 是否持久化历史 |
 | `children` | NamespaceNode[] | 否 | 子节点，用于一次性建多层结构 |
 
 ### FieldDef 结构
@@ -42,11 +43,15 @@ const result = await unsApi.openapiv1unscreate(body);
 | `type` | string | `"int"` / `"float"` / `"string"` / `"bool"` |
 | `unit` | string | 单位（可选），如 `"°C"`、`"bar"` |
 
-> **路径约定（强制）**：数据点路径的倒数第二段必须是类型目录：
+> **路径约定（强制）**：数据点路径的倒数第二段必须是类型目录之一：`Metric` / `Action` / `State`（大小写不敏感）：
 > - `Plant/Line1/Metric/Temperature` ✓（topicType: metric）
 > - `Plant/WMS/Action/StockOut` ✓（topicType: action）
 > - `Plant/MES/State/OrderStatus` ✓（topicType: state）
 > - `Plant/Line1/Temperature` ✗（缺少类型目录）
+>
+> `topicType` 直接从路径倒数第二段推导，无需手动指定；旧参数 `topicType` 仍被接受但会打印警告。
+>
+> **不会自动插入类型目录**——路径中没写的段不会出现。
 
 ## 响应结构
 
@@ -114,6 +119,18 @@ if (!result.data.success) {
   }
 }
 ```
+
+## 常见错误
+
+| 现象 | 原因 | 处理 |
+|------|------|------|
+| `segment before leaf must be a type folder` | 路径叶子前一段不是 Metric/Action/State | 在叶子名前补类型目录，如 `.../Metric/ProductionCount` |
+| `a topic node needs at least two segments` | 路径只有一段，缺少类型目录 | 至少写 `Metric/Count`，不能只写 `Count` |
+| `metric schema 不允许删除字段: {字段名}` | Metric 节点传入的 fields 少于原有 | Metric 字段是 add-only，更新时必须包含原有字段 |
+| `metric定义不能为空` | Metric 节点传入空 fields | METRIC 节点必须提供 fields |
+| `字段类型不能修改: {字段名}` | 修改了同名字段的 type | 字段类型一旦创建不可修改 |
+
+## 使用示例
 
 ### 一次性建完整产线树（含多种 topicType）
 

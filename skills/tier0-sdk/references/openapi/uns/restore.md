@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-restore
-version: 0.2.0
+version: 0.4.0
 description: "POST /openapi/v1/uns/restore — 恢复软删除的 UNS 节点"
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-flow-nodes
-version: 0.1.0
+version: 0.4.0
 description: "SDK 调用 flow nodes — 查询 Node-RED 可用节点列表"
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-search
-version: 0.3.0
+version: 0.4.0
 description: "POST /openapi/v1/uns/search — 按关键词搜索 UNS 节点"
 ---
 
@@ -22,7 +22,8 @@ const result = await unsApi.openapiv1unssearch(body);
 |------|------|------|------|
 | `keyword` | string | 否 | 关键词（模糊匹配节点名称/路径），留空则返回所有节点 |
 | `path_prefix` | string | 否 | 限制搜索范围到指定路径前缀，如 `"Plant/Line1"` |
-| `topicType` | string | 否 | 按数据类型过滤：`Metric` / `Action` / `State`（仅叶子节点） |
+| `topicType` | string | 否 | 按数据类型过滤：`Metric` / `Action` / `State`（仅叶子节点，后端兼容小写） |
+| `include_metadata` | boolean | 否 | 是否返回每个节点的字段定义（fields）、topicType、description。**搜索后需要了解 topic 结构时带上** |
 | `page` | integer | 否 | 页码，默认 1 |
 | `size` | integer | 否 | 每页条数，默认 20 |
 
@@ -44,6 +45,9 @@ const result = await unsApi.openapiv1unssearch(body);
       path: string;         // 完整路径，如 "Plant/Line1/Metric/Temperature"
       topicType: string;    // "Metric" | "Action" | "State" | ""
       type: 'PATH' | 'TOPIC';  // PATH = 目录节点，TOPIC = 数据点（叶子）
+      // 仅 include_metadata: true 时返回
+      fields?: Array<{ name: string; type: string; unit?: string }>;
+      description?: string;
     }>;
   };
 }
@@ -80,6 +84,28 @@ for (const obj of result.data.objects) {
   console.log(obj.path);
 }
 ```
+
+### 搜索后查看字段定义（推荐）
+
+不确定 topic 有哪些字段、类型和单位时，加 `include_metadata`：
+
+```typescript
+const result = await unsApi.openapiv1unssearch({
+  keyword: 'Temperature',
+  topicType: 'Metric',
+  include_metadata: true,
+});
+
+for (const obj of result.data.objects) {
+  if (obj.type === 'TOPIC') {
+    console.log(obj.path, obj.fields);
+    // "Plant/Line1/Metric/Temperature"
+    // [{ name: 'temperature', type: 'float', unit: '°C' }, ...]
+  }
+}
+```
+
+拿到 `fields` 后，即可按字段定义构造正确的 `write` 请求，或对 `read` 返回的 `value` 进行字段级解析。
 
 ### 分页获取所有节点
 
