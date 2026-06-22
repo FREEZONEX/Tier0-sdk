@@ -1,32 +1,34 @@
 ---
 name: tier0-sdk-openapi-quickstart
 version: 0.1.0
-description: "OpenAPI 模块快速开始：环境变量配置、configureClient、基础 API 调用"
+description: "OpenAPI module quickstart: configuration, configureClient, basic API calls"
 ---
 
-# OpenAPI 快速开始
+# OpenAPI Quickstart
 
-## 环境变量配置
+## Configuration
 
-SDK 优先从环境变量读取配置，无需代码中硬编码。
+In Node.js, the SDK can read `TIER0_*` environment variables.
 
-| 变量 | 必需 | 说明 |
+| Variable | Required | Description |
 |------|------|------|
-| `TIER0_API_HOST` / `VITE_TIER0_API_HOST` | 是 | OpenAPI 服务地址（gwsvr），如 `api.tier0.cloud` |
-| `TIER0_API_KEY` / `VITE_TIER0_API_KEY` | 是 | API 认证密钥 |
+| `TIER0_API_HOST` | Yes | OpenAPI base URL, preferably including scheme, e.g. `https://tier0-eks-frontend.tier0.dev` |
+| `TIER0_API_KEY` | Yes | API key |
 
-### 运行时传入（覆盖环境变量）
+For browser/Vite projects, pass values explicitly from `import.meta.env`; do not rely on automatic `VITE_*` lookup.
+
+### Runtime Configuration
 
 ```typescript
 import { configureClient } from '@tier0/sdk/openapi';
 
 configureClient({
-  apiHost: 'gwsvr.default.svc',
+  apiHost: 'https://tier0-eks-frontend.tier0.dev',
   apiKey: 'your-api-key',
 });
 ```
 
-### 动态获取（适用于密钥轮换场景）
+### Dynamic Configuration
 
 ```typescript
 import { configureClient } from '@tier0/sdk/openapi';
@@ -40,9 +42,9 @@ configureClient({
 });
 ```
 
-## 基础调用
+## Basic Calls
 
-### 读取 UNS 数据点
+### Read UNS Current Values
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -51,16 +53,16 @@ const result = await unsApi.openapiv1unsread({
   topics: ['Plant/Line1/Metric/Temperature'],
 });
 
-// ⚠️ HTTP 200 不代表每项成功，必须检查 results[i].success
+// HTTP 200 does not mean every item succeeded; check results[i].success.
 const item = result.data.results[0];
 if (item.success && item.result?.quality === 'Good') {
-  // item.result.value — 业务数据对象，如 { temperature: 27.5, unit: 'C' }
-  // item.result.timeStamp — 数据采集时间（毫秒）
+  // item.result.value: business object, e.g. { temperature: 27.5, unit: 'C' }
+  // item.result.timeStamp: timestamp in milliseconds
   console.log(item.result.value);
 }
 ```
 
-### 浏览命名空间
+### Browse Namespace
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -71,13 +73,13 @@ const nodes = await unsApi.openapiv1unsbrowse({
 });
 ```
 
-### 写入数据
+### Write Data
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
 
-// value 必须是对象（字段名→值），不能是裸数字/字符串
-// 如需记录采集时刻，用 timeStamp（毫秒），禁止在 value 里写 _timestamp
+// value must be an object; do not write bare numbers/strings.
+// Use top-level timeStamp for collection time; do not put _timestamp in value.
 const result = await unsApi.openapiv1unswrite({
   writes: [
     {
@@ -88,14 +90,14 @@ const result = await unsApi.openapiv1unswrite({
   ],
 });
 
-// 检查写入结果
+// Check business results.
 if (!result.data.success) {
   result.data.results.filter(r => !r.success)
     .forEach(r => console.error(r.topic, r.error?.message));
 }
 ```
 
-### 列出 Flow
+### List Flows
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
@@ -105,9 +107,9 @@ const flows = await flowApi.openapiv1flowlist({
 });
 ```
 
-## 类型使用
+## Types
 
-所有类型从 `types.ts` 导出：
+Types are exported from the OpenAPI module:
 
 ```typescript
 import type { components } from '@tier0/sdk/openapi';
@@ -116,29 +118,28 @@ type BrowseReq = components['schemas']['BrowseReq'];
 type FlowInfo = components['schemas']['FlowInfo'];
 ```
 
-## 错误处理
+## Error Handling
 
-SDK 有两层错误需要处理：
+Handle two error layers:
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
 
-// 层级 1：网络/认证错误 → try/catch
+// Layer 1: network/auth errors -> try/catch
 try {
   const result = await unsApi.openapiv1unsread({
     topics: ['Plant/Line1/Metric/Temperature'],
   });
 
-  // 层级 2：批量接口业务错误 → 检查 results[i].success
-  // HTTP 200 不代表每项成功！
+  // Layer 2: per-item business errors -> check results[i].success
   for (const item of result.data.results) {
     if (!item.success) {
-      console.error(`${item.topic} 失败: ${item.error?.message}`);
+      console.error(`${item.topic} failed: ${item.error?.message}`);
     }
   }
 } catch (error) {
   if (error instanceof Error) {
-    // HTTP 4xx/5xx 或网络错误
+    // HTTP 4xx/5xx or network error
     console.error(error.message); // "HTTP 401: Unauthorized"
   }
 }

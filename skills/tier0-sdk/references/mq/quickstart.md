@@ -1,48 +1,45 @@
 ---
 name: tier0-sdk-mq-quickstart
 version: 0.1.0
-description: "MQ 模块快速开始：环境变量配置、订阅、发布、取消订阅、事件监听"
+description: "MQ module quickstart: configuration, subscribe, publish, unsubscribe, events"
 ---
 
-# MQ 快速开始
+# MQ Quickstart
 
-## 环境变量配置
+## Configuration
 
-| 变量 | 必需 | 说明 |
+In Node.js, the SDK can read `TIER0_*` environment variables.
+
+| Variable | Required | Description |
 |------|------|------|
-| `TIER0_MQTT_HOST` / `VITE_TIER0_MQTT_HOST` | 是 | MQTT Broker 地址，如 `mqtt.tier0.cloud` |
-| `TIER0_MQTT_PORT` / `VITE_TIER0_MQTT_PORT` | 否 | MQTT WebSocket 端口（默认 8084） |
-| `TIER0_API_KEY` / `VITE_TIER0_API_KEY` | 是 | 认证密钥（作为 MQTT password） |
+| `TIER0_MQTT_HOST` | Yes | MQTT WebSocket host. Use `wss://.../mqtt` for TLS/cloud brokers. |
+| `TIER0_MQTT_PORT` | No | MQTT WebSocket port, default `8084`, used only when host has no `ws://` or `wss://` scheme |
+| `TIER0_API_KEY` | Yes | API key used as MQTT password |
 
-### .env 文件示例
+For browser/Vite projects, pass values explicitly from `import.meta.env`; do not rely on automatic `VITE_*` lookup.
+
+### .env Example
 
 ```bash
 # Node.js
-TIER0_MQTT_HOST=mqtt.tier0.cloud
-TIER0_MQTT_PORT=8084
+TIER0_MQTT_HOST=wss://mqtt.example.com/mqtt
 TIER0_API_KEY=your-api-key
-
-# Vite 前端
-VITE_TIER0_MQTT_HOST=mqtt.tier0.cloud
-VITE_TIER0_MQTT_PORT=8084
-VITE_TIER0_API_KEY=your-api-key
 ```
 
-### 运行时传入（覆盖环境变量）
+### Runtime Configuration
 
 ```typescript
 import { Tier0MQClient } from '@tier0/sdk/mq';
 
 const client = new Tier0MQClient({
-  host: 'emqx.default.svc',
-  port: 8084,
+  host: 'wss://mqtt.example.com/mqtt',
   password: 'your-api-key',
 });
 ```
 
-## 订阅
+## Subscribe
 
-### 基础订阅
+### Basic Subscribe
 
 ```typescript
 import { Tier0MQClient } from '@tier0/sdk/mq';
@@ -54,24 +51,24 @@ client.subscribe('Plant/Line1/Metric/Temperature', (topic, payload) => {
 });
 ```
 
-### 通配符订阅
+### Wildcards
 
 ```typescript
-// # 匹配多层
+// # matches multiple levels
 client.subscribe('Plant/Line1/#', (topic, payload) => {
-  // 匹配 Plant/Line1/Metric/Temperature
-  // 匹配 Plant/Line1/State/MachineStatus
+  // matches Plant/Line1/Metric/Temperature
+  // matches Plant/Line1/State/MachineStatus
 });
 
-// + 匹配单层
+// + matches one level
 client.subscribe('Plant/+/Metric/Temperature', (topic, payload) => {
-  // 匹配 Plant/Line1/Metric/Temperature
-  // 匹配 Plant/Line2/Metric/Temperature
-  // 不匹配 Plant/Line1/Living/Metric/Temperature
+  // matches Plant/Line1/Metric/Temperature
+  // matches Plant/Line2/Metric/Temperature
+  // does not match Plant/Line1/Living/Metric/Temperature
 });
 ```
 
-### 同一 topic 多 handler
+### Multiple Handlers for One Topic
 
 ```typescript
 const handler1 = (topic: string, payload: string) => {
@@ -84,64 +81,64 @@ const handler2 = (topic: string, payload: string) => {
 
 client.subscribe('sensor/temp', handler1);
 client.subscribe('sensor/temp', handler2);
-// 同一 topic 收到消息时，两个 handler 都会触发
+// Both handlers run when the topic receives a message.
 ```
 
-## 发布
+## Publish
 
 ```typescript
 import { Tier0MQClient } from '@tier0/sdk/mq';
 
 const client = new Tier0MQClient();
 
-// 发布字符串
+// Publish a string.
 await client.publish('Device/Cmd', 'START');
 
-// 发布对象（内部 JSON.stringify）
+// Publish an object; the SDK JSON.stringify()s it.
 await client.publish('Device/Cmd', {
   action: 'setSpeed',
   params: { speed: 120 },
 });
 
-// 自定义 qos 和 retain
+// Custom qos and retain.
 await client.publish('Device/Status', 'online', { qos: 2, retain: true });
 ```
 
-## 取消订阅
+## Unsubscribe
 
 ```typescript
-// 取消特定 handler
+// Remove a specific handler.
 client.unsubscribe('sensor/temp', handler1);
 
-// 取消 topic 下所有 handler
+// Remove all handlers for a topic.
 client.unsubscribe('sensor/temp');
 ```
 
-## 事件监听
+## Events
 
 ```typescript
 const client = new Tier0MQClient();
 
 client.on('connect', () => {
-  console.log('MQ 已连接');
+  console.log('MQ connected');
 });
 
 client.on('disconnect', () => {
-  console.log('MQ 已断开');
+  console.log('MQ disconnected');
 });
 
 client.on('error', (err) => {
-  console.error('MQ 错误:', err);
+  console.error('MQ error:', err);
 });
 ```
 
-## 断开连接
+## Disconnect
 
 ```typescript
 client.disconnect();
 ```
 
-## 状态检查
+## State
 
 ```typescript
 console.log(client.isConnected);      // boolean
