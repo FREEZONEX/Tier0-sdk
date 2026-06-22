@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk
-version: 0.2.2
+version: 0.2.3
 description: "Tier0 SDK for TypeScript/JavaScript agents. Use when building apps or scripts with @tier0/sdk to call Tier0 OpenAPI, manage UNS topics and Flow resources, or subscribe/publish MQTT over WebSocket. Covers Node.js, browser/Vite, React, Vue3, OpenAPI, UNS, Flow, MQ, MQTT, and WebSocket usage."
 metadata:
   requires:
@@ -21,7 +21,7 @@ Load only the reference needed for the current task. The top-level skill intenti
 
 Core guardrails:
 
-1. Configure Tier0 host and API key before using OpenAPI or MQ clients.
+1. Before any task that connects to Tier0, configures hosts, uses API keys, initializes OpenAPI, initializes MQ/MQTT, or handles browser/Vite credentials, read `references/setup/configuration.md` first.
 2. Treat UNS/Flow concepts as domain rules, not SDK conveniences. Read `references/core/concepts.md` before modeling or changing UNS/Flow resources.
 3. For MonoApp/TanStack Start projects, read `references/scaffolds/monoapptemplate.md` before importing SDK modules.
 4. For Flow deploy/delete or Node-RED JSON edits, read the relevant Flow reference and preserve the system-created `mqtt-broker` config node.
@@ -33,8 +33,8 @@ Reference routing:
 
 | Need | Read |
 |---|---|
+| Any connection, authentication, host, API key, OpenAPI client, MQ/MQTT client, browser/Vite credential setup | `references/setup/configuration.md` |
 | Tier0 concepts: Workspace, UNS, topic types, Flow relations, VQT | `references/core/concepts.md` |
-| Environment variables, browser/Vite setup, URL normalization, credentials | `references/setup/configuration.md` |
 | MonoApp/TanStack Start scaffold integration | `references/scaffolds/monoapptemplate.md` |
 | OpenAPI quickstart and client configuration | `references/openapi/quickstart.md` |
 | React Query hooks | `references/openapi/react.md` |

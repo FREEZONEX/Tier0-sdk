@@ -6,7 +6,9 @@ description: "Tier0 SDK configuration for Node.js, browser/Vite, OpenAPI, and MQ
 
 # Configuration
 
-Use this file when setting up API hosts, API keys, MQTT hosts, browser builds, or secret handling.
+Read this file before writing code that connects to Tier0 or configures any Tier0 runtime value.
+
+Use it when setting up API hosts, API keys, MQTT hosts, browser builds, client initialization, credential handling, or secret handling. Read it before `references/openapi/quickstart.md`, `references/mq/quickstart.md`, framework references, or endpoint references whenever the task involves a live Tier0 connection.
 
 ## OpenAPI
 
