@@ -36,7 +36,7 @@ import { configureClient } from '@tier0/sdk/openapi';
 configureClient({
   getApiHost: () => process.env.TIER0_API_HOST,
   getApiKey: () => {
-    // 从安全存储或认证服务获取
+    // Read from secure storage or an auth service.
     return localStorage.getItem('tier0_api_key') || undefined;
   },
 });
