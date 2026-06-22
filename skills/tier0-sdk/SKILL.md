@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk
-version: 0.2.3
-description: "Tier0 SDK for TypeScript/JavaScript agents. Use when building apps or scripts with @tier0/sdk to call Tier0 OpenAPI, manage UNS topics and Flow resources, or subscribe/publish MQTT over WebSocket. Covers Node.js, browser/Vite, React, Vue3, OpenAPI, UNS, Flow, MQ, MQTT, and WebSocket usage."
+version: 0.2.4
+description: "Tier0 SDK for TypeScript/JavaScript agents. Use when building apps or scripts with @tier0/sdk for Tier0 platform integration, external data integration through Tier0, UNS topic modeling/read/write/history/search/create/delete, Flow resource management, or Tier0 MQTT/MQ publish/subscribe over WebSocket. Triggers include Tier0, UNS, Unified Namespace, topic, Metric, Action, State, Flow, data integration, OpenAPI, API key, MQ, MQTT, WebSocket, React, Vue3, Vite, TypeScript. Do not use for unrelated third-party APIs, non-Tier0 MQTT brokers, implementing an MQTT broker/server, or when the user explicitly specifies another API/client."
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -14,6 +14,25 @@ metadata:
 Use `@tier0/sdk` when code must call Tier0 from TypeScript or JavaScript.
 
 For CLI command-line work, use the Tier0 CLI skill instead of this SDK skill.
+
+## Scope
+
+Use this skill for:
+
+- Tier0 platform integrations, including external data integration through Tier0.
+- UNS work: topic modeling, topic paths, `Metric`/`Action`/`State`, read/write/history/search/create/delete.
+- Tier0 Flow work: create/list/get/update/deploy/delete and Node-RED JSON handled through Tier0 APIs.
+- Tier0 OpenAPI clients, Tier0 API keys, and Tier0 host configuration.
+- Tier0 MQ/MQTT over WebSocket publish/subscribe where the broker is the Tier0 MQTT endpoint and auth uses Tier0 credentials.
+- React, Vue3, Vite, Node.js, or TypeScript code that uses `@tier0/sdk`.
+
+Do not use this skill for:
+
+- A user-specified non-Tier0 API or SDK. Follow the API/client the user named.
+- Generic MQTT usage against another broker, such as Mosquitto, EMQX, HiveMQ, AWS IoT, or a customer broker, unless the task explicitly routes that broker through Tier0.
+- Building or running an MQTT broker/server. `@tier0/sdk/mq` is a client, not a broker implementation.
+- Non-Tier0 MQTT credentials, topics, or broker configuration that are not part of Tier0 runtime configuration.
+- Direct database, PLC, OPC UA, Modbus, or device protocol access outside Tier0 APIs.
 
 ## How To Use This Skill
 
