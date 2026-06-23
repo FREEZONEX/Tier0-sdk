@@ -12,8 +12,8 @@ In Node.js, the SDK can read `TIER0_*` environment variables.
 
 | Variable | Required | Description |
 |------|------|------|
-| `TIER0_MQTT_HOST` | Yes | MQTT WebSocket host. Use a full `wss://host:port/mqtt` URL for TLS/cloud brokers. |
-| `TIER0_MQTT_PORT` | No | MQTT WebSocket port, default `8084`, used only when host has no `ws://` or `wss://` scheme. For `mqtt.pre.tier0.dev`, plain WebSocket is `8083` and TLS WebSocket is `8084`. |
+| `TIER0_MQTT_HOST` | Yes | MQTT WebSocket host injected by the platform/deployment. It may be a full `wss://host:port/mqtt` URL for TLS brokers. |
+| `TIER0_MQTT_PORT` | No | MQTT WebSocket port, used only when host has no `ws://` or `wss://` scheme |
 | `TIER0_API_KEY` | Yes | API key used as MQTT password |
 
 For browser/Vite projects, pass values explicitly from `import.meta.env`; do not rely on automatic `VITE_*` lookup.
@@ -22,7 +22,7 @@ For browser/Vite projects, pass values explicitly from `import.meta.env`; do not
 
 ```bash
 # Node.js
-TIER0_MQTT_HOST=wss://mqtt.pre.tier0.dev:8084/mqtt
+TIER0_MQTT_HOST=wss://<your-tier0-mqtt-host>:<port>/mqtt
 TIER0_API_KEY=your-api-key
 ```
 
@@ -32,8 +32,9 @@ TIER0_API_KEY=your-api-key
 import { Tier0MQClient } from '@tier0/sdk/mq';
 
 const client = new Tier0MQClient({
-  host: 'wss://mqtt.pre.tier0.dev:8084/mqtt',
-  password: 'your-api-key',
+  host: process.env.TIER0_MQTT_HOST,
+  port: process.env.TIER0_MQTT_PORT ? Number(process.env.TIER0_MQTT_PORT) : undefined,
+  password: process.env.TIER0_API_KEY,
 });
 ```
 

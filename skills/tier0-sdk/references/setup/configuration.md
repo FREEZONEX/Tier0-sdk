@@ -19,10 +19,10 @@ The OpenAPI client needs:
 | API base URL | `TIER0_API_HOST` | `configureClient({ apiHost })` |
 | API key | `TIER0_API_KEY` | `configureClient({ apiKey })` |
 
-Prefer complete URLs with scheme:
+Prefer complete URLs with scheme. The platform or deployment should inject these values; do not hard-code environment-specific hosts in reusable code or skills:
 
 ```bash
-TIER0_API_HOST=https://tier0-eks-frontend.tier0.dev
+TIER0_API_HOST=https://<your-tier0-api-host>
 TIER0_API_KEY=sk-...
 ```
 
@@ -77,13 +77,14 @@ Host normalization:
 
 - If `host` starts with `ws://` or `wss://`, the SDK uses it directly and appends `/mqtt` if missing.
 - If `host` has no WebSocket scheme, the SDK builds `ws://<host>:<port>/mqtt`.
-- For TLS/cloud brokers, pass a full `wss://host:port/mqtt` URL explicitly. For `mqtt.pre.tier0.dev`, use `wss://mqtt.pre.tier0.dev:8084/mqtt`; plain WebSocket is `host: 'mqtt.pre.tier0.dev', port: 8083`.
+- For TLS/cloud brokers, prefer a full injected `wss://host:port/mqtt` URL. Do not hard-code a broker host; use `TIER0_MQTT_HOST` / `TIER0_MQTT_PORT` or runtime config supplied by the platform.
 
 ```typescript
 import { Tier0MQClient } from '@tier0/sdk/mq';
 
 const client = new Tier0MQClient({
-  host: 'wss://mqtt.pre.tier0.dev:8084/mqtt',
+  host: process.env.TIER0_MQTT_HOST,
+  port: process.env.TIER0_MQTT_PORT ? Number(process.env.TIER0_MQTT_PORT) : undefined,
   password: process.env.TIER0_API_KEY,
 });
 ```

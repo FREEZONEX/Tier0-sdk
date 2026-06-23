@@ -12,7 +12,7 @@ In Node.js, the SDK can read `TIER0_*` environment variables.
 
 | Variable | Required | Description |
 |------|------|------|
-| `TIER0_API_HOST` | Yes | OpenAPI base URL, preferably including scheme, e.g. `https://tier0-eks-frontend.tier0.dev` |
+| `TIER0_API_HOST` | Yes | OpenAPI base URL injected by the platform/deployment, preferably including scheme |
 | `TIER0_API_KEY` | Yes | API key |
 
 For browser/Vite projects, pass values explicitly from `import.meta.env`; do not rely on automatic `VITE_*` lookup.
@@ -23,8 +23,8 @@ For browser/Vite projects, pass values explicitly from `import.meta.env`; do not
 import { configureClient } from '@tier0/sdk/openapi';
 
 configureClient({
-  apiHost: 'https://tier0-eks-frontend.tier0.dev',
-  apiKey: 'your-api-key',
+  apiHost: process.env.TIER0_API_HOST,
+  apiKey: process.env.TIER0_API_KEY,
 });
 ```
 

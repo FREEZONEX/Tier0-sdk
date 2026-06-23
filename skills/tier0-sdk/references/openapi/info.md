@@ -30,7 +30,7 @@ const result = await systemApi.openapiv1info({});
     name: string;           // 服务名称，如 "Tier0 UNS OpenAPI"
     version: string;        // API 版本，如 "v1"
     capabilities: string[]; // 支持的操作列表，如 ["read","write","browse","search","create","update","delete"]
-    mqttBroker: string;     // MQTT Broker 地址，如 "mqtt.pre.tier0.dev"
+    mqttBroker: string;     // MQTT Broker 地址，由当前环境返回
   };
 }
 ```
