@@ -12,8 +12,8 @@ In Node.js, the SDK can read `TIER0_*` environment variables.
 
 | Variable | Required | Description |
 |------|------|------|
-| `TIER0_MQTT_HOST` | Yes | MQTT WebSocket host. Use `wss://.../mqtt` for TLS/cloud brokers. |
-| `TIER0_MQTT_PORT` | No | MQTT WebSocket port, default `8084`, used only when host has no `ws://` or `wss://` scheme |
+| `TIER0_MQTT_HOST` | Yes | MQTT WebSocket host. Use a full `wss://host:port/mqtt` URL for TLS/cloud brokers. |
+| `TIER0_MQTT_PORT` | No | MQTT WebSocket port, default `8084`, used only when host has no `ws://` or `wss://` scheme. For `mqtt.pre.tier0.dev`, plain WebSocket is `8083` and TLS WebSocket is `8084`. |
 | `TIER0_API_KEY` | Yes | API key used as MQTT password |
 
 For browser/Vite projects, pass values explicitly from `import.meta.env`; do not rely on automatic `VITE_*` lookup.
@@ -22,7 +22,7 @@ For browser/Vite projects, pass values explicitly from `import.meta.env`; do not
 
 ```bash
 # Node.js
-TIER0_MQTT_HOST=wss://mqtt.example.com/mqtt
+TIER0_MQTT_HOST=wss://mqtt.pre.tier0.dev:8084/mqtt
 TIER0_API_KEY=your-api-key
 ```
 
@@ -32,10 +32,12 @@ TIER0_API_KEY=your-api-key
 import { Tier0MQClient } from '@tier0/sdk/mq';
 
 const client = new Tier0MQClient({
-  host: 'wss://mqtt.example.com/mqtt',
+  host: 'wss://mqtt.pre.tier0.dev:8084/mqtt',
   password: 'your-api-key',
 });
 ```
+
+> Use `unsApi.openapiv1unswrite()` when you need the API to validate and write a UNS topic current value. If publishing to a UNS-ingested MQTT topic directly, the MQTT topic must already exist in UNS and the JSON payload keys must match that topic's `fields` schema exactly. For example, a topic with field `temperature` must receive `{"temperature":26.4}`, not `{"value":26.4,"unit":"C"}` unless `value` and `unit` are the actual field names in that topic schema.
 
 ## Subscribe
 
@@ -46,7 +48,7 @@ import { Tier0MQClient } from '@tier0/sdk/mq';
 
 const client = new Tier0MQClient();
 
-client.subscribe('Plant/Line1/Metric/Temperature', (topic, payload) => {
+client.subscribe('app/events/temperature', (topic, payload) => {
   console.log(topic, payload);
 });
 ```
@@ -55,16 +57,16 @@ client.subscribe('Plant/Line1/Metric/Temperature', (topic, payload) => {
 
 ```typescript
 // # matches multiple levels
-client.subscribe('Plant/Line1/#', (topic, payload) => {
-  // matches Plant/Line1/Metric/Temperature
-  // matches Plant/Line1/State/MachineStatus
+client.subscribe('app/events/#', (topic, payload) => {
+  // matches app/events/temperature
+  // matches app/events/line1/status
 });
 
 // + matches one level
-client.subscribe('Plant/+/Metric/Temperature', (topic, payload) => {
-  // matches Plant/Line1/Metric/Temperature
-  // matches Plant/Line2/Metric/Temperature
-  // does not match Plant/Line1/Living/Metric/Temperature
+client.subscribe('app/+/temperature', (topic, payload) => {
+  // matches app/line1/temperature
+  // matches app/line2/temperature
+  // does not match app/site/line1/temperature
 });
 ```
 
@@ -92,16 +94,30 @@ import { Tier0MQClient } from '@tier0/sdk/mq';
 const client = new Tier0MQClient();
 
 // Publish a string.
-await client.publish('Device/Cmd', 'START');
+await client.publish('app/device/cmd', 'START');
 
 // Publish an object; the SDK JSON.stringify()s it.
-await client.publish('Device/Cmd', {
+await client.publish('app/device/cmd', {
   action: 'setSpeed',
   params: { speed: 120 },
 });
 
 // Custom qos and retain.
-await client.publish('Device/Status', 'online', { qos: 2, retain: true });
+await client.publish('app/device/status', 'online', { qos: 2, retain: true });
+```
+
+### Publishing to a UNS-ingested topic
+
+Only use this when the target topic already exists in UNS and you know the topic schema. The payload is the business object itself; do not wrap it in a generic `value` object unless `value` is actually a schema field.
+
+```typescript
+// Existing UNS topic schema:
+// Plant/Line1/Metric/Temperature
+// fields: [{ name: 'temperature', type: 'float', unit: 'C' }]
+
+await client.publish('Plant/Line1/Metric/Temperature', {
+  temperature: 26.4,
+});
 ```
 
 ## Unsubscribe

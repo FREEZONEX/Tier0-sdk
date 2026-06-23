@@ -77,15 +77,17 @@ Host normalization:
 
 - If `host` starts with `ws://` or `wss://`, the SDK uses it directly and appends `/mqtt` if missing.
 - If `host` has no WebSocket scheme, the SDK builds `ws://<host>:<port>/mqtt`.
-- For TLS/cloud brokers, pass a full `wss://.../mqtt` URL explicitly.
+- For TLS/cloud brokers, pass a full `wss://host:port/mqtt` URL explicitly. For `mqtt.pre.tier0.dev`, use `wss://mqtt.pre.tier0.dev:8084/mqtt`; plain WebSocket is `host: 'mqtt.pre.tier0.dev', port: 8083`.
 
 ```typescript
 import { Tier0MQClient } from '@tier0/sdk/mq';
 
 const client = new Tier0MQClient({
-  host: 'wss://mqtt.example.com/mqtt',
+  host: 'wss://mqtt.pre.tier0.dev:8084/mqtt',
   password: process.env.TIER0_API_KEY,
 });
 ```
 
 The MQ username and client ID are generated from the API key workspace segment when possible. Override `username` and `clientId` only when the broker requires custom values.
+
+Use OpenAPI `unsApi.openapiv1unswrite()` for UNS current-value writes. The MQ client publishes raw broker messages and does not guarantee that OpenAPI `read`/`browse` latest values will update.
