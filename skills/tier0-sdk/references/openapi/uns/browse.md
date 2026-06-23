@@ -59,10 +59,12 @@ interface TreeNode {
     unit: string;
   }>;
 
-  // 以下字段仅在 include_leaf_value: true 时返回（仅 file 节点）
-  value?: Record<string, unknown>;
-  quality?: 'Good' | 'Uncertain' | 'Bad';
-  timeStamp?: number;  // UNIX 毫秒
+  // 以下字段仅在 include_leaf_value: true 时返回（仅 TOPIC 节点）
+  payload?: {
+    value?: Record<string, unknown>;
+    quality?: 'Good' | 'Uncertain' | 'Bad';
+    timeStamp?: number;  // UNIX 毫秒
+  };
 }
 ```
 
@@ -114,8 +116,8 @@ const result = await unsApi.openapiv1unsbrowse({
 });
 
 for (const node of result.data.tree) {
-  if (node.type === 'TOPIC' && node.value) {
-    console.log(node.path, node.value, node.quality, node.timeStamp);
+  if (node.type === 'TOPIC' && node.payload) {
+    console.log(node.path, node.payload.value, node.payload.quality, node.payload.timeStamp);
   }
 }
 ```

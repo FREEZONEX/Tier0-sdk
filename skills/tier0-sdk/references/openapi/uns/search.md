@@ -7,6 +7,7 @@ description: "POST /openapi/v1/uns/search — 按关键词搜索 UNS 节点"
 # search — `POST /openapi/v1/uns/search`
 
 按关键词检索节点名称。**已知名称片段时用 search；探索树形结构用 browse**。
+`keyword` 目前主要匹配节点短名/叶子名，不负责扫整条路径的中间段；要按路径范围查找，用 `path_prefix`。
 
 ## SDK 调用
 
@@ -20,7 +21,7 @@ const result = await unsApi.openapiv1unssearch(body);
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `keyword` | string | 否 | 关键词（模糊匹配节点名称/路径），留空则返回所有节点 |
+| `keyword` | string | 否 | 关键词（当前主要匹配节点短名/叶子名；不匹配路径中间段），留空则返回所有节点 |
 | `path_prefix` | string | 否 | 限制搜索范围到指定路径前缀，如 `"Plant/Line1"` |
 | `topicType` | string | 否 | 按数据类型过滤：`Metric` / `Action` / `State`（仅叶子节点，后端兼容小写） |
 | `include_metadata` | boolean | 否 | 是否返回每个节点的字段定义（fields）、topicType、description。**搜索后需要了解 topic 结构时带上** |

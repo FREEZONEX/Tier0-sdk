@@ -56,7 +56,7 @@ const result = await unsApi.openapiv1unsread({
 // HTTP 200 does not mean every item succeeded; check results[i].success.
 const item = result.data.results[0];
 if (item.success && item.result?.quality === 'Good') {
-  // item.result.value: business object, e.g. { temperature: 27.5, unit: 'C' }
+  // item.result.value: business object, e.g. { temperature: 27.5 }
   // item.result.timeStamp: timestamp in milliseconds
   console.log(item.result.value);
 }
@@ -84,7 +84,7 @@ const result = await unsApi.openapiv1unswrite({
   writes: [
     {
       topic: 'Plant/Line1/Metric/Temperature',
-      value: { temperature: 27.5, unit: 'C' },
+      value: { temperature: 27.5 },
       timeStamp: Date.now(),
     },
   ],

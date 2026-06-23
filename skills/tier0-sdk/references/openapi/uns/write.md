@@ -66,7 +66,7 @@ const result = await unsApi.openapiv1unswrite({
   writes: [
     {
       topic: 'Plant/Line1/Metric/Temperature',
-      value: { temperature: 27.5, unit: 'C' },
+      value: { temperature: 27.5 },
     },
   ],
 });

@@ -47,14 +47,14 @@ const result = await unsApi.openapiv1unshistory(body);
   msg: string;
   data: {
     success: boolean;
+    total: number;  // 整体总记录数
+    page: number;
+    size: number;
     results: Array<{
       success: boolean;
       topic: string;
       result?: {
-        total: number;   // 符合条件的总记录数
-        page: number;
-        size: number;
-        records: Array<{
+        values: Array<{
           value: Record<string, unknown>;  // 业务数据对象
           quality: 'Good' | 'Uncertain' | 'Bad';
           timeStamp: number;              // 数据采集时间，毫秒
@@ -85,7 +85,7 @@ const result = await unsApi.openapiv1unshistory({
 
 const item = result.data.results[0];
 if (item.success) {
-  for (const record of item.result!.records) {
+  for (const record of item.result!.values) {
     const temp = record.value as { temperature: number };
     console.log(new Date(record.timeStamp), temp.temperature);
   }
@@ -107,9 +107,9 @@ const result = await unsApi.openapiv1unshistory({
 });
 
 if (result.data.success) {
-  const records = result.data.results[0].result?.records ?? [];
-  // 每条 record 代表一个小时的均值
-  records.forEach(r => {
+  const values = result.data.results[0].result?.values ?? [];
+  // 每条 value 代表一个小时的均值
+  values.forEach(r => {
     console.log(new Date(r.timeStamp).toISOString(), r.value);
   });
 }
@@ -131,7 +131,7 @@ for (const item of result.data.results) {
     console.error(`${item.topic} 查询失败: ${item.error?.message}`);
     continue;
   }
-  console.log(`${item.topic}: ${item.result!.total} 条记录`);
+  console.log(`${item.topic}: ${item.result!.values.length} 条记录`);
 }
 ```
 
@@ -141,4 +141,4 @@ for (const item of result.data.results) {
 |------|------|------|
 | `start_time` 格式报错 | 传入了毫秒整数（如 `1733382000000`） | 改为 ISO 字符串：`new Date(ts).toISOString()` |
 | `aggregation.field` 无数据 | 字段名和 value 对象里的 key 不一致 | 先 `read` 一条确认 value 的字段名 |
-| `total` 为 0 | 时间范围内无数据，或 topic 路径错误 | 确认 topic 存在且时间范围正确 |
+| `values` 为空 | 时间范围内无数据，或 topic 路径错误 | 确认 topic 存在且时间范围正确 |

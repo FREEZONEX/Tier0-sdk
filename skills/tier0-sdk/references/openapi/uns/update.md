@@ -25,7 +25,7 @@ const result = await unsApi.openapiv1unsupdate(body);
 | `description` | string | 否 | 新描述 |
 | `displayName` | string | 否 | 新显示名称 |
 | `alias` | string | 否 | 别名 |
-| `updateMask` | string[] | 否 | 指定要更新的字段名列表。**不传则更新所有非空字段**；传入如 `["description"]` 则只更新该字段，其余保持不变 |
+| `updateMask` | string[] | 否 | 指定要更新的字段名列表。建议显式传入，如 `["description"]`、`["displayName","description"]` 或 `["fields"]`，避免后端误更新未打算修改的字段 |
 | `extendProperties` | object | 否 | 自定义扩展属性（key-value 对） |
 
 ### fields 更新规则（重要）
@@ -100,6 +100,6 @@ await unsApi.openapiv1unsupdate({
   path: 'Plant/Line1/Metric/Temperature',
   displayName: '产线1温度（修正）',
   description: '已校准的温度传感器数据',
-  // 不传 updateMask → 更新所有非空字段
+  updateMask: ['displayName', 'description'],
 });
 ```
