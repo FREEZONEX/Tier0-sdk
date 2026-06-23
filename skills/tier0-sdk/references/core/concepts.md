@@ -23,6 +23,18 @@ Use this file when an agent needs Tier0 domain context before selecting SDK APIs
 
 Only TOPIC leaf nodes can be used with `read`, `write`, and `history`. PATH nodes are for `browse` and organization.
 
+## UNS In Applications
+
+When building an end-user application, treat UNS as a data center for operational values, commands, state, and history. The app UI should usually present domain objects and workflows, not the UNS path hierarchy.
+
+Default application behavior:
+
+- Read/write the specific topic paths needed by the feature.
+- Shape screens around user tasks, equipment, orders, alerts, KPIs, or other business concepts.
+- Hide namespace folders and path segments from ordinary users unless they are meaningful business labels.
+
+Only expose the UNS hierarchy when the user explicitly asks for a namespace browser, topic administration, diagnostics, or data-modeling UI.
+
 ## UNS Topic Types
 
 Topic paths must use a type folder immediately before the leaf:

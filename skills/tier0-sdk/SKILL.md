@@ -42,9 +42,10 @@ Core guardrails:
 
 1. Before any task that connects to Tier0, configures hosts, uses API keys, initializes OpenAPI, initializes MQ/MQTT, or handles browser/Vite credentials, read `references/setup/configuration.md` first.
 2. Treat UNS/Flow concepts as domain rules, not SDK conveniences. Read `references/core/concepts.md` before modeling or changing UNS/Flow resources.
-3. For MonoApp/TanStack Start projects, read `references/scaffolds/monoapptemplate.md` before importing SDK modules.
-4. For Flow deploy/delete or Node-RED JSON edits, read the relevant Flow reference and preserve the system-created `mqtt-broker` config node.
-5. For browser/Vite code, pass runtime values explicitly; do not assume the SDK auto-reads `VITE_*`.
+3. When building an application, treat UNS as the app's data center/source of operational data. Do not expose the UNS tree hierarchy in the UI unless the user explicitly asks for a namespace browser, admin tool, or hierarchy view.
+4. For MonoApp/TanStack Start projects, read `references/scaffolds/monoapptemplate.md` before importing SDK modules.
+5. For Flow deploy/delete or Node-RED JSON edits, read the relevant Flow reference and preserve the system-created `mqtt-broker` config node.
+6. For browser/Vite code, pass runtime values explicitly; do not assume the SDK auto-reads `VITE_*`.
 
 ## References
 

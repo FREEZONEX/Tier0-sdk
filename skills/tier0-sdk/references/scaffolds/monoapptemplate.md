@@ -66,6 +66,17 @@ Generated MonoApp applications must not:
 
 If browser-side `VITE_TIER0_*` values are needed, the platform/runtime must inject them and the app should pass them explicitly. Do not assume the SDK automatically reads `VITE_*`.
 
+## App UX Model
+
+For generated applications, treat UNS as the backend data center, not as the visible information architecture.
+
+Default UI behavior:
+
+- Build screens around the user's business workflow, such as equipment status, production orders, alarms, KPIs, commands, or history.
+- Use known UNS topic paths inside service-layer code to read/write the data each feature needs.
+- Do not render a UNS tree, path explorer, or namespace breadcrumb as the primary UI unless the user explicitly asks for browsing or managing the UNS hierarchy.
+- Avoid making users choose from raw `Metric` / `State` / `Action` folders unless the app is specifically an admin, diagnostics, or data-modeling tool.
+
 ## Recommended Service-Layer Examples
 
 ### UNS Write From a Service
