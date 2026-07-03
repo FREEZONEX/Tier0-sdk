@@ -7,19 +7,23 @@ export type TopicHandler = (topic: string, payload: string) => void;
 
 function parseWorkspaceIDFromApiKey(apiKey: string): string | undefined {
   apiKey = apiKey.trim();
-  const parts = apiKey.split('-');
-  if (parts.length !== 3 || parts[0] !== 'sk') {
+  const prefix = 'sk-svc-';
+  if (!apiKey.startsWith(prefix)) {
     return undefined;
   }
-  const payload = parts[2];
-  if (!payload.startsWith('ws')) {
-    return undefined;
-  }
+  const payload = apiKey.slice(prefix.length);
   const sepIndex = payload.indexOf('_');
-  if (sepIndex <= 2) {
+  if (sepIndex <= 0) {
     return undefined;
   }
-  const workspaceID36 = payload.slice(2, sepIndex);
+  const workspacePart = payload.slice(0, sepIndex);
+  if (!workspacePart.startsWith('ws')) {
+    return undefined;
+  }
+  const workspaceID36 = workspacePart.slice(2);
+  if (!workspaceID36) {
+    return undefined;
+  }
   try {
     const workspaceID = parseInt(workspaceID36, 36);
     if (workspaceID <= 0 || isNaN(workspaceID)) {
