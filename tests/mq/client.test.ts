@@ -658,4 +658,73 @@ describe('Tier0MQClient', () => {
     process.env.TIER0_MQTT_HOST = originalHost;
     process.env.TIER0_MQTT_PORT = originalPort;
   });
+
+  describe('workspace ID parsing from API key', () => {
+    it('should parse workspaceID when secret contains no dash', async () => {
+      // workspaceID 12345 in base36 is '9ix'
+      const apiKey = 'sk-svc-ws9ix_secretWithoutDash';
+      const client = new Tier0MQClient({ host: 'localhost', port: 8080, password: apiKey });
+      const connectPromise = client.connect();
+      emit('connect');
+      await connectPromise;
+
+      expect(mqtt.connect).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          username: '12345&open',
+          password: apiKey,
+        })
+      );
+    });
+
+    it('should parse workspaceID when secret contains dash', async () => {
+      // workspaceID 12345 in base36 is '9ix'
+      const apiKey = 'sk-svc-ws9ix_secret-with-dash';
+      const client = new Tier0MQClient({ host: 'localhost', port: 8080, password: apiKey });
+      const connectPromise = client.connect();
+      emit('connect');
+      await connectPromise;
+
+      expect(mqtt.connect).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          username: '12345&open',
+          password: apiKey,
+        })
+      );
+    });
+
+    it('should parse workspaceID when secret contains underscore', async () => {
+      // workspaceID 12345 in base36 is '9ix'
+      const apiKey = 'sk-svc-ws9ix_secret_with_underscore';
+      const client = new Tier0MQClient({ host: 'localhost', port: 8080, password: apiKey });
+      const connectPromise = client.connect();
+      emit('connect');
+      await connectPromise;
+
+      expect(mqtt.connect).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          username: '12345&open',
+          password: apiKey,
+        })
+      );
+    });
+
+    it('should fall back to enterprise credentials for invalid key format', async () => {
+      const apiKey = 'not-a-valid-key';
+      const client = new Tier0MQClient({ host: 'localhost', port: 8080, password: apiKey });
+      const connectPromise = client.connect();
+      emit('connect');
+      await connectPromise;
+
+      expect(mqtt.connect).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          username: 'enterprise&open',
+          password: apiKey,
+        })
+      );
+    });
+  });
 });
