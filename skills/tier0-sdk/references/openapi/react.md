@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-react
-version: 0.1.0
+version: 0.1.1
 description: "OpenAPI React Hooks 使用指南 — @tanstack/react-query 集成"
 ---
 
@@ -28,29 +28,53 @@ function App() {
 }
 ```
 
-## 使用 Hooks
+## 使用模式（先读这一段）
+
+UNS 是数据源，不是界面。把 **topic 路径**和**原始 VQT** 封装在 feature hook / 数据层里，组件只消费领域对象、渲染业务信息。
+
+不要照抄「按钮 → 读 topic → `JSON.stringify(data)`」这种写法：那会把 topic 路径和原始响应直接暴露给用户，违背 UNS 理念。正确做法是「数据层拿数 → 映射成领域对象 → 视图层渲染业务概念」。
 
 ```tsx
-import { useOpenapiv1unsread, useOpenapiv1flowlist } from '@tier0/sdk/openapi/react';
+import { useState } from 'react';
+import { useOpenapiv1unsread } from '@tier0/sdk/openapi/react';
 
-function TemperatureDisplay() {
-  const mutation = useOpenapiv1unsread();
+// 数据层：topic 路径与原始 VQT 都留在这里，对外只暴露领域对象
+function useLine1Temperature() {
+  const read = useOpenapiv1unsread();
 
-  const handleRead = async () => {
-    const result = await mutation.mutateAsync({
+  const refresh = async () => {
+    const res = await read.mutateAsync({
       topics: ['Plant/Line1/Metric/Temperature'],
     });
-    console.log(result);
+    const item = res.data.results?.[0];
+    // 校验 quality，非 Good 不当作可用数据
+    if (!item?.success || item.result?.quality !== 'Good') return null;
+    return {
+      celsius: item.result.value.temperature as number,
+      updatedAt: item.result.timeStamp as number,
+    };
   };
 
+  return { refresh, isLoading: read.isPending, error: read.error };
+}
+
+// 视图层：只呈现业务概念（产线温度），用户看不到 topic / MQTT / 命名空间
+function Line1TemperatureCard() {
+  const { refresh, isLoading, error } = useLine1Temperature();
+  const [celsius, setCelsius] = useState<number | null>(null);
+
   return (
-    <div>
-      <button onClick={handleRead} disabled={mutation.isPending}>
-        {mutation.isPending ? '读取中...' : '读取温度'}
+    <section>
+      <h3>产线 1 温度</h3>
+      <p>{celsius != null ? `${celsius} °C` : '—'}</p>
+      <button
+        onClick={async () => setCelsius((await refresh())?.celsius ?? null)}
+        disabled={isLoading}
+      >
+        {isLoading ? '刷新中…' : '刷新'}
       </button>
-      {mutation.isError && <p>错误: {mutation.error.message}</p>}
-      {mutation.data && <pre>{JSON.stringify(mutation.data, null, 2)}</pre>}
-    </div>
+      {error && <p role="alert">读取失败，请稍后重试</p>}
+    </section>
   );
 }
 ```

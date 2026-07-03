@@ -1,10 +1,12 @@
 ---
 name: tier0-sdk-openapi-quickstart
-version: 0.1.0
+version: 0.1.1
 description: "OpenAPI module quickstart: configuration, configureClient, basic API calls"
 ---
 
 # OpenAPI Quickstart
+
+> UNS is a data source, not a UI. The calls below are how you get/put data; keep topic paths and raw responses in a service/data layer and render business domain objects. `browse`/`search` are for dev-time discovery, not for building a user-facing namespace tree. See `references/core/concepts.md` → "UNS In Applications".
 
 ## Configuration
 

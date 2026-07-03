@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-vue
-version: 0.1.0
+version: 0.1.1
 description: "OpenAPI Vue3 Composables 使用指南"
 ---
 
@@ -12,29 +12,52 @@ description: "OpenAPI Vue3 Composables 使用指南"
 npm install vue
 ```
 
-## 使用 Composables
+## 使用模式（先读这一段）
 
-```vue
-<script setup lang="ts">
+UNS 是数据源，不是界面。把 **topic 路径**和**原始 VQT** 封装在 composable / 数据层里，组件只消费领域对象、渲染业务信息。
+
+不要照抄「按钮 → 读 topic → `JSON.stringify(data)`」这种写法：那会把 topic 路径和原始响应直接暴露给用户，违背 UNS 理念。正确做法是「数据层拿数 → 映射成领域对象 → 视图层渲染业务概念」。
+
+```ts
+// composables/useLine1Temperature.ts —— 数据层：topic 路径与原始 VQT 都留在这里
+import { ref } from 'vue';
 import { useOpenapiv1unsread } from '@tier0/sdk/openapi/vue';
 
-const { data, loading, error, execute } = useOpenapiv1unsread();
+export function useLine1Temperature() {
+  const { loading, error, execute } = useOpenapiv1unsread();
+  const celsius = ref<number | null>(null);
 
-const handleRead = async () => {
-  await execute({
-    topics: ['Plant/Line1/Metric/Temperature'],
-  });
-};
+  const refresh = async () => {
+    const res = await execute({ topics: ['Plant/Line1/Metric/Temperature'] });
+    const item = res?.data?.results?.[0];
+    // 校验 quality，非 Good 不当作可用数据
+    celsius.value =
+      item?.success && item.result?.quality === 'Good'
+        ? (item.result.value.temperature as number)
+        : null;
+  };
+
+  return { celsius, loading, error, refresh };
+}
+```
+
+```vue
+<!-- 视图层：只呈现业务概念（产线温度），用户看不到 topic / MQTT / 命名空间 -->
+<script setup lang="ts">
+import { useLine1Temperature } from '@/composables/useLine1Temperature';
+
+const { celsius, loading, error, refresh } = useLine1Temperature();
 </script>
 
 <template>
-  <div>
-    <button @click="handleRead" :disabled="loading">
-      {{ loading ? '读取中...' : '读取温度' }}
+  <section>
+    <h3>产线 1 温度</h3>
+    <p>{{ celsius != null ? `${celsius} °C` : '—' }}</p>
+    <button @click="refresh" :disabled="loading">
+      {{ loading ? '刷新中…' : '刷新' }}
     </button>
-    <p v-if="error">错误: {{ error.message }}</p>
-    <pre v-if="data">{{ JSON.stringify(data, null, 2) }}</pre>
-  </div>
+    <p v-if="error" role="alert">读取失败，请稍后重试</p>
+  </section>
 </template>
 ```
 

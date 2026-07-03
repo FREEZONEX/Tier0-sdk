@@ -1,10 +1,12 @@
 ---
 name: tier0-sdk-mq-quickstart
-version: 0.1.0
+version: 0.1.1
 description: "MQ module quickstart: configuration, subscribe, publish, unsubscribe, events"
 ---
 
 # MQ Quickstart
+
+> UNS/MQTT topics are integration plumbing, not UI. Subscribe/publish from server-side actions, services, or workers, map payloads into business domain objects, and push those to the UI. Never render topic strings, wildcards, or `subscribedTopics` to end users, and never build a "MQTT topics" list/monitor page unless the user explicitly asks for a diagnostics/admin tool.
 
 ## Configuration
 
@@ -23,7 +25,7 @@ For browser/Vite projects, pass values explicitly from `import.meta.env`; do not
 ```bash
 # Node.js
 TIER0_MQTT_HOST=wss://<your-tier0-mqtt-host>:<port>/mqtt
-TIER0_API_KEY=your-api-key
+TIER0_API_KEY=<your-api-key>
 ```
 
 ### Runtime Configuration

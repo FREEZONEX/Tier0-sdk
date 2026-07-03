@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk
-version: 0.2.4
-description: "Tier0 SDK for TypeScript/JavaScript agents. Use when building apps or scripts with @tier0/sdk for Tier0 platform integration, external data integration through Tier0, UNS topic modeling/read/write/history/search/create/delete, Flow resource management, or Tier0 MQTT/MQ publish/subscribe over WebSocket. Triggers include Tier0, UNS, Unified Namespace, topic, Metric, Action, State, Flow, data integration, OpenAPI, API key, MQ, MQTT, WebSocket, React, Vue3, Vite, TypeScript. Do not use for unrelated third-party APIs, non-Tier0 MQTT brokers, implementing an MQTT broker/server, or when the user explicitly specifies another API/client."
+version: 0.2.7
+description: "Tier0 SDK for TypeScript/JavaScript. Use when building apps or scripts with @tier0/sdk (React, Vue3, Vite, Node): read/write/history/subscribe UNS (Unified Namespace) as a backend data source, manage Flow (Node-RED) resources, publish/subscribe Tier0 MQTT/MQ over WebSocket, or integrate external data through Tier0 OpenAPI. UNS is a data source, not a UI — do not build a UNS tree viewer, topic explorer, or namespace browser. Not for non-Tier0 brokers/APIs, another named SDK/client, or implementing an MQTT broker."
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -13,48 +13,52 @@ metadata:
 
 Use `@tier0/sdk` when code must call Tier0 from TypeScript or JavaScript.
 
-For CLI command-line work, use the Tier0 CLI skill instead of this SDK skill.
+## UNS Is A Data Source, Not A UI
+
+The single most important rule. Treat UNS like a database or integration API:
+
+- A topic (e.g. `Plant/Line1/Metric/Temperature`) is an integration channel — like a DB table or REST endpoint — not a screen or user-facing object.
+- The app consumes UNS (read / history / subscribe / write) from a service/data layer, and the UI renders business domain objects (equipment, orders, alarms, KPIs). End users never see topic paths, MQTT topics, wildcards, `Metric`/`Action`/`State` folders, or the namespace tree.
+- `browse`/`search` are for dev-time discovery only. Build a UNS tree viewer, topic explorer, or namespace browser **only** when the user explicitly asks for a browser, admin, diagnostics, or data-modeling tool.
+
+If you are about to put a topic path or `JSON.stringify(response)` into a component, stop: move it into a service/hook and render a domain object instead.
 
 ## Scope
 
-Use this skill for:
+Use for:
 
-- Tier0 platform integrations, including external data integration through Tier0.
-- UNS work: topic modeling, topic paths, `Metric`/`Action`/`State`, read/write/history/search/create/delete.
-- Tier0 Flow work: create/list/get/update/deploy/delete and Node-RED JSON handled through Tier0 APIs.
-- Tier0 OpenAPI clients, Tier0 API keys, and Tier0 host configuration.
-- Tier0 MQ/MQTT over WebSocket publish/subscribe where the broker is the Tier0 MQTT endpoint and auth uses Tier0 credentials.
-- React, Vue3, Vite, Node.js, or TypeScript code that uses `@tier0/sdk`.
+- Tier0 platform integration, including external data integration through Tier0.
+- UNS as a backend data source: read/write/history/search/create/delete over topic paths.
+- Flow (Node-RED) work via Tier0 APIs: create/list/get/update/deploy/delete.
+- Tier0 OpenAPI clients, API keys, and host configuration.
+- Tier0 MQ/MQTT over WebSocket where the broker is the Tier0 endpoint.
+- React, Vue3, Vite, Node.js, or TypeScript code using `@tier0/sdk`.
 
-Do not use this skill for:
+Do not use for:
 
-- A user-specified non-Tier0 API or SDK. Follow the API/client the user named.
-- Generic MQTT usage against another broker, such as Mosquitto, EMQX, HiveMQ, AWS IoT, or a customer broker, unless the task explicitly routes that broker through Tier0.
-- Building or running an MQTT broker/server. `@tier0/sdk/mq` is a client, not a broker implementation.
-- Non-Tier0 MQTT credentials, topics, or broker configuration that are not part of Tier0 runtime configuration.
+- A non-Tier0 API or SDK the user named — follow the client they specified.
+- Generic MQTT against another broker (Mosquitto, EMQX, HiveMQ, AWS IoT) unless routed through Tier0.
+- Implementing an MQTT broker/server — `@tier0/sdk/mq` is a client only.
 - Direct database, PLC, OPC UA, Modbus, or device protocol access outside Tier0 APIs.
 
-## How To Use This Skill
+## Guardrails
 
-Load only the reference needed for the current task. The top-level skill intentionally stays small; detailed setup, examples, endpoint behavior, and framework patterns live in `references/`.
+The top-level skill stays small; load the reference for the task at hand from `references/`.
 
-Core guardrails:
-
-1. Before any task that connects to Tier0, configures hosts, uses API keys, initializes OpenAPI, initializes MQ/MQTT, or handles browser/Vite credentials, read `references/setup/configuration.md` first.
-2. Treat UNS/Flow concepts as domain rules, not SDK conveniences. Read `references/core/concepts.md` before modeling or changing UNS/Flow resources.
-3. When building an application, treat UNS as the app's data center/source of operational data. Do not expose the UNS tree hierarchy in the UI unless the user explicitly asks for a namespace browser, admin tool, or hierarchy view.
-4. For MonoApp/TanStack Start projects, read `references/scaffolds/monoapptemplate.md` before importing SDK modules.
-5. For Flow deploy/delete or Node-RED JSON edits, read the relevant Flow reference and preserve the system-created `mqtt-broker` config node.
-6. For browser/Vite code, pass runtime values explicitly; do not assume the SDK auto-reads `VITE_*`.
+1. Always use the latest SDK. Before writing any code, check the published version with `npm view @tier0/sdk version` and update to it (`npm install @tier0/sdk@latest`); the SDK evolves, so never rely on a stale pinned version. In the MonoApp scaffold, do not run `npm install` manually — bump `@tier0/sdk` in `package.json` and let the managed install apply it. See `references/setup/configuration.md`.
+2. Read `references/setup/configuration.md` before any connection, host, API key, OpenAPI, MQ/MQTT, or browser/Vite credential work.
+3. Read `references/core/concepts.md` before modeling or changing UNS/Flow resources.
+4. MonoApp/TanStack Start: read `references/scaffolds/monoapptemplate.md` before importing SDK modules.
+5. Flow deploy/delete or Node-RED JSON edits: read the Flow reference and preserve the system-created `mqtt-broker` config node.
+6. Browser/Vite: pass runtime values explicitly; the SDK does not auto-read `VITE_*`.
 
 ## References
-
-Reference routing:
 
 | Need | Read |
 |---|---|
 | Any connection, authentication, host, API key, OpenAPI client, MQ/MQTT client, browser/Vite credential setup | `references/setup/configuration.md` |
 | Tier0 concepts: Workspace, UNS, topic types, Flow relations, VQT | `references/core/concepts.md` |
+| Data-integration shapes: sync app-owned data to UNS (outbound), read external data (inbound), app DB vs UNS | `references/core/data-integration.md` |
 | MonoApp/TanStack Start scaffold integration | `references/scaffolds/monoapptemplate.md` |
 | OpenAPI quickstart and client configuration | `references/openapi/quickstart.md` |
 | React Query hooks | `references/openapi/react.md` |

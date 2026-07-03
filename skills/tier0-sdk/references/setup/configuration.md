@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-configuration
-version: 0.1.0
+version: 0.1.1
 description: "Tier0 SDK configuration for Node.js, browser/Vite, OpenAPI, and MQTT."
 ---
 
@@ -9,6 +9,18 @@ description: "Tier0 SDK configuration for Node.js, browser/Vite, OpenAPI, and MQ
 Read this file before writing code that connects to Tier0 or configures any Tier0 runtime value.
 
 Use it when setting up API hosts, API keys, MQTT hosts, browser builds, client initialization, credential handling, or secret handling. Read it before `references/openapi/quickstart.md`, `references/mq/quickstart.md`, framework references, or endpoint references whenever the task involves a live Tier0 connection.
+
+## Version — Always Use The Latest
+
+Check and update the SDK to the latest published version every time before you use it. The SDK's API surface, endpoints, and types evolve; a stale version leads to wrong signatures and missing endpoints.
+
+```bash
+npm view @tier0/sdk version        # latest published version
+npm ls @tier0/sdk                  # version currently installed
+npm install @tier0/sdk@latest      # update to latest
+```
+
+MonoApp/scaffold caveat: do not run `npm install` manually inside the scaffold — its install is managed (running it manually can corrupt `node_modules` on the shared volume). Instead, set `@tier0/sdk` to the latest version in `package.json` and let the managed install / preview restart apply it.
 
 ## OpenAPI
 
@@ -23,7 +35,7 @@ Prefer complete URLs with scheme. The platform or deployment should inject these
 
 ```bash
 TIER0_API_HOST=https://<your-tier0-api-host>
-TIER0_API_KEY=sk-...
+TIER0_API_KEY=<your-api-key>
 ```
 
 If `apiHost` has no scheme, the SDK normalizes it as `http://<host>`. For cloud deployments, pass `https://...` explicitly.

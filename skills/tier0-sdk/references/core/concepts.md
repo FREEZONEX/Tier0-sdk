@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-concepts
-version: 0.1.0
+version: 0.1.2
 description: "Tier0 SDK domain concepts: Workspace, UNS, topics, VQT, topic types, and Flow relationships."
 ---
 
@@ -25,15 +25,25 @@ Only TOPIC leaf nodes can be used with `read`, `write`, and `history`. PATH node
 
 ## UNS In Applications
 
-When building an end-user application, treat UNS as a data center for operational values, commands, state, and history. The app UI should usually present domain objects and workflows, not the UNS path hierarchy.
+UNS is a backend data source for application pages, not a standalone frontend module. Think of it as the app's database / integration layer: the app reads from it, writes to it, and subscribes to it — it is never the product surface itself.
+
+Mental model:
+
+- A topic is an integration channel (like a DB table or a REST endpoint), not a UI object. A topic path such as `Plant/Line1/Metric/Temperature` is plumbing, not a label to show users.
+- UNS APIs sit behind page-level data services: server actions, API routes, services, hooks, or stores that read/write/subscribe to the specific topic paths a screen needs.
+- The UI presents domain objects and workflows (equipment, orders, alarms, KPIs); it does not present UNS as its own product surface.
 
 Default application behavior:
 
-- Read/write the specific topic paths needed by the feature.
+- Use UNS to supply data to business pages: dashboards, forms, alarms, equipment views, order flows, KPI cards, and similar screens.
+- Read/write/subscribe only the topic paths required by each feature, from a service/data layer.
 - Shape screens around user tasks, equipment, orders, alerts, KPIs, or other business concepts.
-- Hide namespace folders and path segments from ordinary users unless they are meaningful business labels.
+- Never surface these to ordinary users: topic paths, MQTT topics, wildcards, `Metric`/`Action`/`State` folders, or the UNS tree hierarchy. Do not render raw VQT / `JSON.stringify(response)` as the UI.
+- Do not create a dedicated UNS page, tree viewer, topic explorer, or "namespace module" as the main app experience.
 
 Only expose the UNS hierarchy when the user explicitly asks for a namespace browser, topic administration, diagnostics, or data-modeling UI.
+
+This section covers the inbound direction (app reads from UNS). When the app **owns** business data (orders, work orders, results) and must publish/sync it outbound to UNS, or when deciding what belongs in the app DB vs UNS, read `references/core/data-integration.md`.
 
 ## UNS Topic Types
 

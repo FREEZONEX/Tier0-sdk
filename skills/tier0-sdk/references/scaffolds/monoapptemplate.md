@@ -77,6 +77,8 @@ Default UI behavior:
 - Do not render a UNS tree, path explorer, or namespace breadcrumb as the primary UI unless the user explicitly asks for browsing or managing the UNS hierarchy.
 - Avoid making users choose from raw `Metric` / `State` / `Action` folders unless the app is specifically an admin, diagnostics, or data-modeling tool.
 
+The app DB is the system of record for app-owned entities; UNS is the platform integration bus. Before wiring UNS I/O, decide the direction per data element (read external data inbound vs sync app-owned data outbound) using `references/core/data-integration.md`.
+
 ## Recommended Service-Layer Examples
 
 ### UNS Write From a Service
