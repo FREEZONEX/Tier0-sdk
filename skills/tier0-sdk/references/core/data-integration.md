@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-data-integration
-version: 0.1.0
-description: "Application data-integration shapes with Tier0 UNS: when app-owned data syncs outbound to UNS topics, when to read inbound from UNS, and command round-trips. Read when deciding what data flows through UNS vs the app database."
+version: 0.2.1
+description: "Application data-integration shapes with Tier0 UNS: when app-owned data syncs outbound to UNS topics, when to read inbound from UNS, and async request–response (Action/State round-trip) design: correlation ids, shared topic as event stream, timeouts, idempotency. Read when deciding what data flows through UNS vs the app database."
 ---
 
 # Data Integration Shapes
@@ -27,7 +27,9 @@ Example: the app has an Orders table. On create or status change, publish the or
 
 ### 3. Command round-trip — app → UNS `Action` → device/Flow → `State`/`Metric` → app
 
-The app issues a command to an `Action` topic (or via MQ), a device/Flow executes, and the result returns on a `State`/`Metric` topic the app reads or subscribes to. Model the request and the result as separate topics.
+The app issues a command to an `Action` topic (or via MQ), a device/Flow/system executes, and the result returns on a `State`/`Metric` topic the app reads or subscribes to. Model the request and the result as separate topics — never try to "read back" a result from the `Action` topic itself.
+
+This asynchronous request–response is the most design-sensitive UNS pattern. Read "Async Request–Response Design" below before modeling one.
 
 ## What Lives Where
 
@@ -101,6 +103,90 @@ Notes:
 - Per-event write-through (on each mutation) keeps the UNS value fresh. Add a periodic reconciliation/backfill job if correctness across missed writes matters.
 - The current-value topic is last-write-wins; include `updatedAt`/version in the `value` if consumers must detect ordering.
 - For high-frequency or fan-out publishing, use `@tier0/sdk/mq` from a server worker instead of per-request writes (see `references/mq/quickstart.md`).
+
+## Async Request–Response Design (Action → State)
+
+MQTT is not HTTP: writing to an `Action` topic has no response channel. The result arrives asynchronously on a **different** topic. Four decisions must be made explicitly; skipping any of them produces integrations that look correct but cannot be operated.
+
+Running example — a CRM requests a stock transfer from a WMS:
+
+| Data | Direction | Topic | Source of truth |
+|---|---|---|---|
+| Order snapshot sync | CRM → platform (outbound mirror) | `CRM/Sales/State/Order` | CRM DB |
+| Transfer request (command) | CRM → WMS | `WMS/Inventory/Action/TransferRequest` | — (message in flight) |
+| Transfer order status | WMS → platform (outbound mirror) | `WMS/Inventory/State/TransferOrder` | WMS DB |
+
+### 1. Correlate by request id
+
+MQTT has no request/response pairing. The `Action` payload must carry a stable business key (`requestId`); the responder echoes it in every `State` update; the requester matches results on it.
+
+```jsonc
+// Action: WMS/Inventory/Action/TransferRequest
+{ "requestId": "TR-2026-0042", "sku": "SKU-1", "qty": 20, "toWarehouse": "WH-2" }
+
+// State: WMS/Inventory/State/TransferOrder
+{ "requestId": "TR-2026-0042", "status": "processing", "updatedAt": 1782108520121 }
+```
+
+### 2. Shared topic is an event stream, not a state table
+
+A UNS topic's current value is last-write-wins. `read` on a shared `State/TransferOrder` topic returns only the **most recently updated** order — not "the status of order X". Choose the topic granularity deliberately:
+
+- **Shared topic as event stream** (default for business entities like orders): all instances flow through one topic. Consumers subscribe, dedupe by business key, and persist per-instance status **in their own DB**. Per-instance current state lives in databases; the topic's current value has no business meaning.
+- **Per-instance topics** (one leaf per entity id): clean `read` semantics, but the namespace grows with entity count and needs creation/cleanup policy. Reserve for small, long-lived sets (equipment, stations) — not orders.
+
+Never `read` a shared event-stream topic to answer "what is the status of instance X"; query the consumer's DB.
+
+### 3. Both sides persist; UNS is transport plus replay buffer
+
+- **Responder (WMS)**: ingests the `Action`, dedupes by `requestId` (MQTT deliveries can repeat), persists a transfer order in its DB, and owns its lifecycle from then on. After each local status transition commits, it mirrors the snapshot to the `State` topic (outbound sync, direction 2).
+- **Requester (CRM)**: persists its request locally, subscribes to the `State` topic, and updates its local record keyed by `requestId`. It answers "what is the status of TR-0042" from its own DB, never from the topic.
+- **UNS**: provides realtime delivery plus a replay buffer. If a consumer was down, it backfills by querying `history` for the gap and deduping by business key.
+
+This is the "discrete business event" case from direction 1: consumers persist events they are responsible for. The "don't copy shared state into your DB" rule applies to continuous telemetry, not to these events.
+
+### 4. Status machine, timeout, idempotency
+
+- `write` success means the broker accepted the message, not that the responder executed it.
+- Define an explicit status machine advanced only by the owner, e.g. `requested → accepted → processing → completed | failed`, carried in the `State` payload.
+- The requester sets a timeout: no `accepted` or terminal status within the deadline → mark the request timed-out, then alert or retry.
+- Retries re-send the **same** `requestId`; the responder treats duplicates idempotently.
+- Guard against out-of-order delivery: ignore a `State` event whose `updatedAt` is older than the locally stored one.
+
+### Transport selection: HTTP to send, MQTT to receive
+
+The SDK's two channels converge on the same broker and topics: `openapiv1unswrite` is a **validated publish** — the message reaches MQTT subscribers in realtime and updates current value + history, exactly like a direct MQTT publish. Pick per direction:
+
+| Direction | Default | Why |
+|---|---|---|
+| Send (Action command, State mirror) | HTTP `openapiv1unswrite` | Schema validation against `fields`, per-item success feedback, no long-lived connection; fits low-frequency, after-commit writes |
+| Receive (State results, event streams) | MQTT `subscribe` (`@tier0/sdk/mq`) | HTTP can only poll `read`; on a shared event-stream topic, polling **loses intermediate messages** (last-write-wins). Subscribe for realtime, `history` for backfill |
+| High-frequency / fan-out send (telemetry) | MQTT `publish` | Lower overhead, but no validation — payload must match the topic's `fields` schema exactly |
+
+Do not poll `read` as a substitute for subscribing to an event stream, and do not open an MQTT connection just to send one command when an HTTP write does the job with validation.
+
+### Minimal requester flow (CRM side)
+
+```typescript
+// 1. Persist the request locally, then publish the command.
+await db.transferRequests.insert({ id: 'TR-2026-0042', status: 'requested' /* ... */ });
+await unsApi.openapiv1unswrite({
+  writes: [{
+    topic: 'WMS/Inventory/Action/TransferRequest',
+    value: { requestId: 'TR-2026-0042', sku: 'SKU-1', qty: 20, toWarehouse: 'WH-2' },
+    timeStamp: Date.now(),
+  }],
+});
+
+// 2. A long-lived server-side subscriber updates local status as State events arrive.
+client.subscribe('WMS/Inventory/State/TransferOrder', async (_topic, payload) => {
+  const evt = JSON.parse(payload);
+  // Idempotent, ordering-safe update keyed by requestId.
+  await db.transferRequests.updateStatusIfNewer(evt.requestId, evt.status, evt.updatedAt);
+});
+
+// 3. UI reads status from the app DB — never from the UNS topic.
+```
 
 ## Still Not A UI
 

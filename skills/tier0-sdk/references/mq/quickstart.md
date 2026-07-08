@@ -1,12 +1,28 @@
 ---
 name: tier0-sdk-mq-quickstart
-version: 0.1.1
-description: "MQ module quickstart: configuration, subscribe, publish, unsubscribe, events"
+version: 0.2.0
+description: "MQ module quickstart: configuration, subscribe, publish, unsubscribe, events. All topics follow the UNS naming contract: <business path>/<Metric|Action|State>/<leaf>."
 ---
 
 # MQ Quickstart
 
 > UNS/MQTT topics are integration plumbing, not UI. Subscribe/publish from server-side actions, services, or workers, map payloads into business domain objects, and push those to the UI. Never render topic strings, wildcards, or `subscribedTopics` to end users, and never build a "MQTT topics" list/monitor page unless the user explicitly asks for a diagnostics/admin tool.
+
+## Topic Naming (applies to publish AND subscribe)
+
+Every topic on the Tier0 broker follows the UNS contract — a type folder immediately before the leaf:
+
+```text
+<business path>/<Metric|Action|State>/<leaf>
+
+Plant/Line1/Metric/Temperature   ✓ (measurement)
+Plant/Line1/Action/StartBatch    ✓ (command/request)
+Plant/Line1/State/DeviceStatus   ✓ (status/result)
+Plant/Line1/Temperature          ✗ missing type folder
+app/events/temperature           ✗ free-form MQTT-style topic
+```
+
+The broker does **not** validate topic shape: publishing to a malformed topic "succeeds" but the data is invisible to UNS and other platform consumers. Do not invent free-form topics, even for app-internal channels — model them under the app's business path with the proper type folder so they stay interoperable.
 
 ## Configuration
 
@@ -41,6 +57,8 @@ const client = new Tier0MQClient({
 ```
 
 > Use `unsApi.openapiv1unswrite()` when you need the API to validate and write a UNS topic current value. If publishing to a UNS-ingested MQTT topic directly, the MQTT topic must already exist in UNS and the JSON payload keys must match that topic's `fields` schema exactly. For example, a topic with field `temperature` must receive `{"temperature":26.4}`, not `{"value":26.4,"unit":"C"}` unless `value` and `unit` are the actual field names in that topic schema.
+>
+> Default transport split: **HTTP write to send, MQTT subscribe to receive**. Both channels hit the same broker and topics — an HTTP write is delivered to MQTT subscribers in realtime. Reserve direct MQTT `publish` for high-frequency/fan-out sending. See `references/core/data-integration.md` → "Transport selection".
 
 ## Subscribe
 
@@ -51,7 +69,7 @@ import { Tier0MQClient } from '@tier0/sdk/mq';
 
 const client = new Tier0MQClient();
 
-client.subscribe('app/events/temperature', (topic, payload) => {
+client.subscribe('Plant/Line1/Metric/Temperature', (topic, payload) => {
   console.log(topic, payload);
 });
 ```
@@ -60,16 +78,16 @@ client.subscribe('app/events/temperature', (topic, payload) => {
 
 ```typescript
 // # matches multiple levels
-client.subscribe('app/events/#', (topic, payload) => {
-  // matches app/events/temperature
-  // matches app/events/line1/status
+client.subscribe('Plant/Line1/#', (topic, payload) => {
+  // matches Plant/Line1/Metric/Temperature
+  // matches Plant/Line1/State/DeviceStatus
 });
 
 // + matches one level
-client.subscribe('app/+/temperature', (topic, payload) => {
-  // matches app/line1/temperature
-  // matches app/line2/temperature
-  // does not match app/site/line1/temperature
+client.subscribe('Plant/+/Metric/Temperature', (topic, payload) => {
+  // matches Plant/Line1/Metric/Temperature
+  // matches Plant/Line2/Metric/Temperature
+  // does not match Plant/Site1/Line1/Metric/Temperature
 });
 ```
 
@@ -84,8 +102,8 @@ const handler2 = (topic: string, payload: string) => {
   console.log('handler2:', JSON.parse(payload));
 };
 
-client.subscribe('sensor/temp', handler1);
-client.subscribe('sensor/temp', handler2);
+client.subscribe('Plant/Line1/Metric/Temperature', handler1);
+client.subscribe('Plant/Line1/Metric/Temperature', handler2);
 // Both handlers run when the topic receives a message.
 ```
 
@@ -96,18 +114,21 @@ import { Tier0MQClient } from '@tier0/sdk/mq';
 
 const client = new Tier0MQClient();
 
-// Publish a string.
-await client.publish('app/device/cmd', 'START');
-
 // Publish an object; the SDK JSON.stringify()s it.
-await client.publish('app/device/cmd', {
-  action: 'setSpeed',
-  params: { speed: 120 },
+// Commands/requests go to an Action topic.
+await client.publish('Plant/Line1/Action/SetSpeed', {
+  speed: 120,
+  operator: 'op-01',
 });
 
-// Custom qos and retain.
-await client.publish('app/device/status', 'online', { qos: 2, retain: true });
+// Custom qos and retain. Status snapshots go to a State topic.
+await client.publish('Plant/Line1/State/DeviceStatus', { status: 'online' }, {
+  qos: 2,
+  retain: true,
+});
 ```
+
+String payloads are also supported (`client.publish(topic, 'START')`), but UNS-ingested topics expect a JSON object matching the topic's `fields` schema — prefer objects.
 
 ### Publishing to a UNS-ingested topic
 
@@ -127,10 +148,10 @@ await client.publish('Plant/Line1/Metric/Temperature', {
 
 ```typescript
 // Remove a specific handler.
-client.unsubscribe('sensor/temp', handler1);
+client.unsubscribe('Plant/Line1/Metric/Temperature', handler1);
 
 // Remove all handlers for a topic.
-client.unsubscribe('sensor/temp');
+client.unsubscribe('Plant/Line1/Metric/Temperature');
 ```
 
 ## Events

@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk
-version: 0.2.7
-description: "Tier0 SDK for TypeScript/JavaScript. Use when building apps or scripts with @tier0/sdk (React, Vue3, Vite, Node): read/write/history/subscribe UNS (Unified Namespace) as a backend data source, manage Flow (Node-RED) resources, publish/subscribe Tier0 MQTT/MQ over WebSocket, or integrate external data through Tier0 OpenAPI. UNS is a data source, not a UI — do not build a UNS tree viewer, topic explorer, or namespace browser. Not for non-Tier0 brokers/APIs, another named SDK/client, or implementing an MQTT broker."
+version: 0.2.8
+description: "Tier0 SDK for TypeScript/JavaScript. Use when building apps or scripts with @tier0/sdk (React, Vue3, Vite, Node): read/write/history/subscribe UNS (Unified Namespace) as a backend data source, manage Flow (Node-RED) resources, publish/subscribe Tier0 MQTT/MQ over WebSocket, or integrate external data through Tier0 OpenAPI. UNS is a data source, not a UI — do not build a UNS tree viewer, topic explorer, or namespace browser. Every topic path must have a Metric/Action/State type folder immediately before the leaf. Not for non-Tier0 brokers/APIs, another named SDK/client, or implementing an MQTT broker."
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -22,6 +22,23 @@ The single most important rule. Treat UNS like a database or integration API:
 - `browse`/`search` are for dev-time discovery only. Build a UNS tree viewer, topic explorer, or namespace browser **only** when the user explicitly asks for a browser, admin, diagnostics, or data-modeling tool.
 
 If you are about to put a topic path or `JSON.stringify(response)` into a component, stop: move it into a service/hook and render a domain object instead.
+
+## Topic Naming Contract (Non-Negotiable)
+
+Every topic path — OpenAPI `read`/`write`/`create` **and** MQ `publish`/`subscribe` — must have a type folder (`Metric`, `Action`, or `State`) immediately before the leaf:
+
+```text
+<business path>/<Metric|Action|State>/<leaf>
+```
+
+| | Example |
+|---|---|
+| Valid | `Mock/Line1/Action/Request`, `Plant/Line1/Metric/Temperature`, `Acme/Sales/State/Order` |
+| Invalid | `Mock/Line1/Request` (no type folder), `app/events/temperature`, `sensor/temp` |
+
+Pick the type folder by semantics: `Metric` = measurements/time-series, `Action` = commands/requests, `State` = status/results/snapshots. Do not invent free-form MQTT-style topics; the platform will not insert the type folder for you, and the MQTT broker does not validate topic shape — a malformed publish "succeeds" silently and breaks interoperability.
+
+Self-check: every literal topic string you emit must match `^.+/(Metric|Action|State)/[^/]+$` (wildcard segments like `+` allowed in subscribe patterns).
 
 ## Scope
 
@@ -58,7 +75,7 @@ The top-level skill stays small; load the reference for the task at hand from `r
 |---|---|
 | Any connection, authentication, host, API key, OpenAPI client, MQ/MQTT client, browser/Vite credential setup | `references/setup/configuration.md` |
 | Tier0 concepts: Workspace, UNS, topic types, Flow relations, VQT | `references/core/concepts.md` |
-| Data-integration shapes: sync app-owned data to UNS (outbound), read external data (inbound), app DB vs UNS | `references/core/data-integration.md` |
+| Data-integration shapes: outbound sync, inbound consume, app DB vs UNS, async request–response (Action → State round-trip, correlation ids, event-stream topics) | `references/core/data-integration.md` |
 | MonoApp/TanStack Start scaffold integration | `references/scaffolds/monoapptemplate.md` |
 | OpenAPI quickstart and client configuration | `references/openapi/quickstart.md` |
 | React Query hooks | `references/openapi/react.md` |
@@ -69,3 +86,12 @@ The top-level skill stays small; load the reference for the task at hand from `r
 | MQ subscribe/publish details | `references/mq/quickstart.md` |
 
 For constructing SourceFlow/EventFlow Node-RED protocol JSON, use the Tier0 CLI skill protocol references.
+
+## Final Checklist Before Delivering
+
+Run this check on the code you generated. Do not skip it.
+
+1. **Topic shape**: search the code for every literal topic string (OpenAPI `topics`/`topic`/`path` values, MQ `publish`/`subscribe` arguments, Node-RED `msg.topic`). Each one must match `^.+/(Metric|Action|State)/[^/]+$` (wildcards allowed in subscribe patterns). If any topic is missing the type folder, fix it — do not ship it.
+2. **UNS stays out of the UI**: no topic path, wildcard, VQT structure, or `Metric`/`Action`/`State` folder name appears in any component/JSX/template or user-visible text. No page, route, or nav item named UNS/Namespace/Topic/Explorer exists — unless the user explicitly asked for an admin, diagnostics, or data-modeling tool.
+3. **Layering**: all Tier0 SDK calls live in a service/data layer (services, hooks, API routes, server actions); components render domain objects only.
+4. **Batch results checked**: every UNS batch call inspects `data.success` and each `data.results[i].success`, not just HTTP 200.
