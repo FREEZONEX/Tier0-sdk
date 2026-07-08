@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-create
-version: 0.4.0
+version: 0.5.0
 description: "POST /openapi/v1/uns/create — 创建 UNS 命名空间节点"
 ---
 
@@ -31,7 +31,7 @@ const result = await unsApi.openapiv1unscreate(body);
 | `topicType` | string | topic 必填 | `"metric"` / `"action"` / `"state"`（小写） |
 | `displayName` | string | 否 | 显示名称 |
 | `description` | string | 否 | 描述，action/state 节点强烈建议写示例 payload |
-| `fields` | FieldDef[] | 否 | 字段定义（METRIC 节点推荐填写） |
+| `fields` | FieldDef[] | metric **必填** | 字段定义。metric 缺失会报 `schema required for metric`。action/state 可选但**强烈建议声明**：payload 顶层是平铺键值时（绝大多数命令/状态都是），声明 fields 后 UNS 里才能看到该 topic 的 schema；嵌套结构无法用 fields 表达的部分，用 `description` 写示例 payload 补充 |
 | `enableHistory` | boolean | 否 | 是否持久化历史 |
 | `children` | NamespaceNode[] | 否 | 子节点，用于一次性建多层结构 |
 
@@ -165,6 +165,12 @@ const result = await unsApi.openapiv1unscreate({
                   name: 'StartBatch',
                   type: 'topic',
                   topicType: 'action',
+                  // action/state 也声明 fields，UNS 里才能看到 schema
+                  fields: [
+                    { name: 'batch_id', type: 'string' },
+                    { name: 'recipe', type: 'string' },
+                    { name: 'qty', type: 'int' },
+                  ],
                   description: '启动批次指令。示例: {"batch_id":"B-001","recipe":"dark_choco","qty":500}',
                 },
               ],
@@ -177,6 +183,11 @@ const result = await unsApi.openapiv1unscreate({
                   name: 'BatchStatus',
                   type: 'topic',
                   topicType: 'state',
+                  fields: [
+                    { name: 'batch_id', type: 'string' },
+                    { name: 'status', type: 'string' },
+                    { name: 'progress', type: 'int' },
+                  ],
                   description: '批次状态回报。示例: {"batch_id":"B-001","status":"running","progress":42}',
                 },
               ],

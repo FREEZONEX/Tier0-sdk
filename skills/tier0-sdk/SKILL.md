@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk
-version: 0.2.8
+version: 0.2.9
 description: "Tier0 SDK for TypeScript/JavaScript. Use when building apps or scripts with @tier0/sdk (React, Vue3, Vite, Node): read/write/history/subscribe UNS (Unified Namespace) as a backend data source, manage Flow (Node-RED) resources, publish/subscribe Tier0 MQTT/MQ over WebSocket, or integrate external data through Tier0 OpenAPI. UNS is a data source, not a UI — do not build a UNS tree viewer, topic explorer, or namespace browser. Every topic path must have a Metric/Action/State type folder immediately before the leaf. Not for non-Tier0 brokers/APIs, another named SDK/client, or implementing an MQTT broker."
 metadata:
   requires:
@@ -68,6 +68,7 @@ The top-level skill stays small; load the reference for the task at hand from `r
 4. MonoApp/TanStack Start: read `references/scaffolds/monoapptemplate.md` before importing SDK modules.
 5. Flow deploy/delete or Node-RED JSON edits: read the Flow reference and preserve the system-created `mqtt-broker` config node.
 6. Browser/Vite: pass runtime values explicitly; the SDK does not auto-read `VITE_*`.
+7. Never guess UNS request payload shapes, and never search the compiled package (`dist/`, `.d.ts`) for value conventions or examples — it contains none. Every endpoint reference under `references/openapi/` has field-value tables and complete working examples; read the matching file before composing the body. In particular, `uns/create.md` documents the exact `type`/`topicType`/`fields` values and full node-tree examples. Create topics explicitly (create, verify `results[i].success`, then write) — do not fall back to "write first, create best-effort".
 
 ## References
 
@@ -80,7 +81,8 @@ The top-level skill stays small; load the reference for the task at hand from `r
 | OpenAPI quickstart and client configuration | `references/openapi/quickstart.md` |
 | React Query hooks | `references/openapi/react.md` |
 | Vue 3 composables | `references/openapi/vue.md` |
-| UNS endpoint details | `references/openapi/uns/*.md` |
+| UNS endpoint details — each file has field-value tables + working examples | `references/openapi/uns/{read,write,create,browse,search,history,update,delete,restore}.md` |
+| UNS create node structure: `type`/`topicType`/`fields` values, full node-tree examples | `references/openapi/uns/create.md` |
 | Flow endpoint details | `references/openapi/flow/*.md` |
 | System/auth endpoints | `references/openapi/info.md`, `references/openapi/auth/whoami.md`, `references/openapi/reload.md` |
 | MQ subscribe/publish details | `references/mq/quickstart.md` |

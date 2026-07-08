@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-data-integration
-version: 0.2.1
+version: 0.2.2
 description: "Application data-integration shapes with Tier0 UNS: when app-owned data syncs outbound to UNS topics, when to read inbound from UNS, and async request–response (Action/State round-trip) design: correlation ids, shared topic as event stream, timeouts, idempotency. Read when deciding what data flows through UNS vs the app database."
 ---
 
@@ -127,6 +127,8 @@ MQTT has no request/response pairing. The `Action` payload must carry a stable b
 // State: WMS/Inventory/State/TransferOrder
 { "requestId": "TR-2026-0042", "status": "processing", "updatedAt": 1782108520121 }
 ```
+
+When creating these topics, declare the payload keys as `fields` (`requestId`, `status`, …) — `Action`/`State` topics without `fields` have no visible schema in UNS, and consumers cannot discover the contract. Cover nested parts with an example payload in `description`. See `references/openapi/uns/create.md`.
 
 ### 2. Shared topic is an event stream, not a state table
 
