@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-data-integration
-version: 0.2.3
+version: 0.2.4
 description: "Application data-integration shapes with Tier0 UNS: when app-owned data syncs outbound to UNS topics, when to read inbound from UNS, and async request–response (Action/State round-trip) design: correlation ids, shared topic as event stream, timeouts, idempotency. Read when deciding what data flows through UNS vs the app database."
 ---
 
@@ -55,6 +55,7 @@ Topic modeling for app-produced data:
 - **One shared topic per entity type** (`CRM/Sales/State/Order`), created once as schema. The entity id (`orderId`) is a payload field, not a path segment. Never create one topic per DB row, and never use a UUID/primary key as a node name — the namespace is a fixed schema, not a mirror of table rows. Per-instance topics are acceptable only for small, long-lived, named sets (equipment, stations, lines), and even then the leaf is a business name (`Packer01`), not an id. See "Shared topic is an event stream" below.
 - Carry a stable business key in the `value` and set `timeStamp`.
 - Consumers answer "what is the state of instance X" from their own DB (after ingesting the stream), not by reading the shared topic.
+- **Schema-first, no lazy creation**: create the app's topics explicitly with `create` (declaring `fields`, `enableHistory`, `description`) during app provisioning/bootstrap — before the first write. Never rely on a publish auto-creating a topic: HTTP `write` rejects unknown topics, and an MQTT publish to an unmodeled topic at best produces a schema-less ghost node that consumers cannot discover and whose history was never enabled. A business app's topic set is known at build time; there is no reason to create topics lazily at runtime.
 
 ```typescript
 // src/services/order-uns-sync.ts
