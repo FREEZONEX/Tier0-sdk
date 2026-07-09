@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-create
-version: 0.5.0
+version: 0.5.1
 description: "POST /openapi/v1/uns/create — 创建 UNS 命名空间节点"
 ---
 
@@ -43,6 +43,8 @@ const result = await unsApi.openapiv1unscreate(body);
 | `type` | string | `"int"` / `"float"` / `"string"` / `"bool"` |
 | `unit` | string | 单位（可选），如 `"°C"`、`"bar"` |
 
+> **命名约定（强制）**：节点名必须是稳定的、人类可读的业务名（`Temperature`、`Order`、`Packer01`）。**禁止**用 UUID、数据库主键、时间戳等运行时生成的值当节点名；**禁止**按数据库行/业务记录动态建 topic（每条订单/客户一个 topic 是错误建模）。命名空间是一次性设计好的固定 schema，业务实体用**每实体类型一个共享 topic**，实例 id 放进 payload 字段——粒度选择见 `references/core/data-integration.md`。
+>
 > **路径约定（强制）**：数据点路径的倒数第二段必须是类型目录之一：`Metric` / `Action` / `State`（大小写不敏感）：
 > - `Plant/Line1/Metric/Temperature` ✓（topicType: metric）
 > - `Plant/WMS/Action/StockOut` ✓（topicType: action）
