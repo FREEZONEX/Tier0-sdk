@@ -1,18 +1,18 @@
 ---
 name: tier0-sdk-openapi-react
-version: 0.1.1
-description: "OpenAPI React Hooks 使用指南 — @tanstack/react-query 集成"
+version: 0.2.0
+description: "OpenAPI React hooks guide — @tanstack/react-query integration, including polling reads for dashboards"
 ---
 
-# React Hooks 使用指南
+# React Hooks Guide
 
-## 前置条件
+## Prerequisites
 
 ```bash
 npm install @tanstack/react-query
 ```
 
-并在应用根节点包裹 `QueryClientProvider`：
+Wrap the app root with `QueryClientProvider`:
 
 ```tsx
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -28,17 +28,17 @@ function App() {
 }
 ```
 
-## 使用模式（先读这一段）
+## Usage Pattern (read this first)
 
-UNS 是数据源，不是界面。把 **topic 路径**和**原始 VQT** 封装在 feature hook / 数据层里，组件只消费领域对象、渲染业务信息。
+UNS is a data source, not a UI. Encapsulate **topic paths** and **raw VQT** inside a feature hook / data layer; components consume domain objects and render business information only.
 
-不要照抄「按钮 → 读 topic → `JSON.stringify(data)`」这种写法：那会把 topic 路径和原始响应直接暴露给用户，违背 UNS 理念。正确做法是「数据层拿数 → 映射成领域对象 → 视图层渲染业务概念」。
+Do not copy the "button → read topic → `JSON.stringify(data)`" shape: it exposes topic paths and raw responses to users, violating the UNS doctrine. The correct shape is "data layer fetches → maps to a domain object → view renders business concepts".
 
 ```tsx
 import { useState } from 'react';
 import { useOpenapiv1unsread } from '@tier0/sdk/openapi/react';
 
-// 数据层：topic 路径与原始 VQT 都留在这里，对外只暴露领域对象
+// Data layer: topic paths and raw VQT stay here; only domain objects leave.
 function useLine1Temperature() {
   const read = useOpenapiv1unsread();
 
@@ -47,7 +47,7 @@ function useLine1Temperature() {
       topics: ['Plant/Line1/Metric/Temperature'],
     });
     const item = res.data.results?.[0];
-    // 校验 quality，非 Good 不当作可用数据
+    // Validate quality; non-Good values are not usable data.
     if (!item?.success || item.result?.quality !== 'Good') return null;
     return {
       celsius: item.result.value.temperature as number,
@@ -58,28 +58,74 @@ function useLine1Temperature() {
   return { refresh, isLoading: read.isPending, error: read.error };
 }
 
-// 视图层：只呈现业务概念（产线温度），用户看不到 topic / MQTT / 命名空间
+// View layer: renders the business concept (line temperature); users never see topics / MQTT / namespaces.
 function Line1TemperatureCard() {
   const { refresh, isLoading, error } = useLine1Temperature();
   const [celsius, setCelsius] = useState<number | null>(null);
 
   return (
     <section>
-      <h3>产线 1 温度</h3>
+      <h3>Line 1 Temperature</h3>
       <p>{celsius != null ? `${celsius} °C` : '—'}</p>
       <button
         onClick={async () => setCelsius((await refresh())?.celsius ?? null)}
         disabled={isLoading}
       >
-        {isLoading ? '刷新中…' : '刷新'}
+        {isLoading ? 'Refreshing…' : 'Refresh'}
       </button>
-      {error && <p role="alert">读取失败，请稍后重试</p>}
+      {error && <p role="alert">Read failed, please retry later</p>}
     </section>
   );
 }
 ```
 
-## 所有可用的 Hooks
+## Polling Reads for Dashboards (`useQuery` + `refetchInterval`)
+
+The SDK's generated hooks are all mutation-style (imperative trigger). For screens that must stay fresh — dashboards, KPI cards, status boards — wrap the raw API client in a `useQuery` with `refetchInterval` instead of hand-rolling `setInterval`:
+
+```tsx
+import { useQuery } from '@tanstack/react-query';
+import { unsApi } from '@tier0/sdk/openapi';
+
+// Data layer: polls the current value every 5 s and maps VQT to a domain object.
+function useLine1TemperatureLive() {
+  return useQuery({
+    queryKey: ['line1-temperature'],
+    queryFn: async () => {
+      const res = await unsApi.openapiv1unsread({
+        topics: ['Plant/Line1/Metric/Temperature'],
+      });
+      const item = res.data.results?.[0];
+      if (!item?.success || item.result?.quality !== 'Good') return null;
+      return {
+        celsius: item.result.value.temperature as number,
+        updatedAt: item.result.timeStamp as number,
+      };
+    },
+    refetchInterval: 5_000,        // poll every 5 s
+    refetchIntervalInBackground: false, // pause when the tab is hidden
+  });
+}
+
+function Line1TemperatureLiveCard() {
+  const { data, isError } = useLine1TemperatureLive();
+  return (
+    <section>
+      <h3>Line 1 Temperature</h3>
+      <p>{data ? `${data.celsius} °C` : '—'}</p>
+      {isError && <p role="alert">Connection problem, retrying…</p>}
+    </section>
+  );
+}
+```
+
+Guidance:
+
+- Polling `read` is appropriate for **current values** (Metric snapshots, per-instance State topics). Pick an interval matched to how fast the value actually changes (2–10 s for live telemetry, 30 s+ for KPIs).
+- Polling is **not** a substitute for subscribing to a shared event-stream topic — intermediate messages are lost between polls (last-write-wins). For event streams, a server-side MQTT subscriber persists events to the app DB and the UI polls the app's own API instead. See `references/core/data-integration.md` → "Transport selection".
+- In scaffold apps (MonoApp), the browser should poll the app's own API routes, not Tier0 directly — see `references/scaffolds/monoapptemplate.md`.
+
+## All Available Hooks
 
 ```typescript
 import {
@@ -104,10 +150,10 @@ import {
 } from '@tier0/sdk/openapi/react';
 ```
 
-每个 Hook 返回 `UseMutationResult`，包含：
-- `mutate(body)` — 触发请求
-- `mutateAsync(body)` — 异步触发，返回 Promise
-- `data` — 响应数据
-- `isPending` — 是否加载中
-- `isError` / `error` — 错误状态
-- `isSuccess` — 是否成功
+Each hook returns a `UseMutationResult` with:
+- `mutate(body)` — trigger the request
+- `mutateAsync(body)` — async trigger, returns a Promise
+- `data` — response data
+- `isPending` — loading state
+- `isError` / `error` — error state
+- `isSuccess` — success state

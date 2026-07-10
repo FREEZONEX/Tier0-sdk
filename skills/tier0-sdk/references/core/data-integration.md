@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-data-integration
-version: 0.2.3
-description: "Application data-integration shapes with Tier0 UNS: when app-owned data syncs outbound to UNS topics, when to read inbound from UNS, and async request–response (Action/State round-trip) design: correlation ids, shared topic as event stream, timeouts, idempotency. Read when deciding what data flows through UNS vs the app database."
+version: 0.3.0
+description: "Application data-integration shapes with Tier0 UNS: when app-owned data syncs outbound to UNS topics, when to read inbound from UNS, topic granularity design (merge/split criteria, anti-patterns), and async request–response (Action/State round-trip) design: correlation ids, shared topic as event stream, timeouts, idempotency. Read when deciding what data flows through UNS vs the app database, or how many topics to model."
 ---
 
 # Data Integration Shapes
@@ -17,7 +17,7 @@ The app (MonoApp/template) has its own database and is the **system of record** 
 Two sub-cases with **opposite** persistence rules:
 
 - **Live / reference state** (device telemetry, upstream line status, current values another system owns): read / history / subscribe on demand. Do **not** persist it as the app's source of truth — copying continuously-changing shared state into the app DB causes drift. Cache only if a feature needs it. This is the default "UNS is a data source" case (see `concepts.md`).
-- **Ingested events / records** (a discrete business message delivered to the app — a new order, a dispatched work order, an inbound instruction): the app consumes the message, persists it (落库), and owns its lifecycle from then on. Here UNS/MQTT is the **transport** and the app DB **becomes** the source of truth for that record. Subscribe or read the event, dedupe by message/business key (deliveries can repeat), then write it in a normal service transaction. If the app later mutates the record and the platform needs the result, mirror it back out (direction 2).
+- **Ingested events / records** (a discrete business message delivered to the app — a new order, a dispatched work order, an inbound instruction): the app consumes the message, persists it into the app database, and owns its lifecycle from then on. Here UNS/MQTT is the **transport** and the app DB **becomes** the source of truth for that record. Subscribe or read the event, dedupe by message/business key (deliveries can repeat), then write it in a normal service transaction. If the app later mutates the record and the platform needs the result, mirror it back out (direction 2).
 
 ### 2. Outbound — app → UNS (publish/sync)
 
@@ -43,6 +43,50 @@ This asynchronous request–response is the most design-sensitive UNS pattern. R
 - Discrete inbound events/records the app is responsible for (e.g. an order arriving as a message): ingest and persist them — the app becomes the source of truth for that record's lifecycle; UNS/MQTT was the transport.
 - Don't use UNS as the app's primary transactional database.
 - Only sync business-meaningful fields and state transitions outbound, not internal-only columns.
+
+## Topic Granularity
+
+The unit of design: **one topic = one schema = one subscription decision = one
+business meaning.** A consumer either needs a topic's payload as a whole or
+does not subscribe to it. Apply these as judgment tests, not formulas:
+
+**Fields belong in the same topic when** (batch what belongs together):
+
+- They come from the same business entity or the same measurement point and
+  always change together (temperature + humidity from one sensor → one `Metric`
+  topic with two fields).
+- Consumers always need them at the same time.
+- They share one update cadence and one lifecycle.
+
+**Split into separate topics when**:
+
+- Different entity types (`State/Order` vs `State/Shipment`) — never merge.
+- Different type semantics — measurements, commands, and statuses already
+  belong to different `Metric`/`Action`/`State` topics by contract.
+- Different consumer sets — if some consumers want only alarms and not
+  telemetry, merging forces every subscriber to process noise.
+- Update rates differ by an order of magnitude (1 s telemetry and daily KPIs
+  do not share a stream).
+
+**Anti-patterns** (each one has broken real integrations):
+
+| Anti-pattern | Why it fails |
+|---|---|
+| Topic per record (`State/<uuid>`) | Namespace mirrors table rows; forbidden — see the naming rule in `uns/create.md` |
+| Topic per scalar (`Metric/Temp`, `Metric/TempUnit`, …) | Consumers must stitch N subscriptions to reconstruct one object |
+| Mega-topic (`State/AppData` carrying everything) | Schema loses meaning, no selective subscription, namespace loses discoverability — UNS reduced to a message pipe |
+| Mirroring the DB schema 1:1 into topics | The namespace should be designed from the **consumer's** viewpoint, not the storage layout |
+
+**Count signal (review trigger, not a quota)**: a typical application publishes
+single digits to about a dozen topics — one shared `State` per entity type, a
+`Metric` per genuinely independent measurement, an `Action` per command type.
+A publish list well beyond that is a signal to re-check each topic against the
+split/merge tests above — not a limit to contort a genuinely large integration
+surface into. Per-instance topics for small, long-lived named sets (equipment,
+stations) are legitimate and sit outside this signal.
+
+Declare the outcome of these decisions in the app's integration manifest —
+see `references/core/integration-manifest.md`.
 
 ## Outbound Sync Pattern (order example)
 

@@ -1,12 +1,12 @@
 ---
 name: tier0-sdk-openapi-read
-version: 0.4.0
-description: "POST /openapi/v1/uns/read — 读取 UNS topic 当前值（VQT 结构）"
+version: 0.5.0
+description: "POST /openapi/v1/uns/read — read UNS topic current values (VQT structure)"
 ---
 
 # read — `POST /openapi/v1/uns/read`
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -14,17 +14,17 @@ import { unsApi } from '@tier0/sdk/openapi';
 const result = await unsApi.openapiv1unsread(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `topics` | string[] | **是** | topic 路径列表，支持通配符：`+` 匹配单层，`#` 匹配剩余所有层 |
-| `include_metadata` | boolean | 否 | 同时返回 topicType、fields（字段定义）、description 等元数据。**首次读取未知 topic 时强烈建议开启** |
-| `include_leaf_value` | boolean | 否 | 配合通配符使用，展开时同时返回叶子节点的当前值 |
+| `topics` | string[] | **Yes** | Topic paths; wildcards supported: `+` matches one level, `#` matches all remaining levels |
+| `include_metadata` | boolean | No | Also return topicType, fields (field definitions), description and other metadata. **Strongly recommended when reading an unknown topic for the first time** |
+| `include_leaf_value` | boolean | No | With wildcards, also return the current value of expanded leaf nodes |
 
-## 响应结构
+## Response Structure
 
-批量接口，HTTP 200 **不代表每项成功**，必须检查 `data.success` 和 `data.results[i].success`：
+Batch endpoint: HTTP 200 does **not** mean every item succeeded. Check `data.success` and each `data.results[i].success`:
 
 ```typescript
 {
@@ -36,12 +36,12 @@ const result = await unsApi.openapiv1unsread(body);
       success: boolean;
       topic: string;
       result?: {
-        // VQT 结构
-        value: Record<string, unknown> | null;  // 业务数据对象，Bad/GoodNoData 时为 null
+        // VQT structure
+        value: Record<string, unknown> | null;  // business data object; null when Bad/GoodNoData
         quality: 'Good' | 'Uncertain' | 'Bad' | 'GoodNoData';
-        timeStamp: number;  // 数据采集时间，毫秒
+        timeStamp: number;  // collection time, milliseconds
       };
-      metadata?: {           // 仅 include_metadata: true 时返回
+      metadata?: {           // only when include_metadata: true
         topicType: 'METRIC' | 'ACTION' | 'STATE';
         description: string;
         fields: Array<{ name: string; type: string; unit?: string }>;
@@ -52,18 +52,18 @@ const result = await unsApi.openapiv1unsread(body);
 }
 ```
 
-### quality 含义
+### quality Semantics
 
-| quality | 含义 | value 状态 |
+| quality | Meaning | value state |
 |---------|------|-----------|
-| `Good` | 值有效且新鲜 | 非 null |
-| `Uncertain` | 可信度存疑 | 非 null |
-| `Bad` | 数据源断开/不可信 | `null` 或保留 last-known |
-| `GoodNoData` | topic 已建模但未收到任何数据 | `null` |
+| `Good` | Value is valid and fresh | non-null |
+| `Uncertain` | Trustworthiness in doubt | non-null |
+| `Bad` | Data source disconnected/untrusted | `null` or last-known retained |
+| `GoodNoData` | Topic is modeled but has never received data | `null` |
 
-## 使用示例
+## Examples
 
-### 读取单个 topic
+### Read a single topic
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -79,7 +79,7 @@ if (item.success && item.result?.quality === 'Good') {
 }
 ```
 
-### 首次读取 — 同时查字段定义
+### First read — fetch field definitions at the same time
 
 ```typescript
 const result = await unsApi.openapiv1unsread({
@@ -96,11 +96,11 @@ if (item.success) {
 }
 ```
 
-### 通配符批量读取
+### Wildcard batch read
 
 ```typescript
 const result = await unsApi.openapiv1unsread({
-  topics: ['Plant/+/Metric/Temperature'],  // 所有产线温度
+  topics: ['Plant/+/Metric/Temperature'],  // temperatures of all lines
 });
 
 for (const item of result.data.results) {
@@ -110,16 +110,16 @@ for (const item of result.data.results) {
 }
 ```
 
-### 处理 null value（数据源断开）
+### Handle null value (data source disconnected)
 
 ```typescript
 const item = result.data.results[0];
 if (item.success) {
   if (item.result?.quality === 'Bad' || item.result?.quality === 'GoodNoData') {
-    // 数据不可用，value 为 null
-    console.warn('数据不可用:', item.result.quality);
+    // Data unavailable; value is null.
+    console.warn('Data unavailable:', item.result.quality);
   } else {
-    // Good / Uncertain，value 有效
+    // Good / Uncertain: value is usable.
     console.log(item.result?.value);
   }
 }

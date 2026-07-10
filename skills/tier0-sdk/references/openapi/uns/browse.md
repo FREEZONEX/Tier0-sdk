@@ -1,16 +1,16 @@
 ---
 name: tier0-sdk-openapi-browse
-version: 0.4.0
-description: "POST /openapi/v1/uns/browse — 浏览 UNS 命名空间树形结构"
+version: 0.5.0
+description: "POST /openapi/v1/uns/browse — browse the UNS namespace tree"
 ---
 
 # browse — `POST /openapi/v1/uns/browse`
 
-**探索未知路径结构时的首选操作**。不知道完整 topic 路径时，先 browse 再 read/write。
+**First choice when exploring an unknown path structure.** When you do not know the full topic path, browse first, then read/write.
 
-> 应用开发中，`browse` 用于开发期发现 topic 或后台/诊断场景，不应作为构建前端 UNS 树形页面或独立 UNS 模块的依据。业务页面应通过已知 topic 路径的数据服务取数，而不是把 UNS 层级直接展示给用户。
+> In application development, `browse` is for dev-time discovery or admin/diagnostics scenarios. It is not a basis for building a user-facing UNS tree page or a standalone UNS module. Business pages fetch data through services that use known topic paths; they do not expose the UNS hierarchy to users.
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -18,19 +18,19 @@ import { unsApi } from '@tier0/sdk/openapi';
 const result = await unsApi.openapiv1unsbrowse(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `path` | string | 否 | 起始路径。留空或不传则从根节点浏览 |
-| `include_metadata` | boolean | 否 | 返回节点的 displayName、fields、description 等元数据。**首次了解 topic 结构时建议开启** |
-| `include_leaf_value` | boolean | 否 | 同时返回叶子节点（数据点）的当前 VQT 值 |
-| `max_depth` | integer | 否 | 最大递归深度，默认 1（只展开下一层） |
+| `path` | string | No | Starting path. Empty or omitted browses from the root |
+| `include_metadata` | boolean | No | Return node displayName, fields, description and other metadata. **Recommended when learning a topic's structure for the first time** |
+| `include_leaf_value` | boolean | No | Also return the current VQT value of leaf nodes (data points) |
+| `max_depth` | integer | No | Maximum recursion depth, default 1 (expand one level) |
 
-## 响应结构
+## Response Structure
 
-> ⚠️ browse 响应使用 `data.tree[]`，**不是** `data.results[]`。
-> ⚠️ `type` 在**响应**中是大写 `'PATH' | 'TOPIC'`；在 create **请求**中是小写 `'path' | 'topic'`，两者不同。
+> ⚠️ browse responses use `data.tree[]`, **not** `data.results[]`.
+> ⚠️ `type` in **responses** is uppercase `'PATH' | 'TOPIC'`; in create **requests** it is lowercase `'path' | 'topic'`. They differ.
 
 ```typescript
 {
@@ -42,37 +42,37 @@ const result = await unsApi.openapiv1unsbrowse(body);
 }
 
 interface TreeNode {
-  id: number;           // 节点 ID（数字型）
-  name: string;         // 节点短名称（最后一段）
-  path: string;         // 完整路径，如 "Plant/Line1/Metric/Temperature"
-  topicType: string;    // "Metric" | "Action" | "State" | ""（目录节点为空）
-  type: 'PATH' | 'TOPIC';   // PATH = 目录节点，TOPIC = 数据点（叶子）
-  children: TreeNode[]; // 子节点（max_depth > 1 或默认展开时返回）
+  id: number;           // node ID (numeric)
+  name: string;         // short node name (last segment)
+  path: string;         // full path, e.g. "Plant/Line1/Metric/Temperature"
+  topicType: string;    // "Metric" | "Action" | "State" | "" (empty for folder nodes)
+  type: 'PATH' | 'TOPIC';   // PATH = folder node, TOPIC = data point (leaf)
+  children: TreeNode[]; // child nodes (returned when max_depth > 1 or default expansion)
 
-  // 以下字段仅在 include_metadata: true 时返回
+  // Only returned when include_metadata: true
   alias?: string;
   displayName?: string;
   description?: string;
-  enableHistory?: number;   // 1 = 开启历史, 2 = 关闭
+  enableHistory?: number;   // 1 = history on, 2 = off
   extendProperties?: Record<string, unknown>;
   fields?: Array<{
     name: string;
-    type: 'STRING' | 'FLOAT' | 'INT' | 'BOOLEAN' | 'DATETIME';  // 大写
+    type: 'STRING' | 'FLOAT' | 'INT' | 'BOOLEAN' | 'DATETIME';  // uppercase
     unit: string;
   }>;
 
-  // 以下字段仅在 include_leaf_value: true 时返回（仅 TOPIC 节点）
+  // Only returned when include_leaf_value: true (TOPIC nodes only)
   payload?: {
     value?: Record<string, unknown>;
     quality?: 'Good' | 'Uncertain' | 'Bad';
-    timeStamp?: number;  // UNIX 毫秒
+    timeStamp?: number;  // UNIX milliseconds
   };
 }
 ```
 
-## 使用示例
+## Examples
 
-### 查看根节点下有哪些路径
+### List paths under the root
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -86,7 +86,7 @@ for (const node of result.data.tree) {
 }
 ```
 
-### 查看某路径下的子节点，含字段定义
+### Children of a path, with field definitions
 
 ```typescript
 const result = await unsApi.openapiv1unsbrowse({
@@ -109,7 +109,7 @@ function walk(nodes: typeof result.data.tree) {
 walk(result.data.tree);
 ```
 
-### 查看叶子节点当前值（browse + leaf value）
+### Current values of leaf nodes (browse + leaf value)
 
 ```typescript
 const result = await unsApi.openapiv1unsbrowse({
@@ -124,21 +124,21 @@ for (const node of result.data.tree) {
 }
 ```
 
-## UNS ↔ Flow 关联查询
+## UNS ↔ Flow Cross-Lookup
 
-UNS topic 路径与 Flow 名称**通常同名**。浏览到某个路径后，如果用户想了解数据来源（谁在采集/处理），应同时查询对应的 Flow：
+UNS topic paths and Flow names are **usually named alike**. After browsing to a path, if the user wants to know the data's origin (what collects/processes it), query the corresponding Flow as well:
 
 ```typescript
-// 1. browse 发现 topic 路径
+// 1. browse discovers the topic path
 const browse = await unsApi.openapiv1unsbrowse({
   path: 'Plant/Line1',
   max_depth: 2,
 });
 
-// 2. 同名查 Flow（SourceFlow 负责采集，EventFlow 负责处理）
+// 2. Look up Flows by the same name (SourceFlow collects, EventFlow processes)
 const flows = await flowApi.openapiv1flowlist({
   keyword: 'Line1',
 });
 ```
 
-> ⚠️ 目前 API 尚无显式关联字段，`topicmeta` 接口后续版本将提供 Flow ↔ topic 映射。
+> ⚠️ The API has no explicit relation field yet; a future `topicmeta` endpoint will provide the Flow ↔ topic mapping.

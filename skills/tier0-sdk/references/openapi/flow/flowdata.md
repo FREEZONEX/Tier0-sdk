@@ -1,16 +1,16 @@
 ---
 name: tier0-sdk-openapi-flow-flowdata
-version: 0.4.0
-description: "POST /openapi/v1/flow/flowdata — 获取 Flow 的 Node-RED 画布 JSON"
+version: 0.5.0
+description: "POST /openapi/v1/flow/flowdata — get a Flow's Node-RED canvas JSON"
 ---
 
 # flowdata — `POST /openapi/v1/flow/flowdata`
 
-获取 Flow 当前的 Node-RED 画布 JSON（flowsJson）。**deploy 前必须先调用此接口备份**。
+Gets a Flow's current Node-RED canvas JSON (flowsJson). **Must be called to back up before every deploy.**
 
-> ⚠️ **Node-RED 不导出 credentials**：返回的 JSON 中 `mqtt-broker` 节点的 `credentials` 字段为空/缺失，但 Node-RED 内部仍存有凭据（以节点 `id` 为 key）。deploy 时必须保留原有 `mqtt-broker` 节点的 `id`，否则连接会失败。
+> ⚠️ **Node-RED does not export credentials**: in the returned JSON, the `mqtt-broker` node's `credentials` field is empty/missing, but Node-RED still stores the credentials internally (keyed by the node `id`). Deploys must preserve the existing `mqtt-broker` node's `id`, otherwise the connection fails.
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
@@ -18,28 +18,28 @@ import { flowApi } from '@tier0/sdk/openapi';
 const result = await flowApi.openapiv1flowflowdata(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `id` | integer | **是** | Flow 的 DB 主键 |
+| `id` | integer | **Yes** | The Flow's DB primary key |
 
-## 响应结构
+## Response Structure
 
 ```typescript
 {
   code: number;
   msg: string;
   data: {
-    rev: string;                    // Node-RED editor revision（deploy 时可用于并发检测）
-    flows: Record<string, unknown>[]; // Node-RED 节点数组（不含 tab 节点）
+    rev: string;                    // Node-RED editor revision (usable for concurrency checks at deploy)
+    flows: Record<string, unknown>[]; // Node-RED node array (without the tab node)
   };
 }
 ```
 
-## 使用示例
+## Examples
 
-### 备份当前画布
+### Back up the current canvas
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
@@ -47,28 +47,28 @@ import { flowApi } from '@tier0/sdk/openapi';
 const result = await flowApi.openapiv1flowflowdata({ id: 42 });
 
 const backup = result.data.flows;
-// 修改前保存备份，deploy 前必须执行此步骤
+// Save this backup before modifying; mandatory before deploy.
 
-// 找到系统生成的 mqtt-broker 节点（保留其 id，不可替换）
+// Locate the system-generated mqtt-broker node (keep its id, never replace it).
 const mqttBroker = backup.find(
   (node: any) => node.type === 'mqtt-broker' && node.name === 'emqx'
 );
 console.log('MQTT broker node id:', mqttBroker?.id);
 ```
 
-### 修改画布并部署
+### Modify the canvas and deploy
 
 ```typescript
-// 1. 备份
+// 1. Back up.
 const { data: { flows, rev } } = await flowApi.openapiv1flowflowdata({ id: 42 });
 
-// 2. 修改（保留原有 mqtt-broker 节点）
+// 2. Modify (keep the existing mqtt-broker node).
 const updatedFlows = [
   ...flows,
-  // 添加新节点...
+  // add new nodes...
 ];
 
-// 3. 部署
+// 3. Deploy.
 await flowApi.openapiv1flowdeploy({
   id: 42,
   flowsJson: JSON.stringify(updatedFlows),

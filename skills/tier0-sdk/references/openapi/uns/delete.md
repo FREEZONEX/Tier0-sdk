@@ -1,14 +1,14 @@
 ---
 name: tier0-sdk-openapi-delete
-version: 0.4.0
-description: "POST /openapi/v1/uns/delete — 删除 UNS 节点（软删除/硬删除）"
+version: 0.5.0
+description: "POST /openapi/v1/uns/delete — delete UNS nodes (soft/hard delete)"
 ---
 
 # delete — `POST /openapi/v1/uns/delete`
 
-> ⚠️ **高风险操作**：硬删除（`hard_delete: true`）不可逆，历史数据一并清除。除非用户明确要求，默认使用软删除（可通过 restore 恢复）。
+> ⚠️ **High-risk operation**: hard delete (`hard_delete: true`) is irreversible and removes historical data as well. Default to soft delete (recoverable via `restore`) unless the user explicitly asks for a hard delete.
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -16,51 +16,51 @@ import { unsApi } from '@tier0/sdk/openapi';
 const result = await unsApi.openapiv1unsdelete(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `topics` | string[] | **是** | 要删除的 topic 路径列表（完整路径，叶子节点或目录均可） |
-| `hard_delete` | boolean | 否 | `false`（默认）= 软删除，可通过 restore 恢复；`true` = 硬删除，**不可撤销**，同时清除历史数据 |
+| `topics` | string[] | **Yes** | Full paths of the nodes to delete (leaf or folder) |
+| `hard_delete` | boolean | No | `false` (default) = soft delete, recoverable via `restore`; `true` = hard delete, **irreversible**, also removes historical data |
 
-## 响应结构
+## Response Structure
 
 ```typescript
 {
-  code: number;   // 200 = 成功
+  code: number;   // 200 = success
   msg: string;    // "success"
-  data: {};       // 空对象，成功与否依靠外层 code/msg 判断
+  data: {};       // empty object; success is judged by the outer code/msg
 }
 ```
 
-## 使用示例
+## Examples
 
-### 软删除（可恢复）
+### Soft delete (recoverable)
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
 
 const result = await unsApi.openapiv1unsdelete({
   topics: ['Plant/Line1/Metric/Temperature'],
-  // hard_delete 默认 false，即软删除
+  // hard_delete defaults to false (soft delete)
 });
 
 if (result.code !== 200) {
-  console.error('删除失败:', result.msg);
+  console.error('Delete failed:', result.msg);
 }
 ```
 
-### 硬删除（不可撤销，需用户明确确认）
+### Hard delete (irreversible — requires explicit user confirmation)
 
 ```typescript
-// ⚠️ 硬删除前必须向用户确认，操作不可逆
+// ⚠️ Confirm with the user before hard-deleting; this cannot be undone.
 const result = await unsApi.openapiv1unsdelete({
   topics: ['Plant/Line1/Metric/OldSensor'],
   hard_delete: true,
 });
 ```
 
-### 批量软删除多个节点
+### Batch soft delete
 
 ```typescript
 const result = await unsApi.openapiv1unsdelete({
@@ -70,6 +70,6 @@ const result = await unsApi.openapiv1unsdelete({
   ],
 });
 
-// 批量删除：成功与否统一看 code === 200
-console.log(result.code === 200 ? '全部删除成功' : `失败: ${result.msg}`);
+// Batch delete: success is judged by code === 200 for the whole call.
+console.log(result.code === 200 ? 'All deleted' : `Failed: ${result.msg}`);
 ```

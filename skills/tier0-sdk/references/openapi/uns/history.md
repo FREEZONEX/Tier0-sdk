@@ -1,14 +1,14 @@
 ---
 name: tier0-sdk-openapi-history
-version: 0.4.0
-description: "POST /openapi/v1/uns/history — 查询 UNS topic 历史数据"
+version: 0.5.0
+description: "POST /openapi/v1/uns/history — query UNS topic historical data"
 ---
 
 # history — `POST /openapi/v1/uns/history`
 
-**⚠️ 时间格式和聚合参数极易出错，务必读完本文档再调用。**
+**⚠️ The time format and aggregation parameters are highly error-prone. Read this file fully before calling.**
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -16,30 +16,30 @@ import { unsApi } from '@tier0/sdk/openapi';
 const result = await unsApi.openapiv1unshistory(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `topics` | string[] | **是** | topic 路径列表（叶子节点，不支持通配符） |
-| `start_time` | string | **是** | 起始时间，**ISO 8601 格式**，如 `"2026-01-01T00:00:00Z"` |
-| `end_time` | string | **是** | 结束时间，**ISO 8601 格式**，如 `"2026-01-02T00:00:00Z"` |
-| `page` | integer | 否 | 页码，默认 1 |
-| `size` | integer | 否 | 每页条数，默认 100 |
-| `aggregation` | object | 否 | 聚合配置，不传则返回原始数据点 |
+| `topics` | string[] | **Yes** | Topic paths (leaf nodes; wildcards not supported) |
+| `start_time` | string | **Yes** | Start time, **ISO 8601 format**, e.g. `"2026-01-01T00:00:00Z"` |
+| `end_time` | string | **Yes** | End time, **ISO 8601 format**, e.g. `"2026-01-02T00:00:00Z"` |
+| `page` | integer | No | Page number, default 1 |
+| `size` | integer | No | Page size, default 100 |
+| `aggregation` | object | No | Aggregation config; omit to get raw data points |
 
-### aggregation 结构
+### aggregation Structure
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `function` | string | **是** | 聚合函数：`avg` / `max` / `min` / `sum` / `count` |
-| `interval` | string | **是** | 聚合时间窗口：`1m`（分钟）/ `1h`（小时）/ `1d`（天） |
-| `field` | string | 否 | 聚合字段名（value 对象内的某个字段，如 `"temperature"`） |
+| `function` | string | **Yes** | Aggregation function: `avg` / `max` / `min` / `sum` / `count` |
+| `interval` | string | **Yes** | Aggregation window: `1m` (minute) / `1h` (hour) / `1d` (day) |
+| `field` | string | No | Field to aggregate (a key inside the `value` object, e.g. `"temperature"`) |
 
-> **时间格式注意**：`start_time`/`end_time` 必须是 ISO 8601 字符串，**不能传毫秒整数**。CLI 支持相对时间表达式（如 `-1h`、`-7d`），但 SDK 直接调用 API，需要自行在代码中把相对时间转换为 ISO 8601 字符串。
+> **Time format**: `start_time`/`end_time` must be ISO 8601 strings — **millisecond integers are rejected**. The CLI supports relative time expressions (`-1h`, `-7d`), but the SDK calls the API directly, so convert relative times to ISO 8601 strings in your code.
 
-## 响应结构
+## Response Structure
 
-批量接口，HTTP 200 **不代表每项成功**，需检查 `data.success` 和 `data.results[i].success`：
+Batch endpoint: HTTP 200 does **not** mean every item succeeded. Check `data.success` and each `data.results[i].success`:
 
 ```typescript
 {
@@ -47,7 +47,7 @@ const result = await unsApi.openapiv1unshistory(body);
   msg: string;
   data: {
     success: boolean;
-    total: number;  // 整体总记录数
+    total: number;  // total record count
     page: number;
     size: number;
     results: Array<{
@@ -55,9 +55,9 @@ const result = await unsApi.openapiv1unshistory(body);
       topic: string;
       result?: {
         values: Array<{
-          value: Record<string, unknown>;  // 业务数据对象
+          value: Record<string, unknown>;  // business data object
           quality: 'Good' | 'Uncertain' | 'Bad';
-          timeStamp: number;              // 数据采集时间，毫秒
+          timeStamp: number;              // collection time, milliseconds
         }>;
       };
       error?: { code: number; message: string };
@@ -66,9 +66,9 @@ const result = await unsApi.openapiv1unshistory(body);
 }
 ```
 
-## 使用示例
+## Examples
 
-### 查询最近 1 小时原始数据
+### Raw data for the last hour
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -92,7 +92,7 @@ if (item.success) {
 }
 ```
 
-### 查询 24 小时按小时聚合均值
+### Hourly averages over 24 hours
 
 ```typescript
 const result = await unsApi.openapiv1unshistory({
@@ -102,20 +102,20 @@ const result = await unsApi.openapiv1unshistory({
   aggregation: {
     function: 'avg',
     interval: '1h',
-    field: 'temperature',  // value 对象内的字段名
+    field: 'temperature',  // key inside the value object
   },
 });
 
 if (result.data.success) {
   const values = result.data.results[0].result?.values ?? [];
-  // 每条 value 代表一个小时的均值
+  // Each value represents one hour's average.
   values.forEach(r => {
     console.log(new Date(r.timeStamp).toISOString(), r.value);
   });
 }
 ```
 
-### 多 topic + 分页
+### Multiple topics with pagination
 
 ```typescript
 const result = await unsApi.openapiv1unshistory({
@@ -128,17 +128,17 @@ const result = await unsApi.openapiv1unshistory({
 
 for (const item of result.data.results) {
   if (!item.success) {
-    console.error(`${item.topic} 查询失败: ${item.error?.message}`);
+    console.error(`${item.topic} query failed: ${item.error?.message}`);
     continue;
   }
-  console.log(`${item.topic}: ${item.result!.values.length} 条记录`);
+  console.log(`${item.topic}: ${item.result!.values.length} records`);
 }
 ```
 
-## 常见错误
+## Common Errors
 
-| 错误 | 原因 | 解决 |
+| Error | Cause | Fix |
 |------|------|------|
-| `start_time` 格式报错 | 传入了毫秒整数（如 `1733382000000`） | 改为 ISO 字符串：`new Date(ts).toISOString()` |
-| `aggregation.field` 无数据 | 字段名和 value 对象里的 key 不一致 | 先 `read` 一条确认 value 的字段名 |
-| `values` 为空 | 时间范围内无数据，或 topic 路径错误 | 确认 topic 存在且时间范围正确 |
+| `start_time` format error | A millisecond integer was passed (e.g. `1733382000000`) | Use an ISO string: `new Date(ts).toISOString()` |
+| `aggregation.field` returns no data | Field name does not match the keys in the `value` object | `read` one record first to confirm the value field names |
+| `values` is empty | No data in the time range, or wrong topic path | Confirm the topic exists and the time range is correct |

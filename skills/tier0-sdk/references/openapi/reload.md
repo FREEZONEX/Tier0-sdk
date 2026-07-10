@@ -1,12 +1,12 @@
 ---
 name: tier0-sdk-openapi-reload
-version: 0.1.0
-description: "GET /gw/reload — 无请求体"
+version: 0.2.0
+description: "GET /gw/reload — no request body"
 ---
 
 # reload — `GET /gw/reload`
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { systemApi } from '@tier0/sdk/openapi';
@@ -14,17 +14,17 @@ import { systemApi } from '@tier0/sdk/openapi';
 const result = await systemApi.gwreload();
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |------|------|------|
-| — | — | 此接口无需请求体 |
+| — | — | This endpoint takes no request body |
 
-## 响应类型
+## Response Type
 
 `components["schemas"]["Response"]`
 
-## 使用示例
+## Example
 
 ```typescript
 import { systemApi } from '@tier0/sdk/openapi';

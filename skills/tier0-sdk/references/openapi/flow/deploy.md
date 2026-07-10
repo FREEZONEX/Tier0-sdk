@@ -1,18 +1,18 @@
 ---
 name: tier0-sdk-openapi-flow-deploy
-version: 0.4.0
-description: "POST /openapi/v1/flow/deploy — 部署 Node-RED 画布（全量替换，不可撤销）"
+version: 0.5.0
+description: "POST /openapi/v1/flow/deploy — deploy a Node-RED canvas (full replace, irreversible)"
 ---
 
 # deploy — `POST /openapi/v1/flow/deploy`
 
-> ⚠️ **高风险操作**：deploy 会**全量替换** Node-RED 画布配置，覆盖所有节点，Node-RED 实例会立即重新加载，**不可撤销**。**执行前必须**：
-> 1. 通过 `flowApi.openapiv1flowflowdata()` 备份当前画布
-> 2. 确认目标 Flow ID 正确（先用 `flowApi.openapiv1flowget()` 核实）
-> 3. 确认 flowsJson 格式有效
-> 4. 代码层向用户展示变更内容并获得明确确认后再执行
+> ⚠️ **High-risk operation**: deploy **fully replaces** the Node-RED canvas configuration, overwrites all nodes, and the Node-RED instance reloads immediately. **Irreversible.** Before executing you **must**:
+> 1. Back up the current canvas via `flowApi.openapiv1flowflowdata()`
+> 2. Confirm the target Flow ID (verify with `flowApi.openapiv1flowget()` first)
+> 3. Confirm the flowsJson is valid
+> 4. Show the user what will change and get explicit confirmation before executing
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
@@ -20,64 +20,64 @@ import { flowApi } from '@tier0/sdk/openapi';
 const result = await flowApi.openapiv1flowdeploy(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `id` | integer | **是** | Flow 的 DB 主键 |
-| `flowsJson` | string | **是** | Node-RED 节点数组的 **JSON 字符串**（不含 tab 节点）。必须包含原有的 `mqtt-broker` config 节点（保留其 `id`） |
+| `id` | integer | **Yes** | The Flow's DB primary key |
+| `flowsJson` | string | **Yes** | **JSON string** of the Node-RED node array (without the tab node). Must include the existing `mqtt-broker` config node (keeping its `id`) |
 
-## 响应结构
+## Response Structure
 
 ```typescript
 {
   code: number;
   msg: string;
   data: {
-    flowId: string;  // Node-RED 内部 flow id（tab id）
+    flowId: string;  // Node-RED internal flow id (tab id)
   };
 }
 ```
 
-## 使用示例
+## Example
 
-### 标准部署流程（备份 → 修改 → 部署）
+### Standard deploy workflow (backup → modify → deploy)
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
 
-// Step 1: 备份当前画布（必须）
+// Step 1: back up the current canvas (mandatory).
 const { data: { flows } } = await flowApi.openapiv1flowflowdata({ id: 42 });
 
-// Step 2: 找到系统生成的 mqtt-broker 节点（必须原样保留，不可替换）
+// Step 2: locate the system-generated mqtt-broker node (must be preserved as-is).
 const mqttBrokerNode = flows.find((n: any) => n.type === 'mqtt-broker');
 
-// Step 3: 构造新的画布（保留 mqtt-broker 节点）
+// Step 3: build the new canvas (keep the mqtt-broker node).
 const newFlows = [
-  mqttBrokerNode,   // ⚠️ 必须保留，包含系统凭据
+  mqttBrokerNode,   // ⚠️ must be kept — it carries system credentials
   {
     id: 'new-node-1',
     type: 'function',
     z: 'tab-id',
-    name: '格式转换',
+    name: 'transform',
     func: 'msg.topic = "Plant/Line1/Metric/Temperature";\nmsg.payload = JSON.stringify({ temperature: msg.payload.temp });\nreturn msg;',
     outputs: 1,
     x: 400, y: 120,
     wires: [['mqtt-out-1']],
   },
-  // ... 其他节点
+  // ... other nodes
 ];
 
-// Step 4: 部署（向用户确认后执行）
+// Step 4: deploy (after user confirmation).
 const result = await flowApi.openapiv1flowdeploy({
   id: 42,
   flowsJson: JSON.stringify(newFlows),
 });
 
-console.log('部署成功, Node-RED flow id:', result.data.flowId);
+console.log('Deployed, Node-RED flow id:', result.data.flowId);
 ```
 
-> **关键约束**：
-> - `flowsJson` 是 JSON **字符串**，不是对象，需要 `JSON.stringify()`
-> - 必须保留原有 `mqtt-broker` config 节点（相同 `id`），否则 MQTT 连接失败
-> - deploy 前务必备份，且向用户展示将要变更的内容后再执行
+> **Key constraints**:
+> - `flowsJson` is a JSON **string**, not an object — `JSON.stringify()` it
+> - The existing `mqtt-broker` config node (same `id`) must be preserved, otherwise the MQTT connection fails
+> - Always back up before deploy, and show the user the pending changes before executing

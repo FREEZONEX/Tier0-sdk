@@ -1,12 +1,12 @@
 ---
 name: tier0-sdk-openapi-flow-list
-version: 0.4.0
-description: "POST /openapi/v1/flow/list — 列出 Flow"
+version: 0.5.0
+description: "POST /openapi/v1/flow/list — list Flows"
 ---
 
 # list — `POST /openapi/v1/flow/list`
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
@@ -14,14 +14,14 @@ import { flowApi } from '@tier0/sdk/openapi';
 const result = await flowApi.openapiv1flowlist(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `flowType` | string | 否 | 按类型过滤：`source`（数据采集 Flow）/ `event`（事件处理 Flow）。不传则返回全部 |
-| `keyword` | string | 否 | 按名称关键词过滤 |
+| `flowType` | string | No | Filter by type: `source` (data-collection Flow) / `event` (event-processing Flow). Omit for all |
+| `keyword` | string | No | Filter by name keyword |
 
-## 响应结构
+## Response Structure
 
 ```typescript
 {
@@ -29,27 +29,27 @@ const result = await flowApi.openapiv1flowlist(body);
   msg: string;
   data: {
     list: Array<{
-      id: number;                  // DB 主键，CLI/API 操作均用此 id
-      flowId: string;              // Node-RED 内部 flow id（tab id），仅内部使用
+      id: number;                  // DB primary key; use this id for all CLI/API operations
+      flowId: string;              // Node-RED internal flow id (tab id), internal use only
       flowName: string;
       flowType: 'source' | 'event';
       flowStatus: 'DRAFT' | 'PENDING' | 'RUNNING';
       description: string;
-      isFavorite: number;          // 1 = 已收藏，2 = 未收藏
+      isFavorite: number;          // 1 = favorited, 2 = not favorited
       currentVersionId: number;
       currentVersionName: string;
-      createdTime: number;         // 毫秒时间戳
+      createdTime: number;         // millisecond timestamp
       updatedTime: number;
     }>;
   };
 }
 ```
 
-> ⚠️ **`id` ≠ `flowId`**：所有后续操作（get/update/delete/deploy）均使用整数 `id`，`flowId` 是 Node-RED 内部字符串，不可用于 API 参数。
+> ⚠️ **`id` ≠ `flowId`**: all follow-up operations (get/update/delete/deploy) use the integer `id`. `flowId` is a Node-RED internal string and must not be used as an API parameter.
 
-## 使用示例
+## Examples
 
-### 列出所有 Flow
+### List all Flows
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
@@ -61,7 +61,7 @@ for (const flow of result.data.list) {
 }
 ```
 
-### 只列出 SourceFlow
+### List only SourceFlows
 
 ```typescript
 const result = await flowApi.openapiv1flowlist({
@@ -69,7 +69,7 @@ const result = await flowApi.openapiv1flowlist({
 });
 ```
 
-### 按名称搜索（常与 UNS 关联查询）
+### Search by name (often paired with a UNS lookup)
 
 ```typescript
 const result = await flowApi.openapiv1flowlist({
@@ -77,11 +77,11 @@ const result = await flowApi.openapiv1flowlist({
 });
 const flow = result.data.list[0];
 if (flow) {
-  console.log(`找到 Flow id=${flow.id}, 状态=${flow.flowStatus}`);
+  console.log(`Found Flow id=${flow.id}, status=${flow.flowStatus}`);
 }
 ```
 
-用户按名称询问某设备/数据时，Flow 名称与 UNS topic 通常同名，应同时查询两侧：
+When a user asks about a device/data point by name, Flow names and UNS topics are usually named alike — query both sides:
 
 ```typescript
 const [unsResult, flowResult] = await Promise.all([

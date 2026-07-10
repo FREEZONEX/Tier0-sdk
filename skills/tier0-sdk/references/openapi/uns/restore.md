@@ -1,14 +1,14 @@
 ---
 name: tier0-sdk-openapi-restore
-version: 0.4.0
-description: "POST /openapi/v1/uns/restore — 恢复软删除的 UNS 节点"
+version: 0.5.0
+description: "POST /openapi/v1/uns/restore — restore a soft-deleted UNS node"
 ---
 
 # restore — `POST /openapi/v1/uns/restore`
 
-将软删除（`hard_delete: false`）的节点恢复到可用状态。**硬删除的节点无法恢复**。
+Restores a soft-deleted node (`hard_delete: false`) back to an active state. **Hard-deleted nodes cannot be restored.**
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -16,37 +16,37 @@ import { unsApi } from '@tier0/sdk/openapi';
 const result = await unsApi.openapiv1unsrestore(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `path` | string | **是** | 要恢复的节点完整路径（必须处于软删除状态） |
+| `path` | string | **Yes** | Full path of the node to restore (must currently be soft-deleted) |
 
-## 响应结构
+## Response Structure
 
 ```typescript
 {
-  code: number;   // 200 = 成功
+  code: number;   // 200 = success
   msg: string;    // "success"
-  data: {};       // 空对象，成功与否依靠外层 code/msg 判断
+  data: {};       // empty object; success is judged by the outer code/msg
 }
 ```
 
-## 使用示例
+## Example
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
 
-// 前提：该节点之前通过 delete（hard_delete: false）进行了软删除
+// Precondition: the node was soft-deleted via delete (hard_delete: false).
 const result = await unsApi.openapiv1unsrestore({
   path: 'Plant/Line1/Metric/Temperature',
 });
 
 if (result.code === 200) {
-  console.log('节点已恢复');
+  console.log('Node restored');
 } else {
-  console.error('恢复失败:', result.msg, '（节点可能已被硬删除或路径不存在）');
+  console.error('Restore failed:', result.msg, '(node may have been hard-deleted or the path does not exist)');
 }
 ```
 
-> **注意**：如果尝试恢复一个从未被删除或已被硬删除的节点，接口会返回错误。
+> **Note**: restoring a node that was never deleted, or was hard-deleted, returns an error.
