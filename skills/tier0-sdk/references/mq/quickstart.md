@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-mq-quickstart
-version: 0.3.0
+version: 0.3.1
 description: "MQ module quickstart: configuration, subscribe, publish, unsubscribe, events, reconnect/reliability semantics, offline-gap backfill. All topics follow the UNS naming contract: <business path>/<Metric|Action|State>/<leaf>."
 ---
 
@@ -57,6 +57,8 @@ const client = new Tier0MQClient({
 ```
 
 > Use `unsApi.openapiv1unswrite()` when you need the API to validate and write a UNS topic current value. If publishing to a UNS-ingested MQTT topic directly, the MQTT topic must already exist in UNS and the JSON payload keys must match that topic's `fields` schema exactly. For example, a topic with field `temperature` must receive `{"temperature":26.4}`, not `{"value":26.4,"unit":"C"}` unless `value` and `unit` are the actual field names in that topic schema.
+>
+> **No lazy creation**: never publish to a topic that has not been explicitly modeled. Create it first with the `create` endpoint (declaring `fields`) — do not treat publishing as a way to create topics. A publish to an unmodeled topic is a bug, not a provisioning mechanism.
 >
 > Default transport split: **HTTP write to send, MQTT subscribe to receive**. Both channels hit the same broker and topics — an HTTP write is delivered to MQTT subscribers in realtime. Reserve direct MQTT `publish` for high-frequency/fan-out sending. See `references/core/data-integration.md` → "Transport selection".
 

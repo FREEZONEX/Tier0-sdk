@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-create
-version: 0.6.0
+version: 0.6.1
 description: "POST /openapi/v1/uns/create — create UNS namespace nodes"
 ---
 
@@ -44,6 +44,8 @@ const result = await unsApi.openapiv1unscreate(body);
 | `unit` | string | Unit (optional), e.g. `"°C"`, `"bar"` |
 
 > **Naming rule (mandatory)**: node names must be stable, human-readable business names (`Temperature`, `Order`, `Packer01`). **Never** use UUIDs, database primary keys, timestamps, or other runtime-generated values as node names; **never** create topics dynamically per database row or business record (one topic per order/customer is wrong modeling). The namespace is a fixed schema designed once. Business entities use **one shared topic per entity type** with the instance id carried inside the payload — see `references/core/data-integration.md` for granularity rules.
+>
+> **Explicit modeling (mandatory, schema-first)**: all of a business application's topics must be created explicitly through this endpoint (declaring `fields`, `enableHistory`, `description`) during app provisioning/bootstrap — before the first write. **Never rely on lazy creation** — do not let write/publish make topics "appear on their own".
 >
 > **Path rule (mandatory)**: the second-to-last segment of every data-point path must be a type folder: `Metric` / `Action` / `State` (case-insensitive):
 > - `Plant/Line1/Metric/Temperature` ✓ (topicType derived: metric)
