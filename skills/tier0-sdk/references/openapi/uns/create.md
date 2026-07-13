@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-create
-version: 0.4.0
+version: 0.5.2
 description: "POST /openapi/v1/uns/create — 创建 UNS 命名空间节点"
 ---
 
@@ -31,7 +31,7 @@ const result = await unsApi.openapiv1unscreate(body);
 | `topicType` | string | topic 必填 | `"metric"` / `"action"` / `"state"`（小写） |
 | `displayName` | string | 否 | 显示名称 |
 | `description` | string | 否 | 描述，action/state 节点强烈建议写示例 payload |
-| `fields` | FieldDef[] | 否 | 字段定义（METRIC 节点推荐填写） |
+| `fields` | FieldDef[] | metric **必填** | 字段定义。metric 缺失会报 `schema required for metric`。action/state 可选但**强烈建议声明**：payload 顶层是平铺键值时（绝大多数命令/状态都是），声明 fields 后 UNS 里才能看到该 topic 的 schema；嵌套结构无法用 fields 表达的部分，用 `description` 写示例 payload 补充 |
 | `enableHistory` | boolean | 否 | 是否持久化历史 |
 | `children` | NamespaceNode[] | 否 | 子节点，用于一次性建多层结构 |
 
@@ -43,6 +43,10 @@ const result = await unsApi.openapiv1unscreate(body);
 | `type` | string | `"int"` / `"float"` / `"string"` / `"bool"` |
 | `unit` | string | 单位（可选），如 `"°C"`、`"bar"` |
 
+> **命名约定（强制）**：节点名必须是稳定的、人类可读的业务名（`Temperature`、`Order`、`Packer01`）。**禁止**用 UUID、数据库主键、时间戳等运行时生成的值当节点名；**禁止**按数据库行/业务记录动态建 topic（每条订单/客户一个 topic 是错误建模）。命名空间是一次性设计好的固定 schema，业务实体用**每实体类型一个共享 topic**，实例 id 放进 payload 字段——粒度选择见 `references/core/data-integration.md`。
+>
+> **显式建模（强制，schema-first）**：业务应用的全部 topic 必须在应用集成/初始化阶段用本接口显式创建（声明 `fields`、`enableHistory`、`description`），然后才开始写入。**禁止依赖懒创建**——不要靠 write/publish 让 topic "自己出现"。
+>
 > **路径约定（强制）**：数据点路径的倒数第二段必须是类型目录之一：`Metric` / `Action` / `State`（大小写不敏感）：
 > - `Plant/Line1/Metric/Temperature` ✓（topicType: metric）
 > - `Plant/WMS/Action/StockOut` ✓（topicType: action）
@@ -165,6 +169,12 @@ const result = await unsApi.openapiv1unscreate({
                   name: 'StartBatch',
                   type: 'topic',
                   topicType: 'action',
+                  // action/state 也声明 fields，UNS 里才能看到 schema
+                  fields: [
+                    { name: 'batch_id', type: 'string' },
+                    { name: 'recipe', type: 'string' },
+                    { name: 'qty', type: 'int' },
+                  ],
                   description: '启动批次指令。示例: {"batch_id":"B-001","recipe":"dark_choco","qty":500}',
                 },
               ],
@@ -177,6 +187,11 @@ const result = await unsApi.openapiv1unscreate({
                   name: 'BatchStatus',
                   type: 'topic',
                   topicType: 'state',
+                  fields: [
+                    { name: 'batch_id', type: 'string' },
+                    { name: 'status', type: 'string' },
+                    { name: 'progress', type: 'int' },
+                  ],
                   description: '批次状态回报。示例: {"batch_id":"B-001","status":"running","progress":42}',
                 },
               ],
