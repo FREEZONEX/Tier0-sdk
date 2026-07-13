@@ -1,12 +1,12 @@
 ---
 name: tier0-sdk
-version: 0.2.7
-description: "Tier0 SDK for TypeScript/JavaScript. Use when building apps or scripts with @tier0/sdk (React, Vue3, Vite, Node): read/write/history/subscribe UNS (Unified Namespace) as a backend data source, manage Flow (Node-RED) resources, publish/subscribe Tier0 MQTT/MQ over WebSocket, or integrate external data through Tier0 OpenAPI. UNS is a data source, not a UI — do not build a UNS tree viewer, topic explorer, or namespace browser. Not for non-Tier0 brokers/APIs, another named SDK/client, or implementing an MQTT broker."
+version: 0.2.8
+description: "Tier0 SDK for TypeScript/JavaScript. Use when building apps or scripts with @tier0/sdk (React, Vue3, Vite, Node): read/write/history/subscribe UNS (Unified Namespace) as a backend data source, manage Flow (Node-RED) resources, publish/subscribe Tier0 MQTT/MQ over WebSocket, upload/download/delete files through Tier0 OpenAPI, or integrate external data. UNS is a data source, not a UI — do not build a UNS tree viewer, topic explorer, or namespace browser. Not for non-Tier0 brokers/APIs, another named SDK/client, or implementing an MQTT broker."
 metadata:
   requires:
     npm: ["@tier0/sdk"]
   hermes:
-    tags: [sdk, openapi, rest, api, uns, flow, mq, mqtt, websocket, react, vue3, typescript]
+    tags: [sdk, openapi, rest, api, uns, flow, file, upload, attachment, download, delete, mq, mqtt, websocket, react, vue3, typescript]
 ---
 
 # Tier0 SDK
@@ -30,6 +30,7 @@ Use for:
 - Tier0 platform integration, including external data integration through Tier0.
 - UNS as a backend data source: read/write/history/search/create/delete over topic paths.
 - Flow (Node-RED) work via Tier0 APIs: create/list/get/update/deploy/delete.
+- File/attachment operations through Tier0 OpenAPI: upload, download, get URL, delete.
 - Tier0 OpenAPI clients, API keys, and host configuration.
 - Tier0 MQ/MQTT over WebSocket where the broker is the Tier0 endpoint.
 - React, Vue3, Vite, Node.js, or TypeScript code using `@tier0/sdk`.
@@ -65,6 +66,7 @@ The top-level skill stays small; load the reference for the task at hand from `r
 | Vue 3 composables | `references/openapi/vue.md` |
 | UNS endpoint details | `references/openapi/uns/*.md` |
 | Flow endpoint details | `references/openapi/flow/*.md` |
+| File upload/download/URL/delete endpoints | `references/openapi/files/*.md` |
 | System/auth endpoints | `references/openapi/info.md`, `references/openapi/auth/whoami.md`, `references/openapi/reload.md` |
 | MQ subscribe/publish details | `references/mq/quickstart.md` |
 

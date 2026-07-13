@@ -109,6 +109,26 @@ const flows = await flowApi.openapiv1flowlist({
 });
 ```
 
+### Upload / Download / Delete Files
+
+```typescript
+import { uploadFile, downloadFile, getFileUrl, deleteFile } from '@tier0/sdk/files';
+
+// Upload
+const uploaded = await uploadFile(file, { visibility: 'private', business: 'attachment' });
+
+// Get URL (public returns long-lived URL; private returns presigned URL)
+const { fileUrl } = await getFileUrl({ filePath: uploaded.filePath, expiredSec: 3600 });
+
+// Download to browser/Node.js
+const { response } = await downloadFile({ filePath: uploaded.filePath });
+
+// Delete
+await deleteFile({ filePath: uploaded.filePath });
+```
+
+> See `references/openapi/files/*.md` for parameter details and advanced usage.
+
 ## Types
 
 Types are exported from the OpenAPI module:
