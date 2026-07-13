@@ -1,10 +1,17 @@
 ---
 name: tier0-sdk-openapi-react
-version: 0.2.0
+version: 0.2.1
 description: "OpenAPI React hooks guide — @tanstack/react-query integration, including polling reads for dashboards"
 ---
 
 # React Hooks Guide
+
+> **Scope**: this reference is for standalone browser SPAs that call Tier0
+> directly with platform-injected credentials. Inside the MonoApp/TanStack
+> Start scaffold, pages do NOT use these hooks or react-query against Tier0 —
+> they call the app's own API routes through the scaffold's shared request
+> hooks, and the server talks to Tier0 (see
+> `references/scaffolds/monoapptemplate.md`).
 
 ## Prerequisites
 

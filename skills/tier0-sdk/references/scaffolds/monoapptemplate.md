@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-monoapptemplate
-version: 0.2.0
+version: 0.2.1
 description: "Using @tier0/sdk safely inside the MonoApp TanStack Start scaffold: lazy loaders, service-layer patterns, long-lived MQTT subscriber lifecycle, delivering realtime data to the UI."
 ---
 
@@ -202,13 +202,32 @@ Use MQ from a server-side action or service when publishing device commands or s
 ```typescript
 import { loadTier0Mq } from '@/lib/tier0';
 
+// One shared MQ client per server process. Creating a client per publish pays
+// a full WebSocket handshake per message — never do that in app services.
+// globalThis survives dev-server module re-evaluation (same idiom as the
+// subscriber pattern below).
+const MQ_CLIENT_KEY = Symbol.for('app.tier0MqClient');
+
+async function getMqClient() {
+  const g = globalThis as Record<symbol, unknown>;
+  if (!g[MQ_CLIENT_KEY]) {
+    const { Tier0MQClient } = await loadTier0Mq();
+    g[MQ_CLIENT_KEY] = new Tier0MQClient();
+  }
+  return g[MQ_CLIENT_KEY] as import('@tier0/sdk/mq').Tier0MQClient;
+}
+
 export async function publishDeviceMessage(topic: string, payload: unknown) {
-  const { Tier0MQClient } = await loadTier0Mq();
-  const client = new Tier0MQClient();
+  const client = await getMqClient();
   await client.publish(topic, payload);
-  client.disconnect();
 }
 ```
+
+A throwaway client with `disconnect()` is acceptable only in one-off scripts.
+Also remember the transport default: low-frequency, after-commit sends should
+use HTTP `openapiv1unswrite` (validated) rather than opening MQTT at all —
+reserve MQ publish for high-frequency/fan-out sending
+(see `references/core/data-integration.md` → "Transport selection").
 
 ### Long-Lived Subscriber Pattern
 
