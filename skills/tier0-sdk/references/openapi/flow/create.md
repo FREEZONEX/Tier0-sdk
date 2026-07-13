@@ -1,14 +1,14 @@
 ---
 name: tier0-sdk-openapi-flow-create
-version: 0.4.0
-description: "POST /openapi/v1/flow/create — 创建 Flow（系统自动生成 MQTT 凭据）"
+version: 0.5.0
+description: "POST /openapi/v1/flow/create — create a Flow (system auto-generates MQTT credentials)"
 ---
 
 # create — `POST /openapi/v1/flow/create`
 
-创建一个新的 Flow（Node-RED 容器）。**系统会自动生成专属 MQTT 账号密码，并注入到初始 Node-RED 画布配置中**。
+Creates a new Flow (Node-RED container). **The system auto-generates dedicated MQTT credentials and injects them into the initial Node-RED canvas configuration.**
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
@@ -16,30 +16,30 @@ import { flowApi } from '@tier0/sdk/openapi';
 const result = await flowApi.openapiv1flowcreate(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `flowName` | string | **是** | Flow 名称，同类型下唯一 |
-| `flowType` | string | **是** | `source`（数据采集，连接工业协议）/ `event`（事件处理，订阅 MQTT 消息） |
-| `description` | string | 否 | 描述 |
-| `template` | string | 否 | 模板来源标识 |
+| `flowName` | string | **Yes** | Flow name, unique within the same type |
+| `flowType` | string | **Yes** | `source` (data collection, connects industrial protocols) / `event` (event processing, subscribes to MQTT messages) |
+| `description` | string | No | Description |
+| `template` | string | No | Template source identifier |
 
-## 响应结构
+## Response Structure
 
 ```typescript
 {
   code: number;
   msg: string;
   data: {
-    id: number;  // 新创建 Flow 的 DB 主键，后续操作使用此 id
+    id: number;  // DB primary key of the new Flow; use it for follow-up operations
   };
 }
 ```
 
-## 使用示例
+## Examples
 
-### 创建 SourceFlow
+### Create a SourceFlow
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
@@ -47,41 +47,42 @@ import { flowApi } from '@tier0/sdk/openapi';
 const result = await flowApi.openapiv1flowcreate({
   flowName: 'modbus-line1',
   flowType: 'source',
-  description: 'Modbus TCP 采集产线1数据',
+  description: 'Modbus TCP collection for line 1',
 });
 
 const flowId = result.data.id;
-console.log('创建成功，Flow id:', flowId);
+console.log('Created, Flow id:', flowId);
 
-// 创建后可用 flowdata 获取初始画布（含系统生成的 MQTT broker 节点）
+// After creating, use flowdata to fetch the initial canvas
+// (it contains the system-generated MQTT broker node).
 ```
 
-### 创建 EventFlow
+### Create an EventFlow
 
 ```typescript
 const result = await flowApi.openapiv1flowcreate({
   flowName: 'alert-handler',
   flowType: 'event',
-  description: '温度超阈值告警处理',
+  description: 'Over-temperature alert handling',
 });
 ```
 
-> **创建后的典型流程**：create → flowdata（获取初始画布，含 MQTT broker 节点） → 修改画布 → deploy
+> **Typical post-create workflow**: create → flowdata (fetch the initial canvas, including the MQTT broker node) → edit the canvas → deploy
 
-### 从已有 Flow 克隆
+### Clone from an existing Flow
 
 ```typescript
-// 1. 导出参考 Flow 的画布
+// 1. Export the reference Flow's canvas.
 const { data: { flows } } = await flowApi.openapiv1flowflowdata({ id: 1 });
 
-// 2. 创建新 Flow
+// 2. Create the new Flow.
 const { data: { id: newId } } = await flowApi.openapiv1flowcreate({
   flowName: 'modbus-line2',
   flowType: 'source',
-  description: '从 line1 克隆的采集 Flow',
+  description: 'Collection Flow cloned from line1',
 });
 
-// 3. 将模板画布部署到新 Flow（deploy 前需向用户确认）
+// 3. Deploy the template canvas to the new Flow (confirm with the user before deploy).
 await flowApi.openapiv1flowdeploy({
   id: newId,
   flowsJson: JSON.stringify(flows),

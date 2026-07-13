@@ -1,14 +1,14 @@
 ---
 name: tier0-sdk-openapi-flow-delete
-version: 0.4.0
-description: "POST /openapi/v1/flow/delete — 删除 Flow（停止 Node-RED 容器）"
+version: 0.5.0
+description: "POST /openapi/v1/flow/delete — delete Flows (stops the Node-RED container)"
 ---
 
 # delete — `POST /openapi/v1/flow/delete`
 
-> ⚠️ **高风险操作**：删除 Flow 会**停止对应的 Node-RED 容器**，采集/处理立即中断，操作不可撤销。执行前必须向用户确认。
+> ⚠️ **High-risk operation**: deleting a Flow **stops its Node-RED container** — collection/processing halts immediately and the operation is irreversible. Confirm with the user before executing.
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
@@ -16,13 +16,13 @@ import { flowApi } from '@tier0/sdk/openapi';
 const result = await flowApi.openapiv1flowdelete(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `ids` | integer[] | **是** | 要删除的 Flow DB 主键数组（整数），支持批量。**不是 flowId 字符串** |
+| `ids` | integer[] | **Yes** | Array of Flow DB primary keys (integers); batch supported. **Not the `flowId` string** |
 
-## 响应结构
+## Response Structure
 
 ```typescript
 {
@@ -32,24 +32,24 @@ const result = await flowApi.openapiv1flowdelete(body);
 }
 ```
 
-## 使用示例
+## Examples
 
-### 删除单个 Flow（需先向用户确认）
+### Delete a single Flow (confirm with the user first)
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
 
-// ⚠️ 操作前必须确认：删除后 Node-RED 容器停止，数据采集中断
+// ⚠️ Confirm before executing: the Node-RED container stops and data collection halts.
 const result = await flowApi.openapiv1flowdelete({
   ids: [42],
 });
 
 if (result.data.success) {
-  console.log('Flow 已删除，Node-RED 容器已停止');
+  console.log('Flow deleted, Node-RED container stopped');
 }
 ```
 
-### 批量删除
+### Batch delete
 
 ```typescript
 await flowApi.openapiv1flowdelete({
@@ -57,4 +57,4 @@ await flowApi.openapiv1flowdelete({
 });
 ```
 
-> **典型操作顺序**：先 `list` 确认 `id`，向用户展示将被删除的 Flow 名称和状态，确认后再调用 delete。
+> **Typical sequence**: `list` to confirm the `id`, show the user the names and statuses of the Flows to be deleted, then call delete after confirmation.

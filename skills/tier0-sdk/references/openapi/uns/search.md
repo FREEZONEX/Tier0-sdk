@@ -1,15 +1,15 @@
 ---
 name: tier0-sdk-openapi-search
-version: 0.4.0
-description: "POST /openapi/v1/uns/search — 按关键词搜索 UNS 节点"
+version: 0.5.0
+description: "POST /openapi/v1/uns/search — search UNS nodes by keyword"
 ---
 
 # search — `POST /openapi/v1/uns/search`
 
-按关键词检索节点名称。**已知名称片段时用 search；探索树形结构用 browse**。
-`keyword` 目前主要匹配节点短名/叶子名，不负责扫整条路径的中间段；要按路径范围查找，用 `path_prefix`。
+Searches node names by keyword. **Use search when you know a name fragment; use browse to explore the tree structure.**
+`keyword` currently matches the node's short/leaf name, not intermediate path segments; to scope by path, use `path_prefix`.
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -17,36 +17,36 @@ import { unsApi } from '@tier0/sdk/openapi';
 const result = await unsApi.openapiv1unssearch(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `keyword` | string | 否 | 关键词（当前主要匹配节点短名/叶子名；不匹配路径中间段），留空则返回所有节点 |
-| `path_prefix` | string | 否 | 限制搜索范围到指定路径前缀，如 `"Plant/Line1"` |
-| `topicType` | string | 否 | 按数据类型过滤：`Metric` / `Action` / `State`（仅叶子节点，后端兼容小写） |
-| `include_metadata` | boolean | 否 | 是否返回每个节点的字段定义（fields）、topicType、description。**搜索后需要了解 topic 结构时带上** |
-| `page` | integer | 否 | 页码，默认 1 |
-| `size` | integer | 否 | 每页条数，默认 20 |
+| `keyword` | string | No | Keyword (matches node short/leaf names, not intermediate path segments); empty returns all nodes |
+| `path_prefix` | string | No | Restrict search to a path prefix, e.g. `"Plant/Line1"` |
+| `topicType` | string | No | Filter by data type: `Metric` / `Action` / `State` (leaf nodes only; backend accepts lowercase) |
+| `include_metadata` | boolean | No | Return each node's field definitions (fields), topicType, description. **Add it when you need topic structure after searching** |
+| `page` | integer | No | Page number, default 1 |
+| `size` | integer | No | Page size, default 20 |
 
-## 响应结构
+## Response Structure
 
-> ⚠️ search 响应使用 `data.objects[]`，**不是** `data.results[]` 也不是 `data.list[]`。
+> ⚠️ search responses use `data.objects[]`, **not** `data.results[]` and not `data.list[]`.
 
 ```typescript
 {
   code: number;
   msg: string;
   data: {
-    total: number;  // 总匹配数
+    total: number;  // total matches
     page: number;
     size: number;
     objects: Array<{
-      id: number;           // 节点 ID（数字型）
-      name: string;         // 节点短名称（最后一段）
-      path: string;         // 完整路径，如 "Plant/Line1/Metric/Temperature"
+      id: number;           // node ID (numeric)
+      name: string;         // short node name (last segment)
+      path: string;         // full path, e.g. "Plant/Line1/Metric/Temperature"
       topicType: string;    // "Metric" | "Action" | "State" | ""
-      type: 'PATH' | 'TOPIC';  // PATH = 目录节点，TOPIC = 数据点（叶子）
-      // 仅 include_metadata: true 时返回
+      type: 'PATH' | 'TOPIC';  // PATH = folder node, TOPIC = data point (leaf)
+      // only when include_metadata: true
       fields?: Array<{ name: string; type: string; unit?: string }>;
       description?: string;
     }>;
@@ -54,9 +54,9 @@ const result = await unsApi.openapiv1unssearch(body);
 }
 ```
 
-## 使用示例
+## Examples
 
-### 按名称搜索
+### Search by name
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -65,14 +65,14 @@ const result = await unsApi.openapiv1unssearch({
   keyword: 'mixing',
 });
 
-console.log('共找到', result.data.total, '个节点');
+console.log('Found', result.data.total, 'nodes');
 for (const obj of result.data.objects) {
   console.log(obj.path, obj.topicType, obj.type);
   // "Choco_Factory/Production/State/mixing_tank_01"  "State"  "TOPIC"
 }
 ```
 
-### 在指定路径下搜索 State 节点
+### Search State nodes under a path
 
 ```typescript
 const result = await unsApi.openapiv1unssearch({
@@ -86,9 +86,9 @@ for (const obj of result.data.objects) {
 }
 ```
 
-### 搜索后查看字段定义（推荐）
+### Inspect field definitions after searching (recommended)
 
-不确定 topic 有哪些字段、类型和单位时，加 `include_metadata`：
+When unsure which fields, types, and units a topic has, add `include_metadata`:
 
 ```typescript
 const result = await unsApi.openapiv1unssearch({
@@ -106,9 +106,9 @@ for (const obj of result.data.objects) {
 }
 ```
 
-拿到 `fields` 后，即可按字段定义构造正确的 `write` 请求，或对 `read` 返回的 `value` 进行字段级解析。
+With `fields` in hand you can construct a correct `write` request, or parse a `read` response's `value` field by field.
 
-### 分页获取所有节点
+### Paginate through all nodes
 
 ```typescript
 let page = 1;

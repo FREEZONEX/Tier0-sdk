@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-monoapptemplate
-version: 0.1.0
-description: "Using @tier0/sdk safely inside the MonoApp TanStack Start scaffold."
+version: 0.2.1
+description: "Using @tier0/sdk safely inside the MonoApp TanStack Start scaffold: lazy loaders, service-layer patterns, long-lived MQTT subscriber lifecycle, delivering realtime data to the UI."
 ---
 
 # MonoApp Template Integration
@@ -202,15 +202,89 @@ Use MQ from a server-side action or service when publishing device commands or s
 ```typescript
 import { loadTier0Mq } from '@/lib/tier0';
 
+// One shared MQ client per server process. Creating a client per publish pays
+// a full WebSocket handshake per message — never do that in app services.
+// globalThis survives dev-server module re-evaluation (same idiom as the
+// subscriber pattern below).
+const MQ_CLIENT_KEY = Symbol.for('app.tier0MqClient');
+
+async function getMqClient() {
+  const g = globalThis as Record<symbol, unknown>;
+  if (!g[MQ_CLIENT_KEY]) {
+    const { Tier0MQClient } = await loadTier0Mq();
+    g[MQ_CLIENT_KEY] = new Tier0MQClient();
+  }
+  return g[MQ_CLIENT_KEY] as import('@tier0/sdk/mq').Tier0MQClient;
+}
+
 export async function publishDeviceMessage(topic: string, payload: unknown) {
-  const { Tier0MQClient } = await loadTier0Mq();
-  const client = new Tier0MQClient();
+  const client = await getMqClient();
   await client.publish(topic, payload);
-  client.disconnect();
 }
 ```
 
-Long-lived subscriptions should be owned by a server runtime or worker that can manage lifecycle and shutdown. Do not start durable MQTT subscriptions from React render paths or route loaders.
+A throwaway client with `disconnect()` is acceptable only in one-off scripts.
+Also remember the transport default: low-frequency, after-commit sends should
+use HTTP `openapiv1unswrite` (validated) rather than opening MQTT at all —
+reserve MQ publish for high-frequency/fan-out sending
+(see `references/core/data-integration.md` → "Transport selection").
+
+### Long-Lived Subscriber Pattern
+
+Durable subscriptions (event ingestion, Action→State result tracking) must be owned by the server process — never started from React render paths, route loaders, or client code. In this scaffold, use a `globalThis`-guarded singleton started lazily from the service layer (the same idiom as `bootstrapModule` in `src/services/bootstrap.ts`):
+
+```typescript
+// src/services/transfer-events-subscriber.ts
+import { loadTier0Mq } from '@/lib/tier0';
+import { updateTransferStatusIfNewer } from '@/services/transfers';
+
+// Module state is re-created when the dev server re-evaluates modules;
+// globalThis survives, preventing duplicate subscribers on hot reload/SSR.
+const GLOBAL_KEY = Symbol.for('app.transferEventsSubscriber');
+
+export function ensureTransferEventsSubscriber(): Promise<void> {
+  const g = globalThis as Record<symbol, Promise<void> | undefined>;
+  return (g[GLOBAL_KEY] ??= start());
+}
+
+async function start(): Promise<void> {
+  const { Tier0MQClient } = await loadTier0Mq();
+  const client = new Tier0MQClient();
+
+  client.subscribe('WMS/Inventory/State/TransferOrder', async (_topic, payload) => {
+    try {
+      const evt = JSON.parse(payload);
+      // Idempotent, ordering-safe update keyed by the business key.
+      await updateTransferStatusIfNewer(evt.requestId, evt.status, evt.updatedAt);
+    } catch (err) {
+      console.error('transfer event ingest failed', err);
+    }
+  });
+
+  client.on('error', (err) => console.error('MQ error', err));
+
+  // Graceful shutdown: stop the MQTT connection when the server exits.
+  const shutdown = () => client.disconnect();
+  process.once('SIGTERM', shutdown);
+  process.once('SIGINT', shutdown);
+}
+```
+
+Rules:
+
+- Call `ensureTransferEventsSubscriber()` at the start of the service entrypoints that depend on ingested events (mirroring the `bootstrapModule` call convention). It is safe to call repeatedly — the promise memo runs `start()` once per process.
+- The handler persists into the app DB (dedupe/ordering by business key) — see the ingest rules in `references/core/data-integration.md`. The subscriber is transport; the DB is what the UI reads.
+- The client auto-reconnects and re-subscribes on its own (see `references/mq/quickstart.md` → "Reliability and Reconnect Semantics"); pair the `connect` event with a `history` backfill if missed events matter.
+
+### Delivering Realtime Data to the UI
+
+The browser never opens an MQTT connection (that would expose the API key). Realtime flows through the server:
+
+1. **Server-side subscriber → app DB** (pattern above) for event streams and command results.
+2. **UI polls the app's own API route** with TanStack Query `refetchInterval` (2–10 s for live telemetry, 30 s+ for KPIs). The route reads from the app DB, or performs an on-demand UNS `read` for current-value snapshots.
+3. Reserve SSE/WebSocket push from an app API route for cases where sub-second latency is a stated requirement; polling is the default because it needs no extra connection lifecycle handling.
+
+Never render raw topic paths or VQT in components regardless of transport — map to domain objects in the service/route layer.
 
 ## Naming Platform Resources
 

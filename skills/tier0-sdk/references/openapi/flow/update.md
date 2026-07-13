@@ -1,14 +1,14 @@
 ---
 name: tier0-sdk-openapi-flow-update
-version: 0.4.0
-description: "POST /openapi/v1/flow/update — 更新 Flow 元数据（名称/描述/收藏）"
+version: 0.5.0
+description: "POST /openapi/v1/flow/update — update Flow metadata (name/description/favorite)"
 ---
 
 # update — `POST /openapi/v1/flow/update`
 
-更新 Flow 的元数据（名称、描述、收藏状态）。**不用于修改 Node-RED 画布内容**（那是 deploy 的职责）。
+Updates a Flow's metadata (name, description, favorite state). **Not for editing the Node-RED canvas** — that is `deploy`'s job.
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
@@ -16,17 +16,17 @@ import { flowApi } from '@tier0/sdk/openapi';
 const result = await flowApi.openapiv1flowupdate(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `id` | integer | **是** | Flow 的 DB 主键 |
-| `flowName` | string | 否 | 新名称（同类型下唯一） |
-| `description` | string | 否 | 新描述 |
-| `isFavorite` | integer | 否 | 收藏状态：`1` = 收藏，`2` = 取消收藏（注意是整数，不是 boolean） |
-| `template` | string | 否 | 模板标识 |
+| `id` | integer | **Yes** | The Flow's DB primary key |
+| `flowName` | string | No | New name (unique within the same type) |
+| `description` | string | No | New description |
+| `isFavorite` | integer | No | Favorite state: `1` = favorite, `2` = unfavorite (note: integer, not boolean) |
+| `template` | string | No | Template identifier |
 
-## 响应结构
+## Response Structure
 
 ```typescript
 {
@@ -36,9 +36,9 @@ const result = await flowApi.openapiv1flowupdate(body);
 }
 ```
 
-## 使用示例
+## Examples
 
-### 重命名 Flow
+### Rename a Flow
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
@@ -49,21 +49,21 @@ await flowApi.openapiv1flowupdate({
 });
 ```
 
-### 收藏 / 取消收藏
+### Favorite / unfavorite
 
 ```typescript
-// 收藏
+// Favorite
 await flowApi.openapiv1flowupdate({ id: 42, isFavorite: 1 });
 
-// 取消收藏
+// Unfavorite
 await flowApi.openapiv1flowupdate({ id: 42, isFavorite: 2 });
 ```
 
-### 更新描述
+### Update the description
 
 ```typescript
 await flowApi.openapiv1flowupdate({
   id: 42,
-  description: '已接入产线1全部 Modbus 点位，采集周期 500ms',
+  description: 'All line-1 Modbus points connected, 500 ms collection cycle',
 });
 ```

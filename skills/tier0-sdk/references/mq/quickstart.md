@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-mq-quickstart
-version: 0.2.1
-description: "MQ module quickstart: configuration, subscribe, publish, unsubscribe, events. All topics follow the UNS naming contract: <business path>/<Metric|Action|State>/<leaf>."
+version: 0.3.1
+description: "MQ module quickstart: configuration, subscribe, publish, unsubscribe, events, reconnect/reliability semantics, offline-gap backfill. All topics follow the UNS naming contract: <business path>/<Metric|Action|State>/<leaf>."
 ---
 
 # MQ Quickstart
@@ -173,6 +173,59 @@ client.on('error', (err) => {
   console.error('MQ error:', err);
 });
 ```
+
+## Reliability and Reconnect Semantics
+
+What the client does for you, and what it does not:
+
+| Behavior | Semantics |
+|---|---|
+| Connection | Lazy: the first `subscribe`/`publish` connects automatically; `connect()` is only needed when you must await readiness |
+| Reconnect | Automatic, every `reconnectPeriod` ms (default 5000). Configure via `new Tier0MQClient({ reconnectPeriod })` |
+| Resubscribe | On every (re)connect the client re-subscribes **all registered topics** automatically — you do not need to re-register handlers |
+| Subscribe QoS | Fixed at QoS 1 (at-least-once delivery **while connected**; duplicates possible — dedupe by business key) |
+| Publish QoS | Default 0; pass `{ qos: 1 }` or `{ qos: 2 }` per publish when delivery matters |
+| Offline gap | **Messages published while the client is disconnected are lost** (clean session — the broker does not queue for offline clients). Reconnect restores the subscription, not the missed messages |
+| Handler errors | Exceptions thrown inside a handler are caught and emitted as `error` events; they do not kill the connection |
+| `disconnect()` | Clears the registered subscription list — after a manual disconnect, re-register subscriptions yourself |
+
+### Backfill the offline gap with history
+
+Because the offline gap loses messages, a consumer that must not miss events tracks the timestamp of the last processed event and backfills from UNS `history` on reconnect, deduping by business key:
+
+```typescript
+import { Tier0MQClient } from '@tier0/sdk/mq';
+import { unsApi } from '@tier0/sdk/openapi';
+
+const TOPIC = 'WMS/Inventory/State/TransferOrder';
+let lastProcessedAt = Date.now(); // persist this in the app DB in real code
+
+const client = new Tier0MQClient();
+
+client.subscribe(TOPIC, (_topic, payload) => {
+  const evt = JSON.parse(payload);
+  handleEvent(evt);                 // idempotent: dedupes by evt.requestId
+  lastProcessedAt = Math.max(lastProcessedAt, evt.updatedAt ?? Date.now());
+});
+
+client.on('connect', async () => {
+  // Runs on first connect AND every reconnect: fill the gap since the last processed event.
+  const res = await unsApi.openapiv1unshistory({
+    topics: [TOPIC],
+    start_time: new Date(lastProcessedAt).toISOString(),
+    end_time: new Date().toISOString(),
+    size: 500,
+  });
+  const item = res.data.results?.[0];
+  if (item?.success) {
+    for (const record of item.result!.values) {
+      handleEvent(record.value);    // same idempotent handler — replay is safe
+    }
+  }
+});
+```
+
+This is the concrete form of the "UNS is transport plus replay buffer" rule in `references/core/data-integration.md`.
 
 ## Disconnect
 

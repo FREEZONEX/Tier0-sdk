@@ -1,25 +1,25 @@
 ---
 name: tier0-sdk-openapi-vue
-version: 0.1.1
-description: "OpenAPI Vue3 Composables 使用指南"
+version: 0.2.0
+description: "OpenAPI Vue3 composables guide"
 ---
 
-# Vue3 Composables 使用指南
+# Vue3 Composables Guide
 
-## 前置条件
+## Prerequisites
 
 ```bash
 npm install vue
 ```
 
-## 使用模式（先读这一段）
+## Usage Pattern (read this first)
 
-UNS 是数据源，不是界面。把 **topic 路径**和**原始 VQT** 封装在 composable / 数据层里，组件只消费领域对象、渲染业务信息。
+UNS is a data source, not a UI. Encapsulate **topic paths** and **raw VQT** inside a composable / data layer; components consume domain objects and render business information only.
 
-不要照抄「按钮 → 读 topic → `JSON.stringify(data)`」这种写法：那会把 topic 路径和原始响应直接暴露给用户，违背 UNS 理念。正确做法是「数据层拿数 → 映射成领域对象 → 视图层渲染业务概念」。
+Do not copy the "button → read topic → `JSON.stringify(data)`" shape: it exposes topic paths and raw responses to users, violating the UNS doctrine. The correct shape is "data layer fetches → maps to a domain object → view renders business concepts".
 
 ```ts
-// composables/useLine1Temperature.ts —— 数据层：topic 路径与原始 VQT 都留在这里
+// composables/useLine1Temperature.ts — data layer: topic paths and raw VQT stay here
 import { ref } from 'vue';
 import { useOpenapiv1unsread } from '@tier0/sdk/openapi/vue';
 
@@ -30,7 +30,7 @@ export function useLine1Temperature() {
   const refresh = async () => {
     const res = await execute({ topics: ['Plant/Line1/Metric/Temperature'] });
     const item = res?.data?.results?.[0];
-    // 校验 quality，非 Good 不当作可用数据
+    // Validate quality; non-Good values are not usable data.
     celsius.value =
       item?.success && item.result?.quality === 'Good'
         ? (item.result.value.temperature as number)
@@ -42,7 +42,7 @@ export function useLine1Temperature() {
 ```
 
 ```vue
-<!-- 视图层：只呈现业务概念（产线温度），用户看不到 topic / MQTT / 命名空间 -->
+<!-- View layer: renders the business concept (line temperature); users never see topics / MQTT / namespaces -->
 <script setup lang="ts">
 import { useLine1Temperature } from '@/composables/useLine1Temperature';
 
@@ -51,17 +51,17 @@ const { celsius, loading, error, refresh } = useLine1Temperature();
 
 <template>
   <section>
-    <h3>产线 1 温度</h3>
+    <h3>Line 1 Temperature</h3>
     <p>{{ celsius != null ? `${celsius} °C` : '—' }}</p>
     <button @click="refresh" :disabled="loading">
-      {{ loading ? '刷新中…' : '刷新' }}
+      {{ loading ? 'Refreshing…' : 'Refresh' }}
     </button>
-    <p v-if="error" role="alert">读取失败，请稍后重试</p>
+    <p v-if="error" role="alert">Read failed, please retry later</p>
   </section>
 </template>
 ```
 
-## 所有可用的 Composables
+## All Available Composables
 
 ```typescript
 import {
@@ -86,8 +86,8 @@ import {
 } from '@tier0/sdk/openapi/vue';
 ```
 
-每个 Composable 返回：
-- `data` — 响应数据（`ref`）
-- `loading` — 是否加载中（`ref<boolean>`）
-- `error` — 错误对象（`ref<Error | null>`）
-- `execute(body)` — 触发请求（异步函数）
+Each composable returns:
+- `data` — response data (`ref`)
+- `loading` — loading state (`ref<boolean>`)
+- `error` — error object (`ref<Error | null>`)
+- `execute(body)` — trigger the request (async function)

@@ -1,12 +1,12 @@
 ---
 name: tier0-sdk-openapi-write
-version: 0.4.0
-description: "POST /openapi/v1/uns/write — 向 UNS topic 写入数据点（VQT）"
+version: 0.5.0
+description: "POST /openapi/v1/uns/write — write data points (VQT) to UNS topics"
 ---
 
 # write — `POST /openapi/v1/uns/write`
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -14,50 +14,50 @@ import { unsApi } from '@tier0/sdk/openapi';
 const result = await unsApi.openapiv1unswrite(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `writes` | WriteItem[] | **是** | 写入项列表，每项对应一个 topic |
-| `qos` | integer | 否 | MQTT QoS（0/1/2），默认 0，作用于本次全部写入 |
-| `retain` | boolean | 否 | 是否设置 MQTT retain 标志，默认 false。设置为 true 时，新订阅者连接后会立即收到该 topic 最后一条 retained 消息 |
+| `writes` | WriteItem[] | **Yes** | Write items, one per topic |
+| `qos` | integer | No | MQTT QoS (0/1/2), default 0, applies to all writes in this call |
+| `retain` | boolean | No | MQTT retain flag, default false. When true, new subscribers immediately receive the topic's last retained message on connect |
 
-### WriteItem 结构
+### WriteItem Structure
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `topic` | string | **是** | 目标 topic 完整路径（叶子节点），不支持通配符 |
-| `value` | object | **是** | **必须是对象**，字段名须符合该 topic 的 fields 定义。不能是裸数字/字符串 |
-| `quality` | string | 否 | 数据质量：`Good` / `Uncertain` / `Bad`，默认由平台按 Broker ack 设置 |
-| `timeStamp` | integer | 否 | 数据采集时间，**毫秒**时间戳。不传则服务端用当前时间填充 |
+| `topic` | string | **Yes** | Full path of the target topic (leaf node); wildcards not supported |
+| `value` | object | **Yes** | **Must be an object** whose keys match the topic's `fields` definition. Never a bare number/string |
+| `quality` | string | No | Data quality: `Good` / `Uncertain` / `Bad`; defaults to platform-set value based on broker ack |
+| `timeStamp` | integer | No | Collection time, **millisecond** timestamp. Server fills current time when omitted |
 
-> ⚠️ **禁止在 `value` 中写 `_timestamp`** — `_timestamp` 是系统落库时间字段，如需记录采集时刻请用 `timeStamp`（WriteItem 顶层字段）。
+> ⚠️ **Never write `_timestamp` inside `value`** — `_timestamp` is the system persistence-time field. To record collection time, use the top-level `timeStamp` field of WriteItem.
 >
-> **注意**：写入成功仅代表 MQTT Broker 已收到，不代表下游执行完成。如需确认执行结果，请用 `read` 查对应的 State topic。
+> **Note**: a successful write only means the MQTT broker accepted the message, not that downstream execution completed. To confirm the result of a command, `read` the corresponding State topic.
 
-## 响应结构
+## Response Structure
 
-HTTP 200 + 外层 `code:200` **不代表写入全部成功**，必须检查 `data.success` 和 `data.results[i].success`：
+HTTP 200 plus outer `code: 200` does **not** mean all writes succeeded. Check `data.success` and each `data.results[i].success`:
 
 ```typescript
 {
-  code: number;      // HTTP 状态，200 仅表示请求到达
+  code: number;      // HTTP-level status; 200 only means the request arrived
   msg: string;
   data: {
-    success: boolean;   // 整体是否全部成功
+    success: boolean;   // whether every item succeeded
     results: Array<{
-      success: boolean; // 单项是否成功
+      success: boolean; // per-item success
       topic: string;
-      // 成功时无额外字段；失败时有 error
+      // no extra fields on success; error present on failure
       error?: { code: number; message: string };
     }>;
   };
 }
 ```
 
-## 使用示例
+## Examples
 
-### 写入单个 topic
+### Write a single topic
 
 ```typescript
 import { unsApi } from '@tier0/sdk/openapi';
@@ -74,13 +74,13 @@ const result = await unsApi.openapiv1unswrite({
 if (!result.data.success) {
   for (const item of result.data.results) {
     if (!item.success) {
-      console.error(`写入失败 ${item.topic}: ${item.error?.message}`);
+      console.error(`Write failed ${item.topic}: ${item.error?.message}`);
     }
   }
 }
 ```
 
-### 批量写入（含采集时间戳）
+### Batch write with collection timestamps
 
 ```typescript
 const result = await unsApi.openapiv1unswrite({
@@ -100,28 +100,28 @@ const result = await unsApi.openapiv1unswrite({
 });
 ```
 
-### 写入前确认 schema（推荐）
+### Confirm the schema before writing (recommended)
 
-不确定 topic 的字段定义时，先 browse 再写：
+When unsure about a topic's field definitions, browse first, then write:
 
 ```typescript
-// 1. 先查 schema
+// 1. Look up the schema.
 const browse = await unsApi.openapiv1unsbrowse({
   path: 'Plant/Line1/Metric/Temperature',
   include_metadata: true,
 });
-// browse.data.tree[0].fields 包含字段定义（include_metadata: true 时）
+// browse.data.tree[0].fields contains the field definitions (include_metadata: true)
 
-// 2. 按 fields 构造 value 再写入
+// 2. Build value according to fields, then write.
 await unsApi.openapiv1unswrite({
   writes: [{ topic: 'Plant/Line1/Metric/Temperature', value: { temperature: 27.5 } }],
 });
 ```
 
-## 常见错误
+## Common Errors
 
-| 错误 | 原因 | 解决 |
+| Error | Cause | Fix |
 |------|------|------|
-| `success: false` + schema validation | `value` 字段名不符合 fields 定义，或类型不匹配 | 先 browse `include_metadata` 确认 fields |
-| `success: false` + topic not found | topic 路径不存在或拼写错误 | 先 browse/search 确认完整路径 |
-| `value` 写成标量被拒 | `value: 27.5` 而非 `value: { temperature: 27.5 }` | value 必须是对象 |
+| `success: false` + schema validation | `value` keys do not match the fields definition, or types mismatch | browse with `include_metadata` first to confirm fields |
+| `success: false` + topic not found | Topic path does not exist or is misspelled | browse/search first to confirm the full path |
+| Scalar `value` rejected | `value: 27.5` instead of `value: { temperature: 27.5 }` | `value` must be an object |

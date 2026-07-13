@@ -1,12 +1,12 @@
 ---
 name: tier0-sdk-openapi-flow-get
-version: 0.4.0
-description: "POST /openapi/v1/flow/get — 获取单个 Flow 详情"
+version: 0.5.0
+description: "POST /openapi/v1/flow/get — get a single Flow's details"
 ---
 
 # get — `POST /openapi/v1/flow/get`
 
-## SDK 调用
+## SDK Call
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
@@ -14,13 +14,13 @@ import { flowApi } from '@tier0/sdk/openapi';
 const result = await flowApi.openapiv1flowget(body);
 ```
 
-## 请求参数
+## Request Parameters
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |------|------|------|------|
-| `id` | integer | **是** | Flow 的 DB 主键（整数），从 list 接口获取 |
+| `id` | integer | **Yes** | The Flow's DB primary key (integer), obtained from `list` |
 
-## 响应结构
+## Response Structure
 
 ```typescript
 {
@@ -28,12 +28,12 @@ const result = await flowApi.openapiv1flowget(body);
   msg: string;
   data: {
     id: number;
-    flowId: string;              // Node-RED 内部 id，仅内部使用
+    flowId: string;              // Node-RED internal id, internal use only
     flowName: string;
     flowType: 'source' | 'event';
     flowStatus: 'DRAFT' | 'PENDING' | 'RUNNING';
     description: string;
-    isFavorite: number;          // 1 = 已收藏，2 = 未收藏
+    isFavorite: number;          // 1 = favorited, 2 = not favorited
     currentVersionId: number;
     currentVersionName: string;
     currentVersionType: string;
@@ -43,7 +43,7 @@ const result = await flowApi.openapiv1flowget(body);
 }
 ```
 
-## 使用示例
+## Example
 
 ```typescript
 import { flowApi } from '@tier0/sdk/openapi';
