@@ -27,7 +27,7 @@ class HttpClient {
     this.config = config;
   }
 
-  private getBaseURL(): string {
+  private getBaseURLInternal(): string {
     const host = this.config.apiHost || this.config.getApiHost?.() || defaultGetApiHost();
     if (!host || !host.trim()) {
       throw new Error('Tier0 SDK: apiHost is required. Set it via ClientConfig or TIER0_API_HOST environment variable.');
@@ -35,14 +35,14 @@ class HttpClient {
     return normalizeBaseURL(host);
   }
 
-  private getApiKey(): string | undefined {
+  private getApiKeyInternal(): string | undefined {
     return this.config.apiKey || this.config.getApiKey?.() || defaultGetApiKey();
   }
 
   private async request<T>(method: string, path: string, body?: any): Promise<T> {
-    const baseURL = this.getBaseURL();
+    const baseURL = this.getBaseURLInternal();
     const url = `${baseURL}${path}`;
-    const apiKey = this.getApiKey();
+    const apiKey = this.getApiKeyInternal();
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -91,6 +91,22 @@ class HttpClient {
 
   async delete<T>(path: string, body?: any): Promise<T> {
     return this.request<T>('DELETE', path, body);
+  }
+
+  /**
+   * 获取当前客户端配置的 base URL（末尾不含斜杠）。
+   * 供文件下载等需要直接操作完整 URL 的场景使用。
+   */
+  getBaseURL(): string {
+    return this.getBaseURLInternal();
+  }
+
+  /**
+   * 获取当前客户端配置的 API Key。
+   * 供文件下载等需要手动构造请求头的场景使用。
+   */
+  getApiKey(): string | undefined {
+    return this.getApiKeyInternal();
   }
 }
 

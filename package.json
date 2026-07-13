@@ -27,6 +27,11 @@
       "import": "./dist/esm/openapi/vue.js",
       "require": "./dist/cjs/openapi/vue.js"
     },
+    "./files": {
+      "types": "./dist/esm/files.d.ts",
+      "import": "./dist/esm/files.js",
+      "require": "./dist/cjs/files.js"
+    },
     "./mq": {
       "types": "./dist/esm/mq/index.d.ts",
       "import": "./dist/esm/mq/index.js",
