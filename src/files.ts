@@ -26,7 +26,7 @@ export interface UploadOptions {
   appInstanceId?: string;
   /** AI 生成应用会话 ID */
   sessionId?: string;
-  /** 请求取消信号（作用于直传存储的 PUT 请求） */
+  /** 请求取消信号 */
   signal?: AbortSignal;
 }
 
@@ -179,16 +179,20 @@ export async function uploadFile(file: File, options: UploadOptions = {}): Promi
   const client = getClient();
   const contentType = file.type || 'application/octet-stream';
 
-  const resp = await client.post<unknown>('/openapi/v1/assets/files', {
-    fileName,
-    contentType,
-    size: file.size,
-    business: options.business,
-    useBy: options.useBy,
-    visibility: options.visibility,
-    appInstanceId: options.appInstanceId,
-    sessionId: options.sessionId,
-  });
+  const resp = await client.post<unknown>(
+    '/openapi/v1/assets/files',
+    {
+      fileName,
+      contentType,
+      size: file.size,
+      business: options.business,
+      useBy: options.useBy,
+      visibility: options.visibility,
+      appInstanceId: options.appInstanceId,
+      sessionId: options.sessionId,
+    },
+    { signal: options.signal }
+  );
   const data = unwrapData<UploadFileApiResp>(resp);
 
   if (!data.uploadUrl || !data.filePath) {
@@ -236,7 +240,9 @@ export async function getFileUrl(options: GetFileUrlOptions): Promise<GetFileUrl
     responseContentDisposition: options.responseContentDisposition,
   });
 
-  const resp = await client.get<unknown>(`/openapi/v1/assets/files/url?${query}`);
+  const resp = await client.get<unknown>(`/openapi/v1/assets/files/url?${query}`, {
+    signal: options.signal,
+  });
   const data = unwrapData<GetFileUrlApiResp>(resp);
 
   if (!data.fileUrl) {
@@ -300,9 +306,11 @@ export async function deleteFile(options: DeleteFileOptions): Promise<DeleteFile
     throw new Error('Tier0 SDK: deleteFile requires filePath');
   }
   const client = getClient();
-  const resp = await client.post<unknown>('/openapi/v1/assets/files/delete', {
-    filePath: options.filePath,
-  });
+  const resp = await client.post<unknown>(
+    '/openapi/v1/assets/files/delete',
+    { filePath: options.filePath },
+    { signal: options.signal }
+  );
   const data = unwrapData<DeleteFileApiResp>(resp);
   return { deleted: data?.deleted ?? true };
 }

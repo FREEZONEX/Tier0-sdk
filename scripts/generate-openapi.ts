@@ -100,7 +100,7 @@ class HttpClient {
     return this.config.apiKey || this.config.getApiKey?.() || defaultGetApiKey();
   }
 
-  private async request<T>(method: string, path: string, body?: any): Promise<T> {
+  private async request<T>(method: string, path: string, body?: any, options?: { signal?: AbortSignal }): Promise<T> {
     const baseURL = this.getBaseURLInternal();
     const url = \`\${baseURL}\${path}\`;
     const apiKey = this.getApiKeyInternal();
@@ -120,6 +120,7 @@ class HttpClient {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
+      signal: options?.signal,
     });
 
     if (!response.ok) {
@@ -134,24 +135,24 @@ class HttpClient {
     return response.json() as Promise<T>;
   }
 
-  async get<T>(path: string): Promise<T> {
-    return this.request<T>('GET', path);
+  async get<T>(path: string, options?: { signal?: AbortSignal }): Promise<T> {
+    return this.request<T>('GET', path, undefined, options);
   }
 
-  async post<T>(path: string, body: any): Promise<T> {
-    return this.request<T>('POST', path, body);
+  async post<T>(path: string, body: any, options?: { signal?: AbortSignal }): Promise<T> {
+    return this.request<T>('POST', path, body, options);
   }
 
-  async put<T>(path: string, body: any): Promise<T> {
-    return this.request<T>('PUT', path, body);
+  async put<T>(path: string, body: any, options?: { signal?: AbortSignal }): Promise<T> {
+    return this.request<T>('PUT', path, body, options);
   }
 
-  async patch<T>(path: string, body: any): Promise<T> {
-    return this.request<T>('PATCH', path, body);
+  async patch<T>(path: string, body: any, options?: { signal?: AbortSignal }): Promise<T> {
+    return this.request<T>('PATCH', path, body, options);
   }
 
-  async delete<T>(path: string, body?: any): Promise<T> {
-    return this.request<T>('DELETE', path, body);
+  async delete<T>(path: string, body?: any, options?: { signal?: AbortSignal }): Promise<T> {
+    return this.request<T>('DELETE', path, body, options);
   }
 
   /**

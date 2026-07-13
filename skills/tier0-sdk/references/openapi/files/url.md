@@ -1,40 +1,49 @@
 ---
 name: tier0-sdk-openapi-files-url
-version: 0.1.0
-description: "GET /openapi/v1/assets/files/url?filePath=... — 获取文件访问 URL，public 返回长期有效 URL，private 返回带有效期 presigned URL"
+version: 0.2.0
+description: "getFileUrl — GET /openapi/v1/assets/files/url 获取文件访问 URL：public 返回长期有效 URL，private 返回带 expiresAt 的 presigned URL"
 ---
 
-# url — `GET /openapi/v1/assets/files/url`
+# getFileUrl — 获取文件访问 URL
 
-## SDK 调用
+只返回可访问的 URL，不下载文件内容。需要文件内容时请用 `downloadFile`。
+
+## SDK 签名
 
 ```typescript
 import { getFileUrl } from '@tier0/sdk/files';
 
-const { fileUrl, expiresAt } = await getFileUrl({
-  filePath: 'workspace/10086/attachment/20260706/abcdef-report.csv',
-  expiredSec: 3600,
-});
+interface GetFileUrlOptions {
+  filePath: string;                     // 上传时返回的 filePath，必填
+  expiredSec?: number;                  // presigned URL 有效期（秒），默认 3600；仅 private 有效，public 忽略
+  responseContentDisposition?: string;  // 自定义下载响应头，如 attachment;filename=report.csv
+  signal?: AbortSignal;
+}
+
+interface GetFileUrlResult {
+  fileUrl: string;    // public：长期有效公开 URL；private：presigned URL
+  expiresAt?: number; // private：presigned URL 过期时间戳（毫秒）；public 无此字段
+}
+
+function getFileUrl(options: GetFileUrlOptions): Promise<GetFileUrlResult>;
 ```
 
-## 请求参数
+## 底层接口
 
-| 字段 | 类型 | 必填 | 说明 |
+`GET /openapi/v1/assets/files/url?filePath={filePath}&expiredSec={expiredSec}&responseContentDisposition={...}`
+
+| 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `filePath` | string | **是** | 上传时返回的 object key |
-| `expiredSec` | number | 否 | presigned URL 有效期（秒），默认 3600。**仅 private 文件有效**，public 文件忽略 |
+| `expiredSec` | number | 否 | presigned URL 有效期（秒），默认 3600；仅 private 文件有效 |
 | `responseContentDisposition` | string | 否 | 自定义下载响应头 |
 
-## 响应结构
+响应体（扁平 JSON；SDK 同时兼容 `{ code, msg, data }` 包裹响应）：
 
-```typescript
+```json
 {
-  code: number;
-  msg: string;
-  data: {
-    fileUrl: string;       // public：长期有效公开 URL；private：presigned URL
-    expiresAt?: number;    // public：无；private：presigned URL 过期时间戳（毫秒）
-  };
+  "fileUrl": "https://bucket.s3.amazonaws.com/...?X-Amz-Signature=...",
+  "expiresAt": 1751892400000
 }
 ```
 
@@ -78,8 +87,16 @@ const { fileUrl } = await getFileUrl({
 console.log(fileUrl); // https://cdn.example.com/...
 ```
 
+## 错误
+
+| 错误 | 触发时机 |
+|------|----------|
+| `Tier0 SDK: getFileUrl requires filePath` | 未传 `filePath` |
+| `Tier0 SDK: invalid url response from backend: missing fileUrl` | 后端响应缺少 `fileUrl` |
+| `HTTP <status>: ...` | 鉴权失败、文件不存在、跨租户访问（403）等 |
+
 ## 注意事项
 
-- `getFileUrl` 不会下载文件内容，只返回可访问的 URL。
-- private 文件的 presigned URL 会过期，不要把过期 URL 持久化到数据库。
-- public 文件返回长期有效 URL，适合 CDN 引用。
+- private 文件的 presigned URL 会过期，不要把 URL 持久化到数据库；过期后重新调用 `getFileUrl` 即可。
+- public 文件返回长期有效 URL，适合 CDN 引用与 `<img>` 直链。
+- 该接口只返回 URL，不传输文件内容。

@@ -245,4 +245,40 @@ describe('files module', () => {
       expect(result).toEqual({ deleted: true });
     });
   });
+
+  describe('abort signal', () => {
+    it('should pass signal through uploadFile presign and PUT', async () => {
+      const controller = new AbortController();
+      mockFetch
+        .mockResolvedValueOnce(jsonResponse({ filePath: 'p/f.csv', uploadUrl: 'https://s3/put' }))
+        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+      const file = new File(['x'], 'report.csv', { type: 'text/csv' });
+      await uploadFile(file, { signal: controller.signal });
+
+      expect(mockFetch.mock.calls[0][1].signal).toBe(controller.signal);
+      expect(mockFetch.mock.calls[1][1].signal).toBe(controller.signal);
+    });
+
+    it('should pass signal through getFileUrl', async () => {
+      const controller = new AbortController();
+      mockFetch.mockResolvedValueOnce(jsonResponse({ fileUrl: 'https://cdn/f.png' }));
+      await getFileUrl({ filePath: 'p/f.png', signal: controller.signal });
+      expect(mockFetch.mock.calls[0][1].signal).toBe(controller.signal);
+    });
+
+    it('should pass signal through downloadFile', async () => {
+      const controller = new AbortController();
+      mockFetch.mockResolvedValueOnce(new Response('x', { status: 200 }));
+      await downloadFile({ filePath: 'p/f.csv', signal: controller.signal });
+      expect(mockFetch.mock.calls[0][1].signal).toBe(controller.signal);
+    });
+
+    it('should pass signal through deleteFile', async () => {
+      const controller = new AbortController();
+      mockFetch.mockResolvedValueOnce(jsonResponse({ deleted: true }));
+      await deleteFile({ filePath: 'p/f.csv', signal: controller.signal });
+      expect(mockFetch.mock.calls[0][1].signal).toBe(controller.signal);
+    });
+  });
 });

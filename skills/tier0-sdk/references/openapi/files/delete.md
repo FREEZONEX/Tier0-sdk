@@ -1,36 +1,45 @@
 ---
 name: tier0-sdk-openapi-files-delete
-version: 0.1.0
-description: "POST /openapi/v1/assets/files/delete — 删除文件及元数据"
+version: 0.2.0
+description: "deleteFile — POST /openapi/v1/assets/files/delete 按 filePath 删除存储对象与文件记录"
 ---
 
-# delete — `POST /openapi/v1/assets/files/delete`
+# deleteFile — 删除文件
 
-## SDK 调用
+按上传时返回的 `filePath` 删除存储对象与文件记录，不可恢复。
+
+## SDK 签名
 
 ```typescript
 import { deleteFile } from '@tier0/sdk/files';
 
-const { deleted } = await deleteFile({
-  filePath: 'workspace/10086/attachment/20260706/abcdef-report.csv',
-});
+interface DeleteFileOptions {
+  filePath: string;  // 上传时返回的 filePath，必填
+  signal?: AbortSignal;
+}
+
+interface DeleteFileResult {
+  deleted: boolean;
+}
+
+function deleteFile(options: DeleteFileOptions): Promise<DeleteFileResult>;
 ```
 
-## 请求参数
+## 底层接口
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `filePath` | string | **是** | 上传时返回的 object key |
+`POST /openapi/v1/assets/files/delete`，请求体（JSON）：
 
-## 响应结构
-
-```typescript
+```json
 {
-  code: number;
-  msg: string;
-  data: {
-    deleted: boolean;
-  };
+  "filePath": "workspace/10086/attachment/20260706/abcdef-report.csv"
+}
+```
+
+响应体（扁平 JSON；SDK 同时兼容 `{ code, msg, data }` 包裹响应；后端返回 204/空体时 SDK 也按成功处理）：
+
+```json
+{
+  "deleted": true
 }
 ```
 
@@ -52,6 +61,13 @@ try {
   console.error(error.message);
 }
 ```
+
+## 错误
+
+| 错误 | 触发时机 |
+|------|----------|
+| `Tier0 SDK: deleteFile requires filePath` | 未传 `filePath` |
+| `HTTP <status>: ...` | 403 跨租户/无权限、404 文件不存在等 |
 
 ## 注意事项
 
