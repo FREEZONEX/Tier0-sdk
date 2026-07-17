@@ -52,6 +52,7 @@
     "build:esm": "tsc -p tsconfig.esm.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "generate": "bash scripts/generate-openapi.sh",
+    "generate:windows": "pwsh -NoProfile -File scripts/generate-openapi.ps1",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

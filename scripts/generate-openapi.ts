@@ -58,6 +58,152 @@ function getRequestBodyType(spec: any): string | null {
   return null;
 }
 
+interface PathParameter {
+  name: string;
+  type: string;
+}
+
+interface Operation {
+  name: string;
+  method: string;
+  path: string;
+  bodyType: string | null;
+  responseType: string;
+  pathParameters: PathParameter[];
+}
+
+type OperationModules = Record<string, Operation[]>;
+
+const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete']);
+const TYPED_ENVELOPE_OPERATION_IDS = new Set([
+  'postOpenapiV1Launchpad:projectNameGetMembers',
+]);
+
+function getModuleName(pathStr: string): string {
+  if (pathStr.includes('/flow/')) return 'flow';
+  if (pathStr.includes('/uns/')) return 'uns';
+  if (pathStr.includes('/launchpad/')) return 'launchpad';
+  if (pathStr.includes('/auth/')) return 'system';
+  if (pathStr.includes('/info')) return 'system';
+  if (pathStr.includes('/reload')) return 'system';
+  return 'common';
+}
+
+function getParameterType(parameter: any): string {
+  const schema = parameter?.schema || {};
+  if (schema.type === 'integer' || schema.type === 'number') return 'number';
+  if (schema.type === 'boolean') return 'boolean';
+  if (schema.type === 'array') {
+    return `${getParameterType({ schema: schema.items })}[]`;
+  }
+  return 'string';
+}
+
+function getPathParameters(pathStr: string, pathItem: any, spec: any): PathParameter[] {
+  const declaredParameters = [
+    ...(Array.isArray(pathItem.parameters) ? pathItem.parameters : []),
+    ...(Array.isArray(spec.parameters) ? spec.parameters : []),
+  ];
+
+  const placeholders = Array.from(new Set(
+    Array.from(pathStr.matchAll(/\{([^}]+)\}/g), match => match[1]),
+  ));
+  return placeholders.map(name => {
+    const parameter = [...declaredParameters]
+      .reverse()
+      .find(item => item?.in === 'path' && item?.name === name);
+    return { name, type: getParameterType(parameter) };
+  });
+}
+
+function getEnvelopeResponseType(spec: any): string | null {
+  const schema = spec.responses?.['200']?.content?.['application/json']?.schema;
+  const dataRef = schema?.properties?.data?.$ref;
+  if (!dataRef) return null;
+
+  const ref = dataRef.split('/').pop();
+  if (!ref) return null;
+
+  return `{ code: number; msg?: string; data?: components["schemas"]["${ref}"] }`;
+}
+
+function getFunctionName(operationId: string, pathParameters: PathParameter[]): string {
+  let name = operationId;
+  if (name.startsWith('get')) name = name.slice(3);
+  else if (name.startsWith('post')) name = name.slice(4);
+  else if (name.startsWith('put')) name = name.slice(3);
+  else if (name.startsWith('patch')) name = name.slice(5);
+  else if (name.startsWith('delete')) name = name.slice(6);
+
+  for (const parameter of pathParameters) {
+    name = name.split(`:${parameter.name}`).join('');
+  }
+  return toCamelCase(name);
+}
+
+function collectOperations(swagger: SwaggerDoc): OperationModules {
+  const modules: OperationModules = {};
+
+  for (const [pathStr, pathItem] of Object.entries(swagger.paths || {})) {
+    for (const [rawMethod, spec] of Object.entries(pathItem)) {
+      const method = rawMethod.toLowerCase();
+      if (!HTTP_METHODS.has(method) || !spec?.operationId) continue;
+
+      const pathParameters = getPathParameters(pathStr, pathItem, spec);
+      const bodyType = getRequestBodyType(spec);
+      const responseType = TYPED_ENVELOPE_OPERATION_IDS.has(spec.operationId)
+        ? getEnvelopeResponseType(spec) || getResponseType(spec)
+        : getResponseType(spec);
+      const moduleName = getModuleName(pathStr);
+
+      if (!modules[moduleName]) modules[moduleName] = [];
+      modules[moduleName].push({
+        name: getFunctionName(spec.operationId, pathParameters),
+        method,
+        path: pathStr,
+        bodyType,
+        responseType,
+        pathParameters,
+      });
+    }
+  }
+
+  return modules;
+}
+
+function needsBody(operation: Operation): boolean {
+  return operation.method === 'post' || operation.method === 'put' || operation.method === 'patch';
+}
+
+function getVariablesType(operation: Operation): string {
+  if (operation.pathParameters.length === 0) {
+    return operation.bodyType
+      ? `components["schemas"]["${operation.bodyType}"]`
+      : 'void';
+  }
+
+  const fields = operation.pathParameters.map(parameter => `${JSON.stringify(parameter.name)}: ${parameter.type}`);
+  if (operation.bodyType) {
+    fields.push(`body: components["schemas"]["${operation.bodyType}"]`);
+  } else if (needsBody(operation)) {
+    fields.push('body?: any');
+  }
+  return `{ ${fields.join('; ')} }`;
+}
+
+function getPathExpression(operation: Operation): string {
+  if (operation.pathParameters.length === 0) {
+    return `'${operation.path.replace(/'/g, "\\'")}'`;
+  }
+
+  const pathTemplate = operation.path
+    .replace(/`/g, '\\`')
+    .replace(/\{([^}]+)\}/g, (_, name) =>
+      '${encodeURIComponent(String(params[' + JSON.stringify(name) + ']))}',
+    );
+  return '`' + pathTemplate + '`';
+}
+
 function generateClient(): string {
   return `// Auto-generated by generate-openapi.ts
 // Do not edit manually
@@ -187,44 +333,7 @@ export { HttpClient };
 }
 
 function generateApi(swagger: SwaggerDoc): string {
-  const paths = swagger.paths || {};
-  const modules: Record<string, Array<{ name: string; method: string; path: string; bodyType: string | null; responseType: string }>> = {};
-
-  for (const [pathStr, methods] of Object.entries(paths)) {
-    for (const [method, spec] of Object.entries(methods)) {
-      const opId = spec.operationId || '';
-      if (!opId) continue;
-
-      let module = 'common';
-      if (pathStr.includes('/flow/')) module = 'flow';
-      else if (pathStr.includes('/uns/')) module = 'uns';
-      else if (pathStr.includes('/auth/')) module = 'system';
-      else if (pathStr.includes('/info')) module = 'system';
-      else if (pathStr.includes('/reload')) module = 'system';
-
-      if (!modules[module]) modules[module] = [];
-
-      const bodyType = getRequestBodyType(spec);
-      const responseType = getResponseType(spec);
-
-      let fnName = opId;
-      if (fnName.startsWith('get')) fnName = fnName.slice(3);
-      else if (fnName.startsWith('post')) fnName = fnName.slice(4);
-      else if (fnName.startsWith('put')) fnName = fnName.slice(3);
-      else if (fnName.startsWith('patch')) fnName = fnName.slice(5);
-      else if (fnName.startsWith('delete')) fnName = fnName.slice(6);
-
-      fnName = toCamelCase(fnName);
-
-      modules[module].push({
-        name: fnName,
-        method: method.toLowerCase(),
-        path: pathStr,
-        bodyType,
-        responseType,
-      });
-    }
-  }
+  const modules = collectOperations(swagger);
 
   let code = `// Auto-generated by generate-openapi.ts\n// Do not edit manually\n\n`;
   code += `import { getClient } from './client.js';\n`;
@@ -234,12 +343,17 @@ function generateApi(swagger: SwaggerDoc): string {
     const apiName = `${moduleName}Api`;
     code += `export const ${apiName} = {\n`;
 
-    for (const fn of fns) {
-      const needsBody = fn.method === 'post' || fn.method === 'put' || fn.method === 'patch';
-      const args = fn.bodyType ? `body: components["schemas"]["${fn.bodyType}"]` : (needsBody ? 'body?: any' : '');
-      const bodyArg = fn.bodyType ? ', body' : (needsBody ? ', body' : '');
-      const respType = fn.responseType === 'any' ? 'any' : fn.responseType;
-      code += `  ${fn.name}: (${args}) => getClient().${fn.method}<${respType}>('${fn.path}'${bodyArg}),\n`;
+    for (const operation of fns) {
+      const hasPathParameters = operation.pathParameters.length > 0;
+      const args = hasPathParameters
+        ? `params: ${getVariablesType(operation)}`
+        : operation.bodyType
+          ? `body: components["schemas"]["${operation.bodyType}"]`
+          : needsBody(operation) ? 'body?: any' : '';
+      const bodyArg = operation.bodyType || needsBody(operation)
+        ? `, ${hasPathParameters ? 'params.body' : 'body'}`
+        : '';
+      code += `  ${operation.name}: (${args}) => getClient().${operation.method}<${operation.responseType}>(${getPathExpression(operation)}${bodyArg}),\n`;
     }
 
     code += `};\n\n`;
@@ -249,42 +363,7 @@ function generateApi(swagger: SwaggerDoc): string {
 }
 
 function generateReact(swagger: SwaggerDoc): string {
-  const paths = swagger.paths || {};
-  const modules: Record<string, Array<{ name: string; method: string; bodyType: string | null; responseType: string }>> = {};
-
-  for (const [pathStr, methods] of Object.entries(paths)) {
-    for (const [method, spec] of Object.entries(methods)) {
-      const opId = spec.operationId || '';
-      if (!opId) continue;
-
-      let module = 'common';
-      if (pathStr.includes('/flow/')) module = 'flow';
-      else if (pathStr.includes('/uns/')) module = 'uns';
-      else if (pathStr.includes('/auth/')) module = 'system';
-      else if (pathStr.includes('/info')) module = 'system';
-      else if (pathStr.includes('/reload')) module = 'system';
-
-      if (!modules[module]) modules[module] = [];
-
-      const bodyType = getRequestBodyType(spec);
-      const responseType = getResponseType(spec);
-
-      let fnName = opId;
-      if (fnName.startsWith('get')) fnName = fnName.slice(3);
-      else if (fnName.startsWith('post')) fnName = fnName.slice(4);
-      else if (fnName.startsWith('put')) fnName = fnName.slice(3);
-      else if (fnName.startsWith('patch')) fnName = fnName.slice(5);
-      else if (fnName.startsWith('delete')) fnName = fnName.slice(6);
-      fnName = toCamelCase(fnName);
-
-      modules[module].push({
-        name: fnName,
-        method: method.toLowerCase(),
-        bodyType,
-        responseType,
-      });
-    }
-  }
+  const modules = collectOperations(swagger);
 
   let code = `// Auto-generated by generate-openapi.ts\n// Do not edit manually\n\n`;
   code += `// React hooks require @tanstack/react-query to be installed\n`;
@@ -294,13 +373,12 @@ function generateReact(swagger: SwaggerDoc): string {
 
   for (const [moduleName, fns] of Object.entries(modules)) {
     const apiName = `${moduleName}Api`;
-    for (const fn of fns) {
-      const hookName = `use${toPascalCase(fn.name)}`;
-      const bodyType = fn.bodyType ? `components["schemas"]["${fn.bodyType}"]` : 'void';
-      const respType = fn.responseType === 'any' ? 'any' : fn.responseType;
+    for (const operation of fns) {
+      const hookName = `use${toPascalCase(operation.name)}`;
+      const variablesType = getVariablesType(operation);
       code += `export function ${hookName}() {\n`;
-      code += `  return useMutation<${respType}, Error, ${bodyType}>({\n`;
-      code += `    mutationFn: ${apiName}.${fn.name},\n`;
+      code += `  return useMutation<${operation.responseType}, Error, ${variablesType}>({\n`;
+      code += `    mutationFn: ${apiName}.${operation.name},\n`;
       code += `  });\n`;
       code += `}\n\n`;
     }
@@ -310,42 +388,7 @@ function generateReact(swagger: SwaggerDoc): string {
 }
 
 function generateVue(swagger: SwaggerDoc): string {
-  const paths = swagger.paths || {};
-  const modules: Record<string, Array<{ name: string; method: string; bodyType: string | null; responseType: string }>> = {};
-
-  for (const [pathStr, methods] of Object.entries(paths)) {
-    for (const [method, spec] of Object.entries(methods)) {
-      const opId = spec.operationId || '';
-      if (!opId) continue;
-
-      let module = 'common';
-      if (pathStr.includes('/flow/')) module = 'flow';
-      else if (pathStr.includes('/uns/')) module = 'uns';
-      else if (pathStr.includes('/auth/')) module = 'system';
-      else if (pathStr.includes('/info')) module = 'system';
-      else if (pathStr.includes('/reload')) module = 'system';
-
-      if (!modules[module]) modules[module] = [];
-
-      const bodyType = getRequestBodyType(spec);
-      const responseType = getResponseType(spec);
-
-      let fnName = opId;
-      if (fnName.startsWith('get')) fnName = fnName.slice(3);
-      else if (fnName.startsWith('post')) fnName = fnName.slice(4);
-      else if (fnName.startsWith('put')) fnName = fnName.slice(3);
-      else if (fnName.startsWith('patch')) fnName = fnName.slice(5);
-      else if (fnName.startsWith('delete')) fnName = fnName.slice(6);
-      fnName = toCamelCase(fnName);
-
-      modules[module].push({
-        name: fnName,
-        method: method.toLowerCase(),
-        bodyType,
-        responseType,
-      });
-    }
-  }
+  const modules = collectOperations(swagger);
 
   let code = `// Auto-generated by generate-openapi.ts\n// Do not edit manually\n\n`;
   code += `// Vue composables require vue to be installed\n`;
@@ -355,27 +398,27 @@ function generateVue(swagger: SwaggerDoc): string {
 
   for (const [moduleName, fns] of Object.entries(modules)) {
     const apiName = `${moduleName}Api`;
-    for (const fn of fns) {
-      const hookName = `use${toPascalCase(fn.name)}`;
-      const hasBody = !!fn.bodyType;
-      const bodyType = hasBody ? `components["schemas"]["${fn.bodyType}"]` : 'void';
-      const respType = fn.responseType === 'any' ? 'any' : fn.responseType;
+    for (const operation of fns) {
+      const hookName = `use${toPascalCase(operation.name)}`;
+      const variablesType = getVariablesType(operation);
+      const hasVariables = variablesType !== 'void';
+      const variableName = operation.pathParameters.length > 0 ? 'params' : 'body';
       code += `export function ${hookName}() {\n`;
-      code += `  const data = ref<${respType} | null>(null);\n`;
+      code += `  const data = ref<${operation.responseType} | null>(null);\n`;
       code += `  const loading = ref(false);\n`;
       code += `  const error = ref<Error | null>(null);\n\n`;
-      if (hasBody) {
-        code += `  const execute = async (body: ${bodyType}) => {\n`;
+      if (hasVariables) {
+        code += `  const execute = async (${variableName}: ${variablesType}) => {\n`;
       } else {
         code += `  const execute = async () => {\n`;
       }
       code += `    loading.value = true;\n`;
       code += `    error.value = null;\n`;
       code += `    try {\n`;
-      if (hasBody) {
-        code += `      data.value = await ${apiName}.${fn.name}(body);\n`;
+      if (hasVariables) {
+        code += `      data.value = await ${apiName}.${operation.name}(${variableName});\n`;
       } else {
-        code += `      data.value = await ${apiName}.${fn.name}();\n`;
+        code += `      data.value = await ${apiName}.${operation.name}();\n`;
       }
       code += `      return data.value;\n`;
       code += `    } catch (e) {\n`;

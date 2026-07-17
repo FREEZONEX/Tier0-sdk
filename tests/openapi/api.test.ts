@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { systemApi, flowApi, unsApi } from '../../src/openapi/api.js';
+import { systemApi, flowApi, launchpadApi, unsApi } from '../../src/openapi/api.js';
 import { configureClient } from '../../src/openapi/client.js';
 
 describe('API modules', () => {
@@ -109,6 +109,77 @@ describe('API modules', () => {
       const body = { id: 1, flowName: 'updated' };
       const result = await flowApi.openapiv1flowupdate(body);
       expect(result).toEqual({ success: true });
+    });
+  });
+
+  describe('launchpadApi', () => {
+    it('openapiv1launchpadgetmembers should encode projectName and send filters', async () => {
+      configureClient({ apiHost: 'api.example.com', apiKey: 'sk-test' });
+      const response = {
+        code: 200,
+        msg: 'success',
+        data: {
+          list: [{
+            memberId: 1,
+            userId: 'user-1',
+            userName: 'Alice',
+            email: 'alice@example.com',
+            accessLevel: 'edit',
+            roles: [{
+              roleId: 2,
+              roleKey: 'operator',
+              roleName: 'Operator',
+              memberCount: 1,
+              apps: [{ appId: 3, appName: 'Dashboard' }],
+            }],
+            updatedAt: '2026-07-17T01:02:03Z',
+          }],
+          total: 1,
+          page: 1,
+          size: 20,
+        },
+      };
+      mockResponse(response);
+
+      const body = {
+        roleKey: 'operator',
+        roles: ['builder'],
+        updatedAtStart: '2026-07-01T00:00:00Z',
+        updatedAtEnd: '2026-07-17T23:59:59Z',
+        page: 1,
+        size: 20,
+      };
+      const result = await launchpadApi.openapiv1launchpadgetmembers({
+        projectName: 'Factory A/Line 1',
+        body,
+      });
+
+      expect(result.code).toBe(200);
+      expect(result.data?.list[0].roles[0].apps?.[0].appName).toBe('Dashboard');
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://api.example.com/openapi/v1/launchpad/Factory%20A%2FLine%201/getMembers',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify(body),
+          headers: expect.objectContaining({
+            Authorization: 'Bearer sk-test',
+            'X-API-Key': 'sk-test',
+          }),
+        }),
+      );
+    });
+
+    it('openapiv1launchpadgetmembers should preserve a business error without data', async () => {
+      mockResponse({ code: 1004, msg: 'project not found' });
+
+      const result = await launchpadApi.openapiv1launchpadgetmembers({
+        projectName: 'missing-project',
+        body: {},
+      });
+
+      expect(result.code).toBe(1004);
+      expect(result.msg).toBe('project not found');
+      expect(result.data).toBeUndefined();
     });
   });
 
