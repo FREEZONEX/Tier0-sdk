@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { systemApi, flowApi, unsApi } from '../../src/openapi/api.js';
+import { systemApi, flowApi, launchpadApi, unsApi } from '../../src/openapi/api.js';
 import { configureClient } from '../../src/openapi/client.js';
 
 describe('API modules', () => {
@@ -109,6 +109,37 @@ describe('API modules', () => {
       const body = { id: 1, flowName: 'updated' };
       const result = await flowApi.openapiv1flowupdate(body);
       expect(result).toEqual({ success: true });
+    });
+  });
+
+  describe('launchpadApi', () => {
+    it('getMembers should encode the project path and send filters in the body', async () => {
+      const response = {
+        code: 200,
+        data: { list: [], total: 0, page: 1, size: 20 },
+      };
+      mockResponse(response);
+      const body = {
+        roles: ['builder'],
+        updatedAtStart: '2026-07-01T00:00:00Z',
+        updatedAtEnd: '2026-07-20T23:59:59Z',
+        page: 1,
+        size: 20,
+      };
+
+      const result = await launchpadApi.openapiv1launchpadgetmembers({
+        projectName: 'Factory / Operations',
+        body,
+      });
+
+      expect(result).toEqual(response);
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://api.example.com/openapi/v1/launchpad/Factory%20%2F%20Operations/getMembers',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify(body),
+        })
+      );
     });
   });
 
