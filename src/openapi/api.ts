@@ -33,3 +33,7 @@ export const unsApi = {
   openapiv1unswrite: (body: components["schemas"]["WriteReq"]) => getClient().post<any>('/openapi/v1/uns/write', body),
 };
 
+export const launchpadApi = {
+  openapiv1launchpadgetmembers: (params: { "projectName": string; body: components["schemas"]["LaunchpadGetMembersReq"] }) => getClient().post<{ code: number; msg?: string; data?: components["schemas"]["LaunchpadMembersResp"] }>(`/openapi/v1/launchpad/${encodeURIComponent(String(params["projectName"]))}/getMembers`, params.body),
+};
+

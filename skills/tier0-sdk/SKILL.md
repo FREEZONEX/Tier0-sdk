@@ -85,6 +85,7 @@ The top-level skill stays small; load the reference for the task at hand from `r
 | UNS endpoint details — each file has field-value tables + working examples | `references/openapi/uns/{read,write,create,browse,search,history,update,delete,restore}.md` |
 | UNS create node structure: `type`/`topicType`/`fields` values, full node-tree examples | `references/openapi/uns/create.md` |
 | Flow endpoint details | `references/openapi/flow/*.md` |
+| Launchpad project member and role queries | `references/openapi/launchpad/get-members.md` |
 | File upload/download/URL/delete endpoints | `references/openapi/files/*.md` |
 | System/auth endpoints | `references/openapi/info.md`, `references/openapi/auth/whoami.md`, `references/openapi/reload.md` |
 | MQ subscribe/publish details | `references/mq/quickstart.md` |

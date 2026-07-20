@@ -324,6 +324,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/openapi/v1/launchpad/{projectName}/getMembers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postOpenapiV1Launchpad:projectNameGetMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -686,6 +702,51 @@ export interface components {
             results: components["schemas"]["OpenapiWriteResult"][];
             /** Format: boolean */
             success: boolean;
+        };
+        /** LaunchpadGetMembersReq */
+        LaunchpadGetMembersReq: {
+            /** Format: int64 */
+            page?: number;
+            roleKey?: string;
+            roles?: string[];
+            /** Format: int64 */
+            size?: number;
+            updatedAtEnd?: string;
+            updatedAtStart?: string;
+        };
+        /** LaunchpadMembersResp */
+        LaunchpadMembersResp: {
+            list: components["schemas"]["LaunchpadMemberResp"][];
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            size: number;
+            /** Format: int64 */
+            total: number;
+        };
+        /** LaunchpadMemberResp */
+        LaunchpadMemberResp: {
+            email?: string;
+            memberId: string;
+            roles: components["schemas"]["LaunchpadMemberRoleResp"][];
+            updatedAt?: string;
+            userId: string;
+            userName?: string;
+        };
+        /** LaunchpadMemberRoleResp */
+        LaunchpadMemberRoleResp: {
+            apps?: components["schemas"]["LaunchpadMemberRoleAppResp"][];
+            description?: string;
+            /** Format: int64 */
+            memberCount: number;
+            roleId: string;
+            roleKey: string;
+            roleName?: string;
+        };
+        /** LaunchpadMemberRoleAppResp */
+        LaunchpadMemberRoleAppResp: {
+            appId: string;
+            appName: string;
         };
     };
     responses: never;
@@ -1340,6 +1401,41 @@ export interface operations {
                          */
                         code: number;
                         data?: components["schemas"]["WriteResp"];
+                        /** 返回的消息 */
+                        msg?: string;
+                    };
+                };
+            };
+        };
+    };
+    "postOpenapiV1Launchpad:projectNameGetMembers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectName: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LaunchpadGetMembersReq"];
+            };
+        };
+        responses: {
+            /** @description A successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * 返回code
+                         * @default 200
+                         */
+                        code: number;
+                        data?: components["schemas"]["LaunchpadMembersResp"];
                         /** 返回的消息 */
                         msg?: string;
                     };
