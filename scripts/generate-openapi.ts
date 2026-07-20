@@ -80,6 +80,7 @@ function getModuleName(pathStr: string): string {
   if (pathStr.includes('/flow/')) return 'flow';
   if (pathStr.includes('/uns/')) return 'uns';
   if (pathStr.includes('/launchpad/')) return 'launchpad';
+  if (pathStr.includes('/platform/')) return 'platform';
   if (pathStr.includes('/auth/')) return 'system';
   if (pathStr.includes('/info')) return 'system';
   if (pathStr.includes('/reload')) return 'system';
@@ -149,7 +150,7 @@ function collectOperations(swagger: SwaggerDoc): OperationModules {
       const moduleName = getModuleName(pathStr);
       const pathParameters = getPathParameters(pathStr, pathItem, spec);
       const bodyType = getRequestBodyType(spec);
-      const responseType = moduleName === 'launchpad'
+      const responseType = moduleName === 'launchpad' || moduleName === 'platform'
         ? getEnvelopeResponseType(spec) || getResponseType(spec)
         : getResponseType(spec);
 

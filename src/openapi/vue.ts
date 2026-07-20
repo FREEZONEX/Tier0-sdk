@@ -3,7 +3,7 @@
 
 // Vue composables require vue to be installed
 import { ref } from 'vue';
-import { systemApi, flowApi, unsApi, launchpadApi } from './api.js';
+import { systemApi, flowApi, unsApi, launchpadApi, platformApi } from './api.js';
 import type { components } from './types.js';
 
 export function useGwreload() {
@@ -456,6 +456,28 @@ export function useOpenapiv1launchpadgetmembers() {
     error.value = null;
     try {
       data.value = await launchpadApi.openapiv1launchpadgetmembers(params);
+      return data.value;
+    } catch (e) {
+      error.value = e as Error;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  return { data, loading, error, execute };
+}
+
+export function useOpenapiv1platformgetmembers() {
+  const data = ref<{ code: number; msg?: string; data?: components["schemas"]["PlatformMembersResp"] } | null>(null);
+  const loading = ref(false);
+  const error = ref<Error | null>(null);
+
+  const execute = async (body: components["schemas"]["PlatformGetMembersReq"]) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      data.value = await platformApi.openapiv1platformgetmembers(body);
       return data.value;
     } catch (e) {
       error.value = e as Error;

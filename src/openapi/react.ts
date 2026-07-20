@@ -3,7 +3,7 @@
 
 // React hooks require @tanstack/react-query to be installed
 import { useMutation } from '@tanstack/react-query';
-import { systemApi, flowApi, unsApi, launchpadApi } from './api.js';
+import { systemApi, flowApi, unsApi, launchpadApi, platformApi } from './api.js';
 import type { components } from './types.js';
 
 export function useGwreload() {
@@ -129,6 +129,12 @@ export function useOpenapiv1unswrite() {
 export function useOpenapiv1launchpadgetmembers() {
   return useMutation<{ code: number; msg?: string; data?: components["schemas"]["LaunchpadMembersResp"] }, Error, { "projectName": string; body: components["schemas"]["LaunchpadGetMembersReq"] }>({
     mutationFn: launchpadApi.openapiv1launchpadgetmembers,
+  });
+}
+
+export function useOpenapiv1platformgetmembers() {
+  return useMutation<{ code: number; msg?: string; data?: components["schemas"]["PlatformMembersResp"] }, Error, components["schemas"]["PlatformGetMembersReq"]>({
+    mutationFn: platformApi.openapiv1platformgetmembers,
   });
 }
 

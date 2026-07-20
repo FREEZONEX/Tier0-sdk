@@ -49,6 +49,7 @@ Use for:
 - Flow (Node-RED) work via Tier0 APIs: create/list/get/update/deploy/delete.
 - File/attachment operations through Tier0 OpenAPI: upload, download, get URL, delete.
 - Tier0 OpenAPI clients, API keys, and host configuration.
+- Workspace/platform member queries, including role, status, keyword, and update-time filters.
 - Tier0 MQ/MQTT over WebSocket where the broker is the Tier0 endpoint.
 - React, Vue3, Vite, Node.js, or TypeScript code using `@tier0/sdk`.
 
@@ -86,6 +87,7 @@ The top-level skill stays small; load the reference for the task at hand from `r
 | UNS create node structure: `type`/`topicType`/`fields` values, full node-tree examples | `references/openapi/uns/create.md` |
 | Flow endpoint details | `references/openapi/flow/*.md` |
 | Launchpad project member and role queries | `references/openapi/launchpad/get-members.md` |
+| Platform member, workspace role, and user status queries | `references/openapi/platform/get-members.md` |
 | File upload/download/URL/delete endpoints | `references/openapi/files/*.md` |
 | System/auth endpoints | `references/openapi/info.md`, `references/openapi/auth/whoami.md`, `references/openapi/reload.md` |
 | MQ subscribe/publish details | `references/mq/quickstart.md` |
