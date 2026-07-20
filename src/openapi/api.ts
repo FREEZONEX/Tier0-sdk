@@ -37,3 +37,7 @@ export const launchpadApi = {
   openapiv1launchpadgetmembers: (params: { "projectName": string; body: components["schemas"]["LaunchpadGetMembersReq"] }) => getClient().post<{ code: number; msg?: string; data?: components["schemas"]["LaunchpadMembersResp"] }>(`/openapi/v1/launchpad/${encodeURIComponent(String(params["projectName"]))}/getMembers`, params.body),
 };
 
+export const platformApi = {
+  openapiv1platformgetmembers: (body: components["schemas"]["PlatformGetMembersReq"]) => getClient().post<{ code: number; msg?: string; data?: components["schemas"]["PlatformMembersResp"] }>('/openapi/v1/platform/getMembers', body),
+};
+

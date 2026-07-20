@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { systemApi, flowApi, launchpadApi, unsApi } from '../../src/openapi/api.js';
+import { systemApi, flowApi, launchpadApi, platformApi, unsApi } from '../../src/openapi/api.js';
 import { configureClient } from '../../src/openapi/client.js';
 
 describe('API modules', () => {
@@ -135,6 +135,36 @@ describe('API modules', () => {
       expect(result).toEqual(response);
       expect(globalThis.fetch).toHaveBeenCalledWith(
         'http://api.example.com/openapi/v1/launchpad/Factory%20%2F%20Operations/getMembers',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify(body),
+        })
+      );
+    });
+  });
+
+  describe('platformApi', () => {
+    it('getMembers should send platform member filters in the body', async () => {
+      const response = {
+        code: 200,
+        data: { list: [], total: 0, page: 1, size: 20 },
+      };
+      mockResponse(response);
+      const body = {
+        keyword: 'alice',
+        roles: ['builder'],
+        statuses: ['active'],
+        updatedAtStart: '2026-07-01T00:00:00Z',
+        updatedAtEnd: '2026-07-20T23:59:59Z',
+        page: 1,
+        size: 20,
+      };
+
+      const result = await platformApi.openapiv1platformgetmembers(body);
+
+      expect(result).toEqual(response);
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://api.example.com/openapi/v1/platform/getMembers',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify(body),

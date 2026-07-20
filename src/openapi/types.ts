@@ -340,6 +340,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/openapi/v1/platform/getMembers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postOpenapiV1PlatformGetMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -747,6 +763,46 @@ export interface components {
         LaunchpadMemberRoleAppResp: {
             appId: string;
             appName: string;
+        };
+        /** PlatformGetMembersReq */
+        PlatformGetMembersReq: {
+            keyword?: string;
+            /** Format: int64 */
+            page?: number;
+            roleKey?: string;
+            roles?: string[];
+            /** Format: int64 */
+            size?: number;
+            statuses?: string[];
+            updatedAtEnd?: string;
+            updatedAtStart?: string;
+        };
+        /** PlatformMembersResp */
+        PlatformMembersResp: {
+            list: components["schemas"]["PlatformMemberResp"][];
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            size: number;
+            /** Format: int64 */
+            total: number;
+        };
+        /** PlatformMemberResp */
+        PlatformMemberResp: {
+            email?: string;
+            nickName?: string;
+            roles: components["schemas"]["PlatformMemberRoleResp"][];
+            status: string;
+            updatedAt: string;
+            userId: string;
+            userName?: string;
+        };
+        /** PlatformMemberRoleResp */
+        PlatformMemberRoleResp: {
+            description?: string;
+            roleId: string;
+            roleKey: string;
+            roleName?: string;
         };
     };
     responses: never;
@@ -1436,6 +1492,39 @@ export interface operations {
                          */
                         code: number;
                         data?: components["schemas"]["LaunchpadMembersResp"];
+                        /** 返回的消息 */
+                        msg?: string;
+                    };
+                };
+            };
+        };
+    };
+    postOpenapiV1PlatformGetMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformGetMembersReq"];
+            };
+        };
+        responses: {
+            /** @description A successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * 返回code
+                         * @default 200
+                         */
+                        code: number;
+                        data?: components["schemas"]["PlatformMembersResp"];
                         /** 返回的消息 */
                         msg?: string;
                     };
