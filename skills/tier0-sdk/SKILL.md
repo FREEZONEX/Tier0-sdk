@@ -70,7 +70,8 @@ The top-level skill stays small; load the reference for the task at hand from `r
 4. MonoApp/TanStack Start: read `references/scaffolds/monoapptemplate.md` before importing SDK modules.
 5. Flow deploy/delete or Node-RED JSON edits: read the Flow reference and preserve the system-created `mqtt-broker` config node.
 6. Browser/Vite: pass runtime values explicitly; the SDK does not auto-read `VITE_*`.
-7. Never guess UNS request payload shapes, and never search the compiled package (`dist/`, `.d.ts`) for value conventions or examples — it contains none. Every endpoint reference under `references/openapi/` has field-value tables and complete working examples; read the matching file before composing the body. In particular, `uns/create.md` documents the exact `type`/`topicType`/`fields` values and full node-tree examples. Create topics explicitly (create, verify `results[i].success`, then write) — do not fall back to "write first, create best-effort".
+7. Project-scoped calls in generated apps must use `getCurrentProjectId()` from server/runtime code. Never hard-code a project name or ID; imported apps receive a new local project context.
+8. Never guess UNS request payload shapes, and never search the compiled package (`dist/`, `.d.ts`) for value conventions or examples — it contains none. Every endpoint reference under `references/openapi/` has field-value tables and complete working examples; read the matching file before composing the body. In particular, `uns/create.md` documents the exact `type`/`topicType`/`fields` values and full node-tree examples. Create topics explicitly (create, verify `results[i].success`, then write) — do not fall back to "write first, create best-effort".
 
 ## References
 

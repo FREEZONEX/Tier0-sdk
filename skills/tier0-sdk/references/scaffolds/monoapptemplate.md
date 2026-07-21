@@ -55,6 +55,7 @@ The platform injects Tier0 SDK runtime values:
 
 - `TIER0_API_HOST`
 - `TIER0_API_KEY`
+- `TIER0_PROJECT_ID`
 - `TIER0_MQTT_HOST`
 - `TIER0_MQTT_PORT`
 
@@ -63,6 +64,7 @@ Generated MonoApp applications must not:
 - add `TIER0_*` values to `.env.example`
 - create user-facing API key, token, OpenAPI host, MQTT host, or workspace binding settings pages
 - store Tier0 SDK credentials in app database tables
+- hard-code a project name or ID; use `getCurrentProjectId()` in server/runtime code
 
 If browser-side `VITE_TIER0_*` values are needed, the platform/runtime must inject them and the app should pass them explicitly. Do not assume the SDK automatically reads `VITE_*`.
 
