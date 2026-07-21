@@ -38,6 +38,20 @@ TIER0_API_HOST=https://<your-tier0-api-host>
 TIER0_API_KEY=<your-api-key>
 ```
 
+## Current Project
+
+Tier0 application runtimes inject `TIER0_PROJECT_ID`. Read it through the SDK instead of hard-coding a project name or ID:
+
+```typescript
+import { getCurrentProjectId } from '@tier0/sdk';
+
+const projectId = getCurrentProjectId();
+```
+
+The value is always exposed as a string: Cloud uses a UUID, while Enterprise uses its local numeric ID serialized as a string. An app imported into Enterprise receives the target Enterprise project ID, not the source Cloud project ID.
+
+Call `getCurrentProjectId()` from server/runtime code. Browser bundles cannot read Node.js `process.env` automatically.
+
 If `apiHost` has no scheme, the SDK normalizes it as `http://<host>`. For cloud deployments, pass `https://...` explicitly.
 
 ```typescript

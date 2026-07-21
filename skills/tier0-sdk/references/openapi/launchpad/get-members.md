@@ -10,13 +10,14 @@ Query members and their assigned roles in one Launchpad project. The API key mus
 
 ## SDK Call
 
-Pass the exact project name or project UUID in `projectName`. Do not pass a resource name with a `projects/` prefix. The SDK URL-encodes the value.
+Pass the exact project name or project ID in `projectName`. Do not pass a resource name with a `projects/` prefix. The SDK URL-encodes the value.
 
 ```typescript
+import { getCurrentProjectId } from '@tier0/sdk';
 import { launchpadApi } from '@tier0/sdk/openapi';
 
 const result = await launchpadApi.openapiv1launchpadgetmembers({
-  projectName: '214259e9-084b-4489-9217-bff104ab3051',
+  projectName: getCurrentProjectId(),
   body: {
     roles: ['builder', 'operator'],
     updatedAtStart: '2026-07-01T00:00:00Z',
@@ -39,7 +40,7 @@ for (const member of result.data.list) {
 
 | Field | Location | Type | Required | Description |
 |---|---|---|---|---|
-| `projectName` | path | `string` | yes | Exact project name or project UUID |
+| `projectName` | path | `string` | yes | Exact project name or project ID |
 | `roleKey` | body | `string` | no | Match one role key |
 | `roles` | body | `string[]` | no | Match any listed role key |
 | `updatedAtStart` | body | `string` | no | Inclusive RFC3339 lower bound |
@@ -84,3 +85,5 @@ type GetMembersResponse = {
 ```
 
 Identifier fields are strings in both Cloud and Enterprise responses. The public response does not expose `accessLevel`.
+
+Use an explicit project name or ID only when intentionally querying a different project. For the app's own project, always use `getCurrentProjectId()` so Cloud exports continue to work after import into Enterprise.
