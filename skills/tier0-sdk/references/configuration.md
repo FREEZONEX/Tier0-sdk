@@ -8,7 +8,7 @@ description: "Tier0 SDK configuration for Node.js, browser/Vite, OpenAPI, and MQ
 
 Read this file before writing code that connects to Tier0 or configures any Tier0 runtime value.
 
-Use it when setting up API hosts, API keys, MQTT hosts, browser builds, client initialization, runtime project context, credential handling, or secret handling. Read it before `references/openapi.md`, `references/mqtt.md`, framework references, or endpoint references whenever the task involves a live Tier0 connection.
+Use it when setting up API hosts, API keys, MQTT hosts, browser builds, client initialization, runtime project context, credential handling, or secret handling. Read it before `references/openapi.md`, [`../../tier0-sdk-mq/SKILL.md`](../../tier0-sdk-mq/SKILL.md), framework references, or domain endpoint references whenever the task involves a live Tier0 connection.
 
 ## Contents
 

@@ -40,11 +40,18 @@
   },
   "files": [
     "dist/",
-    "skills/"
+    "skills/*/SKILL.md",
+    "skills/*/references/**"
   ],
   "agents": {
     "skills": [
-      { "name": "tier0-sdk", "path": "./skills/tier0-sdk" }
+      { "name": "tier0-sdk", "path": "./skills/tier0-sdk" },
+      { "name": "tier0-sdk-uns", "path": "./skills/tier0-sdk-uns" },
+      { "name": "tier0-sdk-mq", "path": "./skills/tier0-sdk-mq" },
+      { "name": "tier0-sdk-flow", "path": "./skills/tier0-sdk-flow" },
+      { "name": "tier0-sdk-files", "path": "./skills/tier0-sdk-files" },
+      { "name": "tier0-sdk-members", "path": "./skills/tier0-sdk-members" },
+      { "name": "tier0-sdk-system", "path": "./skills/tier0-sdk-system" }
     ]
   },
   "scripts": {

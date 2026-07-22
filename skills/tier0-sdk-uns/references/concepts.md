@@ -50,7 +50,7 @@ Default application behavior:
 
 Only expose the UNS hierarchy when the user explicitly asks for a namespace browser, topic administration, diagnostics, or data-modeling UI.
 
-This section covers the inbound direction (app reads from UNS). When the app **owns** business data (orders, work orders, results) and must publish/sync it outbound to UNS, or when deciding what belongs in the app DB vs UNS, read `references/uns-data-integration.md`.
+This section covers the inbound direction (app reads from UNS). When the app **owns** business data (orders, work orders, results) and must publish/sync it outbound to UNS, or when deciding what belongs in the app DB vs UNS, read [`data-integration.md`](data-integration.md).
 
 ## UNS Topic Types
 

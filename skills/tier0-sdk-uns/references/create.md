@@ -50,7 +50,7 @@ const result = await unsApi.openapiv1unscreate(body);
 | `type` | string | `"int"` / `"float"` / `"string"` / `"bool"` |
 | `unit` | string | 单位（可选），如 `"°C"`、`"bar"` |
 
-> **命名约定（强制）**：节点名必须是稳定的、人类可读的业务名（`Temperature`、`Order`、`Packer01`）。**禁止**用 UUID、数据库主键、时间戳等运行时生成的值当节点名；**禁止**按数据库行/业务记录动态建 topic（每条订单/客户一个 topic 是错误建模）。命名空间是一次性设计好的固定 schema，业务实体用**每实体类型一个共享 topic**，实例 id 放进 payload 字段——粒度选择见 `references/uns-data-integration.md`。
+> **命名约定（强制）**：节点名必须是稳定的、人类可读的业务名（`Temperature`、`Order`、`Packer01`）。**禁止**用 UUID、数据库主键、时间戳等运行时生成的值当节点名；**禁止**按数据库行/业务记录动态建 topic（每条订单/客户一个 topic 是错误建模）。命名空间是一次性设计好的固定 schema，业务实体用**每实体类型一个共享 topic**，实例 id 放进 payload 字段——粒度选择见 [`data-integration.md`](data-integration.md)。
 >
 > **显式建模（强制，schema-first）**：业务应用的全部 topic 必须在应用集成/初始化阶段用本接口显式创建（声明 `fields`、`enableHistory`、`description`），然后才开始写入。**禁止依赖懒创建**——不要靠 write/publish 让 topic "自己出现"。
 >

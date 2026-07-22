@@ -67,7 +67,7 @@ const client = new Tier0MQClient({
 >
 > **No lazy creation**: never publish to a topic that has not been explicitly modeled. Create it first with the `create` endpoint (declaring `fields`) — do not treat publishing as a way to create topics. A publish to an unmodeled topic is a bug, not a provisioning mechanism.
 >
-> Default transport split: **HTTP write to send, MQTT subscribe to receive**. Both channels hit the same broker and topics — an HTTP write is delivered to MQTT subscribers in realtime. Reserve direct MQTT `publish` for high-frequency/fan-out sending. See `references/uns-data-integration.md` → "Transport selection".
+> Default transport split: **HTTP write to send, MQTT subscribe to receive**. Both channels hit the same broker and topics — an HTTP write is delivered to MQTT subscribers in realtime. Reserve direct MQTT `publish` for high-frequency/fan-out sending. See [`../../tier0-sdk-uns/references/data-integration.md`](../../tier0-sdk-uns/references/data-integration.md) → "Transport selection".
 
 ## Subscribe
 

@@ -25,7 +25,7 @@ The app (MonoApp/template) has its own database and is the **system of record** 
 
 Two sub-cases with **opposite** persistence rules:
 
-- **Live / reference state** (device telemetry, upstream line status, current values another system owns): read / history / subscribe on demand. Do **not** persist it as the app's source of truth — copying continuously-changing shared state into the app DB causes drift. Cache only if a feature needs it. This is the default "UNS is a data source" case (see `references/uns-concepts.md`).
+- **Live / reference state** (device telemetry, upstream line status, current values another system owns): read / history / subscribe on demand. Do **not** persist it as the app's source of truth — copying continuously-changing shared state into the app DB causes drift. Cache only if a feature needs it. This is the default "UNS is a data source" case (see [`concepts.md`](concepts.md)).
 - **Ingested events / records** (a discrete business message delivered to the app — a new order, a dispatched work order, an inbound instruction): the app consumes the message, persists it (落库), and owns its lifecycle from then on. Here UNS/MQTT is the **transport** and the app DB **becomes** the source of truth for that record. Subscribe or read the event, dedupe by message/business key (deliveries can repeat), then write it in a normal service transaction. If the app later mutates the record and the platform needs the result, mirror it back out (direction 2).
 
 ### 2. Outbound — app → UNS (publish/sync)
@@ -114,7 +114,7 @@ Notes:
 
 - Per-event write-through (on each mutation) keeps the UNS value fresh. Add a periodic reconciliation/backfill job if correctness across missed writes matters.
 - The current-value topic is last-write-wins; include `updatedAt`/version in the `value` if consumers must detect ordering.
-- For high-frequency or fan-out publishing, use `@tier0/sdk/mq` from a server worker instead of per-request writes (see `references/mqtt.md`).
+- For high-frequency or fan-out publishing, use `@tier0/sdk/mq` from a server worker instead of per-request writes (see [`../../tier0-sdk-mq/SKILL.md`](../../tier0-sdk-mq/SKILL.md)).
 
 ## Async Request–Response Design (Action → State)
 
@@ -140,7 +140,7 @@ MQTT has no request/response pairing. The `Action` payload must carry a stable b
 { "requestId": "TR-2026-0042", "status": "processing", "updatedAt": 1782108520121 }
 ```
 
-When creating these topics, declare the payload keys as `fields` (`requestId`, `status`, …) — `Action`/`State` topics without `fields` have no visible schema in UNS, and consumers cannot discover the contract. Cover nested parts with an example payload in `description`. See `references/uns-create.md`.
+When creating these topics, declare the payload keys as `fields` (`requestId`, `status`, …) — `Action`/`State` topics without `fields` have no visible schema in UNS, and consumers cannot discover the contract. Cover nested parts with an example payload in `description`. See [`create.md`](create.md).
 
 ### 2. Shared topic is an event stream, not a state table
 
