@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk
-version: 0.2.11
+version: 0.2.12
 description: "Tier0 SDK for TypeScript/JavaScript. Use when building apps or scripts with @tier0/sdk (React, Vue3, Vite, Node): read/write/history/subscribe UNS (Unified Namespace) as a backend data source, manage Flow (Node-RED) resources, publish/subscribe Tier0 MQTT/MQ over WebSocket, upload/download/delete files through Tier0 OpenAPI, or integrate external data. UNS is a data source, not a UI — do not build a UNS tree viewer, topic explorer, or namespace browser. Every topic path must have a Metric/Action/State type folder immediately before the leaf. Not for non-Tier0 brokers/APIs, another named SDK/client, or implementing an MQTT broker."
 metadata:
   requires:
@@ -39,6 +39,16 @@ Every topic path — OpenAPI `read`/`write`/`create` **and** MQ `publish`/`subsc
 Pick the type folder by semantics: `Metric` = measurements/time-series, `Action` = commands/requests, `State` = status/results/snapshots. Do not invent free-form MQTT-style topics; the platform will not insert the type folder for you, and the MQTT broker does not validate topic shape — a malformed publish "succeeds" silently and breaks interoperability.
 
 Self-check: every literal topic string you emit must match `^.+/(Metric|Action|State)/[^/]+$` (wildcard segments like `+` allowed in subscribe patterns).
+
+## UNS Read Strategy (Non-Negotiable)
+
+Choose the transport from the data-access pattern:
+
+- **Read once**: use OpenAPI `read` for a one-time current-value snapshot.
+- **Continuously changing, realtime, or always listening**: use MQTT `subscribe`. Never poll OpenAPI `read` with `setInterval`, `refetchInterval`, or a loop to simulate a subscription.
+- **Reconnect backfill**: use OpenAPI `history` only when the topic was created with `enableHistory` enabled. Never assume history exists.
+
+For a live feature, use `read` only for the initial snapshot, keep subsequent updates on MQTT `subscribe`, and use `history` after a connection gap only when history is enabled. Read `references/mq/quickstart.md` and `references/core/data-integration.md` before implementing any realtime, continuous, monitoring, auto-refresh, watch, or event-stream requirement.
 
 ## Scope
 
@@ -79,6 +89,7 @@ The top-level skill stays small; load the reference for the task at hand from `r
 |---|---|
 | Any connection, authentication, host, API key, OpenAPI client, MQ/MQTT client, browser/Vite credential setup | `references/setup/configuration.md` |
 | Tier0 concepts: Workspace, UNS, topic types, Flow relations, VQT | `references/core/concepts.md` |
+| Realtime, continuous, monitoring, auto-refresh, watch, or event-stream receive | `references/mq/quickstart.md`, `references/core/data-integration.md` |
 | Data-integration shapes: outbound sync, inbound consume, app DB vs UNS, async request–response (Action → State round-trip, correlation ids, event-stream topics) | `references/core/data-integration.md` |
 | MonoApp/TanStack Start scaffold integration | `references/scaffolds/monoapptemplate.md` |
 | OpenAPI quickstart and client configuration | `references/openapi/quickstart.md` |
@@ -103,3 +114,4 @@ Run this check on the code you generated. Do not skip it.
 2. **UNS stays out of the UI**: no topic path, wildcard, VQT structure, or `Metric`/`Action`/`State` folder name appears in any component/JSX/template or user-visible text. No page, route, or nav item named UNS/Namespace/Topic/Explorer exists — unless the user explicitly asked for an admin, diagnostics, or data-modeling tool.
 3. **Layering**: all Tier0 SDK calls live in a service/data layer (services, hooks, API routes, server actions); components render domain objects only.
 4. **Batch results checked**: every UNS batch call inspects `data.success` and each `data.results[i].success`, not just HTTP 200.
+5. **Receive transport**: one-time snapshots use OpenAPI `read`; continuous/realtime/listening uses MQTT `subscribe`; reconnect backfill uses OpenAPI `history` only when `enableHistory` is enabled. No timer, query refetch interval, or loop polls `openapiv1unsread` to simulate realtime updates.
