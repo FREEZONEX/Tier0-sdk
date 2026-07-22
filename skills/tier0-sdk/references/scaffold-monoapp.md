@@ -10,6 +10,14 @@ Use this reference when the app is based on `monoapptemplate`, TanStack Start, o
 
 The template already includes `@tier0/sdk` and server-side lazy loaders. Prefer those helpers over direct SDK imports in app code.
 
+## Contents
+
+- Required integration pattern and prohibited replacements
+- Runtime configuration and application UX boundaries
+- Service-layer examples
+- Safe Flow deployment and MQ usage
+- Platform resource naming
+
 ## Required Pattern
 
 Import lazy helper functions from `@/lib/tier0`, then call them inside the concrete server-side action/service that needs Tier0 I/O.
@@ -79,7 +87,7 @@ Default UI behavior:
 - Do not render a UNS tree, path explorer, or namespace breadcrumb as the primary UI unless the user explicitly asks for browsing or managing the UNS hierarchy.
 - Avoid making users choose from raw `Metric` / `State` / `Action` folders unless the app is specifically an admin, diagnostics, or data-modeling tool.
 
-The app DB is the system of record for app-owned entities; UNS is the platform integration bus. Before wiring UNS I/O, decide the direction per data element (read external data inbound vs sync app-owned data outbound) using `references/core/data-integration.md`.
+The app DB is the system of record for app-owned entities; UNS is the platform integration bus. Before wiring UNS I/O, decide the direction per data element (read external data inbound vs sync app-owned data outbound) using `references/uns-data-integration.md`.
 
 ## Recommended Service-Layer Examples
 

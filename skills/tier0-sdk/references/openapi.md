@@ -6,7 +6,14 @@ description: "OpenAPI module quickstart: configuration, configureClient, basic A
 
 # OpenAPI Quickstart
 
-> UNS is a data source, not a UI. The calls below are how you get/put data; keep topic paths and raw responses in a service/data layer and render business domain objects. `browse`/`search` are for dev-time discovery, not for building a user-facing namespace tree. See `references/core/concepts.md` → "UNS In Applications".
+> UNS is a data source, not a UI. The calls below are how you get/put data; keep topic paths and raw responses in a service/data layer and render business domain objects. `browse`/`search` are for dev-time discovery, not for building a user-facing namespace tree. See `references/uns-concepts.md` → "UNS In Applications".
+
+## Contents
+
+- Client and runtime configuration
+- Basic calls for UNS, Flow, and files
+- Generated types
+- Error handling
 
 ## Configuration
 
@@ -127,7 +134,7 @@ const { response } = await downloadFile({ filePath: uploaded.filePath });
 await deleteFile({ filePath: uploaded.filePath });
 ```
 
-> See `references/openapi/files/*.md` for parameter details and advanced usage.
+> See the matching `references/files-*.md` file for parameter details and advanced usage.
 
 ## Types
 

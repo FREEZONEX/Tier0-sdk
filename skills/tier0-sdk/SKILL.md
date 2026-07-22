@@ -1,117 +1,96 @@
 ---
 name: tier0-sdk
-version: 0.2.12
-description: "Tier0 SDK for TypeScript/JavaScript. Use when building apps or scripts with @tier0/sdk (React, Vue3, Vite, Node): read/write/history/subscribe UNS (Unified Namespace) as a backend data source, manage Flow (Node-RED) resources, publish/subscribe Tier0 MQTT/MQ over WebSocket, upload/download/delete files through Tier0 OpenAPI, or integrate external data. UNS is a data source, not a UI — do not build a UNS tree viewer, topic explorer, or namespace browser. Every topic path must have a Metric/Action/State type folder immediately before the leaf. Not for non-Tier0 brokers/APIs, another named SDK/client, or implementing an MQTT broker."
+version: 0.3.0
+description: "Tier0 SDK for TypeScript/JavaScript. Use when building Tier0 apps, services, workers, or scripts with @tier0/sdk: runtime configuration and project context; OpenAPI auth/system operations; project/workspace member queries; UNS modeling, current values, history, and realtime updates; MQTT/MQ publish/subscribe; Flow/Node-RED lifecycle; managed file upload/download/URL/delete; React/Vue adapters; or MonoApp integration. Prefer the SDK over hand-written HTTP, MQTT, or object-storage clients. Not for non-Tier0 APIs, brokers, or SDKs."
 metadata:
   requires:
     npm: ["@tier0/sdk"]
   hermes:
-    tags: [sdk, openapi, rest, api, uns, flow, file, upload, attachment, download, delete, mq, mqtt, websocket, react, vue3, typescript]
+    tags: [sdk, openapi, runtime, project, auth, members, uns, flow, file, upload, mq, mqtt, websocket, react, vue3, typescript]
 ---
 
 # Tier0 SDK
 
-Use `@tier0/sdk` when code must call Tier0 from TypeScript or JavaScript.
+Use the official `@tier0/sdk` package as the application integration layer for Tier0. Keep SDK calls in services, workers, server actions, API routes, hooks, or stores; expose business-domain objects to UI components.
 
-## UNS Is A Data Source, Not A UI
+## Workflow
 
-The single most important rule. Treat UNS like a database or integration API:
+1. Check the published version with `npm view @tier0/sdk version` and use the latest release. In a managed MonoApp, update `package.json` and let the platform install dependencies.
+2. Read `references/configuration.md` before configuring a live connection, host, API key, browser runtime, MQTT client, or project context.
+3. Identify the capability below and read only its linked references before writing code.
+4. Import the matching official SDK entry point. Do not hand-write replacement REST, MQTT, file-storage, or environment-resolution clients.
+5. Run the final checklist for every capability used.
 
-- A topic (e.g. `Plant/Line1/Metric/Temperature`) is an integration channel — like a DB table or REST endpoint — not a screen or user-facing object.
-- The app consumes UNS (read / history / subscribe / write) from a service/data layer, and the UI renders business domain objects (equipment, orders, alarms, KPIs). End users never see topic paths, MQTT topics, wildcards, `Metric`/`Action`/`State` folders, or the namespace tree.
-- `browse`/`search` are for dev-time discovery only. Build a UNS tree viewer, topic explorer, or namespace browser **only** when the user explicitly asks for a browser, admin, diagnostics, or data-modeling tool.
+## Package Entry Points
 
-If you are about to put a topic path or `JSON.stringify(response)` into a component, stop: move it into a service/hook and render a domain object instead.
-
-## Topic Naming Contract (Non-Negotiable)
-
-Every topic path — OpenAPI `read`/`write`/`create` **and** MQ `publish`/`subscribe` — must have a type folder (`Metric`, `Action`, or `State`) immediately before the leaf:
-
-```text
-<business path>/<Metric|Action|State>/<leaf>
-```
-
-| | Example |
+| Need | Import |
 |---|---|
-| Valid | `Mock/Line1/Action/Request`, `Plant/Line1/Metric/Temperature`, `Acme/Sales/State/Order` |
-| Invalid | `Mock/Line1/Request` (no type folder), `app/events/temperature`, `sensor/temp` |
+| Runtime context plus combined exports | `@tier0/sdk` |
+| OpenAPI clients and types | `@tier0/sdk/openapi` |
+| Managed file operations | `@tier0/sdk/files` |
+| MQTT/MQ over WebSocket | `@tier0/sdk/mq` |
+| React Query adapters | `@tier0/sdk/openapi/react` |
+| Vue 3 composables | `@tier0/sdk/openapi/vue` |
 
-Pick the type folder by semantics: `Metric` = measurements/time-series, `Action` = commands/requests, `State` = status/results/snapshots. Do not invent free-form MQTT-style topics; the platform will not insert the type folder for you, and the MQTT broker does not validate topic shape — a malformed publish "succeeds" silently and breaks interoperability.
+## Capability Router
 
-Self-check: every literal topic string you emit must match `^.+/(Metric|Action|State)/[^/]+$` (wildcard segments like `+` allowed in subscribe patterns).
+| Capability or task | Read |
+|---|---|
+| Hosts, API keys, browser/Vite values, MQTT settings, runtime project context | `references/configuration.md` |
+| OpenAPI client setup and general usage | `references/openapi.md` |
+| UNS concepts, application boundaries, topic types, VQT | `references/uns-concepts.md` |
+| UNS ownership, app DB integration, event streams, request/response, transport choice | `references/uns-data-integration.md` |
+| UNS browse/create/delete/history/read/restore/search/update/write | Matching `references/uns-*.md` file |
+| Continuous, realtime, monitoring, auto-refresh, watch, or event-stream receive | `references/mqtt.md`, `references/uns-data-integration.md` |
+| MQTT subscribe/publish, lifecycle, wildcard, and event handling | `references/mqtt.md` |
+| Flow create/list/get/update/nodes/flowdata/deploy/delete | Matching `references/flow-*.md` file |
+| File upload/download/access URL/delete | Matching `references/files-*.md` file |
+| Current identity | `references/identity-whoami.md` |
+| Launchpad project members and roles | `references/identity-project-members.md` |
+| Platform workspace members, roles, status, and filters | `references/identity-platform-members.md` |
+| Service connectivity/capabilities or gateway reload | `references/system-info.md`, `references/system-reload.md` |
+| React Query integration | `references/framework-react.md` |
+| Vue 3 integration | `references/framework-vue.md` |
+| MonoApp/TanStack Start integration | `references/scaffold-monoapp.md` |
 
-## UNS Read Strategy (Non-Negotiable)
+## Cross-Capability Rules
 
-Choose the transport from the data-access pattern:
+### Runtime And Configuration
+
+- Never hard-code an API host, MQTT host, API key, workspace binding, or project ID when the platform supplies it at runtime.
+- In generated project-scoped apps, call `getCurrentProjectId()` from server/runtime code. Imported apps receive a new local project context.
+- Browser bundles do not automatically read Node environment variables or `VITE_*`; pass browser runtime values explicitly as documented.
+
+### UNS Receive Strategy (Non-Negotiable)
 
 - **Read once**: use OpenAPI `read` for a one-time current-value snapshot.
-- **Continuously changing, realtime, or always listening**: use MQTT `subscribe`. Never poll OpenAPI `read` with `setInterval`, `refetchInterval`, or a loop to simulate a subscription.
+- **Continuously changing, realtime, or always listening**: use MQTT `subscribe`. Never poll OpenAPI `read` with a timer, query refetch interval, or loop to simulate a subscription.
 - **Reconnect backfill**: use OpenAPI `history` only when the topic was created with `enableHistory` enabled. Never assume history exists.
 
-For a live feature, use `read` only for the initial snapshot, keep subsequent updates on MQTT `subscribe`, and use `history` after a connection gap only when history is enabled. Read `references/mq/quickstart.md` and `references/core/data-integration.md` before implementing any realtime, continuous, monitoring, auto-refresh, watch, or event-stream requirement.
+For a live feature, use `read` only for the initial snapshot, keep subsequent updates on MQTT `subscribe`, and use `history` after a connection gap only when history is enabled.
 
-## Scope
+### Managed Files
 
-Use for:
+- For Tier0 application files and attachments, use `uploadFile`, `downloadFile`, `getFileUrl`, and `deleteFile` from `@tier0/sdk/files`.
+- Persist the returned `filePath` in business data. Do not persist an expiring presigned URL.
+- Do not add AWS SDK/RustFS clients, direct bucket endpoints, or permanent object-storage credentials. The SDK obtains a presigned upload URL and transfers the file to the platform-managed storage.
+- Use a manual PUT to the SDK-provided `uploadUrl` only for an advanced requirement such as custom upload progress.
 
-- Tier0 platform integration, including external data integration through Tier0.
-- UNS as a backend data source: read/write/history/search/create/delete over topic paths.
-- Flow (Node-RED) work via Tier0 APIs: create/list/get/update/deploy/delete.
-- File/attachment operations through Tier0 OpenAPI: upload, download, get URL, delete.
-- Tier0 OpenAPI clients, API keys, and host configuration.
-- Workspace/platform member queries, including role, status, keyword, and update-time filters.
-- Tier0 MQ/MQTT over WebSocket where the broker is the Tier0 endpoint.
-- React, Vue3, Vite, Node.js, or TypeScript code using `@tier0/sdk`.
+### Domain Guardrails
 
-Do not use for:
+- **UNS**: Treat UNS as a backend data/integration layer, not a user interface. Keep topic paths, wildcards, VQT, and the namespace tree out of ordinary UI. Every topic path must match `^.+/(Metric|Action|State)/[^/]+$`. Create modeled topics explicitly before writing or publishing; never guess payload shapes—read the matching `uns-*.md` reference.
+- **Flow**: Before deploy/delete or Node-RED JSON edits, read the matching Flow reference and preserve the system-created `mqtt-broker` config node and its ID.
+- **Members**: Use project-member APIs for one Launchpad project and platform-member APIs for workspace-wide user/role queries; do not substitute one scope for the other.
+- **Scope**: Do not use this Skill for a non-Tier0 API, another named SDK, a generic external MQTT broker, an MQTT broker implementation, or direct PLC/OPC UA/Modbus/device-protocol access outside Tier0 APIs.
 
-- A non-Tier0 API or SDK the user named — follow the client they specified.
-- Generic MQTT against another broker (Mosquitto, EMQX, HiveMQ, AWS IoT) unless routed through Tier0.
-- Implementing an MQTT broker/server — `@tier0/sdk/mq` is a client only.
-- Direct database, PLC, OPC UA, Modbus, or device protocol access outside Tier0 APIs.
+For SourceFlow/EventFlow Node-RED protocol JSON, use the Tier0 CLI Skill protocol references.
 
-## Guardrails
+## Final Checklist
 
-The top-level skill stays small; load the reference for the task at hand from `references/`.
-
-1. Always use the latest SDK. Before writing any code, check the published version with `npm view @tier0/sdk version` and update to it (`npm install @tier0/sdk@latest`); the SDK evolves, so never rely on a stale pinned version. In the MonoApp scaffold, do not run `npm install` manually — bump `@tier0/sdk` in `package.json` and let the managed install apply it. See `references/setup/configuration.md`.
-2. Read `references/setup/configuration.md` before any connection, host, API key, OpenAPI, MQ/MQTT, or browser/Vite credential work.
-3. Read `references/core/concepts.md` before modeling or changing UNS/Flow resources.
-4. MonoApp/TanStack Start: read `references/scaffolds/monoapptemplate.md` before importing SDK modules.
-5. Flow deploy/delete or Node-RED JSON edits: read the Flow reference and preserve the system-created `mqtt-broker` config node.
-6. Browser/Vite: pass runtime values explicitly; the SDK does not auto-read `VITE_*`.
-7. Project-scoped calls in generated apps must use `getCurrentProjectId()` from server/runtime code. Never hard-code a project name or ID; imported apps receive a new local project context.
-8. Never guess UNS request payload shapes, and never search the compiled package (`dist/`, `.d.ts`) for value conventions or examples — it contains none. Every endpoint reference under `references/openapi/` has field-value tables and complete working examples; read the matching file before composing the body. In particular, `uns/create.md` documents the exact `type`/`topicType`/`fields` values and full node-tree examples. Create topics explicitly (create, verify `results[i].success`, then write) — do not fall back to "write first, create best-effort".
-
-## References
-
-| Need | Read |
-|---|---|
-| Any connection, authentication, host, API key, OpenAPI client, MQ/MQTT client, browser/Vite credential setup | `references/setup/configuration.md` |
-| Tier0 concepts: Workspace, UNS, topic types, Flow relations, VQT | `references/core/concepts.md` |
-| Realtime, continuous, monitoring, auto-refresh, watch, or event-stream receive | `references/mq/quickstart.md`, `references/core/data-integration.md` |
-| Data-integration shapes: outbound sync, inbound consume, app DB vs UNS, async request–response (Action → State round-trip, correlation ids, event-stream topics) | `references/core/data-integration.md` |
-| MonoApp/TanStack Start scaffold integration | `references/scaffolds/monoapptemplate.md` |
-| OpenAPI quickstart and client configuration | `references/openapi/quickstart.md` |
-| React Query hooks | `references/openapi/react.md` |
-| Vue 3 composables | `references/openapi/vue.md` |
-| UNS endpoint details — each file has field-value tables + working examples | `references/openapi/uns/{read,write,create,browse,search,history,update,delete,restore}.md` |
-| UNS create node structure: `type`/`topicType`/`fields` values, full node-tree examples | `references/openapi/uns/create.md` |
-| Flow endpoint details | `references/openapi/flow/*.md` |
-| Launchpad project member and role queries | `references/openapi/launchpad/get-members.md` |
-| Platform member, workspace role, and user status queries | `references/openapi/platform/get-members.md` |
-| File upload/download/URL/delete endpoints | `references/openapi/files/*.md` |
-| System/auth endpoints | `references/openapi/info.md`, `references/openapi/auth/whoami.md`, `references/openapi/reload.md` |
-| MQ subscribe/publish details | `references/mq/quickstart.md` |
-
-For constructing SourceFlow/EventFlow Node-RED protocol JSON, use the Tier0 CLI skill protocol references.
-
-## Final Checklist Before Delivering
-
-Run this check on the code you generated. Do not skip it.
-
-1. **Topic shape**: search the code for every literal topic string (OpenAPI `topics`/`topic`/`path` values, MQ `publish`/`subscribe` arguments, Node-RED `msg.topic`). Each one must match `^.+/(Metric|Action|State)/[^/]+$` (wildcards allowed in subscribe patterns). If any topic is missing the type folder, fix it — do not ship it.
-2. **UNS stays out of the UI**: no topic path, wildcard, VQT structure, or `Metric`/`Action`/`State` folder name appears in any component/JSX/template or user-visible text. No page, route, or nav item named UNS/Namespace/Topic/Explorer exists — unless the user explicitly asked for an admin, diagnostics, or data-modeling tool.
-3. **Layering**: all Tier0 SDK calls live in a service/data layer (services, hooks, API routes, server actions); components render domain objects only.
-4. **Batch results checked**: every UNS batch call inspects `data.success` and each `data.results[i].success`, not just HTTP 200.
-5. **Receive transport**: one-time snapshots use OpenAPI `read`; continuous/realtime/listening uses MQTT `subscribe`; reconnect backfill uses OpenAPI `history` only when `enableHistory` is enabled. No timer, query refetch interval, or loop polls `openapiv1unsread` to simulate realtime updates.
+1. **Official entry point**: every integration uses the matching `@tier0/sdk` export; no replacement HTTP, MQTT, storage, or runtime-context client was introduced.
+2. **Runtime safety**: no platform-supplied host, credential, workspace, or project ID is hard-coded.
+3. **Layering**: SDK calls stay in the service/data layer and UI components receive domain objects.
+4. **UNS transport**: one-time snapshots use `read`; continuous/realtime receive uses MQTT `subscribe`; reconnect backfill uses `history` only when enabled. No polling simulates realtime.
+5. **UNS model**: topic paths satisfy the naming contract, topics are explicitly created, and batch responses inspect both outer and item-level success.
+6. **Files**: uploads/downloads use `@tier0/sdk/files`, business records store `filePath`, and no permanent storage credentials or presigned URLs are persisted.
+7. **Flow**: deploys preserve the existing system MQTT broker node.
