@@ -8,6 +8,12 @@ description: "getFileUrl — GET /openapi/v1/assets/files/url 获取文件访问
 
 只返回可访问的 URL，不下载文件内容。需要文件内容时请用 `downloadFile`。
 
+## 目录
+
+- SDK 签名与底层接口
+- private/public 文件使用示例
+- 错误和注意事项
+
 ## SDK 签名
 
 ```typescript

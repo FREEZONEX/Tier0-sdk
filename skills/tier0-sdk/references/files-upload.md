@@ -8,6 +8,13 @@ description: "uploadFile — POST /openapi/v1/assets/files 申请 presigned PUT 
 
 Cloud 与企业版接口完全统一，SDK 无需区分部署环境，通过 `configureClient` 的 `apiHost`/`apiKey`（或环境变量 `TIER0_API_HOST`/`TIER0_API_KEY`）区分即可。
 
+## 目录
+
+- SDK 签名与上传流程
+- 底层接口与使用示例
+- 浏览器、Node.js 与高级手动 PUT
+- 错误和注意事项
+
 ## SDK 签名
 
 ```typescript

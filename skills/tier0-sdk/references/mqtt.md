@@ -8,6 +8,13 @@ description: "MQ module quickstart: configuration, subscribe, publish, unsubscri
 
 > UNS/MQTT topics are integration plumbing, not UI. Subscribe/publish from server-side actions, services, or workers, map payloads into business domain objects, and push those to the UI. Never render topic strings, wildcards, or `subscribedTopics` to end users, and never build a "MQTT topics" list/monitor page unless the user explicitly asks for a diagnostics/admin tool.
 
+## Contents
+
+- Topic naming and configuration
+- Subscribe, wildcards, and multiple handlers
+- Publish and UNS payload requirements
+- Unsubscribe, lifecycle events, disconnect, and state
+
 ## Topic Naming (applies to publish AND subscribe)
 
 Every topic on the Tier0 broker follows the UNS contract — a type folder immediately before the leaf:
@@ -60,7 +67,7 @@ const client = new Tier0MQClient({
 >
 > **No lazy creation**: never publish to a topic that has not been explicitly modeled. Create it first with the `create` endpoint (declaring `fields`) — do not treat publishing as a way to create topics. A publish to an unmodeled topic is a bug, not a provisioning mechanism.
 >
-> Default transport split: **HTTP write to send, MQTT subscribe to receive**. Both channels hit the same broker and topics — an HTTP write is delivered to MQTT subscribers in realtime. Reserve direct MQTT `publish` for high-frequency/fan-out sending. See `references/core/data-integration.md` → "Transport selection".
+> Default transport split: **HTTP write to send, MQTT subscribe to receive**. Both channels hit the same broker and topics — an HTTP write is delivered to MQTT subscribers in realtime. Reserve direct MQTT `publish` for high-frequency/fan-out sending. See `references/uns-data-integration.md` → "Transport selection".
 
 ## Subscribe
 
