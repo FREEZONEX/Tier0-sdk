@@ -18,6 +18,7 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 3. Route the task to the matching domain Skill below and read that Skill before writing code.
 4. Import an official SDK entry point. Do not hand-write replacement REST, MQTT, object-storage, or environment-resolution clients.
 5. Keep SDK calls in services, workers, server actions, API routes, hooks, or stores; expose business-domain objects to UI components.
+6. For MonoApp browser attachment downloads, read [`references/scaffold-monoapp.md`](references/scaffold-monoapp.md) and [`tier0-sdk-files/references/download.md`](tier0-sdk-files/references/download.md). Resolve the trusted `filePath` server-side, stream `downloadFile().response.body` through an authenticated same-origin route, and save the browser Blob with `<a download>`.
 
 ## Domain Routing
 
@@ -58,6 +59,7 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 - In generated project-scoped apps, call `getCurrentProjectId()` from server/runtime code. Imported apps receive a new local project context.
 - Browser bundles do not automatically read Node environment variables or `VITE_*`; pass browser runtime values explicitly.
 - Do not use these Skills for a non-Tier0 API, another named SDK, a generic external MQTT broker, or direct PLC/OPC UA/Modbus/device-protocol access outside Tier0 APIs.
+- Do not navigate to or `window.open()` a private presigned URL for an attachment download. In MonoApp, proxy `downloadFile` through an authenticated same-origin route and let the UI save a Blob with `<a download>`.
 
 ## Final Checklist
 
@@ -66,3 +68,4 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 3. The implementation uses the correct official `@tier0/sdk` entry point.
 4. No platform-supplied host, credential, workspace, or project ID is hard-coded.
 5. SDK calls stay in the service/data layer and UI components receive domain objects.
+6. MonoApp attachment downloads resolve `filePath` from an authorized business record, stream `downloadFile().response.body` through the app route, and use Blob plus `<a download>` in the UI.
