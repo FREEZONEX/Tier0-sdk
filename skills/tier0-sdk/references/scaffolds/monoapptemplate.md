@@ -186,19 +186,18 @@ URLs may open an inline PDF viewer, be blocked by browser policy/extensions, and
 expose a temporary storage URL to browser history. `responseContentDisposition`
 is not a substitute for the browser-side `download` attribute.
 
-Keep `@tier0/sdk` server-only. If the scaffold's local `Tier0FilesModule` type
-does not expose `downloadFile`, extend the type instead of importing the SDK
-directly into a component:
+Keep `@tier0/sdk` server-only. If the scaffold does not already expose the files
+loader, add the complete loader below to `src/lib/tier0.ts`. Derive the module
+type from the SDK export instead of hand-writing individual function signatures,
+so upload/download/URL/delete types stay synchronized with SDK releases:
 
 ```typescript
-downloadFile: (options: {
-  filePath: string;
-  signal?: AbortSignal;
-}) => Promise<{
-  response: Response;
-  contentType: string;
-  contentDisposition?: string;
-}>;
+export type Tier0FilesModule = typeof import('@tier0/sdk/files');
+
+export async function loadTier0Files(): Promise<Tier0FilesModule> {
+  assertServerOnly('Tier0 Files SDK');
+  return require('@tier0/sdk/files') as Tier0FilesModule;
+}
 ```
 
 Call the SDK from a service:
