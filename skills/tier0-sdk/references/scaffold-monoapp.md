@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-monoapptemplate
 version: 0.1.0
-description: "Using @tier0/sdk safely inside the MonoApp TanStack Start scaffold."
+description: "Using @tier0/sdk safely inside the MonoApp TanStack Start scaffold, including mandatory MQTT subscriptions for continuously changing or realtime data."
 ---
 
 # MonoApp Template Integration
@@ -15,7 +15,8 @@ The template already includes `@tier0/sdk` and server-side lazy loaders. Prefer 
 - Required integration pattern and prohibited replacements
 - Runtime configuration and application UX boundaries
 - Service-layer examples
-- Safe Flow deployment and MQ usage
+- SDK-managed file upload and persistence
+- Safe Flow deployment and realtime/MQ transport selection
 - Platform resource naming
 
 ## Required Pattern
@@ -87,7 +88,7 @@ Default UI behavior:
 - Do not render a UNS tree, path explorer, or namespace breadcrumb as the primary UI unless the user explicitly asks for browsing or managing the UNS hierarchy.
 - Avoid making users choose from raw `Metric` / `State` / `Action` folders unless the app is specifically an admin, diagnostics, or data-modeling tool.
 
-The app DB is the system of record for app-owned entities; UNS is the platform integration bus. Before wiring UNS I/O, decide the direction per data element (read external data inbound vs sync app-owned data outbound) using [`../../tier0-sdk-uns/references/data-integration.md`](../../tier0-sdk-uns/references/data-integration.md).
+The app DB is the system of record for app-owned entities; UNS is the platform integration bus. Before wiring UNS I/O, decide the direction per data element (read external data inbound vs sync app-owned data outbound) using [`../tier0-sdk-uns/references/data-integration.md`](../tier0-sdk-uns/references/data-integration.md).
 
 ## Recommended Service-Layer Examples
 
@@ -173,6 +174,14 @@ await fetch(apiUrl('/api/equipment/command'), {
 });
 ```
 
+## File Upload and Persistence (Required)
+
+When a user asks for an upload, attachment, avatar, image, import, or other upload-and-save feature, default to `@tier0/sdk/files`. It stores content in platform-managed object storage (Cloud AWS S3 or enterprise RustFS). Do not persist uploads on the scaffold server's local filesystem, in the repository or `public/uploads`, or as database blobs.
+
+Receive the browser `File` through a server action or API route, call `uploadFile` in a service, and save only the returned `filePath` in the business record. Resolve access with `getFileUrl`, download with `downloadFile`, and remove with `deleteFile`. Never persist an expiring presigned URL. Local temporary files are allowed only for short-lived processing before the SDK upload.
+
+If `src/lib/tier0.ts` does not yet expose a files loader, extend it with the same server-only lazy-load pattern used by `loadTier0OpenApi()` and `loadTier0Mq()`. Do not use the missing helper as a reason to fall back to local storage or a handwritten S3 client. Read [`../tier0-sdk-files/SKILL.md`](../tier0-sdk-files/SKILL.md) and [`../tier0-sdk-files/references/upload.md`](../tier0-sdk-files/references/upload.md) before implementing the feature.
+
 ## Flow Deploy Safely
 
 Before deploying, get a backup and preserve existing config nodes.
@@ -205,7 +214,23 @@ export async function deployFlowPatch(flowId: number, buildNodes: (current: any[
 
 Flow deploy/delete are high-risk operations. Require explicit user confirmation before calling the service.
 
-## MQ Usage
+## Realtime Data Transport (Required)
+
+Choose the receive transport before implementing a MonoApp feature:
+
+| Data need | Required SDK path |
+|---|---|
+| Read the current value once, including an initial page snapshot | Use `getTier0UnsApi()` and OpenAPI `read` |
+| Receive continuously changing, realtime, monitoring, watch, or always-listening data | Use `loadTier0Mq()` and MQTT `subscribe` |
+| Fill a gap after MQTT reconnect | Use OpenAPI `history` only when the Topic has `enableHistory` enabled, then resume the MQTT subscription |
+
+MQTT `subscribe` is the default and required receive path for realtime scaffold features. Never add `setInterval`, `refetchInterval`, a polling loop, or repeated OpenAPI `read`/`history` calls to simulate realtime. OpenAPI `history` is reconnect backfill, not a live transport.
+
+An initial OpenAPI `read` may seed the screen, but all subsequent updates must come from the MQTT subscription. Own long-lived subscriptions in a server runtime or worker that can manage reconnect, unsubscribe, and shutdown; do not start them from React render paths or route loaders. Push normalized business-domain updates to the UI through the app's own realtime channel instead of exposing raw MQTT topics.
+
+Read [`../tier0-sdk-mq/SKILL.md`](../tier0-sdk-mq/SKILL.md) and [`../tier0-sdk-mq/references/quickstart.md`](../tier0-sdk-mq/references/quickstart.md) before implementing the subscription. For reconnect backfill, also read [`../tier0-sdk-uns/references/history.md`](../tier0-sdk-uns/references/history.md).
+
+## MQ Publish and Lifecycle
 
 Use MQ from a server-side action or service when publishing device commands or subscribing to backend-side events.
 
@@ -220,7 +245,7 @@ export async function publishDeviceMessage(topic: string, payload: unknown) {
 }
 ```
 
-Long-lived subscriptions should be owned by a server runtime or worker that can manage lifecycle and shutdown. Do not start durable MQTT subscriptions from React render paths or route loaders.
+Disconnect short-lived publisher clients after use. Keep durable subscriber lifecycle in the server runtime or worker described above.
 
 ## Naming Platform Resources
 

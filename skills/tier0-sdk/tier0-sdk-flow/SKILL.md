@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-flow
 version: 1.0.0
-description: "Tier0 SDK Flow management for TypeScript/JavaScript: create, list, inspect, rename/update, read Node-RED nodes or flowdata, deploy canvas JSON, and delete SourceFlow/EventFlow resources through Tier0 OpenAPI. Use for @tier0/sdk Flow or Node-RED lifecycle tasks."
+description: "Tier0 SDK Flow management for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. Use it to create, list, inspect, rename/update, read Node-RED nodes or flowdata, deploy canvas JSON, and delete SourceFlow/EventFlow resources through Tier0 OpenAPI. Use for @tier0/sdk Flow or Node-RED lifecycle tasks."
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -9,7 +9,7 @@ metadata:
 
 # Tier0 SDK — Flow
 
-**Before starting, read [`../tier0-sdk/SKILL.md`](../tier0-sdk/SKILL.md).**
+**Before starting, read the root SDK Skill at [`../SKILL.md`](../SKILL.md).**
 
 ## Guardrails
 

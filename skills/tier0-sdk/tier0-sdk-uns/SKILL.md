@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-uns
 version: 1.0.0
-description: "Tier0 SDK UNS operations and modeling for TypeScript/JavaScript: browse/search namespace nodes, create/update/delete/restore modeled topics, read current VQT values, write data, query history, design topic schemas, integrate app-owned data, and choose UNS versus an app database. Use for any @tier0/sdk task involving UNS paths or topic data. Continuous/realtime receive routes to tier0-sdk-mq."
+description: "Tier0 SDK UNS operations and modeling for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. Use it to browse/search namespace nodes, create/update/delete/restore modeled topics, read current VQT values, write data, query history, design topic schemas, integrate app-owned data, and choose UNS versus an app database. Use for any @tier0/sdk task involving UNS paths or topic data. Continuous/realtime receive routes to tier0-sdk-mq."
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -9,7 +9,7 @@ metadata:
 
 # Tier0 SDK — UNS
 
-**Before starting, read [`../tier0-sdk/SKILL.md`](../tier0-sdk/SKILL.md) for shared version, configuration, runtime, and layering rules.**
+**Before starting, read the root SDK Skill at [`../SKILL.md`](../SKILL.md) for shared version, configuration, runtime, and layering rules.**
 
 ## Core Rules
 

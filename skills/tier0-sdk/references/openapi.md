@@ -6,7 +6,7 @@ description: "OpenAPI module quickstart: configuration, configureClient, basic A
 
 # OpenAPI Quickstart
 
-> UNS is a data source, not a UI. The calls below are how you get/put data; keep topic paths and raw responses in a service/data layer and render business domain objects. `browse`/`search` are for dev-time discovery, not for building a user-facing namespace tree. See [`../../tier0-sdk-uns/references/concepts.md`](../../tier0-sdk-uns/references/concepts.md) → "UNS In Applications".
+> UNS is a data source, not a UI. The calls below are how you get/put data; keep topic paths and raw responses in a service/data layer and render business domain objects. `browse`/`search` are for dev-time discovery, not for building a user-facing namespace tree. See [`../tier0-sdk-uns/references/concepts.md`](../tier0-sdk-uns/references/concepts.md) → "UNS In Applications".
 
 ## Contents
 
@@ -134,7 +134,7 @@ const { response } = await downloadFile({ filePath: uploaded.filePath });
 await deleteFile({ filePath: uploaded.filePath });
 ```
 
-> See [`../../tier0-sdk-files/SKILL.md`](../../tier0-sdk-files/SKILL.md) for managed file rules, parameter details, and advanced usage.
+> See [`../tier0-sdk-files/SKILL.md`](../tier0-sdk-files/SKILL.md) for managed file rules, parameter details, and advanced usage.
 
 ## Types
 

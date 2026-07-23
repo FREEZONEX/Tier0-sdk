@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-members
 version: 1.0.0
-description: "Tier0 SDK member and role queries for TypeScript/JavaScript. Use when querying members and roles for one Launchpad project or querying platform/workspace users, workspace roles, status, keywords, and update-time filters through @tier0/sdk/openapi."
+description: "Tier0 SDK member and role queries for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. Use when querying members and roles for one Launchpad project or querying platform/workspace users, workspace roles, status, keywords, and update-time filters through @tier0/sdk/openapi."
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -9,7 +9,7 @@ metadata:
 
 # Tier0 SDK — Members
 
-**Before starting, read [`../tier0-sdk/SKILL.md`](../tier0-sdk/SKILL.md).**
+**Before starting, read the root SDK Skill at [`../SKILL.md`](../SKILL.md).**
 
 ## Scope Routing
 

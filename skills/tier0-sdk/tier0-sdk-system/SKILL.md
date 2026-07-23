@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-system
 version: 1.0.0
-description: "Tier0 SDK system and identity operations for TypeScript/JavaScript. Use when checking the current API-key identity, validating Tier0 service connectivity and capabilities, obtaining broker/service information, or reloading the gateway through @tier0/sdk/openapi."
+description: "Tier0 SDK system and identity operations for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. Use when checking the current API-key identity, validating Tier0 service connectivity and capabilities, obtaining broker/service information, or reloading the gateway through @tier0/sdk/openapi."
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -9,7 +9,7 @@ metadata:
 
 # Tier0 SDK — System
 
-**Before starting, read [`../tier0-sdk/SKILL.md`](../tier0-sdk/SKILL.md).**
+**Before starting, read the root SDK Skill at [`../SKILL.md`](../SKILL.md).**
 
 ## References
 

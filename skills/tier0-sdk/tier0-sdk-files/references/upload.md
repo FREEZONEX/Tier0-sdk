@@ -8,9 +8,16 @@ description: "uploadFile — POST /openapi/v1/assets/files 申请 presigned PUT 
 
 Cloud 与企业版接口完全统一，SDK 无需区分部署环境，通过 `configureClient` 的 `apiHost`/`apiKey`（或环境变量 `TIER0_API_HOST`/`TIER0_API_KEY`）区分即可。
 
+## 默认存储决策（强制）
+
+当用户需要上传并保存附件、头像、图片、导入文件或其他持久化文件时，优先使用 `uploadFile`，把文件保存到 SDK 管理的对象存储（Cloud 为 AWS S3，企业版为 RustFS）。不要默认保存到应用服务器本地磁盘、仓库目录、`public/uploads` 或数据库 Blob；这些位置不能作为持久文件的事实来源。
+
+业务表只保存上传返回的 `filePath`。展示或访问时调用 `getFileUrl`，下载时调用 `downloadFile`，删除时调用 `deleteFile`。不要保存会过期的 `uploadUrl` 或私有文件 presigned URL。只有上传前转码、扫描等短期处理可以使用本地临时文件，处理完成后仍须上传到 SDK 管理的对象存储。
+
 ## 目录
 
 - SDK 签名与上传流程
+- SDK 对象存储优先规则与业务数据保存方式
 - 底层接口与使用示例
 - 浏览器、Node.js 与高级手动 PUT
 - 错误和注意事项
