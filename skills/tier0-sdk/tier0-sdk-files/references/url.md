@@ -8,6 +8,12 @@ description: "getFileUrl — GET /openapi/v1/assets/files/url 获取文件访问
 
 只返回可访问的 URL，不下载文件内容。需要文件内容时请用 `downloadFile`。
 
+## 目录
+
+- SDK 签名与底层接口
+- private/public 文件使用示例
+- 错误和注意事项
+
 该接口适合图片/媒体预览、第三方临时访问或确实需要外发 URL 的场景。
 浏览器应用的“下载附件”按钮不得使用该接口后直接 `window.open()`、
 设置 `location.href` 或打开新标签页；这会让 PDF 等文件进入内置预览器，

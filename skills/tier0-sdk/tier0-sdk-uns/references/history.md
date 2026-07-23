@@ -8,6 +8,13 @@ description: "POST /openapi/v1/uns/history — 查询 UNS topic 历史数据"
 
 **⚠️ 时间格式和聚合参数极易出错，务必读完本文档再调用。**
 
+## 目录
+
+- SDK 调用与请求参数
+- 聚合和响应结构
+- 原始数据、聚合、多 Topic 与分页示例
+- 常见错误
+
 ## SDK 调用
 
 ```typescript
