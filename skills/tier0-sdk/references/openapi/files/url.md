@@ -8,6 +8,12 @@ description: "getFileUrl — GET /openapi/v1/assets/files/url 获取文件访问
 
 只返回可访问的 URL，不下载文件内容。需要文件内容时请用 `downloadFile`。
 
+该接口适合图片/媒体预览、第三方临时访问或确实需要外发 URL 的场景。
+浏览器应用的“下载附件”按钮不得使用该接口后直接 `window.open()`、
+设置 `location.href` 或打开新标签页；这会让 PDF 等文件进入内置预览器，
+也可能被浏览器策略或扩展拦截。应用下载请使用 `downloadFile`，并按
+`download.md` 中的 Blob + `<a download>` 模式实现。
+
 ## SDK 签名
 
 ```typescript
@@ -63,7 +69,7 @@ const { fileUrl } = await getFileUrl({
 document.querySelector('img').src = fileUrl;
 ```
 
-### 外发下载链接
+### 外发临时访问链接
 
 ```typescript
 const { fileUrl, expiresAt } = await getFileUrl({
@@ -100,3 +106,6 @@ console.log(fileUrl); // https://cdn.example.com/...
 - private 文件的 presigned URL 会过期，不要把 URL 持久化到数据库；过期后重新调用 `getFileUrl` 即可。
 - public 文件返回长期有效 URL，适合 CDN 引用与 `<img>` 直链。
 - 该接口只返回 URL，不传输文件内容。
+- `responseContentDisposition` 不能替代浏览器端 `<a download>`，也不能保证不同对象存储和浏览器都强制下载。
+- MonoApp/TanStack Start 的附件下载必须经过同源服务端路由：服务端调用 `downloadFile` 并流式转发，浏览器再保存 Blob。
+- 不要把 private presigned URL 写入数据库、业务记录、浏览器历史或长期缓存。

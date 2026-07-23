@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk
-version: 0.2.12
+version: 0.2.13
 description: "Tier0 SDK for TypeScript/JavaScript. Use when building apps or scripts with @tier0/sdk (React, Vue3, Vite, Node): read/write/history/subscribe UNS (Unified Namespace) as a backend data source, manage Flow (Node-RED) resources, publish/subscribe Tier0 MQTT/MQ over WebSocket, upload/download/delete files through Tier0 OpenAPI, or integrate external data. UNS is a data source, not a UI — do not build a UNS tree viewer, topic explorer, or namespace browser. Every topic path must have a Metric/Action/State type folder immediately before the leaf. Not for non-Tier0 brokers/APIs, another named SDK/client, or implementing an MQTT broker."
 metadata:
   requires:
@@ -82,6 +82,7 @@ The top-level skill stays small; load the reference for the task at hand from `r
 6. Browser/Vite: pass runtime values explicitly; the SDK does not auto-read `VITE_*`.
 7. Project-scoped calls in generated apps must use `getCurrentProjectId()` from server/runtime code. Never hard-code a project name or ID; imported apps receive a new local project context.
 8. Never guess UNS request payload shapes, and never search the compiled package (`dist/`, `.d.ts`) for value conventions or examples — it contains none. Every endpoint reference under `references/openapi/` has field-value tables and complete working examples; read the matching file before composing the body. In particular, `uns/create.md` documents the exact `type`/`topicType`/`fields` values and full node-tree examples. Create topics explicitly (create, verify `results[i].success`, then write) — do not fall back to "write first, create best-effort".
+9. Browser app attachment downloads: use `downloadFile` from a server-side service/API route, stream the response through a same-origin app endpoint, then create a Blob URL and click an `<a download>` in the browser. Do not navigate to or `window.open()` a private presigned URL, and do not rely on `responseContentDisposition` to force browser download. Read both `references/scaffolds/monoapptemplate.md` and `references/openapi/files/download.md`.
 
 ## References
 
@@ -115,3 +116,4 @@ Run this check on the code you generated. Do not skip it.
 3. **Layering**: all Tier0 SDK calls live in a service/data layer (services, hooks, API routes, server actions); components render domain objects only.
 4. **Batch results checked**: every UNS batch call inspects `data.success` and each `data.results[i].success`, not just HTTP 200.
 5. **Receive transport**: one-time snapshots use OpenAPI `read`; continuous/realtime/listening uses MQTT `subscribe`; reconnect backfill uses OpenAPI `history` only when `enableHistory` is enabled. No timer, query refetch interval, or loop polls `openapiv1unsread` to simulate realtime updates.
+6. **Attachment download**: browser downloads go through an authenticated same-origin app route, the route resolves the stored `filePath` from a business record ID and streams `downloadFile().response.body`, and the UI downloads the resulting Blob with `<a download>`. No component opens a private presigned URL directly.
