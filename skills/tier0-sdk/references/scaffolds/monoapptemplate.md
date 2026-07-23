@@ -165,6 +165,99 @@ await fetch(apiUrl('/api/equipment/command'), {
 });
 ```
 
+## Browser Attachment Downloads
+
+Treat attachment download as an authenticated app feature, not as navigation to
+object storage. The safe MonoApp flow is:
+
+```text
+business record ID
+  -> authenticated same-origin app route
+  -> server resolves the stored filePath
+  -> Tier0 downloadFile
+  -> streamed Response body
+  -> browser Blob
+  -> <a download="original-name">
+```
+
+Do not implement attachment download with `getFileUrl()` followed by
+`window.open()`, `location.href`, or an `<a target="_blank">`. Private presigned
+URLs may open an inline PDF viewer, be blocked by browser policy/extensions, and
+expose a temporary storage URL to browser history. `responseContentDisposition`
+is not a substitute for the browser-side `download` attribute.
+
+Keep `@tier0/sdk` server-only. If the scaffold does not already expose the files
+loader, add the complete loader below to `src/lib/tier0.ts`. Derive the module
+type from the SDK export instead of hand-writing individual function signatures,
+so upload/download/URL/delete types stay synchronized with SDK releases:
+
+```typescript
+export type Tier0FilesModule = typeof import('@tier0/sdk/files');
+
+export async function loadTier0Files(): Promise<Tier0FilesModule> {
+  assertServerOnly('Tier0 Files SDK');
+  return require('@tier0/sdk/files') as Tier0FilesModule;
+}
+```
+
+Call the SDK from a service:
+
+```typescript
+// src/services/attachment-files.ts
+import { loadTier0Files } from '@/lib/tier0';
+
+export async function downloadAttachment(filePath: string) {
+  const { downloadFile } = await loadTier0Files();
+  return downloadFile({ filePath });
+}
+```
+
+The app route must accept a business record ID, load the record after
+authentication, and use the server-owned `filePath`. Never accept an arbitrary
+`filePath` from a query string or request body:
+
+```typescript
+GET: withErrors(async ({ params }) => {
+  await requireAuth();
+  const attachment = await getAttachmentById(params.id);
+  const result = await downloadAttachment(attachment.filePath);
+
+  return new Response(result.response.body, {
+    status: 200,
+    headers: {
+      'Content-Type': result.contentType || 'application/octet-stream',
+      'Cache-Control': 'private, no-store',
+    },
+  });
+});
+```
+
+Pass `response.body` through directly. Do not call `blob()` or `arrayBuffer()`
+on the server first, because that buffers the whole file in application memory.
+
+The browser calls only the same-origin app route and chooses the saved filename:
+
+```typescript
+const response = await fetch(apiUrl(`/api/attachments/${attachment.id}/download`));
+if (!response.ok) {
+  throw new Error((await response.text().catch(() => '')) || 'Download failed');
+}
+
+const blob = await response.blob();
+const objectUrl = URL.createObjectURL(blob);
+const link = document.createElement('a');
+link.href = objectUrl;
+link.download = attachment.fileName || 'download';
+document.body.appendChild(link);
+link.click();
+link.remove();
+window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+```
+
+This pattern keeps the Tier0 API key and storage URL on the server, preserves
+business authorization, works for PDFs and other binary files, and lets the UI
+control the filename consistently.
+
 ## Flow Deploy Safely
 
 Before deploying, get a backup and preserve existing config nodes.
