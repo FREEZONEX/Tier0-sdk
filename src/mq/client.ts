@@ -3,7 +3,11 @@ import type { MqttClient, IClientOptions } from 'mqtt';
 import { getEnvVar } from '../runtime-env.js';
 import type { MQTTConfig, MQTTEventMap } from './types.js';
 
-export type TopicHandler = (topic: string, payload: string) => void;
+/**
+ * 消息回调。返回 false 表示下游停滞（背压），SDK 会统计连续背压次数；
+ * 配合 MQTTConfig.maxBackpressuredDeliveries 可在阈值内自动移除订阅。
+ */
+export type TopicHandler = (topic: string, payload: string) => void | boolean;
 
 function parseWorkspaceIDFromApiKey(apiKey: string): string | undefined {
   apiKey = apiKey.trim();
@@ -47,6 +51,8 @@ function generateRandomString(length = 8): string {
 interface Subscription {
   topic: string;
   handler: TopicHandler;
+  /** handler 连续返回 false（背压）的次数，正常返回时清零。 */
+  backpressuredCount?: number;
 }
 
 export class Tier0MQClient {
@@ -158,10 +164,24 @@ export class Tier0MQClient {
         'message',
         (topic: string, payload: Buffer, _packet: mqtt.IPublishPacket) => {
           const payloadStr = payload.toString();
-          this.subscriptions.forEach((sub) => {
+          // 复制一份快照：handler 触发背压自动退订时会重建 this.subscriptions
+          this.subscriptions.slice().forEach((sub) => {
             if (this.topicMatch(sub.topic, topic)) {
               try {
-                sub.handler(topic, payloadStr);
+                const accepted = sub.handler(topic, payloadStr);
+                if (accepted === false) {
+                  sub.backpressuredCount = (sub.backpressuredCount ?? 0) + 1;
+                  const limit = this.config.maxBackpressuredDeliveries ?? 0;
+                  if (limit > 0 && sub.backpressuredCount >= limit) {
+                    this.unsubscribe(sub.topic, sub.handler);
+                    this.emit('subscriptionDropped', {
+                      topic: sub.topic,
+                      reason: `handler 连续 ${sub.backpressuredCount} 次返回背压（false），已按 maxBackpressuredDeliveries=${limit} 自动退订`,
+                    });
+                  }
+                } else {
+                  sub.backpressuredCount = 0;
+                }
               } catch (e) {
                 this.emit('error', e as Error);
               }

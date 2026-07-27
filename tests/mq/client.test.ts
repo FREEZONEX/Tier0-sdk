@@ -727,4 +727,109 @@ describe('Tier0MQClient', () => {
       );
     });
   });
+
+  describe('backpressure protection (maxBackpressuredDeliveries)', () => {
+    async function connectAndSubscribe(
+      client: Tier0MQClient,
+      topic: string,
+      handler: Function
+    ) {
+      client.subscribe(topic, handler as any);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      emit('connect');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    it('should auto-unsubscribe after N consecutive backpressured deliveries', async () => {
+      const client = new Tier0MQClient({
+        host: 'localhost',
+        port: 8080,
+        maxBackpressuredDeliveries: 3,
+      });
+
+      const handler = vi.fn(() => false);
+      const droppedHandler = vi.fn();
+      client.on('subscriptionDropped', droppedHandler);
+      await connectAndSubscribe(client, 'test/topic', handler);
+
+      emit('message', 'test/topic', Buffer.from('m1'));
+      emit('message', 'test/topic', Buffer.from('m2'));
+      expect(client.subscribedTopics).toContain('test/topic');
+      expect(droppedHandler).not.toHaveBeenCalled();
+
+      emit('message', 'test/topic', Buffer.from('m3'));
+
+      // 达到阈值：移除订阅、向 broker 退订并发出事件
+      expect(client.subscribedTopics).not.toContain('test/topic');
+      expect(mockMqttClient.unsubscribe).toHaveBeenCalledWith(
+        'test/topic',
+        expect.any(Function)
+      );
+      expect(droppedHandler).toHaveBeenCalledWith(
+        expect.objectContaining({ topic: 'test/topic' })
+      );
+
+      // 后续消息不再投递
+      handler.mockClear();
+      emit('message', 'test/topic', Buffer.from('m4'));
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('should keep subscription when protection is disabled (default)', async () => {
+      const client = new Tier0MQClient({ host: 'localhost', port: 8080 });
+
+      const handler = vi.fn(() => false);
+      await connectAndSubscribe(client, 'test/topic', handler);
+
+      for (let i = 0; i < 10; i += 1) {
+        emit('message', 'test/topic', Buffer.from(`m${i}`));
+      }
+
+      expect(client.subscribedTopics).toContain('test/topic');
+      expect(handler).toHaveBeenCalledTimes(10);
+      expect(mockMqttClient.unsubscribe).not.toHaveBeenCalled();
+    });
+
+    it('should reset the counter when the handler accepts a message again', async () => {
+      const client = new Tier0MQClient({
+        host: 'localhost',
+        port: 8080,
+        maxBackpressuredDeliveries: 2,
+      });
+
+      let accept = false;
+      const handler = vi.fn(() => accept);
+      await connectAndSubscribe(client, 'test/topic', handler);
+
+      emit('message', 'test/topic', Buffer.from('m1')); // false -> count 1
+      accept = true;
+      emit('message', 'test/topic', Buffer.from('m2')); // true -> reset
+      accept = false;
+      emit('message', 'test/topic', Buffer.from('m3')); // false -> count 1
+
+      // 未连续达到阈值，订阅保留
+      expect(client.subscribedTopics).toContain('test/topic');
+      expect(mockMqttClient.unsubscribe).not.toHaveBeenCalled();
+
+      emit('message', 'test/topic', Buffer.from('m4')); // false -> count 2，触发退订
+      expect(client.subscribedTopics).not.toContain('test/topic');
+    });
+
+    it('should treat void-returning handlers as accepted (backward compatible)', async () => {
+      const client = new Tier0MQClient({
+        host: 'localhost',
+        port: 8080,
+        maxBackpressuredDeliveries: 1,
+      });
+
+      const handler = vi.fn(() => undefined);
+      await connectAndSubscribe(client, 'test/topic', handler);
+
+      emit('message', 'test/topic', Buffer.from('m1'));
+      emit('message', 'test/topic', Buffer.from('m2'));
+
+      expect(client.subscribedTopics).toContain('test/topic');
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
+  });
 });
