@@ -8,6 +8,12 @@ description: "POST /openapi/v1/uns/read — 读取 UNS topic 当前值（VQT 结
 
 > `read` 只用于一次性读取当前值或实时功能的初始快照。持续变化、实时、一直监听的数据必须使用 MQTT `subscribe`；禁止用定时器、`refetchInterval` 或循环轮询本接口模拟订阅。断线补偿仅在 Topic 已开启 `enableHistory` 时使用 OpenAPI `history`。
 
+## 目录
+
+- SDK 调用、请求参数和响应结构
+- Quality 含义
+- 单 Topic、元数据、通配符和空值处理示例
+
 ## SDK 调用
 
 ```typescript

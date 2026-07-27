@@ -9,6 +9,12 @@ description: "POST /openapi/v1/uns/search — 按关键词搜索 UNS 节点"
 按关键词检索节点名称。**已知名称片段时用 search；探索树形结构用 browse**。
 `keyword` 目前主要匹配节点短名/叶子名，不负责扫整条路径的中间段；要按路径范围查找，用 `path_prefix`。
 
+## 目录
+
+- SDK 调用、请求参数和响应结构
+- 名称与路径范围搜索
+- 字段查看和分页示例
+
 ## SDK 调用
 
 ```typescript
