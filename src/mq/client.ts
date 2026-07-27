@@ -4,10 +4,12 @@ import { getEnvVar } from '../runtime-env.js';
 import type { MQTTConfig, MQTTEventMap } from './types.js';
 
 /**
- * 消息回调。返回 false 表示下游停滞（背压），SDK 会统计连续背压次数；
- * 配合 MQTTConfig.maxBackpressuredDeliveries 可在阈值内自动移除订阅。
+ * 消息回调。公开类型保持 `void` 返回，以兼容 async handler、`push()` 简写等
+ * 既有写法；运行时额外识别返回值：handler 返回严格的 `false` 视为下游停滞
+ * （背压），SDK 会统计连续背压次数，配合 MQTTConfig.maxBackpressuredDeliveries
+ * 可在阈值内自动移除订阅。
  */
-export type TopicHandler = (topic: string, payload: string) => void | boolean;
+export type TopicHandler = (topic: string, payload: string) => void;
 
 function parseWorkspaceIDFromApiKey(apiKey: string): string | undefined {
   apiKey = apiKey.trim();
@@ -168,7 +170,10 @@ export class Tier0MQClient {
           this.subscriptions.slice().forEach((sub) => {
             if (this.topicMatch(sub.topic, topic)) {
               try {
-                const accepted = sub.handler(topic, payloadStr);
+                // 公开类型为 void 返回（兼容 async/简写 handler），运行时仅识别严格的 false
+                const accepted = (
+                  sub.handler as (t: string, p: string) => unknown
+                )(topic, payloadStr);
                 if (accepted === false) {
                   sub.backpressuredCount = (sub.backpressuredCount ?? 0) + 1;
                   const limit = this.config.maxBackpressuredDeliveries ?? 0;

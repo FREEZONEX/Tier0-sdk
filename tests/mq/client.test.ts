@@ -831,5 +831,34 @@ describe('Tier0MQClient', () => {
       expect(client.subscribedTopics).toContain('test/topic');
       expect(handler).toHaveBeenCalledTimes(2);
     });
+
+    it('should treat async and non-boolean shorthand handlers as accepted', async () => {
+      const client = new Tier0MQClient({
+        host: 'localhost',
+        port: 8080,
+        maxBackpressuredDeliveries: 1,
+      });
+
+      const queue: string[] = [];
+      // 既有写法：async handler 与 push() 简写（返回 Promise/number），
+      // 运行时均不视为背压
+      const asyncHandler = vi.fn(async () => {});
+      const pushHandler = vi.fn((_t: string, p: string) => queue.push(p));
+      client.subscribe('test/async', asyncHandler as any);
+      client.subscribe('test/push', pushHandler as any);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      emit('connect');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      emit('message', 'test/async', Buffer.from('m1'));
+      emit('message', 'test/push', Buffer.from('m2'));
+      emit('message', 'test/push', Buffer.from('m3'));
+
+      expect(client.subscribedTopics).toContain('test/async');
+      expect(client.subscribedTopics).toContain('test/push');
+      expect(asyncHandler).toHaveBeenCalledTimes(1);
+      expect(queue).toEqual(['m2', 'm3']);
+      expect(mockMqttClient.unsubscribe).not.toHaveBeenCalled();
+    });
   });
 });
