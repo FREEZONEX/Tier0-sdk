@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-mq-quickstart
-version: 0.2.1
-description: "MQ module quickstart: configuration, subscribe, publish, unsubscribe, events. All topics follow the UNS naming contract: <business path>/<Metric|Action|State>/<leaf>."
+version: 0.2.2
+description: "MQ module quickstart: configuration, subscribe, publish, unsubscribe, backpressure, events. All topics follow the UNS naming contract: <business path>/<Metric|Action|State>/<leaf>."
 ---
 
 # MQ Quickstart
@@ -93,6 +93,59 @@ client.subscribe('Plant/+/Metric/Temperature', (topic, payload) => {
 });
 ```
 
+### Backpressure (consumer stalled or gone)
+
+A handler may return `false` to signal "downstream is backpressured" — e.g. the queue it feeds is full, or the browser consumer has disconnected. With `maxBackpressuredDeliveries` configured, the SDK counts consecutive `false` returns and automatically removes the subscription (broker unsubscribe included) once the threshold is hit, emitting `subscriptionDropped`:
+
+```typescript
+const client = new Tier0MQClient({
+  host: process.env.TIER0_MQTT_HOST,
+  password: process.env.TIER0_API_KEY,
+  maxBackpressuredDeliveries: 100, // 0 or unset = disabled (default)
+});
+
+client.on('subscriptionDropped', ({ topic, reason }) => {
+  console.warn('subscription auto-removed:', topic, reason);
+});
+
+client.subscribe('Plant/Line1/Metric/Temperature', (topic, payload) => {
+  if (downstreamQueueIsFull()) return false; // counted as backpressured
+  downstreamQueue.push(payload);
+  return true; // any non-false return resets the counter
+});
+```
+
+This is a safety net, not a substitute for lifecycle cleanup: always unsubscribe/disconnect when the consumer ends (see below).
+
+### Forwarding to a browser (SSE)
+
+One MQTT client per SSE connection, and cleanup MUST run on both teardown paths — the request abort signal AND the stream `cancel()`. Check `desiredSize` before `enqueue` so messages can never pile up in the stream's internal queue after the consumer stalls or leaves:
+
+```typescript
+return new ReadableStream<Uint8Array>({
+  async start(controller) {
+    const close = () => {
+      client.unsubscribe(topicFilter, onMessage);
+      client.disconnect();
+      try { controller.close(); } catch { /* already closed */ }
+    };
+    const onMessage = (topic: string, payload: string) => {
+      if ((controller.desiredSize ?? 0) <= 0) return false; // drop + report backpressure
+      controller.enqueue(toSse(payload));
+      return true;
+    };
+    request.signal.addEventListener('abort', close, { once: true }); // client disconnect
+    await client.connect();
+    client.subscribe(topicFilter, onMessage);
+  },
+  cancel() {
+    client.disconnect(); // stream cancelled by the server bridge
+  },
+});
+```
+
+> Never `enqueue` unconditionally in a message handler: after the consumer is gone, every message is retained in the stream queue and grows process memory without bound (this caused a production OOM). The app server must also propagate socket close to `request.signal`/`cancel()` — if you hand-roll a `node:http` → fetch bridge, abort the request signal on `res` `'close'` and pipe the response with `stream/promises` `pipeline()`.
+
 ### Multiple Handlers for One Topic
 
 ```typescript
@@ -171,6 +224,12 @@ client.on('disconnect', () => {
 
 client.on('error', (err) => {
   console.error('MQ error:', err);
+});
+
+// Fired when a subscription is auto-removed after sustained backpressure
+// (only when maxBackpressuredDeliveries is configured).
+client.on('subscriptionDropped', ({ topic, reason }) => {
+  console.warn('dropped:', topic, reason);
 });
 ```
 
