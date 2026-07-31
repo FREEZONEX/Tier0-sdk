@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { configureClient } from '../../src/openapi/client.js';
+import { configureClient, ApiError } from '../../src/openapi/client.js';
 import { uploadFile, getFileUrl, downloadFile, deleteFile } from '../../src/files.js';
 
 describe('files module', () => {
@@ -39,10 +39,51 @@ describe('files module', () => {
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
-    it('should reject files larger than 10MB before any request', async () => {
-      const file = { name: 'big.bin', size: 11 * 1024 * 1024, type: 'application/octet-stream' } as File;
-      await expect(uploadFile(file)).rejects.toThrow('exceeds the 10MB limit');
-      expect(mockFetch).not.toHaveBeenCalled();
+    it('should allow large files past client pre-check (size limit is server-side)', async () => {
+      mockFetch
+        .mockResolvedValueOnce(jsonResponse({ filePath: 'p/big.bin', uploadUrl: 'https://s3/put' }))
+        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+      // 客户端不再做 10MB 预检：大文件直接发起 presign 申请，大小上限由服务端按套餐裁定
+      const file = { name: 'big.bin', size: 20 * 1024 * 1024, type: 'application/octet-stream' } as File;
+      const result = await uploadFile(file);
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body).size).toBe(20 * 1024 * 1024);
+      expect(result.filePath).toBe('p/big.bin');
+    });
+
+    it('should reject with a structured ApiError carrying quota code/msg', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ code: 40301, msg: 'storage quota exceeded' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      const file = new File(['x'], 'report.csv', { type: 'text/csv' });
+      const err = await uploadFile(file).catch((e) => e);
+
+      // 配额超限错误可机读：status / code / msg 均为结构化字段
+      expect(err).toBeInstanceOf(ApiError);
+      expect(err.status).toBe(403);
+      expect(err.code).toBe(40301);
+      expect(err.msg).toBe('storage quota exceeded');
+      // message 语义不劣化，仍保持 `HTTP <status>: <msg>` 格式
+      expect(err.message).toBe('HTTP 403: storage quota exceeded');
+    });
+
+    it('should fall back to raw text when error body is not JSON', async () => {
+      mockFetch.mockResolvedValueOnce(new Response('Service Unavailable', { status: 503 }));
+
+      const file = new File(['x'], 'report.csv', { type: 'text/csv' });
+      const err = await uploadFile(file).catch((e) => e);
+
+      expect(err).toBeInstanceOf(ApiError);
+      expect(err.status).toBe(503);
+      expect(err.code).toBe(0);
+      expect(err.msg).toBe('Service Unavailable');
+      expect(err.message).toBe('HTTP 503: Service Unavailable');
     });
 
     it('should request presigned URL then PUT file content', async () => {

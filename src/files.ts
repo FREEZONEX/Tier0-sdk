@@ -98,9 +98,6 @@ const FORBIDDEN_EXTENSIONS = new Set([
   'htaccess', 'swf',
 ]);
 
-/** 单文件大小上限（字节）。后端最终裁定，SDK 仅做上传前友好预检 */
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
 interface UploadFileApiResp {
   fileId?: string | number;
   filePath?: string;
@@ -144,12 +141,6 @@ function checkFileName(fileName: string): string {
   return name;
 }
 
-function checkFileSize(size: number): void {
-  if (size > MAX_FILE_SIZE) {
-    throw new Error(`Tier0 SDK: file size ${size} exceeds the 10MB limit`);
-  }
-}
-
 function buildQuery(params: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -174,7 +165,6 @@ function buildQuery(params: Record<string, string | number | undefined>): string
 export async function uploadFile(file: File, options: UploadOptions = {}): Promise<UploadResult> {
   assertUploadFile(file);
   const fileName = checkFileName(file.name);
-  checkFileSize(file.size);
 
   const client = getClient();
   const contentType = file.type || 'application/octet-stream';

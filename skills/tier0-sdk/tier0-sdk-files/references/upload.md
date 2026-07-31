@@ -49,7 +49,7 @@ function uploadFile(file: File, options?: UploadOptions): Promise<UploadResult>;
 
 ## 上传流程
 
-1. SDK 读取 `file.name` / `file.type` / `file.size`，做客户端预检（后缀黑名单、10MB 上限）；
+1. SDK 读取 `file.name` / `file.type` / `file.size`，做客户端预检（仅后缀黑名单）；文件大小上限与配额由服务端按套餐裁定，SDK 不做大小预检；
 2. `POST /openapi/v1/assets/files` 申请 presigned PUT URL 与 `filePath`；
 3. SDK 用 `PUT uploadUrl` 直传文件内容到对象存储（Cloud 为 AWS S3，企业版为 RustFS）；
 4. 返回 `UploadResult`。
@@ -144,14 +144,36 @@ await fetch(data.uploadUrl, {
 
 ## 错误
 
+客户端预检错误（上传前抛出）：
+
 | 错误 | 触发时机 |
 |------|----------|
 | `Tier0 SDK: uploadFile requires a File object` | 入参不是 File |
-| `Tier0 SDK: forbidden file extension: .xxx` | 后缀黑名单（`html/htm/php/jsp/asp/htaccess/swf` 等），上传前抛出 |
-| `Tier0 SDK: file size ... exceeds the 10MB limit` | 超过 10MB，上传前抛出 |
+| `Tier0 SDK: forbidden file extension: .xxx` | 后缀黑名单（`html/htm/php/jsp/asp/htaccess/swf` 等） |
 | `Tier0 SDK: invalid upload response from backend` | 后端响应缺少 `uploadUrl` 或 `filePath` |
 | `Tier0 SDK: direct upload to storage failed: <status>` | PUT 直传存储失败 |
-| `HTTP <status>: ...` | 接口鉴权失败、参数错误等 |
+
+服务端错误以结构化 `ApiError` 抛出（`Error` 子类，message 为 `HTTP <status>: <msg>`），携带 `status`（HTTP 状态码）、`code`（后端业务错误码）、`msg`（错误消息），调用方可机读：
+
+```typescript
+import { ApiError } from '@tier0/sdk/openapi';
+
+try {
+  await uploadFile(file);
+} catch (e) {
+  if (e instanceof ApiError) {
+    console.error(e.status, e.code, e.msg); // 例如 403 40301 'storage quota exceeded'
+  }
+}
+```
+
+存储配额相关错误码（文件大小上限与配额由服务端按套餐裁定，SDK 不做客户端大小预检）：
+
+| 错误码 | HTTP | 触发场景 | 处理建议 |
+|--------|------|----------|----------|
+| `CodeStorageQuotaExceeded` | 403 | 预占/差额补偿超出套餐存储上限 | 提示删除文件或升级套餐 |
+| `CodeStorageFileTooLarge` | 400 | 单文件超过上限（Phase 1 统一 100MB / Phase 2 按套餐 1GB） | 提示当前上限 |
+| `CodeStorageUploadStateInvalid` | 409 | confirm/abort 的记录非 `temp`（非幂等重放场景） | 提示任务已结束或不存在 |
 
 ## 注意事项
 
