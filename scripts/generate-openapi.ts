@@ -225,6 +225,43 @@ function normalizeBaseURL(host: string): string {
   return \`http://\${trimmed}\`;
 }
 
+/**
+ * 结构化 API 错误。后端返回非 2xx 时抛出，携带 HTTP 状态码与后端业务错误码，
+ * 供调用方机读（如存储配额超限 CodeStorageQuotaExceeded）。
+ * message 保持 \`HTTP <status>: <msg>\` 格式，与既有调用方兼容。
+ */
+export class ApiError extends Error {
+  /** HTTP 状态码 */
+  readonly status: number;
+  /** 后端业务错误码（响应体 code 字段；解析失败时为 0） */
+  readonly code: number;
+  /** 后端错误消息（响应体 msg 字段；解析失败时为原始响应文本） */
+  readonly msg: string;
+
+  constructor(status: number, code: number, msg: string) {
+    super(\`HTTP \${status}: \${msg}\`);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.msg = msg;
+  }
+}
+
+/** 从响应体解析后端 ResultVO 的 code/msg；非 JSON 或缺字段时兜底为原始文本 */
+function parseErrorBody(text: string): { code: number; msg: string } {
+  try {
+    const body = JSON.parse(text) as { code?: unknown; msg?: unknown };
+    if (body && typeof body === 'object') {
+      const msg = typeof body.msg === 'string' && body.msg ? body.msg : text;
+      const code = typeof body.code === 'number' ? body.code : 0;
+      return { code, msg };
+    }
+  } catch {
+    // 非 JSON 响应体，兜底原文
+  }
+  return { code: 0, msg: text };
+}
+
 class HttpClient {
   private config: ClientConfig;
 
@@ -269,7 +306,8 @@ class HttpClient {
 
     if (!response.ok) {
       const text = await response.text().catch(() => 'Unknown error');
-      throw new Error(\`HTTP \${response.status}: \${text}\`);
+      const { code, msg } = parseErrorBody(text);
+      throw new ApiError(response.status, code, msg);
     }
 
     if (response.status === 204) {

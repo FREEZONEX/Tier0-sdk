@@ -20,7 +20,7 @@ When a user asks for an upload-and-save feature, use platform-managed object sto
 3. Use `getFileUrl` for access/display or `downloadFile` for content/download.
 4. Use `deleteFile` when the managed object must be removed.
 
-Do not add AWS SDK/RustFS clients, direct bucket endpoints, or permanent object-storage credentials. The SDK obtains a presigned upload URL and transfers the file to platform-managed storage. Use a manual PUT to the SDK-provided `uploadUrl` only for an advanced requirement such as custom upload progress.
+Do not add AWS SDK/RustFS clients, direct bucket endpoints, or permanent object-storage credentials. The SDK obtains a presigned POST URL plus form fields and transfers the file to platform-managed storage. Use a manual POST to the SDK-provided `postUrl` (with `postFields` written first and `file` appended last) only for an advanced requirement such as custom upload progress.
 
 ## References
 

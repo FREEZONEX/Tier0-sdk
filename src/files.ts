@@ -1,4 +1,4 @@
-import { getClient } from './openapi/client.js';
+import { getClient, ApiError } from './openapi/client.js';
 
 /**
  * 文件可见性：
@@ -37,9 +37,11 @@ export interface UploadResult {
   filePath: string;
   /** public：长期有效公开 URL；private：上传时可能为空或 presigned URL */
   fileUrl: string;
-  /** 本次上传使用的 presigned PUT URL */
-  uploadUrl?: string;
-  /** private presigned URL 过期时间戳（毫秒） */
+  /** 本次上传使用的 presigned POST URL（POST policy 上传入口） */
+  postUrl: string;
+  /** POST 上传表单字段，全部需先写入 multipart 表单，`file` 字段必须最后 */
+  postFields: Record<string, string>;
+  /** presigned URL 过期时间戳（毫秒） */
   expiresAt?: number;
 }
 
@@ -98,14 +100,12 @@ const FORBIDDEN_EXTENSIONS = new Set([
   'htaccess', 'swf',
 ]);
 
-/** 单文件大小上限（字节）。后端最终裁定，SDK 仅做上传前友好预检 */
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
 interface UploadFileApiResp {
   fileId?: string | number;
   filePath?: string;
   fileUrl?: string;
-  uploadUrl?: string;
+  postUrl?: string;
+  postFields?: Record<string, string>;
   expiresAt?: number;
 }
 
@@ -144,12 +144,6 @@ function checkFileName(fileName: string): string {
   return name;
 }
 
-function checkFileSize(size: number): void {
-  if (size > MAX_FILE_SIZE) {
-    throw new Error(`Tier0 SDK: file size ${size} exceeds the 10MB limit`);
-  }
-}
-
 function buildQuery(params: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -164,8 +158,9 @@ function buildQuery(params: Record<string, string | number | undefined>): string
  * 上传文件。
  *
  * Cloud 和企业版接口完全统一，无需区分部署环境：
- * 1. `POST /openapi/v1/assets/files` 申请 presigned PUT URL 与 filePath；
- * 2. SDK 直传文件内容到对象存储（Cloud 为 AWS S3，企业版为 RustFS）；
+ * 1. `POST /openapi/v1/assets/files` 申请 presigned POST URL、表单字段与 filePath；
+ * 2. SDK 以 `multipart/form-data` 直传文件内容到对象存储（Cloud 为 AWS S3，企业版为 RustFS）：
+ *    `postFields` 全部先写入表单，`file` 字段必须最后 appended，不额外添加 `Content-Type` 表单字段；
  * 3. 返回 { filePath, fileUrl, ... }，业务侧保存 filePath 即可。
  *
  * 调用前需先通过 `configureClient` 配置 apiHost/apiKey，或设置环境变量
@@ -174,7 +169,6 @@ function buildQuery(params: Record<string, string | number | undefined>): string
 export async function uploadFile(file: File, options: UploadOptions = {}): Promise<UploadResult> {
   assertUploadFile(file);
   const fileName = checkFileName(file.name);
-  checkFileSize(file.size);
 
   const client = getClient();
   const contentType = file.type || 'application/octet-stream';
@@ -195,27 +189,36 @@ export async function uploadFile(file: File, options: UploadOptions = {}): Promi
   );
   const data = unwrapData<UploadFileApiResp>(resp);
 
-  if (!data.uploadUrl || !data.filePath) {
-    throw new Error('Tier0 SDK: invalid upload response from backend: missing uploadUrl or filePath');
+  if (!data.postUrl || !data.filePath) {
+    throw new Error('Tier0 SDK: invalid upload response from backend: missing postUrl or filePath');
   }
 
-  const uploadResp = await fetch(data.uploadUrl, {
-    method: 'PUT',
-    body: file,
-    headers: { 'Content-Type': contentType },
+  // 表单字段顺序对对象存储签名校验敏感：postFields 全部先入，file 必须最后 appended；
+  // 不手动设置 Content-Type，浏览器/undici 会为 FormData 自动生成 multipart boundary。
+  const form = new FormData();
+  for (const [key, value] of Object.entries(data.postFields ?? {})) {
+    form.append(key, value);
+  }
+  form.append('file', file);
+
+  const uploadResp = await fetch(data.postUrl, {
+    method: 'POST',
+    body: form,
     signal: options.signal,
   });
 
   if (!uploadResp.ok) {
     const text = await uploadResp.text().catch(() => 'Unknown error');
-    throw new Error(`Tier0 SDK: direct upload to storage failed: ${uploadResp.status} ${text}`);
+    // 直传存储失败同样抛结构化 ApiError，供调用方机读（status/code/msg）
+    throw new ApiError(uploadResp.status, 0, text);
   }
 
   return {
     fileId: data.fileId !== undefined ? String(data.fileId) : undefined,
     filePath: data.filePath,
     fileUrl: data.fileUrl ?? '',
-    uploadUrl: data.uploadUrl,
+    postUrl: data.postUrl,
+    postFields: data.postFields ?? {},
     expiresAt: data.expiresAt,
   };
 }

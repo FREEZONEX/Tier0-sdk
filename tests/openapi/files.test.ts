@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { configureClient } from '../../src/openapi/client.js';
+import { configureClient, ApiError } from '../../src/openapi/client.js';
 import { uploadFile, getFileUrl, downloadFile, deleteFile } from '../../src/files.js';
 
 describe('files module', () => {
@@ -28,6 +28,26 @@ describe('files module', () => {
     });
   }
 
+  /** 构造后端 presign 成功响应（POST policy 契约） */
+  function presignResp(overrides: Record<string, unknown> = {}): Response {
+    return jsonResponse({
+      fileId: 123,
+      filePath: 'p/f.csv',
+      fileUrl: '',
+      postUrl: 'https://bucket.s3.amazonaws.com/upload',
+      postFields: {
+        key: 'p/f.csv',
+        policy: 'policy-base64',
+        'x-amz-algorithm': 'AWS4-HMAC-SHA256',
+        'x-amz-credential': 'AKID/20260706/us-east-1/s3/aws4_request',
+        'x-amz-date': '20260706T000000Z',
+        'x-amz-signature': 'sig',
+      },
+      expiresAt: 1751892400000,
+      ...overrides,
+    });
+  }
+
   describe('uploadFile', () => {
     it('should reject non-File input', async () => {
       await expect(uploadFile(null as unknown as File)).rejects.toThrow('uploadFile requires a File object');
@@ -39,26 +59,70 @@ describe('files module', () => {
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
-    it('should reject files larger than 10MB before any request', async () => {
-      const file = { name: 'big.bin', size: 11 * 1024 * 1024, type: 'application/octet-stream' } as File;
-      await expect(uploadFile(file)).rejects.toThrow('exceeds the 10MB limit');
-      expect(mockFetch).not.toHaveBeenCalled();
+    it('should allow large files past client pre-check (size limit is server-side)', async () => {
+      mockFetch
+        .mockResolvedValueOnce(presignResp({ filePath: 'p/big.bin' }))
+        .mockResolvedValueOnce(new Response(null, { status: 204 }));
+
+      // 客户端不再做 10MB 预检：大文件直接发起 presign 申请，大小上限由服务端按套餐裁定
+      const file = { name: 'big.bin', size: 20 * 1024 * 1024, type: 'application/octet-stream' } as File;
+      const result = await uploadFile(file);
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body).size).toBe(20 * 1024 * 1024);
+      expect(mockFetch.mock.calls[1][1].method).toBe('POST');
+      expect(result.filePath).toBe('p/big.bin');
     });
 
-    it('should request presigned URL then PUT file content', async () => {
+    it('should reject with a structured ApiError carrying quota code/msg', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ code: 40301, msg: 'storage quota exceeded' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      const file = new File(['x'], 'report.csv', { type: 'text/csv' });
+      const err = await uploadFile(file).catch((e) => e);
+
+      // 配额超限错误可机读：status / code / msg 均为结构化字段
+      expect(err).toBeInstanceOf(ApiError);
+      expect(err.status).toBe(403);
+      expect(err.code).toBe(40301);
+      expect(err.msg).toBe('storage quota exceeded');
+      // message 语义不劣化，仍保持 `HTTP <status>: <msg>` 格式
+      expect(err.message).toBe('HTTP 403: storage quota exceeded');
+    });
+
+    it('should fall back to raw text when error body is not JSON', async () => {
+      mockFetch.mockResolvedValueOnce(new Response('Service Unavailable', { status: 503 }));
+
+      const file = new File(['x'], 'report.csv', { type: 'text/csv' });
+      const err = await uploadFile(file).catch((e) => e);
+
+      expect(err).toBeInstanceOf(ApiError);
+      expect(err.status).toBe(503);
+      expect(err.code).toBe(0);
+      expect(err.msg).toBe('Service Unavailable');
+      expect(err.message).toBe('HTTP 503: Service Unavailable');
+    });
+
+    it('should request presigned POST then upload file via multipart form', async () => {
       mockFetch
         .mockResolvedValueOnce(
-          jsonResponse({
-            data: {
-              fileId: 123,
-              filePath: 'workspace/10086/attachment/20260706/abcdef-report.csv',
-              fileUrl: '',
-              uploadUrl: 'https://bucket.s3.amazonaws.com/put?X-Amz-Signature=sig',
-              expiresAt: 1751892400000,
+          presignResp({
+            filePath: 'workspace/10086/attachment/20260706/abcdef-report.csv',
+            postFields: {
+              key: 'workspace/10086/attachment/20260706/abcdef-report.csv',
+              policy: 'policy-base64',
+              'x-amz-algorithm': 'AWS4-HMAC-SHA256',
+              'x-amz-credential': 'AKID/20260706/us-east-1/s3/aws4_request',
+              'x-amz-date': '20260706T000000Z',
+              'x-amz-signature': 'sig',
             },
           })
         )
-        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+        .mockResolvedValueOnce(new Response(null, { status: 204 }));
 
       const file = new File(['a,b\n1,2'], 'report.csv', { type: 'text/csv' });
       const result = await uploadFile(file, {
@@ -69,7 +133,7 @@ describe('files module', () => {
         sessionId: 'sess-456',
       });
 
-      // 第一步：申请 presigned URL
+      // 第一步：申请 presigned POST URL
       expect(mockFetch).toHaveBeenNthCalledWith(
         1,
         'https://api.example.com/openapi/v1/assets/files',
@@ -92,42 +156,63 @@ describe('files module', () => {
         sessionId: 'sess-456',
       });
 
-      // 第二步：直传存储
-      expect(mockFetch).toHaveBeenNthCalledWith(
-        2,
-        'https://bucket.s3.amazonaws.com/put?X-Amz-Signature=sig',
-        expect.objectContaining({
-          method: 'PUT',
-          body: file,
-          headers: { 'Content-Type': 'text/csv' },
-        })
-      );
+      // 第二步：multipart/form-data POST 直传存储
+      const [uploadPostUrl, uploadInit] = mockFetch.mock.calls[1];
+      expect(uploadPostUrl).toBe('https://bucket.s3.amazonaws.com/upload');
+      expect(uploadInit.method).toBe('POST');
+      const form = uploadInit.body as FormData;
+      expect(form).toBeInstanceOf(FormData);
+      // postFields 全部先写入，file 必须最后 appended
+      expect([...form.keys()]).toEqual([
+        'key',
+        'policy',
+        'x-amz-algorithm',
+        'x-amz-credential',
+        'x-amz-date',
+        'x-amz-signature',
+        'file',
+      ]);
+      expect(form.get('key')).toBe('workspace/10086/attachment/20260706/abcdef-report.csv');
+      expect(form.get('policy')).toBe('policy-base64');
+      expect(form.get('x-amz-signature')).toBe('sig');
+      expect(form.get('file')).toBe(file);
+      // 不额外添加 Content-Type 表单字段
+      expect(form.has('Content-Type')).toBe(false);
+      // 不手动设置 Content-Type header，由 fetch 为 FormData 自动生成 multipart boundary
+      expect(uploadInit.headers).toBeUndefined();
 
       expect(result).toEqual({
         fileId: '123',
         filePath: 'workspace/10086/attachment/20260706/abcdef-report.csv',
         fileUrl: '',
-        uploadUrl: 'https://bucket.s3.amazonaws.com/put?X-Amz-Signature=sig',
+        postUrl: 'https://bucket.s3.amazonaws.com/upload',
+        postFields: {
+          key: 'workspace/10086/attachment/20260706/abcdef-report.csv',
+          policy: 'policy-base64',
+          'x-amz-algorithm': 'AWS4-HMAC-SHA256',
+          'x-amz-credential': 'AKID/20260706/us-east-1/s3/aws4_request',
+          'x-amz-date': '20260706T000000Z',
+          'x-amz-signature': 'sig',
+        },
         expiresAt: 1751892400000,
       });
     });
 
     it('should default contentType to application/octet-stream', async () => {
       mockFetch
-        .mockResolvedValueOnce(
-          jsonResponse({ filePath: 'p/f.bin', fileUrl: 'https://cdn/f.bin', uploadUrl: 'https://s3/put' })
-        )
-        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+        .mockResolvedValueOnce(presignResp({ filePath: 'p/f.bin', fileUrl: 'https://cdn/f.bin' }))
+        .mockResolvedValueOnce(new Response(null, { status: 204 }));
 
       const file = new File(['data'], 'f.bin');
       const result = await uploadFile(file, { visibility: 'public' });
 
       expect(JSON.parse(mockFetch.mock.calls[0][1].body).contentType).toBe('application/octet-stream');
-      expect(mockFetch.mock.calls[1][1].headers).toEqual({ 'Content-Type': 'application/octet-stream' });
+      expect(mockFetch.mock.calls[1][1].method).toBe('POST');
+      expect(mockFetch.mock.calls[1][1].headers).toBeUndefined();
       expect(result.fileUrl).toBe('https://cdn/f.bin');
     });
 
-    it('should throw when presign response misses uploadUrl or filePath', async () => {
+    it('should throw when presign response misses postUrl or filePath', async () => {
       mockFetch.mockResolvedValueOnce(jsonResponse({ filePath: 'p/f.csv' }));
 
       const file = new File(['x'], 'report.csv', { type: 'text/csv' });
@@ -135,13 +220,20 @@ describe('files module', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
-    it('should throw when direct PUT to storage fails', async () => {
+    it('should throw a structured ApiError when direct POST to storage fails', async () => {
       mockFetch
-        .mockResolvedValueOnce(jsonResponse({ filePath: 'p/f.csv', uploadUrl: 'https://s3/put' }))
-        .mockResolvedValueOnce(new Response('AccessDenied', { status: 403 }));
+        .mockResolvedValueOnce(presignResp())
+        .mockResolvedValueOnce(new Response('<Error><Code>AccessDenied</Code></Error>', { status: 403 }));
 
       const file = new File(['x'], 'report.csv', { type: 'text/csv' });
-      await expect(uploadFile(file)).rejects.toThrow('direct upload to storage failed: 403');
+      const err = await uploadFile(file).catch((e) => e);
+
+      // 直传存储失败也走结构化 ApiError：status / code / msg 均可机读
+      expect(err).toBeInstanceOf(ApiError);
+      expect(err.status).toBe(403);
+      expect(err.code).toBe(0);
+      expect(err.msg).toContain('AccessDenied');
+      expect(err.message).toBe('HTTP 403: <Error><Code>AccessDenied</Code></Error>');
     });
   });
 
@@ -247,11 +339,11 @@ describe('files module', () => {
   });
 
   describe('abort signal', () => {
-    it('should pass signal through uploadFile presign and PUT', async () => {
+    it('should pass signal through uploadFile presign and POST', async () => {
       const controller = new AbortController();
       mockFetch
-        .mockResolvedValueOnce(jsonResponse({ filePath: 'p/f.csv', uploadUrl: 'https://s3/put' }))
-        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+        .mockResolvedValueOnce(presignResp())
+        .mockResolvedValueOnce(new Response(null, { status: 204 }));
 
       const file = new File(['x'], 'report.csv', { type: 'text/csv' });
       await uploadFile(file, { signal: controller.signal });
