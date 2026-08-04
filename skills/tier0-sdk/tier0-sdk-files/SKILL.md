@@ -15,7 +15,7 @@ metadata:
 
 When a user asks for an upload-and-save feature, use platform-managed object storage through `@tier0/sdk/files` by default. Do not persist uploaded files on the app server's local filesystem, in the repository or `public/` directory, or as database blobs. Local temporary files are allowed only for short-lived processing before upload and must not become the source of truth.
 
-1. Use `uploadFile` from `@tier0/sdk/files`.
+1. Use `uploadFile` from `@tier0/sdk/files`（文件 >100MB 自动 multipart 分片直传，见 [`references/multipart.md`](references/multipart.md)；小文件也可显式传 `options.multipart` 走分片）。
 2. Persist the returned `filePath` in business data; do not persist an expiring presigned URL.
 3. Use `getFileUrl` for access/display or `downloadFile` for content/download.
 4. Use `deleteFile` when the managed object must be removed.
@@ -27,6 +27,7 @@ Do not add AWS SDK/RustFS clients, direct bucket endpoints, or permanent object-
 | Task | Read |
 |---|---|
 | Upload | [`references/upload.md`](references/upload.md) |
+| Multipart upload (large files, resume, progress) | [`references/multipart.md`](references/multipart.md) |
 | Get access URL | [`references/url.md`](references/url.md) |
 | Download | [`references/download.md`](references/download.md) |
 | Delete | [`references/delete.md`](references/delete.md) |
