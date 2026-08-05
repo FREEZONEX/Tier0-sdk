@@ -54,6 +54,8 @@ export interface UploadResult {
 export const MULTIPART_THRESHOLD_BYTES = 100 * 1024 * 1024;
 /** multipart 分片默认大小（字节）：8MB */
 export const DEFAULT_MULTIPART_PART_SIZE = 8 * 1024 * 1024;
+/** S3 兼容对象存储 multipart 非末片的最小分片大小（字节）：5MB，小于该值 complete 会被拒（EntityTooSmall） */
+export const MIN_MULTIPART_PART_SIZE = 5 * 1024 * 1024;
 /** multipart 分片默认并发上传数 */
 export const DEFAULT_MULTIPART_CONCURRENCY = 4;
 /** 单片上传失败的最大重试次数（不含首次请求） */
@@ -86,22 +88,26 @@ export interface MultipartPart {
 
 /** multipart 分片上传子选项，挂在 `uploadFile` 的 `options.multipart` 上 */
 export interface MultipartOptions {
-  /** 分片大小（字节），默认 8MB */
+  /** 分片大小（字节），默认 8MB；低于 5MB 会自动抬升到 5MB（S3 最小分片限制） */
   partSize?: number;
   /** 并发上传分片数，默认 4 */
   concurrency?: number;
   /** 进度回调：每完成一片调用一次 */
   onProgress?: MultipartProgressCallback;
+  /** 失败（分片重试耗尽 / complete 失败）时保留会话以便续传；默认 false：自动 abort 清理 */
+  retainSessionOnFailure?: boolean;
 }
 
 /** `uploadFileMultipart` 的选项：`UploadOptions` 基础上增加分片参数 */
 export interface MultipartUploadOptions extends UploadOptions {
-  /** 分片大小（字节），默认 8MB */
+  /** 分片大小（字节），默认 8MB；低于 5MB 会自动抬升到 5MB（S3 最小分片限制） */
   partSize?: number;
   /** 并发上传分片数，默认 4 */
   concurrency?: number;
   /** 进度回调：每完成一片调用一次 */
   onProgress?: MultipartProgressCallback;
+  /** 失败（分片重试耗尽 / complete 失败）时保留会话以便续传；默认 false：自动 abort 清理 */
+  retainSessionOnFailure?: boolean;
 }
 
 /**
@@ -113,6 +119,49 @@ export interface MultipartUploadResult extends UploadResult {
   uploadId: string;
   /** 上传完成后后端返回的文件大小（字节） */
   sizeBytes: number;
+}
+
+/**
+ * 失败会话的公开结构：`MultipartUploadError.multipartSession` 携带，调用方可持久化后
+ * 经 `resumeMultipartUpload` 断点续传（跳过 `completedParts`，仅续传缺失分片）。
+ */
+export interface MultipartResumeSession {
+  /** 存储对象 key（init 返回） */
+  fileKey: string;
+  /** 分片会话 ID（init 返回） */
+  uploadId: string;
+  /** 后端裁定的分片大小（字节），续传切片必须沿用 */
+  partSize: number;
+  /** 已完成分片（partNumber -> etag），续传时跳过 */
+  completedParts: MultipartPart[];
+}
+
+/**
+ * multipart 分片上传失败时抛出的结构化错误：`ApiError` 子类，语义与 `ApiError` 完全一致
+ * （status/code/msg 可机读）。`retainSessionOnFailure: true` 且失败发生在分片上传或
+ * complete 阶段时，携带 `multipartSession` 供调用方断点续传。
+ */
+export class MultipartUploadError extends ApiError {
+  /** 失败时的会话快照（含已完成分片）；未保留会话时为空 */
+  readonly multipartSession?: MultipartResumeSession;
+
+  constructor(status: number, code: number, msg: string, multipartSession?: MultipartResumeSession) {
+    super(status, code, msg);
+    this.name = 'MultipartUploadError';
+    this.multipartSession = multipartSession;
+  }
+}
+
+/** `resumeMultipartUpload` 的选项 */
+export interface ResumeMultipartUploadOptions {
+  /** 并发上传分片数，默认 4 */
+  concurrency?: number;
+  /** 进度回调：每完成一片调用一次 */
+  onProgress?: MultipartProgressCallback;
+  /** 请求取消信号 */
+  signal?: AbortSignal;
+  /** 续传再次失败时是否再次保留会话（默认 false：自动 abort 清理） */
+  retainSessionOnFailure?: boolean;
 }
 
 /**
@@ -307,13 +356,47 @@ async function uploadPartsWithResume(
     .map(([partNumber, etag]) => ({ partNumber, etag }));
 }
 
-/** 将任意错误规整为结构化 ApiError：已是 ApiError 原样保留 status/code/msg，其余包装为 status=0 的客户端错误 */
-function toStructuredError(err: unknown): ApiError {
+/** 用户主动取消：signal 已中止，或错误本身就是 AbortError（与单发路径的取消失败语义一致） */
+function isUserAbort(err: unknown, signal?: AbortSignal): boolean {
+  return signal?.aborted === true || (err instanceof Error && err.name === 'AbortError');
+}
+
+/** 将内部会话转为可导出/续传的公开会话结构（已完成分片按 partNumber 升序） */
+function toResumeSession(session: MultipartSession): MultipartResumeSession {
+  const completedParts = Array.from(session.completed.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([partNumber, etag]) => ({ partNumber, etag }));
+  return {
+    fileKey: session.fileKey,
+    uploadId: session.uploadId,
+    partSize: session.partSize,
+    completedParts,
+  };
+}
+
+/** 尽力调用 multipart/abort 清理会话；清理失败不掩盖原始错误 */
+async function abortMultipartSession(client: HttpClient, session: MultipartSession): Promise<void> {
+  await client
+    .post<unknown>('/openapi/v1/assets/files/multipart/abort', {
+      fileKey: session.fileKey,
+      uploadId: session.uploadId,
+    })
+    .catch(() => undefined);
+}
+
+/**
+ * 将任意错误规整为结构化 ApiError：已是 ApiError 原样保留 status/code/msg，
+ * 其余包装为 status=0 的客户端错误；传入 session 时包装为 MultipartUploadError 供续传。
+ */
+function toStructuredError(err: unknown, session?: MultipartResumeSession): ApiError {
   if (err instanceof ApiError) {
+    if (session) {
+      return new MultipartUploadError(err.status, err.code, err.msg, session);
+    }
     return err;
   }
   const msg = err instanceof Error ? err.message : String(err);
-  return new ApiError(0, 0, msg);
+  return new MultipartUploadError(0, 0, msg, session);
 }
 
 /** complete 幂等重试：失败退避重试，成功返回解包后的 complete 响应 */
@@ -354,15 +437,22 @@ async function postMultipartCompleteWithRetry(
  * multipart 分片上传大文件，解决单发上传（presigned POST）在 >100MB 场景的超时问题。
  *
  * 调用流程（均走既有 x-api-key 认证与 HttpClient）：
- * 1. `POST /openapi/v1/assets/files/multipart/init` 初始化分片会话（可选传 partSize，后端裁定为准）；
- * 2. `POST /openapi/v1/assets/files/multipart/part-urls` 一次性申请各分片的直传 URL；
+ * 1. `POST /openapi/v1/assets/files/multipart/init` 初始化分片会话（可选传 partSize，后端裁定为准；
+ *    客户端传入低于 5MB 的 partSize 会自动抬升到 5MB，避免非末片小于 S3 最小分片导致 complete 被拒）；
+ * 2. `POST /openapi/v1/assets/files/multipart/part-urls` 申请未完成分片的直传 URL（已完成分片跳过）；
  * 3. 并发 `PUT` 直传分片（默认并发 4，可配）：浏览器/Node 均用 `file.slice` 切片，
  *    单片失败指数退避重试 3 次；已上传分片记录在内存中，重试/续传不重传；
- *    重试仍失败则调用 `multipart/abort` 清理会话并抛结构化 ApiError；
  * 4. `POST /openapi/v1/assets/files/multipart/complete` 组装文件（幂等，失败可重试）。
  *
+ * 失败语义（分片上传与 complete 一致）：
+ * - 用户取消（`options.signal` 中止 / AbortError）：会话尽力 abort 清理后原样抛回 AbortError，
+ *   不转 ApiError，与单发上传路径行为一致；
+ * - 其他失败：默认 abort 清理会话后抛结构化 ApiError（status/code/msg 可机读）；
+ *   设置 `retainSessionOnFailure: true` 时不 abort，抛出的 `MultipartUploadError` 携带
+ *   `multipartSession`（fileKey/uploadId/partSize/completedParts），可经 `resumeMultipartUpload` 断点续传。
+ *
  * 每片 PUT 自带 60s 超时；`onProgress` 每完成一片回调一次（percent 为完成分片数/总分片数）。
- * 断点续传本版仅内存实现（uploadId + 已完成 partNumber），不做跨进程持久化。
+ * 断点续传本版仅内存实现（uploadId + 已完成 partNumber），跨进程续传需自行持久化会话信息。
  *
  * `uploadFile` 在文件 >100MB 时自动调用本方法；小文件也可显式传 `options.multipart` 走分片。
  */
@@ -377,9 +467,9 @@ export async function uploadFileMultipart(
   const fileName = checkFileName(file.name);
   const client = getClient();
   const contentType = file.type || 'application/octet-stream';
-  const partSize = options.partSize && options.partSize > 0 ? options.partSize : DEFAULT_MULTIPART_PART_SIZE;
-  const concurrency =
-    options.concurrency && options.concurrency > 0 ? options.concurrency : DEFAULT_MULTIPART_CONCURRENCY;
+  // 客户端显式传入的分片大小，低于 S3 最小分片（5MB）时抬升，避免非末片在 complete 阶段被拒（EntityTooSmall）
+  const requestedPartSize = options.partSize && options.partSize > 0 ? options.partSize : DEFAULT_MULTIPART_PART_SIZE;
+  const partSize = Math.max(requestedPartSize, MIN_MULTIPART_PART_SIZE);
 
   // 1. 初始化分片会话
   const initResp = await client.post<unknown>(
@@ -402,65 +492,150 @@ export async function uploadFileMultipart(
     throw new Error('Tier0 SDK: invalid multipart init response from backend: missing fileKey/uploadId/filePath');
   }
 
+  // 后端裁定的分片大小同样抬到最小分片（若后端返回更小值）；分片数以文件大小自洽计算，
+  // 保证切片覆盖整个文件且非末片满足最小分片约束
+  const sessionPartSize = Math.max(
+    init.partSize && init.partSize > 0 ? init.partSize : partSize,
+    MIN_MULTIPART_PART_SIZE
+  );
   const session: MultipartSession = {
     fileKey: init.fileKey,
     uploadId: init.uploadId,
-    partSize: init.partSize && init.partSize > 0 ? init.partSize : partSize,
-    partCount: init.partCount && init.partCount > 0 ? init.partCount : Math.ceil(file.size / partSize),
+    partSize: sessionPartSize,
+    partCount: Math.ceil(file.size / sessionPartSize),
     completed: new Map(),
   };
 
+  return runMultipartUpload(file, session, options);
+}
+
+/**
+ * multipart 核心流程：part-urls -> 并发直传 -> complete。
+ * `uploadFileMultipart`（新会话）与 `resumeMultipartUpload`（既有会话续传）共用。
+ */
+async function runMultipartUpload(
+  file: File,
+  session: MultipartSession,
+  options: MultipartUploadOptions
+): Promise<MultipartUploadResult> {
+  const client = getClient();
+  const retain = options.retainSessionOnFailure === true;
+
+  // 2. 申请未完成分片的直传 URL（已完成分片跳过；续传场景只申请缺失分片）
+  const partNumbers = Array.from({ length: session.partCount }, (_, i) => i + 1).filter(
+    (n) => !session.completed.has(n)
+  );
   let parts: MultipartPart[];
   try {
-    // 2. 一次性申请所有分片的直传 URL
-    const partNumbers = Array.from({ length: session.partCount }, (_, i) => i + 1);
-    const partUrlsResp = await client.post<unknown>(
-      '/openapi/v1/assets/files/multipart/part-urls',
-      { fileKey: session.fileKey, uploadId: session.uploadId, partNumbers },
-      { signal: options.signal }
-    );
-    const partUrlsData = unwrapData<MultipartPartUrlApiResp>(partUrlsResp);
-    const partUrls = new Map<number, string>();
-    for (const item of partUrlsData?.partUrls ?? []) {
-      if (item?.partNumber && item.url) {
-        partUrls.set(item.partNumber, item.url);
+    if (partNumbers.length > 0) {
+      const partUrlsResp = await client.post<unknown>(
+        '/openapi/v1/assets/files/multipart/part-urls',
+        { fileKey: session.fileKey, uploadId: session.uploadId, partNumbers },
+        { signal: options.signal }
+      );
+      const partUrlsData = unwrapData<MultipartPartUrlApiResp>(partUrlsResp);
+      const partUrls = new Map<number, string>();
+      for (const item of partUrlsData?.partUrls ?? []) {
+        if (item?.partNumber && item.url) {
+          partUrls.set(item.partNumber, item.url);
+        }
       }
-    }
 
-    // 3. 并发直传分片（失败重试；重试仍失败走 abort）
-    parts = await uploadPartsWithResume(
-      file,
-      session,
-      partUrls,
-      concurrency,
-      MULTIPART_MAX_RETRIES,
-      options.onProgress,
-      options.signal
-    );
+      // 3. 并发直传分片（失败重试；重试仍失败按 retainSessionOnFailure 决定 abort 或保留会话）
+      parts = await uploadPartsWithResume(
+        file,
+        session,
+        partUrls,
+        options.concurrency && options.concurrency > 0 ? options.concurrency : DEFAULT_MULTIPART_CONCURRENCY,
+        MULTIPART_MAX_RETRIES,
+        options.onProgress,
+        options.signal
+      );
+    } else {
+      // 全部分片已上传（如 complete 失败后的续传）：无需再传分片，直接进入 complete
+      parts = Array.from(session.completed.entries())
+        .sort(([a], [b]) => a - b)
+        .map(([partNumber, etag]) => ({ partNumber, etag }));
+    }
   } catch (err) {
-    // 尽力清理未完成的会话；abort 失败不掩盖原始错误
-    await client
-      .post<unknown>('/openapi/v1/assets/files/multipart/abort', {
-        fileKey: session.fileKey,
-        uploadId: session.uploadId,
-      })
-      .catch(() => undefined);
+    if (isUserAbort(err, options.signal)) {
+      // 用户取消：清理会话后原样抛回 AbortError，不转 ApiError
+      await abortMultipartSession(client, session);
+      throw err;
+    }
+    if (retain) {
+      // 保留会话供续传：错误携带 fileKey/uploadId/partSize/completedParts
+      throw toStructuredError(err, toResumeSession(session));
+    }
+    await abortMultipartSession(client, session);
     throw toStructuredError(err);
   }
 
-  // 4. complete：幂等，失败退避重试
-  const complete = await postMultipartCompleteWithRetry(client, session, parts, options.signal);
+  // 4. complete：幂等，失败退避重试；失败同样走 abort 清理（除非 retainSessionOnFailure）
+  try {
+    const complete = await postMultipartCompleteWithRetry(client, session, parts, options.signal);
+    return {
+      fileId: complete.fileId !== undefined ? String(complete.fileId) : undefined,
+      filePath: complete.filePath,
+      fileUrl: complete.fileUrl ?? '',
+      postUrl: '',
+      postFields: {},
+      uploadId: session.uploadId,
+      sizeBytes: complete.sizeBytes ?? file.size,
+      expiresAt: complete.expiresAt,
+    };
+  } catch (err) {
+    if (isUserAbort(err, options.signal)) {
+      await abortMultipartSession(client, session);
+      throw err;
+    }
+    if (retain) {
+      // complete 失败时全部分片已上传：续传可直接跳过上传、仅重试 complete 组装
+      throw toStructuredError(err, toResumeSession(session));
+    }
+    await abortMultipartSession(client, session);
+    throw toStructuredError(err);
+  }
+}
 
-  return {
-    fileId: complete.fileId !== undefined ? String(complete.fileId) : undefined,
-    filePath: complete.filePath,
-    fileUrl: complete.fileUrl ?? '',
-    postUrl: '',
-    postFields: {},
+/**
+ * 断点续传：使用 `MultipartUploadError.multipartSession`（或自行持久化的会话）恢复上传。
+ * 已完成分片（`completedParts`）跳过不重传，仅重新申请缺失分片的直传 URL 并续传，随后 complete。
+ * 适用于 `retainSessionOnFailure: true` 保留的失败会话；若失败发生在 complete 阶段
+ * （全部分片已上传），续传会直接进入 complete 组装。
+ * 注意：`file` 需与原上传为同一文件（大小一致），分片大小以会话为准。
+ */
+export async function resumeMultipartUpload(
+  file: File,
+  session: MultipartResumeSession,
+  options: ResumeMultipartUploadOptions = {}
+): Promise<MultipartUploadResult> {
+  assertUploadFile(file);
+  if (!session || !session.fileKey || !session.uploadId) {
+    throw new Error('Tier0 SDK: resumeMultipartUpload requires a valid multipart session (fileKey/uploadId)');
+  }
+  if (!(session.partSize > 0)) {
+    throw new Error('Tier0 SDK: resumeMultipartUpload requires a positive partSize in session');
+  }
+  const completed = new Map<number, string>();
+  for (const part of session.completedParts ?? []) {
+    if (part && part.partNumber > 0 && part.etag) {
+      completed.set(part.partNumber, part.etag);
+    }
+  }
+  const internal: MultipartSession = {
+    fileKey: session.fileKey,
     uploadId: session.uploadId,
-    sizeBytes: complete.sizeBytes ?? file.size,
-    expiresAt: complete.expiresAt,
+    partSize: session.partSize,
+    partCount: Math.ceil(file.size / session.partSize),
+    completed,
   };
+  return runMultipartUpload(file, internal, {
+    concurrency: options.concurrency,
+    onProgress: options.onProgress,
+    signal: options.signal,
+    retainSessionOnFailure: options.retainSessionOnFailure,
+  });
 }
 
 export interface GetFileUrlOptions {
@@ -596,6 +771,7 @@ export async function uploadFile(file: File, options: UploadOptions = {}): Promi
       partSize: multipart?.partSize,
       concurrency: multipart?.concurrency,
       onProgress: multipart?.onProgress,
+      retainSessionOnFailure: multipart?.retainSessionOnFailure,
     });
   }
   const fileName = checkFileName(file.name);
