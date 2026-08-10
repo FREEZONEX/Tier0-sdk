@@ -20,6 +20,40 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 5. Keep SDK calls in services, workers, server actions, API routes, hooks, or stores; expose business-domain objects to UI components.
 6. For MonoApp browser attachment downloads, read [`references/scaffold-monoapp.md`](references/scaffold-monoapp.md) and [`tier0-sdk-files/references/download.md`](tier0-sdk-files/references/download.md). Resolve the trusted `filePath` server-side, stream `downloadFile().response.body` through an authenticated same-origin route, and save the browser Blob with `<a download>`.
 
+## 可调用接口总览（OpenAPI，`@tier0/sdk/openapi`）
+
+> 完整接口清单（方法名 → Path）。AI 据此选接口，详细参数/示例见对应领域 Skill 与
+> `src/openapi/types.ts`（`FlowInfo`、`NodeRedNodeSet` 等类型）。方法均经
+> `getClient()` 自动鉴权（`Authorization: Bearer <TIER0_API_KEY>` + `X-API-Key`）。
+
+| 领域 | 方法 | Path |
+|---|---|---|
+| system | `systemApi.openapiv1info` | `POST /openapi/v1/info` |
+| system | `systemApi.openapiv1authwhoami` | `POST /openapi/v1/auth/whoami` |
+| system | `systemApi.gwreload` | `GET /gw/reload` |
+| flow | `flowApi.openapiv1flowlist` | `POST /openapi/v1/flow/list` |
+| flow | `flowApi.openapiv1flowget` | `POST /openapi/v1/flow/get` |
+| flow | `flowApi.openapiv1flowcreate` | `POST /openapi/v1/flow/create` |
+| flow | `flowApi.openapiv1flowupdate` | `POST /openapi/v1/flow/update` |
+| flow | `flowApi.openapiv1flowdelete` | `POST /openapi/v1/flow/delete` |
+| flow | `flowApi.openapiv1flowflowdata` | `POST /openapi/v1/flow/flowdata` |
+| flow | `flowApi.openapiv1flownodes` | `POST /openapi/v1/flow/nodes` |
+| flow | `flowApi.openapiv1flowdeploy` | `POST /openapi/v1/flow/deploy` |
+| uns | `unsApi.openapiv1unsbrowse` | `POST /openapi/v1/uns/browse` |
+| uns | `unsApi.openapiv1unsread` | `POST /openapi/v1/uns/read` |
+| uns | `unsApi.openapiv1unswrite` | `POST /openapi/v1/uns/write` |
+| uns | `unsApi.openapiv1unshistory` | `POST /openapi/v1/uns/history` |
+| uns | `unsApi.openapiv1unssearch` | `POST /openapi/v1/uns/search` |
+| uns | `unsApi.openapiv1unscreate` | `POST /openapi/v1/uns/create` |
+| uns | `unsApi.openapiv1unsupdate` | `POST /openapi/v1/uns/update` |
+| uns | `unsApi.openapiv1unsdelete` | `POST /openapi/v1/uns/delete` |
+| uns | `unsApi.openapiv1unsrestore` | `POST /openapi/v1/uns/restore` |
+| launchpad | `launchpadApi.openapiv1launchpadgetmembers` | `POST /openapi/v1/launchpad/{projectName}/getMembers` |
+| platform | `platformApi.openapiv1platformgetmembers` | `POST /openapi/v1/platform/getMembers` |
+
+> Node-RED 原生 Admin API（`/flow/{source|event}/**`，非 OpenAPI）见
+> [`tier0-sdk-flow/SKILL.md`](tier0-sdk-flow/SKILL.md) 的接口速查 B 节。
+
 ## Domain Routing
 
 | User need | Read |
