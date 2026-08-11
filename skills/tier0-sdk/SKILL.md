@@ -23,7 +23,8 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 ## 可调用接口总览（OpenAPI，`@tier0/sdk/openapi`）
 
 > 完整接口清单（方法名 → Path）。AI 据此选接口，详细参数/示例见对应领域 Skill 与
-> `src/openapi/types.ts`（`FlowInfo`、`NodeRedNodeSet` 等类型）。方法均经
+> 安装包内的类型声明 `@tier0/sdk/openapi`（`dist/esm/openapi/types.d.ts`，含 `FlowInfo`、
+> `NodeRedNodeSet` 等类型）。方法均经
 > `getClient()` 自动鉴权（`Authorization: Bearer <TIER0_API_KEY>` + `X-API-Key`）。
 
 | 领域 | 方法 | Path |

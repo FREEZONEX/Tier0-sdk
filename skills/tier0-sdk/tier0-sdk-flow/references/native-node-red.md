@@ -23,43 +23,60 @@ description: "访问 Node-RED 自身 Admin API（原生运行时接口）：通�
 | `TIER0_API_HOST + /flow/event/**` | eventflow Node-RED 原生接口 | 同上 |
 
 - key 类型：`full_access` 读写全开；`read_only` 只读（写操作 403）；
-- host：App 服务端用部署注入的 `TIER0_API_HOST`（`backend:8080`），浏览器端不得直连（走 BFF）。
+- host：App 服务端用部署注入的 `TIER0_API_HOST`（容器内为 `backend:8080`，云端为 `test.tier0.dev` 等）；
+  **若 host 已含 `http(s)://` 前缀则原样使用，不要再拼 scheme**（见下方 normalizeBaseURL 帮助函数）；
+  浏览器端不得直连（走 BFF）。
 
 ## 端点清单
 
+> **`/status` 不存在**：Node-RED Admin API 无 `GET /status` 端点（运行时状态用 `/settings`、`/diagnostics`、
+> `/flows/state` 等）。下表只列真实存在的端点。
+
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| GET | `/flow/{source\|event}/flows` | 原生全量 flows + rev（非平台合成） |
-| GET | `/flow/{source\|event}/flow/:id` | 单个 flow 节点与 configs |
+| GET | `/flow/{source\|event}/flows` | 原生全量 flows；**默认 v1 返回节点数组**；带 `Node-RED-API-Version: v2` 返回 `{rev, flows}` |
+| GET | `/flow/{source\|event}/flow/:id` | 单个 flow 节点与 configs（`:id` 是 **Node-RED 运行时 flow id**，即 `FlowInfo.flowId`，**非平台 DB 整数 id**） |
 | GET | `/flow/{source\|event}/flow/global` | 全局配置节点 |
 | GET | `/flow/{source\|event}/nodes` | 已安装节点类型列表 |
-| GET | `/flow/{source\|event}/settings`、`/status` | 运行时设置 / 状态 |
-| POST | `/flow/{source\|event}/flows` | 全量部署（`Node-RED-Deployment-Type: flows`） |
+| GET | `/flow/{source\|event}/settings`、`/diagnostics` | 运行时设置 / 诊断 |
+| POST | `/flow/{source\|event}/flows` | 全量部署（`Node-RED-Deployment-Type: flows` + `Node-RED-API-Version: v2`） |
 | POST | `/flow/{source\|event}/flow` | 创建 flow |
 | PUT | `/flow/{source\|event}/flow/:id` | 更新 flow（含 global） |
 | DELETE | `/flow/{source\|event}/flow/:id` | 删除 flow |
 | WS | `/flow/{source\|event}/comms` | 实时通道（可选） |
 
+> **`:id` 映射**：平台 OpenAPI 的 `openapiv1flowget/update/delete/deploy` 用的是**平台 DB 整数 id**（`FlowInfo.id`）；
+> 原生接口 `/flow/:id` 用的是 **Node-RED 运行时 flow id**（`FlowInfo.flowId`，如 `923b1328f984b8f0`）。
+> 两者不同——先 `openapiv1flowlist` 拿 `flowId` 字段，再传给原生接口，否则会 404 或命中错误资源。
+
 ## 请求示例（原生 fetch）
 
 ```typescript
-const host = process.env.TIER0_API_HOST; // 例如 backend:8080
+// host 规范化：兼容 "backend:8080" 与 "https://test.tier0.dev" 两种配置
+function baseURL(host: string): string {
+  const h = host.trim().replace(/\/+$/, '');
+  return /^https?:\/\//i.test(h) ? h : `http://${h}`;
+}
+
+const host = process.env.TIER0_API_HOST;
+const base = `${baseURL(host)}/flow/source`; // sourceflow；eventflow 用 /flow/event
 const apiKey = process.env.TIER0_API_KEY;
+const headers = { Authorization: `Bearer ${apiKey}`, 'X-API-Key': apiKey };
 
-// 读 sourceflow 原生 flows
-const res = await fetch(`http://${host}/flow/source/flows`, {
-  headers: { Authorization: `Bearer ${apiKey}`, 'X-API-Key': apiKey },
+// 读 sourceflow 原生 flows（v2 返回 {rev, flows}，需要 rev 时用）
+const res = await fetch(`${base}/flows`, {
+  headers: { ...headers, 'Node-RED-API-Version': 'v2' },
 });
-const runtimeFlows = await res.json(); // 节点数组 [{type:"tab",...}, ...]
+const { rev, flows: runtimeFlows } = await res.json(); // v2 响应 {rev, flows}
 
-// 部署 eventflow 画布（全量替换，先备份）
-const deployRes = await fetch(`http://${host}/flow/event/flows`, {
+// 部署 eventflow 画布（全量替换，先备份；body 传节点数组）
+const deployRes = await fetch(`${baseURL(host)}/flow/event/flows`, {
   method: 'POST',
   headers: {
-    Authorization: `Bearer ${apiKey}`,
-    'X-API-Key': apiKey,
+    ...headers,
     'Content-Type': 'application/json',
     'Node-RED-Deployment-Type': 'flows',
+    'Node-RED-API-Version': 'v2',
   },
   body: JSON.stringify(canvasFlows), // 直接传节点数组，非包裹对象
 });
@@ -75,10 +92,12 @@ import { randomUUID } from 'node:crypto';
 
 const host = process.env.TIER0_API_HOST;
 const apiKey = process.env.TIER0_API_KEY;
-const base = `http://${host}/flow/source`; // sourceflow；eventflow 用 /flow/event
+// host 规范化：兼容 "backend:8080" 与 "https://test.tier0.dev"
+const baseURL = (h: string) => (/^https?:\/\//i.test(h.trim()) ? h.trim() : `http://${h.trim()}`).replace(/\/+$/, '');
+const base = `${baseURL(host)}/flow/source`; // sourceflow；eventflow 用 /flow/event
 const headers = { Authorization: `Bearer ${apiKey}`, 'X-API-Key': apiKey };
 
-// 1. 读当前画布（必须全量读，因为部署是全量替换）
+// 1. 读当前画布（必须全量读，因为部署是全量替换；v1 返回节点数组）
 const flowsRes = await fetch(`${base}/flows`, { headers });
 const flows: any[] = await flowsRes.json();
 console.log(`当前节点数: ${flows.length}`);
@@ -98,7 +117,7 @@ flows.push(comment);
 // 3. 全量部署（整画布替换）
 const deployRes = await fetch(`${base}/flows`, {
   method: 'POST',
-  headers: { ...headers, 'Content-Type': 'application/json', 'Node-RED-Deployment-Type': 'flows' },
+  headers: { ...headers, 'Content-Type': 'application/json', 'Node-RED-Deployment-Type': 'flows', 'Node-RED-API-Version': 'v2' },
   body: JSON.stringify(flows),
 });
 if (deployRes.status !== 204) throw new Error(`部署失败: ${deployRes.status} ${await deployRes.text()}`);
@@ -118,7 +137,8 @@ console.log(`部署后节点数: ${after.length}（应比之前多 1）`);
 - **保留系统节点**：`mqtt-broker` config 节点及其 ID 不能动（删除会导致 MQTT 连接失效）；
 - **唯一 id**：新增节点 id 必须唯一，避免覆盖已有节点；
 - **部署成功码**：`204 No Content`；
-- **回滚**：改前保存一份 GET 结果，需要时原样 POST 回去即可还原。
+- **回滚**：改前保存一份 GET 结果，需要时原样 POST 回去即可还原；
+- **`:id` 是 Node-RED 运行时 flow id**：`/flow/:id` 的 `:id` 是 `FlowInfo.flowId`（如 `923b1328f984b8f0`），**不是**平台 OpenAPI 用的 DB 整数 id——先 `openapiv1flowlist` 拿 `flowId` 再传给原生接口。
 
 ## 与 OpenAPI 管理接口对比
 

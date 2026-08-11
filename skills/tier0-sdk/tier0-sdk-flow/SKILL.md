@@ -36,7 +36,7 @@ metadata:
 ## 可调用接口速查（完整契约）
 
 > 以下接口清单即为可调用全集。AI 直接按此表写调用代码即可，无需额外记忆。
-> SDK 方法来自 `@tier0/sdk/openapi`（`src/openapi/api.ts`，由 swagger.json 生成，勿手改）。
+> SDK 方法来自 `@tier0/sdk/openapi`（`dist/esm/openapi/api.js`，由 swagger.json 生成，勿手改）。
 
 ### A. 平台管理接口（`POST /openapi/v1/flow/*`，SDK 方法）
 
