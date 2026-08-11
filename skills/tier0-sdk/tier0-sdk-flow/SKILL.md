@@ -91,15 +91,19 @@ const key = process.env.TIER0_API_KEY;
 const res = await fetch(`http://${host}/flow/source/flows`, {
   headers: { Authorization: `Bearer ${key}`, 'X-API-Key': key },
 });
-const runtimeFlows = await res.json();
+const runtimeFlows = await res.json(); // 节点数组
 
-// 部署 eventflow 画布（全量替换，先备份）
+// 部署 eventflow 画布（全量替换，先备份；body 直接传节点数组）
 await fetch(`http://${host}/flow/event/flows`, {
   method: 'POST',
   headers: { Authorization: `Bearer ${key}`, 'X-API-Key': key, 'Content-Type': 'application/json', 'Node-RED-Deployment-Type': 'flows' },
-  body: JSON.stringify({ flows: canvasFlows }),
+  body: JSON.stringify(canvasFlows), // 非 { flows: [...] } 包裹
 });
+// 成功返回 HTTP 204
 ```
+
+> 编辑节点完整工作流（读→改→部署→确认→恢复）见
+> [`references/native-node-red.md`](references/native-node-red.md)「编辑 Node-RED 节点」。
 
 > 完整端点与示例见 [`references/native-node-red.md`](references/native-node-red.md)。
 > 选择建议：默认用 A（平台管理，含校验/版本快照）；仅需原生运行时数据/能力时用 B。

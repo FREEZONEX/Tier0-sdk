@@ -50,7 +50,7 @@ const apiKey = process.env.TIER0_API_KEY;
 const res = await fetch(`http://${host}/flow/source/flows`, {
   headers: { Authorization: `Bearer ${apiKey}`, 'X-API-Key': apiKey },
 });
-const runtimeFlows = await res.json();
+const runtimeFlows = await res.json(); // 节点数组 [{type:"tab",...}, ...]
 
 // 部署 eventflow 画布（全量替换，先备份）
 const deployRes = await fetch(`http://${host}/flow/event/flows`, {
@@ -61,9 +61,64 @@ const deployRes = await fetch(`http://${host}/flow/event/flows`, {
     'Content-Type': 'application/json',
     'Node-RED-Deployment-Type': 'flows',
   },
-  body: JSON.stringify({ flows: canvasFlows }),
+  body: JSON.stringify(canvasFlows), // 直接传节点数组，非包裹对象
 });
+// 成功返回 HTTP 204
 ```
+
+## 编辑 Node-RED 节点（完整工作流）
+
+> 已按真实环境验证（云端 test 环境实测：加 comment 节点 → 部署 204 → 读回确认 → 恢复原画布）。
+
+```typescript
+import { randomUUID } from 'node:crypto';
+
+const host = process.env.TIER0_API_HOST;
+const apiKey = process.env.TIER0_API_KEY;
+const base = `http://${host}/flow/source`; // sourceflow；eventflow 用 /flow/event
+const headers = { Authorization: `Bearer ${apiKey}`, 'X-API-Key': apiKey };
+
+// 1. 读当前画布（必须全量读，因为部署是全量替换）
+const flowsRes = await fetch(`${base}/flows`, { headers });
+const flows: any[] = await flowsRes.json();
+console.log(`当前节点数: ${flows.length}`);
+
+// 2. 修改节点（示例：给某个 tab 加一个 comment 注释节点）
+const tab = flows.find((n) => n.type === 'tab' && n.label === '企业数据');
+const comment = {
+  id: `sdk-edit-${randomUUID().slice(0, 8)}`, // 唯一 id
+  type: 'comment',
+  name: 'SDK 编辑注释',
+  info: '由 SDK 临时添加，可安全删除',
+  x: 10, y: 10, w: 400, h: 80,
+  z: tab.id, // 归属的 tab
+};
+flows.push(comment);
+
+// 3. 全量部署（整画布替换）
+const deployRes = await fetch(`${base}/flows`, {
+  method: 'POST',
+  headers: { ...headers, 'Content-Type': 'application/json', 'Node-RED-Deployment-Type': 'flows' },
+  body: JSON.stringify(flows),
+});
+if (deployRes.status !== 204) throw new Error(`部署失败: ${deployRes.status} ${await deployRes.text()}`);
+
+// 4. 读回确认写入
+const verifyRes = await fetch(`${base}/flows`, { headers });
+const after = await verifyRes.json();
+console.log(`部署后节点数: ${after.length}（应比之前多 1）`);
+
+// 5. 恢复（如需回滚）：重新 GET 备份 → 去掉新增节点 → 再 POST
+```
+
+### 编辑要点
+
+- **全量替换语义**：`POST /flow/{source|event}/flows` 是整画布替换，请求体直接传**节点数组**（非 `{flows: [...]}` 包裹）；
+- **必须先读后写**：改前 GET 完整 flows，改后整体提交；
+- **保留系统节点**：`mqtt-broker` config 节点及其 ID 不能动（删除会导致 MQTT 连接失效）；
+- **唯一 id**：新增节点 id 必须唯一，避免覆盖已有节点；
+- **部署成功码**：`204 No Content`；
+- **回滚**：改前保存一份 GET 结果，需要时原样 POST 回去即可还原。
 
 ## 与 OpenAPI 管理接口对比
 
