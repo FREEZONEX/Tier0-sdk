@@ -3,10 +3,23 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SDK_DIR="$(dirname "$SCRIPT_DIR")"
-ROOT_DIR="$(dirname "$(dirname "$SDK_DIR")")"
+# sdk is a submodule of the Tier0 meta repo (<root>/sdk); backend sits next to it.
+ROOT_DIR="$(dirname "$SDK_DIR")"
 
-SWAGGER_PATH="$ROOT_DIR/backend/service/gwsvr/internal/handler/swaggerui/swagger.json"
+# swagger.json is committed in Tier0-Backend (gwsvr swaggerui handler serves it).
+# Override SWAGGER_PATH to point at another checkout (e.g. a backend worktree).
+SWAGGER_PATH="${SWAGGER_PATH:-$ROOT_DIR/backend/service/gwsvr/internal/handler/swaggerui/swagger.json}"
 OUTPUT_DIR="$SDK_DIR/src/openapi"
+
+if [ ! -f "$SWAGGER_PATH" ]; then
+  echo "ERROR: swagger.json not found: $SWAGGER_PATH" >&2
+  echo "Troubleshooting:" >&2
+  echo "  1. Run this script from the Tier0 meta repo where sdk/ and backend/ are siblings." >&2
+  echo "  2. The swaggerui spec currently lives on the backend dev branch; make sure the" >&2
+  echo "     backend checkout includes service/gwsvr/internal/handler/swaggerui/swagger.json." >&2
+  echo "  3. Or pass an explicit path: SWAGGER_PATH=/path/to/swagger.json bash scripts/generate-openapi.sh" >&2
+  exit 1
+fi
 
 echo "[1/4] Installing dependencies..."
 cd "$SDK_DIR"
