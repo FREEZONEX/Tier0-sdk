@@ -1,12 +1,14 @@
 ---
 name: tier0-sdk-openapi-files-upload
-version: 0.2.0
-description: "uploadFile — POST /openapi/v1/assets/files 申请 presigned POST URL（POST policy）后以 multipart 直传对象存储，返回 filePath 与 fileUrl"
+version: 0.3.0
+description: "使用 uploadFile 统一上传并持久化文件；SDK 对不超过 100 MB 的文件使用标准上传，对超过 100 MB 的文件强制自动切换分片上传，并返回业务侧应保存的 filePath。"
 ---
 
-# uploadFile — 上传文件
+# `uploadFile` — 统一上传入口
 
 Cloud 与企业版接口完全统一，SDK 无需区分部署环境，通过 `configureClient` 的 `apiHost`/`apiKey`（或环境变量 `TIER0_API_HOST`/`TIER0_API_KEY`）区分即可。
+
+应用始终调用 `uploadFile()`。不要在应用中判断是否需要切片，也不要直接调用分片接口：文件超过 100 MB 时，SDK 会强制自动切换为分片上传。
 
 ## 默认存储决策（强制）
 
@@ -18,14 +20,27 @@ Cloud 与企业版接口完全统一，SDK 无需区分部署环境，通过 `co
 
 - SDK 签名与上传流程
 - SDK 对象存储优先规则与业务数据保存方式
-- 底层接口与使用示例
-- 浏览器、Node.js 与高级手动 PUT
+- 标准上传接口与浏览器、Node.js 示例
 - 错误和注意事项
 
 ## SDK 签名
 
 ```typescript
 import { uploadFile } from '@tier0/sdk/files';
+
+interface MultipartOptions {
+  partSize?: number;
+  concurrency?: number;
+  onProgress?: (progress: MultipartProgress) => void;
+  retainSessionOnFailure?: boolean;
+}
+
+interface MultipartProgress {
+  doneParts: number;
+  totalParts: number;
+  uploadedBytes: number;
+  percent: number;
+}
 
 interface UploadOptions {
   business?: string;                          // 业务场景，如 attachment / avatar / notebook
@@ -34,14 +49,15 @@ interface UploadOptions {
   appInstanceId?: string;                     // AI 生成应用实例 ID
   sessionId?: string;                         // AI 生成应用会话 ID
   signal?: AbortSignal;
+  multipart?: MultipartOptions;               // 显式配置进度、并发或失败续传；小文件传入后也使用分片
 }
 
 interface UploadResult {
   fileId?: string;               // 后端文件记录 ID（若返回）
   filePath: string;              // 存储 object key，业务侧保存此字段，后续 download/url/delete 都用它
   fileUrl: string;               // public：长期有效公开 URL；private：可能为空或 presigned URL
-  postUrl: string;               // 本次上传使用的 presigned POST URL
-  postFields: Record<string,string>; // POST 表单字段，全部先写入表单，`file` 字段必须最后
+  postUrl: string;               // 标准上传使用；分片上传时为空字符串
+  postFields: Record<string,string>; // 标准上传使用；分片上传时为空对象
   expiresAt?: number;            // presigned URL 过期时间戳（毫秒）
 }
 
@@ -50,12 +66,17 @@ function uploadFile(file: File, options?: UploadOptions): Promise<UploadResult>;
 
 ## 上传流程
 
-1. SDK 读取 `file.name` / `file.type` / `file.size`，做客户端预检（仅后缀黑名单）；文件大小上限与配额由服务端按套餐裁定，SDK 不做大小预检；
-2. `POST /openapi/v1/assets/files` 申请 presigned POST URL（`postUrl`）与表单字段（`postFields`）、`filePath`；
-3. SDK 以 `multipart/form-data` POST 直传文件内容到对象存储（Cloud 为 AWS S3，企业版为 RustFS）：`postFields` 全部先写入表单，`file` 字段必须最后 appended，不额外添加 `Content-Type` 表单字段；
-4. 返回 `UploadResult`。
+1. SDK 检查文件名、类型和大小，并选择上传方式。
+2. 文件不超过 100 MB 且未传 `options.multipart` 时，SDK 申请 presigned POST 并完成标准上传。
+3. 文件超过 100 MB 时，SDK 强制自动执行分片上传；任何大小的文件传入 `options.multipart` 时也执行分片上传。详细行为见 [`multipart.md`](multipart.md)。
+4. 后端独立校验套餐单文件上限和剩余存储配额；100 MB 是传输方式切换阈值，不是套餐上限。
+5. SDK 返回 `UploadResult`，业务数据只保存 `filePath`。
 
-## 底层接口
+## 标准上传底层接口
+
+以下契约用于理解和排障，不要在应用代码中替代 `uploadFile()` 手动调用。
+
+标准上传虽然使用 HTTP `multipart/form-data` 提交文件，但它不是对象存储的 multipart 分片上传；后者仅指 [`multipart.md`](multipart.md) 中的切片、并发 PUT 和 complete 流程。
 
 `POST /openapi/v1/assets/files`，请求体（JSON）：
 
@@ -129,31 +150,6 @@ const result = await uploadFile(file, {
 });
 ```
 
-### 手动 POST 直传（高级，如需自定义上传进度）
-
-```typescript
-import { getClient } from '@tier0/sdk/openapi';
-
-const client = getClient();
-const resp = await client.post('/openapi/v1/assets/files', {
-  fileName: file.name,
-  contentType: file.type || 'application/octet-stream',
-  size: file.size,
-  visibility: 'private',
-});
-// 网关可能返回扁平 JSON 或 { code, msg, data } 包裹，按需解包
-const data = (resp as any).data ?? resp;
-
-const form = new FormData();
-// postFields 全部先写入表单，file 字段必须最后 appended
-for (const [key, value] of Object.entries(data.postFields)) {
-  form.append(key, value);
-}
-form.append('file', file);
-// 不要手动设置 Content-Type header：fetch 会为 FormData 自动生成 multipart boundary
-await fetch(data.postUrl, { method: 'POST', body: form });
-```
-
 ## 错误
 
 客户端预检错误（上传前抛出）：
@@ -183,11 +179,12 @@ try {
 | 错误码 | HTTP | 触发场景 | 处理建议 |
 |--------|------|----------|----------|
 | `CodeStorageQuotaExceeded` | 403 | 预占/差额补偿超出套餐存储上限 | 提示删除文件或升级套餐 |
-| `CodeStorageFileTooLarge` | 400 | 单文件超过上限（Phase 1 统一 100MB / Phase 2 按套餐 1GB） | 提示当前上限 |
+| `CodeStorageFileTooLarge` | 400 | 单文件超过当前套餐或部署环境允许的上限 | 提示服务端返回的当前上限或升级套餐 |
 | `CodeStorageUploadStateInvalid` | 409 | confirm/abort 的记录非 `temp`（非幂等重放场景） | 提示任务已结束或不存在 |
 
 ## 注意事项
 
+- 应用只调用 `uploadFile()`；不要自行切片、申请分片 URL、收集 ETag 或调用 complete/abort。
 - `postUrl`/`postFields` 默认有效期 3600 秒，超时需重新发起上传。
 - `filePath` 由服务端生成；SDK 不暴露 bucket、endpoint 或永久密钥。
 - POST 上传为 `multipart/form-data`：`postFields` 全部先写入，`file` 字段必须最后 appended；不要额外添加 `Content-Type` 表单字段；对象 key 精确匹配 `filePath`；body 大小 ∈ [1, sizeBytes]；成功返回 204 无 body。
