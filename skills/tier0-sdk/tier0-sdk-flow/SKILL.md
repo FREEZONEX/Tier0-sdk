@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-flow
-version: 1.1.0
-description: "Tier0 SDK Flow management for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. Use it to create, list, inspect, rename/update, read Node-RED nodes or flowdata, deploy canvas JSON, and delete SourceFlow/EventFlow resources through Tier0 OpenAPI, or to access Node-RED native Admin APIs directly through the /flow/{source|event} gateway prefix. Use for @tier0/sdk Flow or Node-RED lifecycle tasks."
+version: 1.3.0
+description: "Tier0 SDK Flow management for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. Use it to create, list, inspect, rename/update, read Node-RED nodes or flowdata, deploy canvas JSON, and delete SourceFlow/EventFlow resources through Tier0 OpenAPI; or expose and invoke application HTTP endpoints built with Node-RED http in/http response nodes through /flow/{source|event}. Use for @tier0/sdk Flow, Node-RED lifecycle, webhook, or Flow HTTP endpoint tasks."
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -17,7 +17,8 @@ metadata:
 - Before editing/deploying Node-RED JSON, fetch the existing flowdata and preserve the system-created `mqtt-broker` config node and its ID.
 - Treat deploy as a full-canvas replacement; retain required system nodes and validate the complete JSON before sending.
 - Use the Tier0 CLI Skill protocol references when constructing SourceFlow/EventFlow Node-RED protocol JSON.
-- When accessing Node-RED native Admin APIs through `/flow/{source|event}/**`, treat writes (deploy/update/delete) as bypassing platform validation and version snapshots: back up flowdata first and verify the full canvas JSON before sending.
+- Use only the platform `flowApi` methods documented below for Flow management. Do not attempt management operations through `/flow/{source|event}/**`.
+- Use `/flow/{source|event}/**` only to invoke user-defined `http in` endpoints. Build an `http in -> processing -> http response` chain and read the dedicated HTTP endpoint reference.
 
 ## References
 
@@ -31,7 +32,7 @@ metadata:
 | Get canvas flowdata | [`references/flowdata.md`](references/flowdata.md) |
 | Deploy canvas | [`references/deploy.md`](references/deploy.md) |
 | Delete | [`references/delete.md`](references/delete.md) |
-| Node-RED native Admin API | [`references/native-node-red.md`](references/native-node-red.md) |
+| Expose or invoke an `http in` endpoint | [`references/http-endpoints.md`](references/http-endpoints.md) |
 
 ## 可调用接口速查（完整契约）
 
@@ -65,52 +66,20 @@ const { data } = await flowApi.openapiv1flowlist({ flowType: 'event' });
 await flowApi.openapiv1flowdeploy({ id: 1, flowsJson: JSON.stringify(canvasFlows) });
 ```
 
-### B. Node-RED 原生接口（`/flow/{source|event}/**`，原生 fetch）
+### B. 用户定义的 HTTP 接口
 
-平台管理接口走 A；需 Node-RED **运行时真实数据/直接写运行时**时走本节。
-鉴权：`Authorization: Bearer <TIER0_API_KEY>`（或 `X-API-Key`）；host = `TIER0_API_HOST`（App 服务端）。
+当 Flow 使用 `http in` 接收应用请求时，通过以下地址调用：
 
-| Method | Path | 说明 |
-|---|---|---|
-| GET | `/flow/{source\|event}/flows` | 原生全量 flows + rev（非平台合成） |
-| GET | `/flow/{source\|event}/flow/:id` | 单个 flow 节点与 configs |
-| GET | `/flow/{source\|event}/flow/global` | 全局配置节点 |
-| GET | `/flow/{source\|event}/nodes` | 已安装节点类型列表 |
-| GET | `/flow/{source\|event}/settings`、`/status` | 运行时设置 / 状态 |
-| POST | `/flow/{source\|event}/flows` | 全量部署（`Node-RED-Deployment-Type: flows`） |
-| POST | `/flow/{source\|event}/flow` | 创建 flow |
-| PUT | `/flow/{source\|event}/flow/:id` | 更新 flow（含 global） |
-| DELETE | `/flow/{source\|event}/flow/:id` | 删除 flow |
-| WS | `/flow/{source\|event}/comms` | 实时通道（可选） |
-
-```typescript
-const host = process.env.TIER0_API_HOST; // 例如 backend:8080
-const key = process.env.TIER0_API_KEY;
-
-// 读 sourceflow 原生 flows
-const res = await fetch(`http://${host}/flow/source/flows`, {
-  headers: { Authorization: `Bearer ${key}`, 'X-API-Key': key },
-});
-const runtimeFlows = await res.json(); // 节点数组
-
-// 部署 eventflow 画布（全量替换，先备份；body 直接传节点数组）
-await fetch(`http://${host}/flow/event/flows`, {
-  method: 'POST',
-  headers: { Authorization: `Bearer ${key}`, 'X-API-Key': key, 'Content-Type': 'application/json', 'Node-RED-Deployment-Type': 'flows' },
-  body: JSON.stringify(canvasFlows), // 非 { flows: [...] } 包裹
-});
-// 成功返回 HTTP 204
+```text
+SourceFlow: {TIER0_API_HOST}/flow/source/<http-in path>
+EventFlow:  {TIER0_API_HOST}/flow/event/<http-in path>
 ```
 
-> 编辑节点完整工作流（读→改→部署→确认→恢复）见
-> [`references/native-node-red.md`](references/native-node-red.md)「编辑 Node-RED 节点」。
-
-> 完整端点与示例见 [`references/native-node-red.md`](references/native-node-red.md)。
-> 选择建议：默认用 A（平台管理，含校验/版本快照）；仅需原生运行时数据/能力时用 B。
+网关将请求转发到对应的 `http in` 节点。该入口只用于调用用户定义的业务接口，不用于 Flow 管理。读取 [`references/http-endpoints.md`](references/http-endpoints.md) 获取节点链路、路径映射、调用代码、权限和超时规则。
 
 ## Final Checklist
 
 1. Existing flowdata was inspected before canvas changes.
 2. The system MQTT broker node and ID are preserved.
 3. Deploy sends the intended full canvas.
-4. Native Admin API writes are backed up and deliberate (bypass platform validation).
+4. Every user-defined `http in` route ends in `http response` and is called with the required API-key permission.

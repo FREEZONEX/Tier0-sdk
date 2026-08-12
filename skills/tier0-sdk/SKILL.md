@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk
-version: 0.3.0
-description: "Tier0 SDK root/router Skill and shared configuration for TypeScript/JavaScript. Read this root Skill before every Tier0 SDK domain Skill, and read references/configuration.md before making any actual @tier0/sdk call. Use for installing or updating @tier0/sdk, configuring API/MQTT/runtime values, resolving the current project, selecting package entry points, React/Vue adapters, MonoApp integration, or routing work to UNS, realtime MQ, Flow, files, members, and system capabilities."
+version: 0.3.2
+description: "Tier0 SDK root/router Skill and shared configuration for TypeScript/JavaScript. Read this root Skill before every Tier0 SDK domain Skill, and read references/configuration.md before making any actual @tier0/sdk call. Use for installing or updating @tier0/sdk, configuring API/MQTT/runtime values, resolving the current project, selecting package entry points, React/Vue adapters, MonoApp integration, or routing work to UNS, realtime MQ, Flow and Node-RED HTTP endpoints, files, members, and system capabilities."
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -52,16 +52,13 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 | launchpad | `launchpadApi.openapiv1launchpadgetmembers` | `POST /openapi/v1/launchpad/{projectName}/getMembers` |
 | platform | `platformApi.openapiv1platformgetmembers` | `POST /openapi/v1/platform/getMembers` |
 
-> Node-RED 原生 Admin API（`/flow/{source|event}/**`，非 OpenAPI）见
-> [`tier0-sdk-flow/SKILL.md`](tier0-sdk-flow/SKILL.md) 的接口速查 B 节。
-
 ## Domain Routing
 
 | User need | Read |
 |---|---|
 | UNS modeling, browse/search, read/write/history, topic lifecycle, app data integration | [`tier0-sdk-uns/SKILL.md`](tier0-sdk-uns/SKILL.md) |
 | Continuous/realtime receive, MQTT subscribe/publish, connection lifecycle | [`tier0-sdk-mq/SKILL.md`](tier0-sdk-mq/SKILL.md) |
-| Flow/Node-RED create, inspect, edit, deploy, or delete | [`tier0-sdk-flow/SKILL.md`](tier0-sdk-flow/SKILL.md) |
+| Flow/Node-RED create, inspect, edit, deploy, delete, or expose/invoke an `http in` endpoint or webhook | [`tier0-sdk-flow/SKILL.md`](tier0-sdk-flow/SKILL.md) |
 | Upload, persist, access, download, or delete files/attachments | [`tier0-sdk-files/SKILL.md`](tier0-sdk-files/SKILL.md) |
 | Launchpad project members or platform/workspace members and roles | [`tier0-sdk-members/SKILL.md`](tier0-sdk-members/SKILL.md) |
 | Current identity, service info/capabilities, gateway reload | [`tier0-sdk-system/SKILL.md`](tier0-sdk-system/SKILL.md) |
