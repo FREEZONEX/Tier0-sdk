@@ -178,16 +178,20 @@ const body = {
   idempotencyKey: 'order-A1029-shipped-v1', // unchanged across retries
 };
 
-for (let attempt = 0; attempt < 3; attempt++) {
-  try {
-    const resp = await notificationsApi.openapiv1notificationssend(body);
-    break; // if the first attempt actually succeeded, this is an idempotent hit — same messageId, no duplicate
-  } catch (e) {
-    const retryable = e instanceof ApiError && (e.status >= 500 || e.status === 429);
-    if (!retryable) throw e; // other 4xx: retrying cannot help
-    await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+async function sendWithRetry(maxAttempts = 3) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      // if an earlier attempt actually succeeded, this is an idempotent hit — same messageId, no duplicate
+      return await notificationsApi.openapiv1notificationssend(body);
+    } catch (e) {
+      const retryable = e instanceof ApiError && (e.status >= 500 || e.status === 429);
+      if (!retryable || attempt >= maxAttempts) throw e; // other 4xx: retrying cannot help; exhausted: surface the last error, never swallow it
+      await new Promise(r => setTimeout(r, 1000 * attempt));
+    }
   }
 }
+
+const resp = await sendWithRetry();
 ```
 
 ## Errors

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 interface SwaggerDoc {
   paths: Record<string, Record<string, any>>;
@@ -564,7 +565,7 @@ function main() {
 
   // 供 openapi-typescript 生成 types.ts 用的过滤后 swagger（白名单端点 + 引用闭包内的 schema），
   // 避免把未纳入 SDK 的端点类型带进发布面
-  const scriptDir = path.dirname(new URL(import.meta.url).pathname);
+  const scriptDir = path.dirname(fileURLToPath(import.meta.url));
   fs.writeFileSync(path.join(scriptDir, 'swagger.filtered.json'), JSON.stringify(swagger, null, 2), 'utf-8');
 
   // Write generated files
