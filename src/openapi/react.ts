@@ -3,7 +3,7 @@
 
 // React hooks require @tanstack/react-query to be installed
 import { useMutation } from '@tanstack/react-query';
-import { systemApi, flowApi, unsApi, launchpadApi, platformApi } from './api.js';
+import { systemApi, flowApi, launchpadApi, notificationsApi, platformApi, unsApi } from './api.js';
 import type { components } from './types.js';
 
 export function useGwreload() {
@@ -72,6 +72,30 @@ export function useOpenapiv1flowupdate() {
   });
 }
 
+export function useOpenapiv1launchpadgetmembers() {
+  return useMutation<{ code: number; msg?: string; data?: components["schemas"]["LaunchpadMembersResp"] }, Error, { "projectName": string; body: components["schemas"]["LaunchpadGetMembersReq"] }>({
+    mutationFn: launchpadApi.openapiv1launchpadgetmembers,
+  });
+}
+
+export function useOpenapiv1notificationsget() {
+  return useMutation<components["schemas"]["GetNotificationResp"], Error, components["schemas"]["GetNotificationReq"]>({
+    mutationFn: notificationsApi.openapiv1notificationsget,
+  });
+}
+
+export function useOpenapiv1notificationssend() {
+  return useMutation<components["schemas"]["SendNotificationResp"], Error, components["schemas"]["SendNotificationReq"]>({
+    mutationFn: notificationsApi.openapiv1notificationssend,
+  });
+}
+
+export function useOpenapiv1platformgetmembers() {
+  return useMutation<{ code: number; msg?: string; data?: components["schemas"]["PlatformMembersResp"] }, Error, components["schemas"]["PlatformGetMembersReq"]>({
+    mutationFn: platformApi.openapiv1platformgetmembers,
+  });
+}
+
 export function useOpenapiv1unsbrowse() {
   return useMutation<any, Error, components["schemas"]["BrowseReq"]>({
     mutationFn: unsApi.openapiv1unsbrowse,
@@ -123,18 +147,6 @@ export function useOpenapiv1unsupdate() {
 export function useOpenapiv1unswrite() {
   return useMutation<any, Error, components["schemas"]["WriteReq"]>({
     mutationFn: unsApi.openapiv1unswrite,
-  });
-}
-
-export function useOpenapiv1launchpadgetmembers() {
-  return useMutation<{ code: number; msg?: string; data?: components["schemas"]["LaunchpadMembersResp"] }, Error, { "projectName": string; body: components["schemas"]["LaunchpadGetMembersReq"] }>({
-    mutationFn: launchpadApi.openapiv1launchpadgetmembers,
-  });
-}
-
-export function useOpenapiv1platformgetmembers() {
-  return useMutation<{ code: number; msg?: string; data?: components["schemas"]["PlatformMembersResp"] }, Error, components["schemas"]["PlatformGetMembersReq"]>({
-    mutationFn: platformApi.openapiv1platformgetmembers,
   });
 }
 

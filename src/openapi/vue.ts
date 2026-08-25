@@ -3,7 +3,7 @@
 
 // Vue composables require vue to be installed
 import { ref } from 'vue';
-import { systemApi, flowApi, unsApi, launchpadApi, platformApi } from './api.js';
+import { systemApi, flowApi, launchpadApi, notificationsApi, platformApi, unsApi } from './api.js';
 import type { components } from './types.js';
 
 export function useGwreload() {
@@ -248,6 +248,94 @@ export function useOpenapiv1flowupdate() {
   return { data, loading, error, execute };
 }
 
+export function useOpenapiv1launchpadgetmembers() {
+  const data = ref<{ code: number; msg?: string; data?: components["schemas"]["LaunchpadMembersResp"] } | null>(null);
+  const loading = ref(false);
+  const error = ref<Error | null>(null);
+
+  const execute = async (params: { "projectName": string; body: components["schemas"]["LaunchpadGetMembersReq"] }) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      data.value = await launchpadApi.openapiv1launchpadgetmembers(params);
+      return data.value;
+    } catch (e) {
+      error.value = e as Error;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  return { data, loading, error, execute };
+}
+
+export function useOpenapiv1notificationsget() {
+  const data = ref<components["schemas"]["GetNotificationResp"] | null>(null);
+  const loading = ref(false);
+  const error = ref<Error | null>(null);
+
+  const execute = async (body: components["schemas"]["GetNotificationReq"]) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      data.value = await notificationsApi.openapiv1notificationsget(body);
+      return data.value;
+    } catch (e) {
+      error.value = e as Error;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  return { data, loading, error, execute };
+}
+
+export function useOpenapiv1notificationssend() {
+  const data = ref<components["schemas"]["SendNotificationResp"] | null>(null);
+  const loading = ref(false);
+  const error = ref<Error | null>(null);
+
+  const execute = async (body: components["schemas"]["SendNotificationReq"]) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      data.value = await notificationsApi.openapiv1notificationssend(body);
+      return data.value;
+    } catch (e) {
+      error.value = e as Error;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  return { data, loading, error, execute };
+}
+
+export function useOpenapiv1platformgetmembers() {
+  const data = ref<{ code: number; msg?: string; data?: components["schemas"]["PlatformMembersResp"] } | null>(null);
+  const loading = ref(false);
+  const error = ref<Error | null>(null);
+
+  const execute = async (body: components["schemas"]["PlatformGetMembersReq"]) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      data.value = await platformApi.openapiv1platformgetmembers(body);
+      return data.value;
+    } catch (e) {
+      error.value = e as Error;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  return { data, loading, error, execute };
+}
+
 export function useOpenapiv1unsbrowse() {
   const data = ref<any | null>(null);
   const loading = ref(false);
@@ -434,50 +522,6 @@ export function useOpenapiv1unswrite() {
     error.value = null;
     try {
       data.value = await unsApi.openapiv1unswrite(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1launchpadgetmembers() {
-  const data = ref<{ code: number; msg?: string; data?: components["schemas"]["LaunchpadMembersResp"] } | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (params: { "projectName": string; body: components["schemas"]["LaunchpadGetMembersReq"] }) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await launchpadApi.openapiv1launchpadgetmembers(params);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1platformgetmembers() {
-  const data = ref<{ code: number; msg?: string; data?: components["schemas"]["PlatformMembersResp"] } | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["PlatformGetMembersReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await platformApi.openapiv1platformgetmembers(body);
       return data.value;
     } catch (e) {
       error.value = e as Error;

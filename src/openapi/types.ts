@@ -180,6 +180,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/openapi/v1/launchpad/{projectName}/getMembers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postOpenapiV1Launchpad:projectNameGetMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openapi/v1/notifications/get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 查询消息通知发送状态
+         * @description 查询消息通知发送状态：按 messageId 查询，归属校验锚定发起请求的 API Key
+         */
+        post: operations["postOpenapiV1NotificationsGet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openapi/v1/notifications/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 发送消息通知
+         * @description 发送消息通知：向 Key 所属 Workspace 内的用户发送站内信，并按需触发终端提醒（Web Push/移动推送）
+         */
+        post: operations["postOpenapiV1NotificationsSend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openapi/v1/platform/getMembers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postOpenapiV1PlatformGetMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/openapi/v1/uns/browse": {
         parameters: {
             query?: never;
@@ -324,38 +396,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/openapi/v1/launchpad/{projectName}/getMembers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1Launchpad:projectNameGetMembers"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/platform/getMembers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1PlatformGetMembers"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -389,10 +429,6 @@ export interface components {
         BrowseResp: {
             tree: components["schemas"]["OpenapiNodeInfo"][];
         };
-        /** CliAuthStatusReq */
-        CliAuthStatusReq: {
-            setupCode: string;
-        };
         /** CreateResp */
         CreateResp: {
             results: components["schemas"]["OpenapiCreateResult"][];
@@ -408,6 +444,7 @@ export interface components {
         };
         /** FlowCreateResp */
         FlowCreateResp: {
+            brokerID: string;
             /** Format: int64 */
             id: number;
         };
@@ -488,11 +525,48 @@ export interface components {
             isFavorite?: number;
             template?: string;
         };
+        /** GetNotificationReq */
+        GetNotificationReq: {
+            messageId: string;
+        };
+        /** GetNotificationResp */
+        GetNotificationResp: {
+            messageId: string;
+            type: string;
+            /** @description accepted/sent/failed */
+            status: string;
+            createdAt: string;
+            completedAt?: string;
+            errorCode?: string;
+            message?: string;
+        };
         /** HistoryAggregation */
         HistoryAggregation: {
-            field: string;
-            function: string;
+            field?: string;
+            fields?: components["schemas"]["HistoryAggregationField"][];
+            function?: string;
             interval: string;
+        };
+        /** HistoryAggregationField */
+        HistoryAggregationField: {
+            function?: string;
+            name: string;
+        };
+        /** HistoryQueryMeta */
+        HistoryQueryMeta: {
+            /** Format: int64 */
+            actualIntervalMs?: number;
+            /** Format: boolean */
+            aggregated: boolean;
+            /** Format: int64 */
+            rawTotal: number;
+            /** Format: int64 */
+            requestedIntervalMs?: number;
+            /** Format: int64 */
+            returnedTotal: number;
+            /** Format: boolean */
+            sampled: boolean;
+            strategy?: string;
         };
         /** HistoryReq */
         HistoryReq: {
@@ -519,19 +593,66 @@ export interface components {
         };
         /** InfoReq */
         InfoReq: Record<string, never>;
+        /** LaunchpadGetMembersReq */
+        LaunchpadGetMembersReq: {
+            /** Format: int64 */
+            page?: number;
+            roleKey?: string;
+            roles?: string[];
+            /** Format: int64 */
+            size?: number;
+            updatedAtEnd?: string;
+            updatedAtStart?: string;
+        };
+        /** LaunchpadMemberResp */
+        LaunchpadMemberResp: {
+            email?: string;
+            memberId: string;
+            roles: components["schemas"]["LaunchpadMemberRoleResp"][];
+            updatedAt?: string;
+            userId: string;
+            userName?: string;
+        };
+        /** LaunchpadMemberRoleAppResp */
+        LaunchpadMemberRoleAppResp: {
+            appId: string;
+            appName: string;
+        };
+        /** LaunchpadMemberRoleResp */
+        LaunchpadMemberRoleResp: {
+            apps?: components["schemas"]["LaunchpadMemberRoleAppResp"][];
+            description?: string;
+            /** Format: int64 */
+            memberCount: number;
+            roleId: string;
+            roleKey: string;
+            roleName?: string;
+        };
+        /** LaunchpadMembersResp */
+        LaunchpadMembersResp: {
+            list: components["schemas"]["LaunchpadMemberResp"][];
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            size: number;
+            /** Format: int64 */
+            total: number;
+        };
         /** NamespaceNode */
         NamespaceNode: {
             alias?: string;
             children?: components["schemas"]["NamespaceNode"][];
             description?: string;
             displayName?: string;
+            /** Format: boolean */
+            enableHistory?: boolean;
             extendProperties?: {
                 [key: string]: string;
             };
             fields?: components["schemas"]["SchemaField"][];
             name: string;
             topicType?: string;
-            type: string;
+            type?: string;
         };
         /** NodeCreateReq */
         NodeCreateReq: {
@@ -562,6 +683,8 @@ export interface components {
             alias?: string;
             description?: string;
             displayName?: string;
+            /** Format: boolean */
+            enableHistory?: boolean;
             extendProperties?: {
                 [key: string]: string;
             };
@@ -569,6 +692,19 @@ export interface components {
             name?: string;
             path: string;
             updateMask?: string[];
+        };
+        /** NotificationSender */
+        NotificationSender: {
+            /** @description 枚举 app/other，缺省 other */
+            type?: string;
+            /** @description app 必填=appId（agent-platform UUID）；other 可选；字符集 [0-9a-zA-Z-]{1,128} */
+            id?: string;
+            /** @description 人读显示名（接替废弃的 source），≤100字符 */
+            name?: string;
+            /** @description 类型专属附加信息（app: {"projectId":"..."}），序列化后≤500字节 */
+            meta?: {
+                [key: string]: string;
+            };
         };
         /** OpenapiCreateResult */
         OpenapiCreateResult: {
@@ -592,6 +728,7 @@ export interface components {
         };
         /** OpenapiHistoryResult */
         OpenapiHistoryResult: {
+            meta?: components["schemas"]["HistoryQueryMeta"];
             values: components["schemas"]["OpenapiHistoryValue"][];
         };
         /** OpenapiHistoryValue */
@@ -610,11 +747,15 @@ export interface components {
         /** OpenapiNodeInfo */
         OpenapiNodeInfo: {
             alias?: string;
+            /** Format: int64 */
+            bindEventFlowID?: number;
+            /** Format: int64 */
+            bindFlowID?: number;
             children?: components["schemas"]["OpenapiNodeInfo"][];
             description?: string;
             displayName?: string;
-            /** Format: int64 */
-            enableHistory?: number;
+            /** Format: boolean */
+            enableHistory?: boolean;
             extendProperties?: {
                 [key: string]: string;
             };
@@ -649,6 +790,46 @@ export interface components {
             /** Format: boolean */
             success: boolean;
             topic: string;
+        };
+        /** PlatformGetMembersReq */
+        PlatformGetMembersReq: {
+            keyword?: string;
+            /** Format: int64 */
+            page?: number;
+            roleKey?: string;
+            roles?: string[];
+            /** Format: int64 */
+            size?: number;
+            statuses?: string[];
+            updatedAtEnd?: string;
+            updatedAtStart?: string;
+        };
+        /** PlatformMemberResp */
+        PlatformMemberResp: {
+            email?: string;
+            nickName?: string;
+            roles: components["schemas"]["PlatformMemberRoleResp"][];
+            status: string;
+            updatedAt: string;
+            userId: string;
+            userName?: string;
+        };
+        /** PlatformMemberRoleResp */
+        PlatformMemberRoleResp: {
+            description?: string;
+            roleId: string;
+            roleKey: string;
+            roleName?: string;
+        };
+        /** PlatformMembersResp */
+        PlatformMembersResp: {
+            list: components["schemas"]["PlatformMemberResp"][];
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            size: number;
+            /** Format: int64 */
+            total: number;
         };
         /** ReadReq */
         ReadReq: {
@@ -698,6 +879,33 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        /** SendNotificationReq */
+        SendNotificationReq: {
+            /** @description 收件人用户 ID（大整数按 string 承载，避免 JS 精度丢失） */
+            recipientUserId: string;
+            /** @description 消息类型，本期仅接受 "inbox" */
+            type: string;
+            /** @description 标题，1-50 字符 */
+            title: string;
+            /** @description 内容，1-800 字符 */
+            content: string;
+            /** @description 幂等键，≤128 字符，锚定 API Key，24 小时窗口 */
+            idempotencyKey: string;
+            /** @description 已废弃：过渡期作 sender.name 别名（sender.name 优先） */
+            source?: string;
+            /** @description test/live，缺省 live；test 模式标题自动加 [Test] 前缀 */
+            mode?: string;
+            /** @description 推送渠道 web/mobile；不传或 [] 同义=静默（只建站内信不推送），推送须显式传值 */
+            channels?: string[];
+            sender?: components["schemas"]["NotificationSender"];
+        };
+        /** SendNotificationResp */
+        SendNotificationResp: {
+            messageId: string;
+            /** @description accepted（站内信异步创建中） */
+            status: string;
+            createdAt: string;
+        };
         /** WriteItem */
         WriteItem: {
             /** Format: int64 */
@@ -718,91 +926,6 @@ export interface components {
             results: components["schemas"]["OpenapiWriteResult"][];
             /** Format: boolean */
             success: boolean;
-        };
-        /** LaunchpadGetMembersReq */
-        LaunchpadGetMembersReq: {
-            /** Format: int64 */
-            page?: number;
-            roleKey?: string;
-            roles?: string[];
-            /** Format: int64 */
-            size?: number;
-            updatedAtEnd?: string;
-            updatedAtStart?: string;
-        };
-        /** LaunchpadMembersResp */
-        LaunchpadMembersResp: {
-            list: components["schemas"]["LaunchpadMemberResp"][];
-            /** Format: int64 */
-            page: number;
-            /** Format: int64 */
-            size: number;
-            /** Format: int64 */
-            total: number;
-        };
-        /** LaunchpadMemberResp */
-        LaunchpadMemberResp: {
-            email?: string;
-            memberId: string;
-            roles: components["schemas"]["LaunchpadMemberRoleResp"][];
-            updatedAt?: string;
-            userId: string;
-            userName?: string;
-        };
-        /** LaunchpadMemberRoleResp */
-        LaunchpadMemberRoleResp: {
-            apps?: components["schemas"]["LaunchpadMemberRoleAppResp"][];
-            description?: string;
-            /** Format: int64 */
-            memberCount: number;
-            roleId: string;
-            roleKey: string;
-            roleName?: string;
-        };
-        /** LaunchpadMemberRoleAppResp */
-        LaunchpadMemberRoleAppResp: {
-            appId: string;
-            appName: string;
-        };
-        /** PlatformGetMembersReq */
-        PlatformGetMembersReq: {
-            keyword?: string;
-            /** Format: int64 */
-            page?: number;
-            roleKey?: string;
-            roles?: string[];
-            /** Format: int64 */
-            size?: number;
-            statuses?: string[];
-            updatedAtEnd?: string;
-            updatedAtStart?: string;
-        };
-        /** PlatformMembersResp */
-        PlatformMembersResp: {
-            list: components["schemas"]["PlatformMemberResp"][];
-            /** Format: int64 */
-            page: number;
-            /** Format: int64 */
-            size: number;
-            /** Format: int64 */
-            total: number;
-        };
-        /** PlatformMemberResp */
-        PlatformMemberResp: {
-            email?: string;
-            nickName?: string;
-            roles: components["schemas"]["PlatformMemberRoleResp"][];
-            status: string;
-            updatedAt: string;
-            userId: string;
-            userName?: string;
-        };
-        /** PlatformMemberRoleResp */
-        PlatformMemberRoleResp: {
-            description?: string;
-            roleId: string;
-            roleKey: string;
-            roleName?: string;
         };
     };
     responses: never;
@@ -1167,6 +1290,122 @@ export interface operations {
             };
         };
     };
+    "postOpenapiV1Launchpad:projectNameGetMembers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectName: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LaunchpadGetMembersReq"];
+            };
+        };
+        responses: {
+            /** @description A successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * 返回code
+                         * @default 200
+                         */
+                        code: number;
+                        data?: components["schemas"]["LaunchpadMembersResp"];
+                        /** 返回的消息 */
+                        msg?: string;
+                    };
+                };
+            };
+        };
+    };
+    postOpenapiV1NotificationsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GetNotificationReq"];
+            };
+        };
+        responses: {
+            /** @description A successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetNotificationResp"];
+                };
+            };
+        };
+    };
+    postOpenapiV1NotificationsSend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendNotificationReq"];
+            };
+        };
+        responses: {
+            /** @description A successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendNotificationResp"];
+                };
+            };
+        };
+    };
+    postOpenapiV1PlatformGetMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformGetMembersReq"];
+            };
+        };
+        responses: {
+            /** @description A successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * 返回code
+                         * @default 200
+                         */
+                        code: number;
+                        data?: components["schemas"]["PlatformMembersResp"];
+                        /** 返回的消息 */
+                        msg?: string;
+                    };
+                };
+            };
+        };
+    };
     postOpenapiV1UnsBrowse: {
         parameters: {
             query?: never;
@@ -1457,74 +1696,6 @@ export interface operations {
                          */
                         code: number;
                         data?: components["schemas"]["WriteResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    "postOpenapiV1Launchpad:projectNameGetMembers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                projectName: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LaunchpadGetMembersReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code: number;
-                        data?: components["schemas"]["LaunchpadMembersResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1PlatformGetMembers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PlatformGetMembersReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code: number;
-                        data?: components["schemas"]["PlatformMembersResp"];
                         /** 返回的消息 */
                         msg?: string;
                     };

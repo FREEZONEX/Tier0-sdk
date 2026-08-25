@@ -76,11 +76,72 @@ type OperationModules = Record<string, Operation[]>;
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete']);
 
+// SDK 已纳入的端点白名单：后端 swagger 里存在但尚未接入 SDK 生成面的端点
+// （assets 文件族走手写 src/files.ts、mqtt-auth、uns 附件/绑定等）明确排除，接入时逐条加入
+const INCLUDED_PATHS = new Set([
+  '/gw/reload',
+  '/openapi/v1/auth/whoami',
+  '/openapi/v1/info',
+  '/openapi/v1/flow/create',
+  '/openapi/v1/flow/delete',
+  '/openapi/v1/flow/deploy',
+  '/openapi/v1/flow/flowdata',
+  '/openapi/v1/flow/get',
+  '/openapi/v1/flow/list',
+  '/openapi/v1/flow/nodes',
+  '/openapi/v1/flow/update',
+  '/openapi/v1/uns/browse',
+  '/openapi/v1/uns/create',
+  '/openapi/v1/uns/delete',
+  '/openapi/v1/uns/history',
+  '/openapi/v1/uns/read',
+  '/openapi/v1/uns/restore',
+  '/openapi/v1/uns/search',
+  '/openapi/v1/uns/update',
+  '/openapi/v1/uns/write',
+  '/openapi/v1/launchpad/{projectName}/getMembers',
+  '/openapi/v1/platform/getMembers',
+  '/openapi/v1/notifications/send',
+  '/openapi/v1/notifications/get',
+]);
+
+// 收集一个 JSON 子树里全部 $ref 指向的 schema 名
+function collectRefs(node: any, into: Set<string>): void {
+  if (!node || typeof node !== 'object') return;
+  if (typeof node.$ref === 'string') {
+    const name = node.$ref.split('/').pop();
+    if (name) into.add(name);
+  }
+  for (const value of Object.values(node)) collectRefs(value, into);
+}
+
+// 按白名单过滤路径，并把 schema 裁剪到被保留路径传递引用的闭包
+function filterSwagger(swagger: SwaggerDoc): SwaggerDoc {
+  const paths = Object.fromEntries(
+    Object.entries(swagger.paths || {}).filter(([p]) => INCLUDED_PATHS.has(p))
+  );
+
+  const allSchemas = swagger.components?.schemas || {};
+  const kept = new Set<string>();
+  collectRefs(paths, kept);
+  let previousSize = 0;
+  while (kept.size !== previousSize) {
+    previousSize = kept.size;
+    for (const name of [...kept]) collectRefs(allSchemas[name], kept);
+  }
+  const schemas = Object.fromEntries(
+    Object.entries(allSchemas).filter(([name]) => kept.has(name))
+  );
+
+  return { ...swagger, paths, components: { ...swagger.components, schemas } };
+}
+
 function getModuleName(pathStr: string): string {
   if (pathStr.includes('/flow/')) return 'flow';
   if (pathStr.includes('/uns/')) return 'uns';
   if (pathStr.includes('/launchpad/')) return 'launchpad';
   if (pathStr.includes('/platform/')) return 'platform';
+  if (pathStr.includes('/notifications/')) return 'notifications';
   if (pathStr.includes('/auth/')) return 'system';
   if (pathStr.includes('/info')) return 'system';
   if (pathStr.includes('/reload')) return 'system';
@@ -494,12 +555,17 @@ function main() {
     process.exit(1);
   }
 
-  const swagger = loadSwagger(swaggerPath);
+  const swagger = filterSwagger(loadSwagger(swaggerPath));
 
   // Ensure output directory exists
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
+
+  // 供 openapi-typescript 生成 types.ts 用的过滤后 swagger（白名单端点 + 引用闭包内的 schema），
+  // 避免把未纳入 SDK 的端点类型带进发布面
+  const scriptDir = path.dirname(new URL(import.meta.url).pathname);
+  fs.writeFileSync(path.join(scriptDir, 'swagger.filtered.json'), JSON.stringify(swagger, null, 2), 'utf-8');
 
   // Write generated files
   fs.writeFileSync(path.join(outputDir, 'client.ts'), generateClient(), 'utf-8');

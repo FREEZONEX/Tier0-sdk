@@ -21,6 +21,19 @@ export const flowApi = {
   openapiv1flowupdate: (body: components["schemas"]["FlowUpdateReq"]) => getClient().post<any>('/openapi/v1/flow/update', body),
 };
 
+export const launchpadApi = {
+  openapiv1launchpadgetmembers: (params: { "projectName": string; body: components["schemas"]["LaunchpadGetMembersReq"] }) => getClient().post<{ code: number; msg?: string; data?: components["schemas"]["LaunchpadMembersResp"] }>(`/openapi/v1/launchpad/${encodeURIComponent(String(params["projectName"]))}/getMembers`, params.body),
+};
+
+export const notificationsApi = {
+  openapiv1notificationsget: (body: components["schemas"]["GetNotificationReq"]) => getClient().post<components["schemas"]["GetNotificationResp"]>('/openapi/v1/notifications/get', body),
+  openapiv1notificationssend: (body: components["schemas"]["SendNotificationReq"]) => getClient().post<components["schemas"]["SendNotificationResp"]>('/openapi/v1/notifications/send', body),
+};
+
+export const platformApi = {
+  openapiv1platformgetmembers: (body: components["schemas"]["PlatformGetMembersReq"]) => getClient().post<{ code: number; msg?: string; data?: components["schemas"]["PlatformMembersResp"] }>('/openapi/v1/platform/getMembers', body),
+};
+
 export const unsApi = {
   openapiv1unsbrowse: (body: components["schemas"]["BrowseReq"]) => getClient().post<any>('/openapi/v1/uns/browse', body),
   openapiv1unscreate: (body: components["schemas"]["NodeCreateReq"]) => getClient().post<any>('/openapi/v1/uns/create', body),
@@ -31,13 +44,5 @@ export const unsApi = {
   openapiv1unssearch: (body: components["schemas"]["SearchReq"]) => getClient().post<any>('/openapi/v1/uns/search', body),
   openapiv1unsupdate: (body: components["schemas"]["NodeUpdateReq"]) => getClient().post<any>('/openapi/v1/uns/update', body),
   openapiv1unswrite: (body: components["schemas"]["WriteReq"]) => getClient().post<any>('/openapi/v1/uns/write', body),
-};
-
-export const launchpadApi = {
-  openapiv1launchpadgetmembers: (params: { "projectName": string; body: components["schemas"]["LaunchpadGetMembersReq"] }) => getClient().post<{ code: number; msg?: string; data?: components["schemas"]["LaunchpadMembersResp"] }>(`/openapi/v1/launchpad/${encodeURIComponent(String(params["projectName"]))}/getMembers`, params.body),
-};
-
-export const platformApi = {
-  openapiv1platformgetmembers: (body: components["schemas"]["PlatformGetMembersReq"]) => getClient().post<{ code: number; msg?: string; data?: components["schemas"]["PlatformMembersResp"] }>('/openapi/v1/platform/getMembers', body),
 };
 
