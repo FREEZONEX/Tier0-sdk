@@ -50,6 +50,7 @@
       { "name": "tier0-sdk-flow", "path": "./skills/tier0-sdk/tier0-sdk-flow" },
       { "name": "tier0-sdk-files", "path": "./skills/tier0-sdk/tier0-sdk-files" },
       { "name": "tier0-sdk-members", "path": "./skills/tier0-sdk/tier0-sdk-members" },
+      { "name": "tier0-sdk-notifications", "path": "./skills/tier0-sdk/tier0-sdk-notifications" },
       { "name": "tier0-sdk-system", "path": "./skills/tier0-sdk/tier0-sdk-system" }
     ]
   },
