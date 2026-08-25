@@ -23,13 +23,12 @@ try {
 } catch (e) {
   if (e instanceof ApiError) {
     // e.status = real HTTP status (409, 429, ...); e.code is 0 (no envelope)
-    try {
-      const { errorCode, message } = JSON.parse(e.msg);
-      // handle errorCode per the table below
-    } catch {
-      // non-JSON body (e.g. gateway-level 500): fall back to e.status + e.msg text
-    }
+    let errorCode = 'UNKNOWN';
+    let message = e.msg; // non-JSON body (e.g. gateway-level 500) stays as raw text
+    try { ({ errorCode, message } = JSON.parse(e.msg)); } catch {}
+    // inspect errorCode per the table below (e.g. back off on NOTIFICATION_RATE_LIMITED), then:
   }
+  throw e; // never swallow a failed send — callers must not proceed as if it succeeded
 }
 ```
 
@@ -91,7 +90,10 @@ Self-reported display/navigation hint — **not a verified identity; never base 
 
 **For the `app` scenario always send all three**: `id` (appId) + `meta.projectId` + `name`. The BFF looks up the real app name/icon and builds the app-detail jump URL from the (projectId, appId) pair — without projectId, the mobile Open button and icon lookup break, leaving only the `name` fallback.
 
-**Where appId/projectId come from**: the platform does **not** inject them at runtime (no environment variable exists). The AI building the App knows both in its session context — write them into the sender parameter as constants (or the App's own env vars) at code-generation time.
+**Where appId/projectId come from**:
+
+- `meta.projectId`: **resolve at runtime** with `getCurrentProjectId()` from `@tier0/sdk` (the runtime injects `TIER0_PROJECT_ID`, see the root `references/configuration.md`). Never hard-code it at generation time — an App imported into another project would keep pointing at the source project, breaking icon lookup and Open-button navigation.
+- `sender.id` (appId): no runtime injection exists for it. The AI building the App knows it in its session context — write it in as a constant (or the App's own env var) at code-generation time.
 
 ## Idempotency key discipline
 
@@ -123,7 +125,7 @@ Self-reported display/navigation hint — **not a verified identity; never base 
 For an AI generating App code:
 
 1. API key: via App env vars (`TIER0_API_HOST` / `TIER0_API_KEY`); the key needs `notifications:send`
-2. appId / projectId: constants written at generation time into `sender` (nothing to read at runtime)
+2. `sender.id` (appId): constant written at generation time; `sender.meta.projectId`: `getCurrentProjectId()` at runtime (server-side code — the runtime injects `TIER0_PROJECT_ID`)
 3. mode: `NODE_ENV === 'production' ? 'live' : 'test'`
 4. Recipient and channels: from the user's explicit instruction (see the decision ladder in [`../SKILL.md`](../SKILL.md)) — never hard-coded defaults
 
@@ -148,6 +150,8 @@ console.log(resp.messageId, resp.status); // "71234..." "accepted"
 ### 2. Full send with push + sender (App scenario)
 
 ```typescript
+import { getCurrentProjectId } from '@tier0/sdk';
+
 const resp = await notificationsApi.openapiv1notificationssend({
   recipientUserId: '333145365391552',
   type: 'inbox',
@@ -158,9 +162,9 @@ const resp = await notificationsApi.openapiv1notificationssend({
   channels: ['web', 'mobile'], // the user explicitly asked for push
   sender: {
     type: 'app',
-    id: '550e8400-e29b-41d4-a716-446655440000',        // appId: written at generation time
+    id: '550e8400-e29b-41d4-a716-446655440000', // appId: constant written at generation time
     name: 'OEE Monitor',
-    meta: { projectId: '6ba7b810-9dad-41d1-80b4-00c04fd430c8' },
+    meta: { projectId: getCurrentProjectId() }, // runtime value — correct even after the App is imported elsewhere
   },
 });
 ```

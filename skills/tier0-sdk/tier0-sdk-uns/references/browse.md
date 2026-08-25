@@ -59,7 +59,7 @@ interface TreeNode {
   alias?: string;
   displayName?: string;
   description?: string;
-  enableHistory?: number;   // 1 = 开启历史, 2 = 关闭
+  enableHistory?: boolean;  // true = 开启历史（与 create/update 的 boolean 语义一致）
   extendProperties?: Record<string, unknown>;
   fields?: Array<{
     name: string;
