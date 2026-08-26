@@ -64,7 +64,7 @@ async function waitForTerminal(messageId: string, maxAttempts = 10) {
   for (let i = 0; i < maxAttempts; i++) {
     const resp = await notificationsApi.openapiv1notificationsget({ messageId });
     if (resp.status !== 'accepted') return resp; // sent or failed: terminal
-    await new Promise(r => setTimeout(r, 1500));
+    if (i < maxAttempts - 1) await new Promise(r => setTimeout(r, 1500)); // no pointless sleep after the final poll
   }
   return null; // still processing — tell the user honestly
 }

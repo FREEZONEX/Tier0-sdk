@@ -20,8 +20,10 @@ npx tsx "$SCRIPT_DIR/generate-openapi.ts" \
 
 echo "[3/4] Generating TypeScript types from filtered swagger..."
 # 必须消费 tsx 步骤产出的 swagger.filtered.json（白名单端点+引用闭包 schema），
-# 用原始 swagger 会把未纳入 SDK 的端点类型带进发布面
-npx openapi-typescript "$SCRIPT_DIR/swagger.filtered.json" -o "$OUTPUT_DIR/types.ts"
+# 用原始 swagger 会把未纳入 SDK 的端点类型带进发布面。
+# --default-non-nullable=false：请求字段带 default（如 mode/sender.type）仍是调用方可省略的，
+# 不关掉会被生成为必填，与服务端"缺省即 default"的契约相悖
+npx openapi-typescript "$SCRIPT_DIR/swagger.filtered.json" -o "$OUTPUT_DIR/types.ts" --default-non-nullable=false
 
 echo "[4/4] Running TypeScript check..."
 cd "$SDK_DIR"

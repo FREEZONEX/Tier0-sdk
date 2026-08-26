@@ -59,7 +59,7 @@ The inbox message is always created (it IS the message); `channels` only decides
 ### Resolving the recipient (in priority order)
 
 1. **Business context** (preferred): the triggering event/work order/session usually carries the target user ID — use it as-is (keep it a string).
-2. **Platform member query**: `platformApi.openapiv1platformgetmembers({ keyword: 'alice', page: 1, size: 20 })` — see [`tier0-sdk-members`](../../tier0-sdk-members/SKILL.md). Each row's `userId` is the same ID space as `recipientUserId`.
+2. **Platform member query**: `platformApi.openapiv1platformgetmembers({ keyword: 'alice', statuses: ['active'], page: 1, size: 20 })` — see [`tier0-sdk-members`](../../tier0-sdk-members/SKILL.md). Each row's `userId` is the same ID space as `recipientUserId`. Always filter `statuses: ['active']` — a disabled member matches by name/email but the send would fail with `RECIPIENT_NOT_AVAILABLE`.
 3. ⚠️ Either way: **the recipient must be an active member of the API key's workspace**, otherwise 404 `RECIPIENT_NOT_AVAILABLE`. The member list is platform-wide — a listed user is not necessarily in this key's workspace. That mismatch is the first suspect for this 404.
 
 ## mode: detect the scenario
@@ -190,7 +190,10 @@ async function sendWithRetry(maxAttempts = 3) {
       // if an earlier attempt actually succeeded, this is an idempotent hit — same messageId, no duplicate
       return await notificationsApi.openapiv1notificationssend(body);
     } catch (e) {
-      const retryable = e instanceof ApiError && (e.status >= 500 || e.status === 429);
+      // Retryable: server-side 5xx / rate limit — and transport failures with no HTTP response
+      // (fetch throws TypeError on connection reset/DNS): the caller cannot know whether the
+      // server accepted the request, and reusing the idempotency key makes the retry safe.
+      const retryable = e instanceof ApiError ? e.status >= 500 || e.status === 429 : true;
       if (!retryable || attempt >= maxAttempts) throw e; // other 4xx: retrying cannot help; exhausted: surface the last error, never swallow it
       await new Promise(r => setTimeout(r, 1000 * attempt));
     }

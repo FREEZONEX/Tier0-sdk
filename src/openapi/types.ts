@@ -710,7 +710,7 @@ export interface components {
              * @default other
              * @enum {string}
              */
-            type: "app" | "other";
+            type?: "app" | "other";
             /** @description app 必填=appId（agent-platform UUID）；other 可选；字符集 [0-9a-zA-Z-]{1,128} */
             id?: string;
             /** @description 人读显示名（接替废弃的 source），≤100字符 */
@@ -915,7 +915,7 @@ export interface components {
              * @default live
              * @enum {string}
              */
-            mode: "test" | "live";
+            mode?: "test" | "live";
             /** @description 推送渠道 web/mobile；不传或 [] 同义=静默（只建站内信不推送），推送须显式传值 */
             channels?: ("web" | "mobile")[];
             sender?: components["schemas"]["NotificationSender"];
@@ -980,7 +980,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["Response"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1009,7 +1009,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["AuthWhoamiResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1042,7 +1042,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["FlowCreateResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1075,7 +1075,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["FlowEmptyResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1108,7 +1108,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["FlowDeployResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1141,7 +1141,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["FlowDataResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1174,7 +1174,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["FlowInfo"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1207,7 +1207,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["FlowListResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1240,7 +1240,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["FlowNodesResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1273,7 +1273,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["FlowEmptyResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1306,7 +1306,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         /** 返回的消息 */
                         msg?: string;
                     };
@@ -1340,7 +1340,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["LaunchpadMembersResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1529,7 +1529,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["PlatformMembersResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1562,7 +1562,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["BrowseResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1595,7 +1595,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["CreateResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1628,7 +1628,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["OpenapiEmptyResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1661,7 +1661,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["HistoryResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1694,7 +1694,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["ReadResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1727,7 +1727,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["OpenapiEmptyResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1760,7 +1760,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["SearchResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1793,7 +1793,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["OpenapiEmptyResp"];
                         /** 返回的消息 */
                         msg?: string;
@@ -1826,7 +1826,7 @@ export interface operations {
                          * 返回code
                          * @default 200
                          */
-                        code: number;
+                        code?: number;
                         data?: components["schemas"]["WriteResp"];
                         /** 返回的消息 */
                         msg?: string;
