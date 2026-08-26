@@ -58,6 +58,10 @@ run('OpenAPI Integration Tests', () => {
   it('should send a silent test notification to self and reach a terminal status', async (ctx) => {
     const who = await systemApi.openapiv1authwhoami();
     expect(who.code).toBe(200);
+    // whoami 契约把 userID 作为 number 返回，JSON.parse 后精度已定——String() 无法恢复
+    // 超过 MAX_SAFE_INTEGER 的原值。显式护栏：超界时 fail（而非静默发给取整后的错误收件人）。
+    // 根因在后端 whoami 契约（应与 notifications 一致用 string 承载大整数），SDK 侧无法补救。
+    expect(Number.isSafeInteger(who.data.userID)).toBe(true);
     const recipientUserId = String(who.data.userID);
 
     let sendResp;
