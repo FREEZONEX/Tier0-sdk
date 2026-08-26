@@ -49,21 +49,32 @@ run('OpenAPI Integration Tests', () => {
     expect(Array.isArray(result.data?.nodes || result.data)).toBe(true);
   });
 
+  // notifications 权限位（notifications:send/read）独立于 uns/flow——通用 Key 可能没有：
+  // 403 NOTIFICATION_NOT_ALLOWED 时动态 skip，不把权限不足误报成套件失败
+  const isNotifyForbidden = (e: unknown): boolean =>
+    e instanceof ApiError && e.status === 403;
+
   // notifications 端到端：发给 Key 主人自己 + test 模式 + 静默（无 channels），不打扰任何真实用户
-  it('should send a silent test notification to self and reach a terminal status', async () => {
+  it('should send a silent test notification to self and reach a terminal status', async (ctx) => {
     const who = await systemApi.openapiv1authwhoami();
     expect(who.code).toBe(200);
     const recipientUserId = String(who.data.userID);
 
-    const sendResp = await notificationsApi.openapiv1notificationssend({
-      recipientUserId,
-      type: 'inbox',
-      title: 'SDK integration check',
-      content: 'Silent test notification sent by tier0-sdk integration tests. Safe to ignore.',
-      idempotencyKey: `sdk-integration-${Date.now()}`,
-      mode: 'test',
-      // no channels = silent: inbox only
-    });
+    let sendResp;
+    try {
+      sendResp = await notificationsApi.openapiv1notificationssend({
+        recipientUserId,
+        type: 'inbox',
+        title: 'SDK integration check',
+        content: 'Silent test notification sent by tier0-sdk integration tests. Safe to ignore.',
+        idempotencyKey: `sdk-integration-${Date.now()}`,
+        mode: 'test',
+        // no channels = silent: inbox only
+      });
+    } catch (e) {
+      if (isNotifyForbidden(e)) return ctx.skip(); // key lacks notifications:send
+      throw e;
+    }
     expect(sendResp.messageId).toMatch(/^\d+$/);
     expect(['accepted', 'sent', 'failed']).toContain(sendResp.status);
 
@@ -78,10 +89,11 @@ run('OpenAPI Integration Tests', () => {
     expect(status).toBe('sent');
   }, 30_000);
 
-  it('should return structured 404 for a foreign messageId', async () => {
+  it('should return structured 404 for a foreign messageId', async (ctx) => {
     const err = await notificationsApi
       .openapiv1notificationsget({ messageId: '1' })
       .catch((e: unknown) => e);
+    if (isNotifyForbidden(err)) return ctx.skip(); // key lacks notifications:read
     expect(err).toBeInstanceOf(ApiError);
     expect((err as ApiError).status).toBe(404);
     expect(JSON.parse((err as ApiError).msg).errorCode).toBe('MESSAGE_NOT_FOUND');
