@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { configureClient } from '../../src/openapi/client.js';
-import { systemApi, flowApi, unsApi } from '../../src/openapi/api.js';
+import { configureClient, ApiError } from '../../src/openapi/client.js';
+import { systemApi, flowApi, notificationsApi, unsApi } from '../../src/openapi/api.js';
 
 const apiHost = process.env.TIER0_API_HOST;
 const apiKey = process.env.TIER0_API_KEY;
@@ -47,5 +47,66 @@ run('OpenAPI Integration Tests', () => {
     expect(result).toBeDefined();
     expect(result.code).toBe(200);
     expect(Array.isArray(result.data?.nodes || result.data)).toBe(true);
+  });
+
+  // notifications 权限位（notifications:send/read）独立于 uns/flow——通用 Key 可能没有：
+  // 403 NOTIFICATION_NOT_ALLOWED 时动态 skip，不把权限不足误报成套件失败
+  const isNotifyForbidden = (e: unknown): boolean =>
+    e instanceof ApiError && e.status === 403;
+
+  // notifications 端到端：发给 Key 主人自己 + test 模式 + 静默（无 channels），不打扰任何真实用户
+  it('should send a silent test notification to self and reach a terminal status', async (ctx) => {
+    const who = await systemApi.openapiv1authwhoami();
+    expect(who.code).toBe(200);
+    // whoami 契约把 userID 作为 number 返回，JSON.parse 后精度已定——String() 无法恢复
+    // 超过 MAX_SAFE_INTEGER 的原值。显式护栏：超界时 fail（而非静默发给取整后的错误收件人）。
+    // 根因在后端 whoami 契约（应与 notifications 一致用 string 承载大整数），SDK 侧无法补救。
+    expect(Number.isSafeInteger(who.data.userID)).toBe(true);
+    const recipientUserId = String(who.data.userID);
+
+    let sendResp;
+    try {
+      sendResp = await notificationsApi.openapiv1notificationssend({
+        recipientUserId,
+        type: 'inbox',
+        title: 'SDK integration check',
+        content: 'Silent test notification sent by tier0-sdk integration tests. Safe to ignore.',
+        idempotencyKey: `sdk-integration-${Date.now()}`,
+        mode: 'test',
+        // no channels = silent: inbox only
+      });
+    } catch (e) {
+      if (isNotifyForbidden(e)) return ctx.skip(); // key lacks notifications:send
+      throw e;
+    }
+    expect(sendResp.messageId).toMatch(/^\d+$/);
+    expect(['accepted', 'sent', 'failed']).toContain(sendResp.status);
+
+    // 轮询到终态（worker 异步建信，通常秒级）；send/read 是独立权限位，
+    // Key 只有 send 没有 read 时轮询会 403——同样降级为 skip 而非套件失败
+    let status = sendResp.status;
+    for (let i = 0; i < 10 && status === 'accepted'; i++) {
+      await new Promise(r => setTimeout(r, 1500));
+      let got;
+      try {
+        got = await notificationsApi.openapiv1notificationsget({ messageId: sendResp.messageId });
+      } catch (e) {
+        if (isNotifyForbidden(e)) return ctx.skip(); // key lacks notifications:read
+        throw e;
+      }
+      expect(got.messageId).toBe(sendResp.messageId);
+      status = got.status;
+    }
+    expect(status).toBe('sent');
+  }, 30_000);
+
+  it('should return structured 404 for a foreign messageId', async (ctx) => {
+    const err = await notificationsApi
+      .openapiv1notificationsget({ messageId: '1' })
+      .catch((e: unknown) => e);
+    if (isNotifyForbidden(err)) return ctx.skip(); // key lacks notifications:read
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(404);
+    expect(JSON.parse((err as ApiError).msg).errorCode).toBe('MESSAGE_NOT_FOUND');
   });
 });
