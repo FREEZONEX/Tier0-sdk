@@ -78,11 +78,18 @@ run('OpenAPI Integration Tests', () => {
     expect(sendResp.messageId).toMatch(/^\d+$/);
     expect(['accepted', 'sent', 'failed']).toContain(sendResp.status);
 
-    // 轮询到终态（worker 异步建信，通常秒级）
+    // 轮询到终态（worker 异步建信，通常秒级）；send/read 是独立权限位，
+    // Key 只有 send 没有 read 时轮询会 403——同样降级为 skip 而非套件失败
     let status = sendResp.status;
     for (let i = 0; i < 10 && status === 'accepted'; i++) {
       await new Promise(r => setTimeout(r, 1500));
-      const got = await notificationsApi.openapiv1notificationsget({ messageId: sendResp.messageId });
+      let got;
+      try {
+        got = await notificationsApi.openapiv1notificationsget({ messageId: sendResp.messageId });
+      } catch (e) {
+        if (isNotifyForbidden(e)) return ctx.skip(); // key lacks notifications:read
+        throw e;
+      }
       expect(got.messageId).toBe(sendResp.messageId);
       status = got.status;
     }
