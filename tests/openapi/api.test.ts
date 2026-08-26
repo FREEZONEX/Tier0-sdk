@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { systemApi, flowApi, launchpadApi, platformApi, unsApi } from '../../src/openapi/api.js';
-import { configureClient } from '../../src/openapi/client.js';
+import { systemApi, flowApi, launchpadApi, notificationsApi, platformApi, unsApi } from '../../src/openapi/api.js';
+import { ApiError, configureClient } from '../../src/openapi/client.js';
 
 describe('API modules', () => {
   const originalFetch = globalThis.fetch;
@@ -170,6 +170,54 @@ describe('API modules', () => {
           body: JSON.stringify(body),
         })
       );
+    });
+  });
+
+  describe('notificationsApi', () => {
+    // notifications 响应无 {code,msg,data} 信封：成功=裸 JSON，错误=真实 HTTP 状态码 + {errorCode,message}
+    it('openapiv1notificationssend should call POST /openapi/v1/notifications/send and return bare JSON', async () => {
+      const bare = { messageId: '7123456789012345', status: 'accepted', createdAt: '2026-08-25T00:00:00Z' };
+      mockResponse(bare);
+      const body = {
+        recipientUserId: '333145365391552',
+        type: 'inbox',
+        title: 'Order shipped',
+        content: 'Your order has shipped.',
+        idempotencyKey: 'order-A1029-shipped-v1',
+      };
+      const result = await notificationsApi.openapiv1notificationssend(body);
+      expect(result).toEqual(bare);
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://api.example.com/openapi/v1/notifications/send',
+        expect.objectContaining({ method: 'POST', body: JSON.stringify(body) })
+      );
+    });
+
+    it('openapiv1notificationsget should call POST /openapi/v1/notifications/get', async () => {
+      const bare = { messageId: '7123456789012345', type: 'inbox', status: 'sent', createdAt: '2026-08-25T00:00:00Z' };
+      mockResponse(bare);
+      const result = await notificationsApi.openapiv1notificationsget({ messageId: '7123456789012345' });
+      expect(result).toEqual(bare);
+    });
+
+    it('error responses throw ApiError with parseable {errorCode,message} in msg', async () => {
+      const errBody = { errorCode: 'IDEMPOTENCY_KEY_CONFLICT', message: 'idempotency key conflict' };
+      mockResponse(errBody, 409);
+      const promise = notificationsApi.openapiv1notificationssend({
+        recipientUserId: '1',
+        type: 'inbox',
+        title: 't',
+        content: 'c',
+        idempotencyKey: 'k',
+      });
+      const err = (await promise.catch((e: unknown) => e)) as ApiError;
+      expect(err).toBeInstanceOf(ApiError);
+      expect(err.status).toBe(409);
+      // notifications 错误体没有 {code,msg} 信封字段，原始 JSON 文本兜底落在 err.msg——skill 文档教的解析模式
+      const parsed = JSON.parse(err.msg);
+      expect(parsed.errorCode).toBe('IDEMPOTENCY_KEY_CONFLICT');
+      expect(parsed.message).toBe('idempotency key conflict');
     });
   });
 

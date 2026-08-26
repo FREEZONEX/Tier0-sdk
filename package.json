@@ -1,6 +1,6 @@
 {
   "name": "@tier0/sdk",
-  "version": "0.2.12",
+  "version": "0.3.1",
   "description": "Tier0 SDK - OpenAPI REST client and MQTT over WebSocket client for TypeScript/JavaScript",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -50,6 +50,7 @@
       { "name": "tier0-sdk-flow", "path": "./skills/tier0-sdk/tier0-sdk-flow" },
       { "name": "tier0-sdk-files", "path": "./skills/tier0-sdk/tier0-sdk-files" },
       { "name": "tier0-sdk-members", "path": "./skills/tier0-sdk/tier0-sdk-members" },
+      { "name": "tier0-sdk-notifications", "path": "./skills/tier0-sdk/tier0-sdk-notifications" },
       { "name": "tier0-sdk-system", "path": "./skills/tier0-sdk/tier0-sdk-system" }
     ]
   },
