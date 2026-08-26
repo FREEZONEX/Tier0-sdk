@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-monoapptemplate
-version: 0.1.0
+version: 0.1.1
 description: "Using @tier0/sdk safely inside the MonoApp TanStack Start scaffold, including mandatory MQTT subscriptions for continuously changing or realtime data."
 ---
 
@@ -74,6 +74,8 @@ Generated MonoApp applications must not:
 - create user-facing API key, token, OpenAPI host, MQTT host, or workspace binding settings pages
 - store Tier0 SDK credentials in app database tables
 - hard-code a project name or ID; use `getCurrentProjectId()` in server/runtime code
+
+`TIER0_API_KEY` is the App's shared business credential. It is not the identity of the person using the App, and `systemApi.openapiv1authwhoami()` must not be used for App login, authorization, personalization, audit attribution, or “current user” lookup. Use the scaffold's authenticated session (for example, `requireAuth()`) for the current App user. Resolve a Tier0 `userId` through member data only when a Tier0 API needs one, and keep that identifier internal.
 
 If browser-side `VITE_TIER0_*` values are needed, the platform/runtime must inject them and the app should pass them explicitly. Do not assume the SDK automatically reads `VITE_*`.
 

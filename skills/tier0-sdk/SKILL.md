@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk
-version: 0.3.3
+version: 0.3.5
 description: "Tier0 SDK root/router Skill and shared configuration for TypeScript/JavaScript. Read this root Skill before every Tier0 SDK domain Skill, and read references/configuration.md before making any actual @tier0/sdk call. Use for installing or updating @tier0/sdk, configuring API/MQTT/runtime values, resolving the current project, selecting package entry points, React/Vue adapters, MonoApp integration, or routing work to UNS, realtime MQ, Flow and Node-RED HTTP endpoints, files, members, notifications, and system capabilities."
 metadata:
   requires:
@@ -63,8 +63,8 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 | Flow/Node-RED create, inspect, edit, deploy, delete, or expose/invoke an `http in` endpoint or webhook | [`tier0-sdk-flow/SKILL.md`](tier0-sdk-flow/SKILL.md) |
 | Upload, persist, access, download, or delete files/attachments | [`tier0-sdk-files/SKILL.md`](tier0-sdk-files/SKILL.md) |
 | Launchpad project members or platform/workspace members and roles | [`tier0-sdk-members/SKILL.md`](tier0-sdk-members/SKILL.md) |
-| Send an in-app notification to a workspace user (inbox + optional web/mobile push), query its delivery status | [`tier0-sdk-notifications/SKILL.md`](tier0-sdk-notifications/SKILL.md) |
-| Current identity, service info/capabilities, gateway reload | [`tier0-sdk-system/SKILL.md`](tier0-sdk-system/SKILL.md) |
+| Select a recipient by human identity, send an in-app notification (inbox + optional web/mobile push), or query delivery status. Never ask an end user for a user ID | [`tier0-sdk-notifications/SKILL.md`](tier0-sdk-notifications/SKILL.md) |
+| API-key credential diagnostics (not an App end-user identity), service info/capabilities, gateway reload | [`tier0-sdk-system/SKILL.md`](tier0-sdk-system/SKILL.md) |
 | Client configuration, generic OpenAPI, React/Vue, MonoApp | This Skill and its `references/` |
 
 ## Package Entry Points

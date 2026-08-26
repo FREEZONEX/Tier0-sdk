@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.1.0
+version: 0.3.0
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -36,7 +36,7 @@ try {
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `recipientUserId` | `string` | **yes** | Recipient user ID. A big integer carried as a string — **never convert to `number`** (JS precision loss). See "Resolving the recipient" below |
+| `recipientUserId` | `string` | **yes** | Internal recipient identifier resolved from Tier0 member data. Never expose it as user input or convert it to `number` (JS precision loss). See "Resolving the recipient" below |
 | `type` | `string` | **yes** | Message type. **Only `"inbox"` is accepted** (400 otherwise). A reserved field for future message forms; hard-code it |
 | `title` | `string` | **yes** | 1-50 characters |
 | `content` | `string` | **yes** | 1-800 characters (over the limit returns 422 `CONTENT_LIMIT_EXCEEDED`, not 400) |
@@ -56,11 +56,42 @@ try {
 
 The inbox message is always created (it IS the message); `channels` only decides whether to interrupt.
 
-### Resolving the recipient (in priority order)
+### Resolving the recipient
 
-1. **Business context** (preferred): the triggering event/work order/session usually carries the target user ID — use it as-is (keep it a string).
-2. **Platform member query**: `platformApi.openapiv1platformgetmembers({ keyword: 'alice', statuses: ['active'], page: 1, size: 20 })` — see [`tier0-sdk-members`](../../tier0-sdk-members/SKILL.md). Each row's `userId` is the same ID space as `recipientUserId`. Always filter `statuses: ['active']` — a disabled member matches by name/email but the send would fail with `RECIPIENT_NOT_AVAILABLE`.
-3. ⚠️ Either way: **the recipient must be an active member of the API key's workspace**, otherwise 404 `RECIPIENT_NOT_AVAILABLE`. The member list is platform-wide — a listed user is not necessarily in this key's workspace. That mismatch is the first suspect for this 404.
+The product interaction selects a person; only application code handles the ID.
+
+1. **Existing trusted relation**: if a work order, assignment, or stored member selection already contains a Tier0 `userId`, reuse it internally as a string. Do not expose it or accept an arbitrary replacement from an end-user text field.
+2. **Project-scoped selection**: use `launchpadApi.openapiv1launchpadgetmembers` with `getCurrentProjectId()` when recipients must belong to the current project. Build picker labels from `userName`, `email`, and roles; keep `userId` only as the option value.
+3. **Workspace-wide selection**: use `platformApi.openapiv1platformgetmembers({ keyword, statuses: ['active'], page: 1, size: 20 })`. It searches the API key's Workspace by username, nickname, or email and returns `userId` in the required string form.
+4. **Ambiguity**: when more than one member matches, show names, email, and relevant roles. Do not display IDs as the differentiator and never pick the first result silently.
+
+Cloud member queries currently require `uns:read`; notification send separately requires `notifications:send`. If the key lacks member-read permission, surface a configuration error to the app owner or administrator. Never make the end user supply `recipientUserId` as a workaround.
+
+In an App, never use `auth/whoami` to determine the sender or recipient. The App API Key is a shared business credential and does not identify the signed-in person. Obtain the current person from the App's authenticated session, then resolve that person's name/email to the string `userId` through the appropriate member list. This also avoids `whoami.userID`, whose current JavaScript `number` schema can lose precision for large IDs.
+
+The notification endpoint accepts only active members of the API key's Workspace; otherwise it returns 404 `RECIPIENT_NOT_AVAILABLE`. If a member became unavailable after selection, refresh the picker and ask the user to choose again.
+
+```typescript
+import { platformApi } from '@tier0/sdk/openapi';
+
+async function searchActiveRecipients(keyword: string) {
+  const result = await platformApi.openapiv1platformgetmembers({
+    keyword,
+    statuses: ['active'],
+    page: 1,
+    size: 20,
+  });
+  if (result.code !== 200 || !result.data) {
+    throw new Error(result.msg ?? `getMembers failed with code ${result.code}`);
+  }
+  return result.data.list.map(member => ({
+    value: member.userId, // internal value sent as recipientUserId
+    label: member.nickName || member.userName || member.email || 'Unnamed member',
+    email: member.email,
+    roles: member.roles.map(role => role.roleName || role.roleKey),
+  }));
+}
+```
 
 ## mode: detect the scenario
 
@@ -129,9 +160,12 @@ For an AI generating App code:
 1. API key: via App env vars (`TIER0_API_HOST` / `TIER0_API_KEY`); the key needs `notifications:send`
 2. `sender.id` (appId): constant written at generation time; `sender.meta.projectId`: `getCurrentProjectId()` at runtime (server-side code — the runtime injects `TIER0_PROJECT_ID`)
 3. mode: `NODE_ENV === 'production' ? 'live' : 'test'`
-4. Recipient and channels: from the user's explicit instruction (see the decision ladder in [`../SKILL.md`](../SKILL.md)) — never hard-coded defaults
+4. Recipient: selected by a human-readable member picker or resolved from a trusted business relation; `recipientUserId` remains internal and is never typed by the user
+5. Channels: from the user's explicit instruction (see the decision ladder in [`../SKILL.md`](../SKILL.md)) — never hard-coded defaults
 
 ## Examples
+
+The examples assume `recipientUserId` came from the selected member option or a trusted business relation. It is never collected through a raw-ID field.
 
 ### 1. Minimal silent inbox message (record only, no interruption)
 
@@ -139,7 +173,7 @@ For an AI generating App code:
 import { notificationsApi } from '@tier0/sdk/openapi';
 
 const resp = await notificationsApi.openapiv1notificationssend({
-  recipientUserId: '333145365391552',
+  recipientUserId: selectedRecipient.value,
   type: 'inbox',
   title: 'Weekly inventory report ready',
   content: 'The weekly inventory report is available on the Reports page.',
@@ -155,7 +189,7 @@ console.log(resp.messageId, resp.status); // "71234..." "accepted"
 import { getCurrentProjectId } from '@tier0/sdk';
 
 const resp = await notificationsApi.openapiv1notificationssend({
-  recipientUserId: '333145365391552',
+  recipientUserId: selectedRecipient.value,
   type: 'inbox',
   title: 'Equipment alert',
   content: 'Mixing tank 01 on line 1 exceeded temperature limit (82°C). Immediate action required.',
@@ -177,7 +211,7 @@ const resp = await notificationsApi.openapiv1notificationssend({
 import { ApiError } from '@tier0/sdk/openapi';
 
 const body = {
-  recipientUserId: '333145365391552',
+  recipientUserId: selectedRecipient.value,
   type: 'inbox',
   title: 'Order shipped',
   content: 'Your order #A1029 has shipped.',
@@ -211,7 +245,7 @@ const resp = await sendWithRetry();
 | 400 | `INVALID_NOTIFICATION_TYPE` | `type` is not `"inbox"` | Hard-code `type: "inbox"` |
 | 401 | `INVALID_CREDENTIAL` | API key missing or invalid | Check `TIER0_API_KEY` |
 | 403 | `NOTIFICATION_NOT_ALLOWED` | Key lacks the `notifications:send` resource key | Ask an admin to grant it |
-| 404 | `RECIPIENT_NOT_AVAILABLE` | Recipient is not an active member of the key's workspace | Verify workspace membership (first suspect: userId from the platform-wide list but not in this workspace) |
+| 404 | `RECIPIENT_NOT_AVAILABLE` | Recipient is no longer an active member of the key's Workspace | Refresh members and ask the user to choose an available recipient; do not request an ID |
 | 409 | `IDEMPOTENCY_KEY_CONFLICT` | Same key resent with different content | New event → new key; same event → keep content identical |
 | 422 | `CONTENT_LIMIT_EXCEEDED` | content >800 characters | Truncate or shorten |
 | 429 | `NOTIFICATION_RATE_LIMITED` | Rate limit (1000/min per key; keys are workspace-shared) | Back off and retry (reuse the key) |

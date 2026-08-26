@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-openapi-launchpad-get-members
-version: 0.1.0
-description: "POST /openapi/v1/launchpad/:projectName/getMembers - query project members and roles"
+version: 0.2.0
+description: "POST /openapi/v1/launchpad/:projectName/getMembers - query project members and roles, including human-readable member selection"
 ---
 
 # getMembers - `POST /openapi/v1/launchpad/:projectName/getMembers`
@@ -31,10 +31,19 @@ if (result.code !== 200 || !result.data) {
   throw new Error(result.msg ?? `getMembers failed with code ${result.code}`);
 }
 
-for (const member of result.data.list) {
-  console.log(member.userId, member.userName, member.roles);
-}
+const options = result.data.list.map(member => ({
+  value: member.userId, // internal only; submit this to APIs that require userId
+  label: member.userName || member.email || 'Unnamed member',
+  email: member.email,
+  roles: member.roles.map(role => role.roleName || role.roleKey),
+}));
 ```
+
+## User-facing selection
+
+This endpoint has no name/email keyword filter. For a project-scoped member picker, paginate the project members, then filter the loaded `userName` and `email` display fields in the application. Display the person's name, email, and relevant role names; keep `userId` and `memberId` internal.
+
+Never render a free-text “User ID” field or ask an end user to paste an identifier. When several members have similar names, show their email and roles for disambiguation. If the member query is unavailable because the API key lacks permission, surface an application configuration error instead of falling back to raw ID entry.
 
 ## Request
 
@@ -84,6 +93,6 @@ type GetMembersResponse = {
 };
 ```
 
-Identifier fields are strings in both Cloud and Enterprise responses. The public response does not expose `accessLevel`.
+Identifier fields are strings in both Cloud and Enterprise responses and must remain strings in application code. They are transport and relation values, not user-facing labels. The public response does not expose `accessLevel`.
 
 Use an explicit project name or ID only when intentionally querying a different project. For the app's own project, always use `getCurrentProjectId()` so Cloud exports continue to work after import into Enterprise.

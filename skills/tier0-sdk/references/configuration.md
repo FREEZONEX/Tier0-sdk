@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-configuration
-version: 0.1.1
+version: 0.1.2
 description: "Tier0 SDK configuration for Node.js, browser/Vite, OpenAPI, and MQTT."
 ---
 
@@ -44,6 +44,12 @@ Prefer complete URLs with scheme. The platform or deployment should inject these
 TIER0_API_HOST=https://<your-tier0-api-host>
 TIER0_API_KEY=<your-api-key>
 ```
+
+### API Key identity is not App user identity
+
+An App API Key is a server-side business credential shared by the application. It does not identify the human currently visiting or operating the App. `systemApi.openapiv1authwhoami()` reports credential context only where that key type supports it; an App API Key cannot be used to query the current end user.
+
+In an App, obtain the signed-in person from the App's own authentication/session layer. Use that identity for authorization, personalization, and audit attribution. When a Tier0 API requires a `userId`, resolve the signed-in person or user-selected person through the appropriate Tier0 member list and keep the resolved ID internal. Never substitute `whoami` or expose an ID input field.
 
 ## Current Project
 
