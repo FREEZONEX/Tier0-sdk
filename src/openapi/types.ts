@@ -533,8 +533,11 @@ export interface components {
         GetNotificationResp: {
             messageId: string;
             type: string;
-            /** @description accepted/sent/failed */
-            status: string;
+            /**
+             * @description accepted 排队中 / sent 已送达 / failed 终态失败
+             * @enum {string}
+             */
+            status: "accepted" | "sent" | "failed";
             createdAt: string;
             completedAt?: string;
             errorCode?: string;
@@ -693,10 +696,21 @@ export interface components {
             path: string;
             updateMask?: string[];
         };
+        /** NotificationError */
+        NotificationError: {
+            /** @description 机器可读错误码：INVALID_REQUEST / INVALID_NOTIFICATION_TYPE / INVALID_CREDENTIAL / NOTIFICATION_NOT_ALLOWED / RECIPIENT_NOT_AVAILABLE / CONTENT_LIMIT_EXCEEDED / NOTIFICATION_RATE_LIMITED / IDEMPOTENCY_KEY_CONFLICT / MESSAGE_NOT_FOUND / INTERNAL_ERROR */
+            errorCode: string;
+            /** @description 人读错误信息 */
+            message: string;
+        };
         /** NotificationSender */
         NotificationSender: {
-            /** @description 枚举 app/other，缺省 other */
-            type?: string;
+            /**
+             * @description 枚举 app/other，缺省 other
+             * @default other
+             * @enum {string}
+             */
+            type: "app" | "other";
             /** @description app 必填=appId（agent-platform UUID）；other 可选；字符集 [0-9a-zA-Z-]{1,128} */
             id?: string;
             /** @description 人读显示名（接替废弃的 source），≤100字符 */
@@ -883,8 +897,11 @@ export interface components {
         SendNotificationReq: {
             /** @description 收件人用户 ID（大整数按 string 承载，避免 JS 精度丢失） */
             recipientUserId: string;
-            /** @description 消息类型，本期仅接受 "inbox" */
-            type: string;
+            /**
+             * @description 消息类型，本期仅接受 "inbox"
+             * @enum {string}
+             */
+            type: "inbox";
             /** @description 标题，1-50 字符 */
             title: string;
             /** @description 内容，1-800 字符 */
@@ -893,17 +910,24 @@ export interface components {
             idempotencyKey: string;
             /** @description 已废弃：过渡期作 sender.name 别名（sender.name 优先） */
             source?: string;
-            /** @description test/live，缺省 live；test 模式标题自动加 [Test] 前缀 */
-            mode?: string;
+            /**
+             * @description test/live，缺省 live；test 模式标题自动加 [Test] 前缀
+             * @default live
+             * @enum {string}
+             */
+            mode: "test" | "live";
             /** @description 推送渠道 web/mobile；不传或 [] 同义=静默（只建站内信不推送），推送须显式传值 */
-            channels?: string[];
+            channels?: ("web" | "mobile")[];
             sender?: components["schemas"]["NotificationSender"];
         };
         /** SendNotificationResp */
         SendNotificationResp: {
             messageId: string;
-            /** @description accepted（站内信异步创建中） */
-            status: string;
+            /**
+             * @description 首次提交返回 accepted（站内信异步创建中）；同一 idempotencyKey 在 24h 窗口内重放时返回已有记录的当前状态，可能为终态 sent/failed
+             * @enum {string}
+             */
+            status: "accepted" | "sent" | "failed";
             createdAt: string;
         };
         /** WriteItem */
@@ -1347,6 +1371,42 @@ export interface operations {
                     "application/json": components["schemas"]["GetNotificationResp"];
                 };
             };
+            /** @description INVALID_REQUEST：参数校验失败 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description INVALID_CREDENTIAL：API Key 缺失或无效 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description MESSAGE_NOT_FOUND：messageId 不存在或不属于当前 API Key */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description INTERNAL_ERROR：内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
         };
     };
     postOpenapiV1NotificationsSend: {
@@ -1369,6 +1429,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SendNotificationResp"];
+                };
+            };
+            /** @description INVALID_REQUEST / INVALID_NOTIFICATION_TYPE：参数校验失败或 type 非 inbox */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description INVALID_CREDENTIAL：API Key 缺失或无效 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description NOTIFICATION_NOT_ALLOWED：Key 无 notifications:send 权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description RECIPIENT_NOT_AVAILABLE：收件人不是 Key 所属 Workspace 的 active 成员 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_CONFLICT：同一 idempotencyKey 但请求内容不同 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description CONTENT_LIMIT_EXCEEDED：标题/内容/sender 超长 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description NOTIFICATION_RATE_LIMITED：触发限流 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description INTERNAL_ERROR：内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
                 };
             };
         };

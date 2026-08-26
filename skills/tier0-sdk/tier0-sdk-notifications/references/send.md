@@ -109,10 +109,12 @@ Self-reported display/navigation hint — **not a verified identity; never base 
 // HTTP 200, bare JSON, no envelope
 {
   messageId: string;   // save it — the only handle for querying delivery status
-  status: 'accepted';
+  status: 'accepted' | 'sent' | 'failed';
   createdAt: string;   // ISO 8601
 }
 ```
+
+`status` is `accepted` on first submission. **An idempotent replay (same key within the 24h window) returns the existing record's current state instead — possibly already terminal `sent`/`failed`** — so treat the response as a status snapshot, not always "queued".
 
 **Async semantics (important)**: at 200 + `accepted` the inbox message **does not exist yet** — validation passed and the job was queued; a background worker creates the message, and pushes go out later still. Therefore:
 
