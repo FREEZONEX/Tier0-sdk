@@ -153,11 +153,24 @@ With neither source present the message renders no Open button at all.
 
 ### Writing the path
 
-**In-app path — leave the workspace segment out.** Platform routes live under `/ws/<workspaceId>/…`, but the web client prepends the **recipient's own** workspace to any `/`-prefixed path that does not already start with `/ws/`. So write `/launchpad/launch/<appId>?projectId=<projectId>`, not `/ws/1/launchpad/…`: a hard-coded `/ws/1` pins every recipient to workspace 1 and breaks the moment the App is imported into another workspace (same guardrail as `meta.projectId`, see the root [`SKILL.md`](../../SKILL.md)).
+`link` is where the agent composes a route, so the first question is **whose route**. An App and the platform are two different origins, and a `/`-prefixed path always means the **platform**, never the App.
 
-**An in-app path cannot deep-link inside an App.** Apps run in an iframe on the launch page, and that page's query string is not forwarded into the App — `/launchpad/launch/<appId>?projectId=<projectId>` always lands on the App's own entry screen. It is also exactly what the appId + projectId fallback already produces, so sending it as `link` adds nothing.
+**A. A screen inside your own App → its absolute `https://` URL.** The App is served from its own deployed origin, so build the URL on that origin and append your own router path:
 
-**To land on a specific screen inside your App, send its absolute `https://` URL.** The App knows its own deployed base URL (its own config/env — the SDK injects no such value); append your route to it. The trade-off: a new tab outside the platform shell.
+```typescript
+// Client-side: the App's own origin is exactly where it is served from
+const appBase = window.location.origin;
+// Server-side (route handler / server action): the App's own config, e.g. APP_PUBLIC_URL
+const link = `${appBase}/alerts/tank01`;
+```
+
+The web client opens it in a new tab (`noopener`). This is the normal way to deep-link into an App, not a fallback.
+
+**B. A platform page (UNS, Flows, Launchpad, …) → a `/`-prefixed path with no workspace segment.** Platform routes live under `/ws/<workspaceId>/…`, but the web client prepends the **recipient's own** workspace to any `/`-prefixed path that does not already start with `/ws/`. So write `/launchpad/launch/<appId>?projectId=<projectId>`, not `/ws/1/launchpad/…` — a hard-coded `/ws/1` pins every recipient to workspace 1 and breaks the moment the App is imported into another workspace (same guardrail as `meta.projectId`, see the root [`SKILL.md`](../../SKILL.md)).
+
+⚠️ **A `/`-prefixed path is resolved against the platform, not your App.** Sending your own router path (`/alerts/tank01`) makes the client navigate to `/ws/<recipient's workspace>/alerts/tank01` — a platform route that does not exist. For your own screens use form A.
+
+⚠️ **Do not try to deep-link into an App through the platform launch page.** Apps run in an iframe whose source is the App's own deployment URL; the launch page's query string is not forwarded into it, so `/launchpad/launch/<appId>?projectId=<projectId>` always lands on the App's entry screen — and that is exactly what the appId + projectId fallback already produces, so sending it as `link` adds nothing.
 
 **Mobile ignores `link`.** The mobile app opens the sending App via appId + projectId regardless, so a notification with a `link` lands on different pages on web and mobile. Do not put a mobile-critical destination in `link` alone.
 
@@ -236,10 +249,10 @@ const resp = await notificationsApi.openapiv1notificationssend({
   idempotencyKey: 'alert-tank01-overtemp-20260825T1500',
   mode: process.env.NODE_ENV === 'production' ? 'live' : 'test',
   channels: ['web', 'mobile'], // the user explicitly asked for push
-  // Open button target: a specific screen inside this App, so it must be an absolute https:// URL
-  // built on the App's own deployed base URL (the App's own config — the SDK injects no such value).
-  // An in-app path such as `/launchpad/launch/${appId}?projectId=...` would only reach the entry screen.
-  link: `${process.env.APP_PUBLIC_URL}/alerts/tank01`,
+  // Open button target: a screen inside this App, so build it on the App's OWN origin
+  // (client: window.location.origin; server: the App's own config). A `/`-prefixed path
+  // would be resolved against the platform, not this App — see "Writing the path".
+  link: `${appBaseUrl}/alerts/tank01`,
   sender: {
     type: 'app',
     id: '550e8400-e29b-41d4-a716-446655440000', // appId: constant written at generation time
