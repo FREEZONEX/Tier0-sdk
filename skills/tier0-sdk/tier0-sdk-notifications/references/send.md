@@ -131,10 +131,10 @@ Self-reported display/navigation hint — **not a verified identity; never base 
 
 Populates the **Open button** on the recipient's in-app message. Self-reported navigation hint — like `sender`, **never base any security decision on it**; the server validates the shape only, not that the destination exists or that the recipient may view it.
 
-| Form | Example | Notes |
+| Form | Example | How it opens |
 |---|---|---|
-| Absolute | `https://app.tier0.dev/ws/1/uns?id=42` | **`https://` only.** `http://` is rejected (cleartext); `javascript:` / `data:` and other pseudo-schemes are blocked by the same prefix allowlist |
-| In-app relative | `/ws/<workspaceId>/apps/oee/alerts/tank01` | Opens inside the platform |
+| In-app path | `/launchpad/launch/<appId>?projectId=<projectId>` | Navigates inside the platform shell, in the recipient's own workspace |
+| Absolute URL | `https://oee-monitor.example.com/alerts/tank01` | **`https://` only** (`http://` is rejected as cleartext; `javascript:` / `data:` and other pseudo-schemes are blocked by the same prefix allowlist). Opens in a **new tab** with `noopener`, outside the platform shell |
 
 Validation (400 `INVALID_REQUEST` on any violation):
 
@@ -151,7 +151,15 @@ Omitting `link` is normal and safe. There are **two** navigation sources, and th
 
 With neither source present the message renders no Open button at all.
 
-**Never hard-code the workspace segment.** An in-app path carries a `/ws/<workspaceId>/` prefix; hard-coding it sends recipients to the wrong workspace once the App is imported elsewhere (same guardrail as `meta.projectId`, see the root [`SKILL.md`](../../SKILL.md)). Derive the prefix from the App's own runtime config, or send an absolute `https://` URL the App already knows.
+### Writing the path
+
+**In-app path — leave the workspace segment out.** Platform routes live under `/ws/<workspaceId>/…`, but the web client prepends the **recipient's own** workspace to any `/`-prefixed path that does not already start with `/ws/`. So write `/launchpad/launch/<appId>?projectId=<projectId>`, not `/ws/1/launchpad/…`: a hard-coded `/ws/1` pins every recipient to workspace 1 and breaks the moment the App is imported into another workspace (same guardrail as `meta.projectId`, see the root [`SKILL.md`](../../SKILL.md)).
+
+**An in-app path cannot deep-link inside an App.** Apps run in an iframe on the launch page, and that page's query string is not forwarded into the App — `/launchpad/launch/<appId>?projectId=<projectId>` always lands on the App's own entry screen. It is also exactly what the appId + projectId fallback already produces, so sending it as `link` adds nothing.
+
+**To land on a specific screen inside your App, send its absolute `https://` URL.** The App knows its own deployed base URL (its own config/env — the SDK injects no such value); append your route to it. The trade-off: a new tab outside the platform shell.
+
+**Mobile ignores `link`.** The mobile app opens the sending App via appId + projectId regardless, so a notification with a `link` lands on different pages on web and mobile. Do not put a mobile-critical destination in `link` alone.
 
 **Point it somewhere the recipient can actually reach.** The server does no permission check — a link into a resource they cannot view lands them on a 403.
 
@@ -228,9 +236,10 @@ const resp = await notificationsApi.openapiv1notificationssend({
   idempotencyKey: 'alert-tank01-overtemp-20260825T1500',
   mode: process.env.NODE_ENV === 'production' ? 'live' : 'test',
   channels: ['web', 'mobile'], // the user explicitly asked for push
-  // Open button target. Build the path from the App's own runtime config — never hard-code a
-  // workspace segment like `/ws/1`, which breaks once the App is imported into another workspace.
-  link: `${process.env.APP_BASE_PATH}/alerts/tank01`, // absolute form must be https://
+  // Open button target: a specific screen inside this App, so it must be an absolute https:// URL
+  // built on the App's own deployed base URL (the App's own config — the SDK injects no such value).
+  // An in-app path such as `/launchpad/launch/${appId}?projectId=...` would only reach the entry screen.
+  link: `${process.env.APP_PUBLIC_URL}/alerts/tank01`,
   sender: {
     type: 'app',
     id: '550e8400-e29b-41d4-a716-446655440000', // appId: constant written at generation time
