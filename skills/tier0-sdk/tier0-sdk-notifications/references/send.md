@@ -136,13 +136,27 @@ Populates the **Open button** on the recipient's in-app message. Self-reported n
 | In-app path | `/launchpad/launch/<appId>?projectId=<projectId>` | Navigates inside the platform shell, in the recipient's own workspace |
 | Absolute URL | `https://oee-monitor.example.com/alerts/tank01` | **`https://` only** (`http://` is rejected as cleartext; `javascript:` / `data:` and other pseudo-schemes are blocked by the same prefix allowlist). Opens in a **new tab** with `noopener`, outside the platform shell |
 
-Validation (400 `INVALID_REQUEST` on any violation):
+### What the server checks
+
+**A malformed `link` fails the whole send** — 400 `INVALID_REQUEST`, no message is created. The cost of a bad link is not "no Open button", it is "the notification never went out".
+
+The server checks the **shape only**, in this order (first match wins):
 
 - Must start with `https://` (with at least one character after it) or `/`
 - **Protocol-relative `//host/path` is rejected** — it has a leading slash but resolves cross-origin, so it does not count as an in-app path
 - **Backslashes are rejected outright** — the WHATWG URL spec normalizes them to `/` in special-scheme URLs, so `/\host` resolves exactly like `//host`. Percent-encode a legitimate backslash as `%5C`
 - ≤500 characters
 - No whitespace, control, or invisible format characters. Classified by Unicode category, **not just ASCII**: a plain space, U+00A0 no-break space, U+3000 ideographic space, U+2028 line separator, **U+200B zero-width space and U+FEFF BOM** are all rejected. Percent-encode a space as `%20`
+
+Everything else is rejected by the prefix rule: `http://` (cleartext), `javascript:` / `data:` pseudo-schemes, `//evil.com`, a bare `https://`, and a path that forgot its leading slash (`alerts/tank01`).
+
+**What it does *not* check** — the shape is the whole contract:
+
+- **No host allowlist.** `https://anything-at-all.example.com/x` passes; the recipient leaves the platform
+- **No route existence check.** `/a/route/that/does/not/exist` passes and 404s on click
+- **No permission check.** A link into something the recipient cannot see passes and 403s on click
+
+That is what "self-reported navigation hint" means in practice: getting it right is entirely the caller's job.
 
 Omitting `link` is normal and safe. There are **two** navigation sources, and the button is rendered when either one is complete:
 
