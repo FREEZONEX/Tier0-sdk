@@ -134,7 +134,7 @@ Populates the **Open button** on the recipient's in-app message. Self-reported n
 | Form | Example | Notes |
 |---|---|---|
 | Absolute | `https://app.tier0.dev/ws/1/uns?id=42` | **`https://` only.** `http://` is rejected (cleartext); `javascript:` / `data:` and other pseudo-schemes are blocked by the same prefix allowlist |
-| In-app relative | `/ws/1/apps/oee/alerts/tank01` | Opens inside the platform |
+| In-app relative | `/ws/<workspaceId>/apps/oee/alerts/tank01` | Opens inside the platform |
 
 Validation (400 `INVALID_REQUEST` on any violation):
 
@@ -145,6 +145,8 @@ Validation (400 `INVALID_REQUEST` on any violation):
 - No whitespace, control, or invisible format characters. Classified by Unicode category, **not just ASCII**: a plain space, U+00A0 no-break space, U+3000 ideographic space, U+2028 line separator, **U+200B zero-width space and U+FEFF BOM** are all rejected. Percent-encode a space as `%20`
 
 Omitting `link` is normal and safe: the message then falls back to `sender.type=app` + `id`/`meta.projectId` to offer "open the sending App", and renders no button when neither is present.
+
+**Never hard-code the workspace segment.** An in-app path carries a `/ws/<workspaceId>/` prefix; hard-coding it sends recipients to the wrong workspace once the App is imported elsewhere (same guardrail as `meta.projectId`, see the root [`SKILL.md`](../../SKILL.md)). Derive the prefix from the App's own runtime config, or send an absolute `https://` URL the App already knows.
 
 **Point it somewhere the recipient can actually reach.** The server does no permission check — a link into a resource they cannot view lands them on a 403.
 
@@ -221,7 +223,9 @@ const resp = await notificationsApi.openapiv1notificationssend({
   idempotencyKey: 'alert-tank01-overtemp-20260825T1500',
   mode: process.env.NODE_ENV === 'production' ? 'live' : 'test',
   channels: ['web', 'mobile'], // the user explicitly asked for push
-  link: '/ws/1/apps/oee/alerts/tank01', // Open button target; absolute form must be https://
+  // Open button target. Build the path from the App's own runtime config — never hard-code a
+  // workspace segment like `/ws/1`, which breaks once the App is imported into another workspace.
+  link: `${process.env.APP_BASE_PATH}/alerts/tank01`, // absolute form must be https://
   sender: {
     type: 'app',
     id: '550e8400-e29b-41d4-a716-446655440000', // appId: constant written at generation time

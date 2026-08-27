@@ -40,7 +40,7 @@ Sending a notification interrupts a real person. Never substitute defaults for t
 | `mode` | Agent detects the scenario; ask when unsure | See send.md. Never silently default to `live` when uncertain |
 | `idempotencyKey` | Agent | Business-event key discipline, see send.md |
 | `sender` | Agent | Filled from the calling app's identity, see send.md |
-| `link` | Agent (ask when ambiguous) | The Open-button target, derived from whatever the notification is about (the order, the alarming device, the work order). Ask when the destination is not obvious — and confirm the recipient can actually reach it. Omitting it is fine: no Open button |
+| `link` | Agent (ask when ambiguous) | The Open-button target, derived from whatever the notification is about (the order, the alarming device, the work order). Ask when the destination is not obvious — and confirm the recipient can actually reach it. Omitting it is fine, but it does not guarantee no button: with `sender.type=app` the message still offers "open the sending App". No button appears only when neither `link` nor an app sender is present |
 | `type` | No choice | Fixed `"inbox"`, the only accepted value |
 
 ## Scope Routing
@@ -59,4 +59,4 @@ Sending a notification interrupts a real person. Never substitute defaults for t
 5. `idempotencyKey` is a business-event key, reused verbatim on retries.
 6. Responses were parsed as bare JSON (no envelope) and errors via `ApiError.status` + JSON in `ApiError.msg`.
 7. Status reported to the user says "sent", never "seen/read" — there is no read receipt.
-8. If a `link` was sent, it is `https://` or `/`-prefixed, and points at something the recipient has permission to open.
+8. If a `link` was sent, it passes **every** rule in [send.md](references/send.md) — `https://` or `/` prefix, protocol-relative `//host` and backslashes rejected, ≤500 characters, no Unicode whitespace / control / invisible format characters — and points at something the recipient has permission to open.
