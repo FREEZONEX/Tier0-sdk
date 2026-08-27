@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.3.0
+version: 0.4.0
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -44,6 +44,7 @@ try {
 | `mode` | `string` | no | `test` / `live`, default `live`. `test` auto-prefixes the title with `[Test]` |
 | `channels` | `string[]` | no | Push channels: `web` / `mobile`. **Omitting and `[]` are synonymous = silent message** (inbox only, no reminder). **Pushing requires explicit values**, e.g. `["web","mobile"]` |
 | `sender` | `object` | no | Sender identity, see below. Server defaults to `{"type":"other"}` |
+| `link` | `string` | no | Open-button target, see below. Omit for no Open button |
 | `source` | `string` | no | **Deprecated**: transitional alias for `sender.name` (`sender.name` wins). Do not send |
 
 ### Three easily-confused fields
@@ -126,11 +127,35 @@ Self-reported display/navigation hint — **not a verified identity; never base 
 - `meta.projectId`: **resolve at runtime** with `getCurrentProjectId()` from `@tier0/sdk` (the runtime injects `TIER0_PROJECT_ID`, see the root `references/configuration.md`). Never hard-code it at generation time — an App imported into another project would keep pointing at the source project, breaking icon lookup and Open-button navigation.
 - `sender.id` (appId): no runtime injection exists for it. The AI building the App knows it in its session context — write it in as a constant (or the App's own env var) at code-generation time.
 
+## link: the Open button target
+
+Populates the **Open button** on the recipient's in-app message. Self-reported navigation hint — like `sender`, **never base any security decision on it**; the server validates the shape only, not that the destination exists or that the recipient may view it.
+
+| Form | Example | Notes |
+|---|---|---|
+| Absolute | `https://app.tier0.dev/ws/1/uns?id=42` | **`https://` only.** `http://` is rejected (cleartext); `javascript:` / `data:` and other pseudo-schemes are blocked by the same prefix allowlist |
+| In-app relative | `/ws/1/apps/oee/alerts/tank01` | Opens inside the platform |
+
+Validation (400 `INVALID_REQUEST` on any violation):
+
+- Must start with `https://` (with at least one character after it) or `/`
+- **Protocol-relative `//host/path` is rejected** — it has a leading slash but resolves cross-origin, so it does not count as an in-app path
+- **Backslashes are rejected outright** — the WHATWG URL spec normalizes them to `/` in special-scheme URLs, so `/\host` resolves exactly like `//host`. Percent-encode a legitimate backslash as `%5C`
+- ≤500 characters
+- No whitespace, control, or invisible format characters. Classified by Unicode category, **not just ASCII**: a plain space, U+00A0 no-break space, U+3000 ideographic space, U+2028 line separator, **U+200B zero-width space and U+FEFF BOM** are all rejected. Percent-encode a space as `%20`
+
+Omitting `link` is normal and safe: the message then falls back to `sender.type=app` + `id`/`meta.projectId` to offer "open the sending App", and renders no button when neither is present.
+
+**Point it somewhere the recipient can actually reach.** The server does no permission check — a link into a resource they cannot view lands them on a 403.
+
+**Reading it back**: the field is called `link` on the way in, but the stored message exposes it as `actionType` (currently always `"link"`) and `actionPath` (the value you sent). You do not need these in the SDK — they are consumed by the web client — but the asymmetry surprises people reading server logs.
+
 ## Idempotency key discipline
 
 - **Must be a business-event key**, e.g. `order-A1029-shipped-v1` — **never a random value/UUID** (a fresh key per attempt defeats idempotency; retries would re-notify the user)
 - Retries **must reuse the same key**: an idempotent hit returns the original result without duplicating the notification
 - Same key with different content → 409 `IDEMPOTENCY_KEY_CONFLICT` (the server compares a content digest as a misuse guard)
+- ⚠️ **`link` is part of that digest**: reusing the same key while changing the link returns 409, *not* an idempotent hit. Retries must resend the body verbatim, link included
 - 24-hour window: after it expires the same key creates a new message (new messageId)
 - Scope is the API key: different keys never collide
 
@@ -196,6 +221,7 @@ const resp = await notificationsApi.openapiv1notificationssend({
   idempotencyKey: 'alert-tank01-overtemp-20260825T1500',
   mode: process.env.NODE_ENV === 'production' ? 'live' : 'test',
   channels: ['web', 'mobile'], // the user explicitly asked for push
+  link: '/ws/1/apps/oee/alerts/tank01', // Open button target; absolute form must be https://
   sender: {
     type: 'app',
     id: '550e8400-e29b-41d4-a716-446655440000', // appId: constant written at generation time
@@ -241,7 +267,7 @@ const resp = await sendWithRetry();
 
 | HTTP | errorCode | Cause | Handling |
 |---|---|---|---|
-| 400 | `INVALID_REQUEST` | Missing required field / title >50 / idempotencyKey >128 / invalid mode, channels, or sender enum / recipientUserId not an integer string | Fix the field per `message` |
+| 400 | `INVALID_REQUEST` | Missing required field / title >50 / idempotencyKey >128 / invalid mode, channels, or sender enum / recipientUserId not an integer string / invalid `link` (bad prefix, protocol-relative `//host` or its backslash variant, backslash anywhere, >500 chars, any Unicode whitespace / control / invisible format character) | Fix the field per `message` |
 | 400 | `INVALID_NOTIFICATION_TYPE` | `type` is not `"inbox"` | Hard-code `type: "inbox"` |
 | 401 | `INVALID_CREDENTIAL` | API key missing or invalid | Check `TIER0_API_KEY` |
 | 403 | `NOTIFICATION_NOT_ALLOWED` | Key lacks the `notifications:send` resource key | Ask an admin to grant it |
