@@ -144,7 +144,12 @@ Validation (400 `INVALID_REQUEST` on any violation):
 - ≤500 characters
 - No whitespace, control, or invisible format characters. Classified by Unicode category, **not just ASCII**: a plain space, U+00A0 no-break space, U+3000 ideographic space, U+2028 line separator, **U+200B zero-width space and U+FEFF BOM** are all rejected. Percent-encode a space as `%20`
 
-Omitting `link` is normal and safe: the message then falls back to `sender.type=app` + `id`/`meta.projectId` to offer "open the sending App", and renders no button when neither is present.
+Omitting `link` is normal and safe. There are **two** navigation sources, and the button is rendered when either one is complete:
+
+1. `link` — this field
+2. `sender.type=app` carrying **both** `id` (appId) **and** `meta.projectId` — offers "open the sending App". An incomplete pair is not a source: with appId but no projectId the BFF cannot build the app-detail URL, so no button
+
+With neither source present the message renders no Open button at all.
 
 **Never hard-code the workspace segment.** An in-app path carries a `/ws/<workspaceId>/` prefix; hard-coding it sends recipients to the wrong workspace once the App is imported elsewhere (same guardrail as `meta.projectId`, see the root [`SKILL.md`](../../SKILL.md)). Derive the prefix from the App's own runtime config, or send an absolute `https://` URL the App already knows.
 

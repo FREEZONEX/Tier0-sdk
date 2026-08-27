@@ -40,7 +40,7 @@ Sending a notification interrupts a real person. Never substitute defaults for t
 | `mode` | Agent detects the scenario; ask when unsure | See send.md. Never silently default to `live` when uncertain |
 | `idempotencyKey` | Agent | Business-event key discipline, see send.md |
 | `sender` | Agent | Filled from the calling app's identity, see send.md |
-| `link` | Agent (ask when ambiguous) | The Open-button target, derived from whatever the notification is about (the order, the alarming device, the work order). Ask when the destination is not obvious — and confirm the recipient can actually reach it. Omitting it is fine, but it does not guarantee no button: with `sender.type=app` the message still offers "open the sending App". No button appears only when neither `link` nor an app sender is present |
+| `link` | Agent (ask when ambiguous) | The Open-button target, derived from whatever the notification is about (the order, the alarming device, the work order). Ask when the destination is not obvious — and confirm the recipient can actually reach it. Omitting it is fine, but it does not guarantee no button: there are **two** navigation sources — `link`, and `sender.type=app` carrying **both** `id` (appId) and `meta.projectId`, which offers "open the sending App". No button appears only when both sources are absent |
 | `type` | No choice | Fixed `"inbox"`, the only accepted value |
 
 ## Scope Routing
