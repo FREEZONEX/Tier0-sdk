@@ -139,9 +139,12 @@ There is no icon field: the App icon is never self-reported. The in-app message 
 - `sender.name`: same as appId — **there is no runtime source for it**. The runtime injects only host, key, MQTT host/port and project id; no OpenAPI endpoint returns the calling App's own name; `package.json` `name` is the scaffold default (`scaffold`), not the App's name. So write the App's name in as a constant, from what you know when generating the App — and if the App already keeps its display name somewhere (a title, a brand constant), **reuse that one instead of writing a second copy**, or the two drift apart.
 
 ```typescript
-// Written at generation time — the App knows its own identity, the runtime does not expose it
-const TIER0_APP_ID = '550e8400-e29b-41d4-a716-446655440000';
-const TIER0_APP_NAME = 'OEE Monitor'; // must match the App's name on the platform
+// Written at generation time — the App knows its own identity, the platform does not inject it.
+// Do NOT name these TIER0_*: that prefix belongs to values the platform really does inject
+// (TIER0_API_HOST / TIER0_API_KEY / TIER0_MQTT_* / TIER0_PROJECT_ID), and reusing it here
+// would suggest these arrive from the runtime when they do not.
+const APP_ID = '550e8400-e29b-41d4-a716-446655440000';
+const APP_NAME = 'OEE Monitor'; // must match the App's name on the platform
 ```
 
 Keep the constant in step with the App if it is ever renamed on the platform. A stale value is not fatal — the in-app message shows the looked-up real name whenever the lookup succeeds, and the stale constant surfaces only on the fallback path — but that is exactly the inconsistency this field exists to avoid.
