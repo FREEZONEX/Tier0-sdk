@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-uns
-version: 1.0.0
+version: 1.1.0
 description: "Tier0 SDK UNS operations and modeling for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. Use it to browse/search namespace nodes, create/update/delete/restore modeled topics, read current VQT values, write data, query history, design topic schemas, integrate app-owned data, and choose UNS versus an app database. Use for any @tier0/sdk task involving UNS paths or topic data. Continuous/realtime receive routes to tier0-sdk-mq."
 metadata:
   requires:
@@ -24,6 +24,7 @@ metadata:
 - **Read once**: use OpenAPI `read` for a one-time current-value snapshot.
 - **Continuously changing, realtime, or always listening**: read [`../tier0-sdk-mq/SKILL.md`](../tier0-sdk-mq/SKILL.md) and use MQTT `subscribe`; never poll OpenAPI `read`.
 - **Reconnect backfill**: use OpenAPI `history` only when the Topic was created with `enableHistory` enabled.
+- **History counts**: omitting `countMode` preserves the compatible exact-total behavior. Performance-sensitive callers that do not consume `total` should explicitly set `countMode: 'none'` and follow `meta.hasMore`.
 
 ## References
 
@@ -47,3 +48,4 @@ metadata:
 3. Continuous receive uses MQTT, not OpenAPI polling.
 4. History is used only when enabled.
 5. Batch item failures are handled.
+6. Large history reads omit pagination for automatic sampling, or explicitly use `countMode: 'none'` and paginate with `hasMore` when an exact total is unnecessary.

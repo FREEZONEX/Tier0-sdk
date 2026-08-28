@@ -570,10 +570,15 @@ export interface components {
             /** Format: boolean */
             sampled: boolean;
             strategy?: string;
+            /** Format: boolean */
+            totalExact: boolean;
+            /** Format: boolean */
+            hasMore: boolean;
         };
         /** HistoryReq */
         HistoryReq: {
             aggregation?: components["schemas"]["HistoryAggregation"];
+            countMode?: "exact" | "none";
             end_time: string;
             /** Format: int64 */
             page?: number;
@@ -593,6 +598,8 @@ export interface components {
             success: boolean;
             /** Format: int64 */
             total: number;
+            /** Format: boolean */
+            totalExact: boolean;
         };
         /** InfoReq */
         InfoReq: Record<string, never>;
