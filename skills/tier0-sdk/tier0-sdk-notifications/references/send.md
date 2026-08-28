@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.5.0
+version: 0.5.1
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -119,16 +119,16 @@ Four fields, and what to put in each:
 |---|---|---|
 | `sender.type` | no (default `other`) | `"app"` when an App Builder application is sending — it unlocks the icon and open-the-App behaviour below. `"other"` for anything else (scripts, integrations, backend jobs). Closed enum: any other value is 400 |
 | `sender.id` | **yes when `type` is `app`** | The **appId** (agent-platform UUID), charset `[0-9a-zA-Z-]{1,128}`. Accepted but pointless for `other` — nothing consumes it there |
-| `sender.name` | no | **Leave it out when `type` is `app`** — the platform resolves the real name from (projectId, appId), see below. For `other`: a name that makes the script or integration recognizable, since nothing can be looked up. ≤100 chars (successor of the deprecated `source`) |
+| `sender.name` | optional in the contract, but **required in practice for `other`** | **Leave it out when `type` is `app`** — the platform resolves the real name from (projectId, appId), see below. **Always send it for `other`**: nothing can be looked up, so omitting it leaves the message with no sender identity at all. ≤100 chars (successor of the deprecated `source`) |
 | `sender.meta` | no | For `app`: `{"projectId": "<the current project id>"}`. **Every value must be a string** — `{projectId: 123}` is not valid. ≤500 bytes serialized |
 
 Neither the name nor the icon is self-reported for an App: both are resolved server-side by looking up (projectId, appId). A mobile push composes the icon URL from appId.
 
-**For the `app` scenario send exactly two fields**: `id` (appId) + `meta.projectId`. That pair drives the name lookup, the icon, and the app-detail jump URL — without `projectId` all three break.
+**For the `app` scenario send exactly three fields**: `type: 'app'` + `id` (appId) + `meta.projectId`. `type` is what selects the App behaviour at all — omit it and the sender silently defaults to `other`, losing the name lookup, the icon and the Open button. The (appId, projectId) pair then drives all three — without `projectId` they break together.
 
 **Do not send `sender.name` for an `app` sender.** The platform looks the real name up, so a self-reported copy can only disagree with it — and it goes stale the moment the App is renamed. Omit it and the displayed name always tracks the App's actual name. If the lookup finds nothing (App deleted, or not visible to this recipient), the message simply shows no sender name; that is the intended degradation, not something to paper over.
 
-`sender.name` is for `other` senders — scripts, integrations, backend jobs — which have no entity to look up. There it is the only identity available, so name them recognizably.
+`sender.name` is for `other` senders — scripts, integrations, backend jobs — which have no entity to look up. There it is the **only** identity available: send it every time, and make it recognizable to the person receiving the message ("Nightly stock sync", not "script"). Leave it out and the recipient sees a message from nobody.
 
 **`sender.name` never reaches a push notification.** The push payload is title + content, plus — for `sender.type=app` on **Android** — an app icon thumbnail whose URL is composed from `sender.id` (appId) directly, with no lookup. So a push shows your App's icon but never its name: whatever must identify the source to someone reading the push has to be in the `title` or `content` you wrote. Web Push and iOS ignore the icon field too.
 
