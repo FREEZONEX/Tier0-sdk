@@ -9,7 +9,7 @@ metadata:
 
 # Tier0 SDK — UNS
 
-**Before starting, read the root SDK Skill at [`../SKILL.md`](../SKILL.md) for shared version, configuration, runtime, and layering rules.**
+**Before starting, read the root SDK Skill at [`../tier0-sdk/SKILL.md`](../tier0-sdk/SKILL.md) for shared version, configuration, runtime, and layering rules.**
 
 ## Core Rules
 

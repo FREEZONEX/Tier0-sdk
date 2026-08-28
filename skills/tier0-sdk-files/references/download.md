@@ -12,7 +12,7 @@ description: "downloadFile — GET /openapi/v1/assets/files/download 直接下�
 `<a download>` 保存。不要用 `getFileUrl()` 后执行 `window.open()`、
 `location.href` 或打开新标签页。MonoApp/TanStack Start 应进一步通过
 同源服务端路由流式转发，完整模式见
-[`../../references/scaffold-monoapp.md#browser-attachment-downloads`](../../references/scaffold-monoapp.md#browser-attachment-downloads)。
+[`../../tier0-sdk/references/scaffold-monoapp.md#browser-attachment-downloads`](../../tier0-sdk/references/scaffold-monoapp.md#browser-attachment-downloads)。
 
 ## SDK 签名
 

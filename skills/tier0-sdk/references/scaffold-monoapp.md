@@ -90,7 +90,7 @@ Default UI behavior:
 - Do not render a UNS tree, path explorer, or namespace breadcrumb as the primary UI unless the user explicitly asks for browsing or managing the UNS hierarchy.
 - Avoid making users choose from raw `Metric` / `State` / `Action` folders unless the app is specifically an admin, diagnostics, or data-modeling tool.
 
-The app DB is the system of record for app-owned entities; UNS is the platform integration bus. Before wiring UNS I/O, decide the direction per data element (read external data inbound vs sync app-owned data outbound) using [`../tier0-sdk-uns/references/data-integration.md`](../tier0-sdk-uns/references/data-integration.md).
+The app DB is the system of record for app-owned entities; UNS is the platform integration bus. Before wiring UNS I/O, decide the direction per data element (read external data inbound vs sync app-owned data outbound) using [`../../tier0-sdk-uns/references/data-integration.md`](../../tier0-sdk-uns/references/data-integration.md).
 
 ## Recommended Service-Layer Examples
 
@@ -182,7 +182,7 @@ When a user asks for an upload, attachment, avatar, image, import, or other uplo
 
 Receive the browser `File` through a server action or API route, call `uploadFile` in a service, and save only the returned `filePath` in the business record. Resolve access with `getFileUrl`, download with `downloadFile`, and remove with `deleteFile`. Never persist an expiring presigned URL. Local temporary files are allowed only for short-lived processing before the SDK upload.
 
-If `src/lib/tier0.ts` does not yet expose a files loader, extend it with the same server-only lazy-load pattern used by `loadTier0OpenApi()` and `loadTier0Mq()`. Do not use the missing helper as a reason to fall back to local storage or a handwritten S3 client. Read [`../tier0-sdk-files/SKILL.md`](../tier0-sdk-files/SKILL.md) and [`../tier0-sdk-files/references/upload.md`](../tier0-sdk-files/references/upload.md) before implementing the feature.
+If `src/lib/tier0.ts` does not yet expose a files loader, extend it with the same server-only lazy-load pattern used by `loadTier0OpenApi()` and `loadTier0Mq()`. Do not use the missing helper as a reason to fall back to local storage or a handwritten S3 client. Read [`../../tier0-sdk-files/SKILL.md`](../../tier0-sdk-files/SKILL.md) and [`../../tier0-sdk-files/references/upload.md`](../../tier0-sdk-files/references/upload.md) before implementing the feature.
 
 ## Browser Attachment Downloads
 
@@ -323,7 +323,7 @@ MQTT `subscribe` is the default and required receive path for realtime scaffold 
 
 An initial OpenAPI `read` may seed the screen, but all subsequent updates must come from the MQTT subscription. Own long-lived subscriptions in a server runtime or worker that can manage reconnect, unsubscribe, and shutdown; do not start them from React render paths or route loaders. Push normalized business-domain updates to the UI through the app's own realtime channel instead of exposing raw MQTT topics.
 
-Read [`../tier0-sdk-mq/SKILL.md`](../tier0-sdk-mq/SKILL.md) and [`../tier0-sdk-mq/references/quickstart.md`](../tier0-sdk-mq/references/quickstart.md) before implementing the subscription. For reconnect backfill, also read [`../tier0-sdk-uns/references/history.md`](../tier0-sdk-uns/references/history.md).
+Read [`../../tier0-sdk-mq/SKILL.md`](../../tier0-sdk-mq/SKILL.md) and [`../../tier0-sdk-mq/references/quickstart.md`](../../tier0-sdk-mq/references/quickstart.md) before implementing the subscription. For reconnect backfill, also read [`../../tier0-sdk-uns/references/history.md`](../../tier0-sdk-uns/references/history.md).
 
 ## MQ Publish and Lifecycle
 
