@@ -132,10 +132,19 @@ There is no icon field: the App icon is never self-reported. The in-app message 
 
 **`sender.name` never reaches a push notification.** The push payload is title + content, plus — for `sender.type=app` on **Android** — an app icon thumbnail whose URL is composed from `sender.id` (appId) directly, with no lookup. So a push shows your App's icon but never its name: whatever must identify the source to someone reading the push has to be in the `title` or `content` you wrote. Web Push and iOS ignore the icon field too.
 
-**Where appId/projectId come from**:
+**Where the three values come from**:
 
 - `meta.projectId`: **resolve at runtime** with `getCurrentProjectId()` from `@tier0/sdk` (the runtime injects `TIER0_PROJECT_ID`, see the root `references/configuration.md`). Never hard-code it at generation time — an App imported into another project would keep pointing at the source project, breaking icon lookup and Open-button navigation.
 - `sender.id` (appId): no runtime injection exists for it. The AI building the App knows it in its session context — write it in as a constant (or the App's own env var) at code-generation time.
+- `sender.name`: same as appId — **there is no runtime source for it**. The runtime injects only host, key, MQTT host/port and project id; no OpenAPI endpoint returns the calling App's own name. So write the App's name in as a constant next to the appId, from what you know when generating the App.
+
+```typescript
+// Written at generation time — the App knows its own identity, the runtime does not expose it
+const TIER0_APP_ID = '550e8400-e29b-41d4-a716-446655440000';
+const TIER0_APP_NAME = 'OEE Monitor'; // must match the App's name on the platform
+```
+
+Keep the constant in step with the App if it is ever renamed on the platform. A stale value is not fatal — the in-app message shows the looked-up real name whenever the lookup succeeds, and the stale constant surfaces only on the fallback path — but that is exactly the inconsistency this field exists to avoid.
 
 ## link: the Open button target
 
