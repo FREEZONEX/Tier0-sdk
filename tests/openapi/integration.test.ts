@@ -100,6 +100,47 @@ run('OpenAPI Integration Tests', () => {
     expect(status).toBe('sent');
   }, 30_000);
 
+  // link 端到端（2026-08-27 open-link 契约）：合法值被写入侧接受，非法值必须 400 而不是静默丢字段。
+  // 不验回显——get 契约不含 actionPath，读回走 BFF/web 那条链路。
+  it('should accept a valid link and reject a malformed one', async (ctx) => {
+    const who = await systemApi.openapiv1authwhoami();
+    expect(Number.isSafeInteger(who.data.userID)).toBe(true);
+    const recipientUserId = String(who.data.userID);
+
+    let sendResp;
+    try {
+      sendResp = await notificationsApi.openapiv1notificationssend({
+        recipientUserId,
+        type: 'inbox',
+        title: 'SDK link check',
+        content: 'Silent test notification carrying an Open link. Safe to ignore.',
+        idempotencyKey: `sdk-link-${Date.now()}`,
+        mode: 'test',
+        link: '/launchpad', // 站内路径不带 /ws 段：web 端自动补接收人所在空间
+      });
+    } catch (e) {
+      if (isNotifyForbidden(e)) return ctx.skip(); // key lacks notifications:send
+      throw e;
+    }
+    expect(sendResp.messageId).toMatch(/^\d+$/);
+
+    // 协议相对地址：有前导斜杠但浏览器按跨站绝对地址解析，写入侧必须拒
+    const err = await notificationsApi
+      .openapiv1notificationssend({
+        recipientUserId,
+        type: 'inbox',
+        title: 'SDK link check',
+        content: 'This send must fail on link validation.',
+        idempotencyKey: `sdk-link-bad-${Date.now()}`,
+        mode: 'test',
+        link: '//evil.example.com/x',
+      })
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(400);
+    expect(JSON.parse((err as ApiError).msg).errorCode).toBe('INVALID_REQUEST');
+  }, 20_000);
+
   it('should return structured 404 for a foreign messageId', async (ctx) => {
     const err = await notificationsApi
       .openapiv1notificationsget({ messageId: '1' })
