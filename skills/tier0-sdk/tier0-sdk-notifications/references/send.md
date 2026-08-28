@@ -124,7 +124,9 @@ Self-reported display/navigation hint — **not a verified identity; never base 
 
 **`sender.name` must be the App's own name.** For an `app` sender the recipient normally sees the *real* app name, which the BFF resolves from (projectId, appId); `sender.name` is displayed only when that lookup misses (app deleted, not visible to the recipient, lookup failure). So it is a fallback for one specific string, not a free label: put anything else there — a product name, a team name, "Alert System" — and the same App shows up as two different senders depending on whether the lookup happened to succeed. Send the App's name and the two paths agree.
 
-`sender.name` is also the only sender identity an `other` sender has, so scripts and integrations should name themselves recognizably there.
+`sender.name` is also the only sender identity an `other` sender has (no lookup applies), so scripts and integrations should name themselves recognizably there.
+
+**`sender` only reaches the in-app message.** A web/mobile push carries just the title and the content — no sender, no icon, no link. Whatever identifies the source to a recipient looking at a push notification has to be in the `title` or `content` you wrote.
 
 **Where appId/projectId come from**:
 
