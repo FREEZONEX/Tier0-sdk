@@ -9,7 +9,7 @@ metadata:
 
 # Tier0 SDK — MQTT/MQ
 
-**Before starting, read the root SDK Skill at [`../tier0-sdk/SKILL.md`](../tier0-sdk/SKILL.md). If MQTT will subscribe to, publish to, or match any Tier0 UNS Topic, you must then read [`../tier0-sdk-uns/SKILL.md`](../tier0-sdk-uns/SKILL.md) before designing the Topic or writing code.**
+**Before starting, read the root SDK Skill at [`../SKILL.md`](../SKILL.md). If MQTT will subscribe to, publish to, or match any Tier0 UNS Topic, you must then read [`../tier0-sdk-uns/SKILL.md`](../tier0-sdk-uns/SKILL.md) before designing the Topic or writing code.**
 
 ## UNS MQTT Prerequisite
 

@@ -9,7 +9,7 @@ metadata:
 
 # Tier0 SDK — Members
 
-**Before starting, read the root SDK Skill at [`../tier0-sdk/SKILL.md`](../tier0-sdk/SKILL.md).**
+**Before starting, read the root SDK Skill at [`../SKILL.md`](../SKILL.md).**
 
 ## Scope Routing
 

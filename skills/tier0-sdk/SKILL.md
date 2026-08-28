@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk
-version: 0.4.0
-description: "Tier0 SDK shared setup and cross-domain router for TypeScript/JavaScript. Use when installing or updating @tier0/sdk, configuring API/MQTT/runtime values, resolving the current project, selecting package entry points, integrating React/Vue/MonoApp, or routing an unspecified or cross-domain SDK task. For a concrete operation, prefer the matching tier0-sdk-* domain Skill; it links back here for shared configuration."
+version: 0.3.5
+description: "Tier0 SDK root/router Skill and shared configuration for TypeScript/JavaScript. Read this root Skill before every Tier0 SDK domain Skill, and read references/configuration.md before making any actual @tier0/sdk call. Use for installing or updating @tier0/sdk, configuring API/MQTT/runtime values, resolving the current project, selecting package entry points, React/Vue adapters, MonoApp integration, or routing work to UNS, realtime MQ, Flow and Node-RED HTTP endpoints, files, members, notifications, and system capabilities."
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -9,7 +9,7 @@ metadata:
 
 # Tier0 SDK Root Router
 
-This is the shared root Skill, independently discoverable alongside the flat `tier0-sdk-*` domain Skills. Read it before using any domain Skill. It owns package versioning, runtime configuration, official entry points, domain routing, and cross-domain application boundaries.
+This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Skill. It owns package versioning, runtime configuration, official entry points, domain routing, and cross-domain application boundaries.
 
 ## Shared Workflow
 
@@ -18,7 +18,7 @@ This is the shared root Skill, independently discoverable alongside the flat `ti
 3. Route the task to the matching domain Skill below and read that Skill before writing code.
 4. Import an official SDK entry point. Do not hand-write replacement REST, MQTT, object-storage, or environment-resolution clients.
 5. Keep SDK calls in services, workers, server actions, API routes, hooks, or stores; expose business-domain objects to UI components.
-6. For MonoApp browser attachment downloads, read [`references/scaffold-monoapp.md`](references/scaffold-monoapp.md) and [`../tier0-sdk-files/references/download.md`](../tier0-sdk-files/references/download.md). Resolve the trusted `filePath` server-side, stream `downloadFile().response.body` through an authenticated same-origin route, and save the browser Blob with `<a download>`.
+6. For MonoApp browser attachment downloads, read [`references/scaffold-monoapp.md`](references/scaffold-monoapp.md) and [`tier0-sdk-files/references/download.md`](tier0-sdk-files/references/download.md). Resolve the trusted `filePath` server-side, stream `downloadFile().response.body` through an authenticated same-origin route, and save the browser Blob with `<a download>`.
 
 ## 可调用接口总览（OpenAPI，`@tier0/sdk/openapi`）
 
@@ -58,13 +58,13 @@ This is the shared root Skill, independently discoverable alongside the flat `ti
 
 | User need | Read |
 |---|---|
-| UNS modeling, browse/search, read/write/history, topic lifecycle, app data integration | [`../tier0-sdk-uns/SKILL.md`](../tier0-sdk-uns/SKILL.md) |
-| Continuous/realtime receive, MQTT subscribe/publish, connection lifecycle | [`../tier0-sdk-mq/SKILL.md`](../tier0-sdk-mq/SKILL.md) |
-| Flow/Node-RED create, inspect, edit, deploy, delete, or expose/invoke an `http in` endpoint or webhook | [`../tier0-sdk-flow/SKILL.md`](../tier0-sdk-flow/SKILL.md) |
-| Upload, persist, access, download, or delete files/attachments | [`../tier0-sdk-files/SKILL.md`](../tier0-sdk-files/SKILL.md) |
-| Launchpad project members or platform/workspace members and roles | [`../tier0-sdk-members/SKILL.md`](../tier0-sdk-members/SKILL.md) |
-| Select a recipient by human identity, send an in-app notification (inbox + optional web/mobile push), or query delivery status. Never ask an end user for a user ID | [`../tier0-sdk-notifications/SKILL.md`](../tier0-sdk-notifications/SKILL.md) |
-| API-key credential diagnostics (not an App end-user identity), service info/capabilities, gateway reload | [`../tier0-sdk-system/SKILL.md`](../tier0-sdk-system/SKILL.md) |
+| UNS modeling, browse/search, read/write/history, topic lifecycle, app data integration | [`tier0-sdk-uns/SKILL.md`](tier0-sdk-uns/SKILL.md) |
+| Continuous/realtime receive, MQTT subscribe/publish, connection lifecycle | [`tier0-sdk-mq/SKILL.md`](tier0-sdk-mq/SKILL.md) |
+| Flow/Node-RED create, inspect, edit, deploy, delete, or expose/invoke an `http in` endpoint or webhook | [`tier0-sdk-flow/SKILL.md`](tier0-sdk-flow/SKILL.md) |
+| Upload, persist, access, download, or delete files/attachments | [`tier0-sdk-files/SKILL.md`](tier0-sdk-files/SKILL.md) |
+| Launchpad project members or platform/workspace members and roles | [`tier0-sdk-members/SKILL.md`](tier0-sdk-members/SKILL.md) |
+| Select a recipient by human identity, send an in-app notification (inbox + optional web/mobile push), or query delivery status. Never ask an end user for a user ID | [`tier0-sdk-notifications/SKILL.md`](tier0-sdk-notifications/SKILL.md) |
+| API-key credential diagnostics (not an App end-user identity), service info/capabilities, gateway reload | [`tier0-sdk-system/SKILL.md`](tier0-sdk-system/SKILL.md) |
 | Client configuration, generic OpenAPI, React/Vue, MonoApp | This Skill and its `references/` |
 
 ## Package Entry Points

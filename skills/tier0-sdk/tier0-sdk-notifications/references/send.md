@@ -182,7 +182,7 @@ const link = `${appBase}/alerts/tank01`;
 
 The web client opens it in a new tab (`noopener`). This is the normal way to deep-link into an App, not a fallback.
 
-**B. A platform page (UNS, Flows, Launchpad, …) → a `/`-prefixed path with no workspace segment.** Platform routes live under `/ws/<workspaceId>/…`, but the web client prepends the **recipient's own** workspace to any `/`-prefixed path that does not already start with `/ws/`. So write `/launchpad/launch/<appId>?projectId=<projectId>`, not `/ws/1/launchpad/…` — a hard-coded `/ws/1` pins every recipient to workspace 1 and breaks the moment the App is imported into another workspace (same guardrail as `meta.projectId`, see the root [`SKILL.md`](../../tier0-sdk/SKILL.md)).
+**B. A platform page (UNS, Flows, Launchpad, …) → a `/`-prefixed path with no workspace segment.** Platform routes live under `/ws/<workspaceId>/…`, but the web client prepends the **recipient's own** workspace to any `/`-prefixed path that does not already start with `/ws/`. So write `/launchpad/launch/<appId>?projectId=<projectId>`, not `/ws/1/launchpad/…` — a hard-coded `/ws/1` pins every recipient to workspace 1 and breaks the moment the App is imported into another workspace (same guardrail as `meta.projectId`, see the root [`SKILL.md`](../../SKILL.md)).
 
 ⚠️ **A `/`-prefixed path is resolved against the platform, not your App.** Sending your own router path (`/alerts/tank01`) makes the client navigate to `/ws/<recipient's workspace>/alerts/tank01` — a platform route that does not exist. For your own screens use form A.
 
