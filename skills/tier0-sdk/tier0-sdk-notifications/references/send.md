@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.5.3
+version: 0.5.4
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -309,6 +309,7 @@ const body = {
   title: 'Order shipped',
   content: 'Your order #A1029 has shipped.',
   idempotencyKey: 'order-A1029-shipped-v1', // unchanged across retries
+  sender: { type: 'other', name: 'Order service' }, // an `other` sender must name itself
 };
 
 async function sendWithRetry(maxAttempts = 3) {
