@@ -919,6 +919,8 @@ export interface components {
             /** @description 推送渠道 web/mobile；不传或 [] 同义=静默（只建站内信不推送），推送须显式传值 */
             channels?: ("web" | "mobile")[];
             sender?: components["schemas"]["NotificationSender"];
+            /** @description Open 跳转地址，可选；非空时须 https:// 或 / 开头、≤500 字符；不含任何空白/控制/不可见格式字符（含 U+00A0、U+200B、U+FEFF 等非 ASCII 形态），不含反斜杠；协议相对地址 //host 及其反斜杠变体视为跨站绝对地址一并拒绝。缺省=站内信不渲染 Open 按钮。自报值仅导航提示，不可作安全判断依据 */
+            link?: string;
         };
         /** SendNotificationResp */
         SendNotificationResp: {
@@ -1431,7 +1433,7 @@ export interface operations {
                     "application/json": components["schemas"]["SendNotificationResp"];
                 };
             };
-            /** @description INVALID_REQUEST / INVALID_NOTIFICATION_TYPE：参数校验失败或 type 非 inbox */
+            /** @description INVALID_REQUEST / INVALID_NOTIFICATION_TYPE：参数校验失败（含 link 前缀/长度/空白控制字符非法）或 type 非 inbox */
             400: {
                 headers: {
                     [name: string]: unknown;

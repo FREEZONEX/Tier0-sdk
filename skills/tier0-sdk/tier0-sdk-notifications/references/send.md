@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.3.0
+version: 0.4.0
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -44,6 +44,7 @@ try {
 | `mode` | `string` | no | `test` / `live`, default `live`. `test` auto-prefixes the title with `[Test]` |
 | `channels` | `string[]` | no | Push channels: `web` / `mobile`. **Omitting and `[]` are synonymous = silent message** (inbox only, no reminder). **Pushing requires explicit values**, e.g. `["web","mobile"]` |
 | `sender` | `object` | no | Sender identity, see below. Server defaults to `{"type":"other"}` |
+| `link` | `string` | no | Open-button target, see below. **Omitting and `""` are synonymous**; the button then disappears only if the sender is not a complete `app` sender (see below) |
 | `source` | `string` | no | **Deprecated**: transitional alias for `sender.name` (`sender.name` wins). Do not send |
 
 ### Three easily-confused fields
@@ -126,11 +127,79 @@ Self-reported display/navigation hint — **not a verified identity; never base 
 - `meta.projectId`: **resolve at runtime** with `getCurrentProjectId()` from `@tier0/sdk` (the runtime injects `TIER0_PROJECT_ID`, see the root `references/configuration.md`). Never hard-code it at generation time — an App imported into another project would keep pointing at the source project, breaking icon lookup and Open-button navigation.
 - `sender.id` (appId): no runtime injection exists for it. The AI building the App knows it in its session context — write it in as a constant (or the App's own env var) at code-generation time.
 
+## link: the Open button target
+
+Populates the **Open button** on the recipient's in-app message. Self-reported navigation hint — like `sender`, **never base any security decision on it**; the server validates the shape only, not that the destination exists or that the recipient may view it.
+
+| Form | Example | How it opens |
+|---|---|---|
+| In-app path | `/launchpad/launch/<appId>?projectId=<projectId>` | Navigates inside the platform shell, in the recipient's own workspace |
+| Absolute URL | `https://oee-monitor.example.com/alerts/tank01` | **`https://` only** (`http://` is rejected as cleartext; `javascript:` / `data:` and other pseudo-schemes are blocked by the same prefix allowlist). Opens in a **new tab** with `noopener`, outside the platform shell |
+
+### What the server checks
+
+**A malformed `link` fails the whole send** — 400 `INVALID_REQUEST`, no message is created. The cost of a bad link is not "no Open button", it is "the notification never went out".
+
+**An empty string is not malformed.** `link: ""` is treated exactly like omitting the field — accepted, no navigation from this source — so a form that serializes an untouched optional input as `""` needs no special handling. It is also excluded from the idempotency digest, so it cannot conflict with a pre-`link` request replayed inside the 24h window.
+
+For a non-empty value the server checks the **shape only**, in this order (first match wins):
+
+- Must start with `https://` (with at least one character after it) or `/`
+- **Protocol-relative `//host/path` is rejected** — it has a leading slash but resolves cross-origin, so it does not count as an in-app path
+- **Backslashes are rejected outright** — the WHATWG URL spec normalizes them to `/` in special-scheme URLs, so `/\host` resolves exactly like `//host`. Percent-encode a legitimate backslash as `%5C`
+- ≤500 characters
+- No whitespace, control, or invisible format characters. Classified by Unicode category, **not just ASCII**: a plain space, U+00A0 no-break space, U+3000 ideographic space, U+2028 line separator, **U+200B zero-width space and U+FEFF BOM** are all rejected. Percent-encode a space as `%20`
+
+Everything else is rejected by the prefix rule: `http://` (cleartext), `javascript:` / `data:` pseudo-schemes, `//evil.com`, a bare `https://`, and a path that forgot its leading slash (`alerts/tank01`).
+
+**What it does *not* check** — the shape is the whole contract:
+
+- **No host allowlist.** `https://anything-at-all.example.com/x` passes; the recipient leaves the platform
+- **No route existence check.** `/a/route/that/does/not/exist` passes and 404s on click
+- **No permission check.** A link into something the recipient cannot see passes and 403s on click
+
+That is what "self-reported navigation hint" means in practice: getting it right is entirely the caller's job.
+
+Omitting `link` is normal and safe. There are **two** navigation sources, and the button is rendered when either one is complete:
+
+1. `link` — this field
+2. `sender.type=app` carrying **both** `id` (appId) **and** `meta.projectId` — offers "open the sending App". An incomplete pair is not a source: with appId but no projectId the BFF cannot build the app-detail URL, so no button
+
+With neither source present the message renders no Open button at all.
+
+### Writing the path
+
+`link` is where the agent composes a route, so the first question is **whose route**. An App and the platform are two different origins, and a `/`-prefixed path always means the **platform**, never the App.
+
+**A. A screen inside your own App → its absolute `https://` URL.** The App is served from its own deployed origin, so build the URL on that origin and append your own router path:
+
+```typescript
+// Client-side: the App's own origin is exactly where it is served from
+const appBase = window.location.origin;
+// Server-side (route handler / server action): the App's own config, e.g. APP_PUBLIC_URL
+const link = `${appBase}/alerts/tank01`;
+```
+
+The web client opens it in a new tab (`noopener`). This is the normal way to deep-link into an App, not a fallback.
+
+**B. A platform page (UNS, Flows, Launchpad, …) → a `/`-prefixed path with no workspace segment.** Platform routes live under `/ws/<workspaceId>/…`, but the web client prepends the **recipient's own** workspace to any `/`-prefixed path that does not already start with `/ws/`. So write `/launchpad/launch/<appId>?projectId=<projectId>`, not `/ws/1/launchpad/…` — a hard-coded `/ws/1` pins every recipient to workspace 1 and breaks the moment the App is imported into another workspace (same guardrail as `meta.projectId`, see the root [`SKILL.md`](../../SKILL.md)).
+
+⚠️ **A `/`-prefixed path is resolved against the platform, not your App.** Sending your own router path (`/alerts/tank01`) makes the client navigate to `/ws/<recipient's workspace>/alerts/tank01` — a platform route that does not exist. For your own screens use form A.
+
+⚠️ **Do not try to deep-link into an App through the platform launch page.** Apps run in an iframe whose source is the App's own deployment URL; the launch page's query string is not forwarded into it, so `/launchpad/launch/<appId>?projectId=<projectId>` always lands on the App's entry screen — and that is exactly what the appId + projectId fallback already produces, so sending it as `link` adds nothing.
+
+**Mobile ignores `link`.** The mobile app opens the sending App via appId + projectId regardless, so a notification with a `link` lands on different pages on web and mobile. Do not put a mobile-critical destination in `link` alone.
+
+**Point it somewhere the recipient can actually reach.** The server does no permission check — a link into a resource they cannot view lands them on a 403.
+
+**Reading it back**: the field is called `link` on the way in, but the stored message exposes it as `actionType` (currently always `"link"`) and `actionPath` (the value you sent). You do not need these in the SDK — they are consumed by the web client — but the asymmetry surprises people reading server logs.
+
 ## Idempotency key discipline
 
 - **Must be a business-event key**, e.g. `order-A1029-shipped-v1` — **never a random value/UUID** (a fresh key per attempt defeats idempotency; retries would re-notify the user)
 - Retries **must reuse the same key**: an idempotent hit returns the original result without duplicating the notification
 - Same key with different content → 409 `IDEMPOTENCY_KEY_CONFLICT` (the server compares a content digest as a misuse guard)
+- ⚠️ **`link` is part of that digest**: reusing the same key while changing the link returns 409, *not* an idempotent hit. Retries must resend the body verbatim, link included
 - 24-hour window: after it expires the same key creates a new message (new messageId)
 - Scope is the API key: different keys never collide
 
@@ -196,6 +265,11 @@ const resp = await notificationsApi.openapiv1notificationssend({
   idempotencyKey: 'alert-tank01-overtemp-20260825T1500',
   mode: process.env.NODE_ENV === 'production' ? 'live' : 'test',
   channels: ['web', 'mobile'], // the user explicitly asked for push
+  // Open button target: a screen inside this App, so build it on the App's OWN base URL —
+  // here from the App's own config, since this runs server-side (client-side code can use
+  // window.location.origin). A `/`-prefixed path would be resolved against the platform,
+  // not this App — see "Writing the path".
+  link: `${process.env.APP_PUBLIC_URL}/alerts/tank01`,
   sender: {
     type: 'app',
     id: '550e8400-e29b-41d4-a716-446655440000', // appId: constant written at generation time
@@ -241,7 +315,7 @@ const resp = await sendWithRetry();
 
 | HTTP | errorCode | Cause | Handling |
 |---|---|---|---|
-| 400 | `INVALID_REQUEST` | Missing required field / title >50 / idempotencyKey >128 / invalid mode, channels, or sender enum / recipientUserId not an integer string | Fix the field per `message` |
+| 400 | `INVALID_REQUEST` | Missing required field / title >50 / idempotencyKey >128 / invalid mode, channels, or sender enum / recipientUserId not an integer string / invalid `link` (bad prefix, protocol-relative `//host` or its backslash variant, backslash anywhere, >500 chars, any Unicode whitespace / control / invisible format character) | Fix the field per `message` |
 | 400 | `INVALID_NOTIFICATION_TYPE` | `type` is not `"inbox"` | Hard-code `type: "inbox"` |
 | 401 | `INVALID_CREDENTIAL` | API key missing or invalid | Check `TIER0_API_KEY` |
 | 403 | `NOTIFICATION_NOT_ALLOWED` | Key lacks the `notifications:send` resource key | Ask an admin to grant it |
