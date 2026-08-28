@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.5.1
+version: 0.5.2
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -124,7 +124,7 @@ Four fields, and what to put in each:
 
 Neither the name nor the icon is self-reported for an App: both are resolved server-side by looking up (projectId, appId). A mobile push composes the icon URL from appId.
 
-**For the `app` scenario send exactly three fields**: `type: 'app'` + `id` (appId) + `meta.projectId`. `type` is what selects the App behaviour at all — omit it and the sender silently defaults to `other`, losing the name lookup, the icon and the Open button. The (appId, projectId) pair then drives all three — without `projectId` they break together.
+**For the `app` scenario send exactly three fields**: `type: 'app'` + `id` (appId) + `meta.projectId`. `type` is what selects the App behaviour at all — omit it and the sender silently defaults to `other`, losing the name lookup, the icon and the Open button. The (appId, projectId) pair then drives everything the in-app message shows: the name lookup, the App icon there, and the Open button. Without `projectId` those three break together — the Android push icon is the exception, since it is composed from `appId` alone (see below).
 
 **Do not send `sender.name` for an `app` sender.** The platform looks the real name up, so a self-reported copy can only disagree with it — and it goes stale the moment the App is renamed. Omit it and the displayed name always tracks the App's actual name. If the lookup finds nothing (App deleted, or not visible to this recipient), the message simply shows no sender name; that is the intended degradation, not something to paper over.
 
