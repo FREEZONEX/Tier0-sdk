@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.4.0
+version: 0.4.1
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -117,10 +117,14 @@ Self-reported display/navigation hint — **not a verified identity; never base 
 |---|---|---|
 | `sender.type` | no (default `other`) | Closed enum `"app"` \| `"other"`, 400 on other values. `app` = an App Builder application (enables jump/lookup semantics); `other` = fallback (scripts, integrations) |
 | `sender.id` | required for `app` | For `app`: the appId (agent-platform UUID). Charset `[0-9a-zA-Z-]{1,128}` |
-| `sender.name` | no | Human-readable display name, ≤100 chars (successor of deprecated `source`) |
+| `sender.name` | no | Display name, ≤100 chars (successor of deprecated `source`). **For `app`: the App's own name** — see below |
 | `sender.meta` | no | Type-specific extras, ≤500 bytes serialized. For `app`: `{"projectId": "..."}` |
 
 **For the `app` scenario always send all three**: `id` (appId) + `meta.projectId` + `name`. The BFF looks up the real app name/icon and builds the app-detail jump URL from the (projectId, appId) pair — without projectId, the mobile Open button and icon lookup break, leaving only the `name` fallback.
+
+**`sender.name` must be the App's own name.** For an `app` sender the recipient normally sees the *real* app name, which the BFF resolves from (projectId, appId); `sender.name` is displayed only when that lookup misses (app deleted, not visible to the recipient, lookup failure). So it is a fallback for one specific string, not a free label: put anything else there — a product name, a team name, "Alert System" — and the same App shows up as two different senders depending on whether the lookup happened to succeed. Send the App's name and the two paths agree.
+
+`sender.name` is also the only sender identity an `other` sender has, so scripts and integrations should name themselves recognizably there.
 
 **Where appId/projectId come from**:
 
@@ -273,7 +277,7 @@ const resp = await notificationsApi.openapiv1notificationssend({
   sender: {
     type: 'app',
     id: '550e8400-e29b-41d4-a716-446655440000', // appId: constant written at generation time
-    name: 'OEE Monitor',
+    name: 'OEE Monitor', // this App's own name — the fallback shown when the app lookup misses
     meta: { projectId: getCurrentProjectId() }, // runtime value — correct even after the App is imported elsewhere
   },
 });
