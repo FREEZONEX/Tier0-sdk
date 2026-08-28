@@ -44,7 +44,7 @@ try {
 | `mode` | `string` | no | `test` / `live`, default `live`. `test` auto-prefixes the title with `[Test]` |
 | `channels` | `string[]` | no | Push channels: `web` / `mobile`. **Omitting and `[]` are synonymous = silent message** (inbox only, no reminder). **Pushing requires explicit values**, e.g. `["web","mobile"]` |
 | `sender` | `object` | no | Sender identity, see below. Server defaults to `{"type":"other"}` |
-| `link` | `string` | no | Open-button target, see below. Omit for no Open button |
+| `link` | `string` | no | Open-button target, see below. **Omitting and `""` are synonymous**; the button then disappears only if the sender is not a complete `app` sender (see below) |
 | `source` | `string` | no | **Deprecated**: transitional alias for `sender.name` (`sender.name` wins). Do not send |
 
 ### Three easily-confused fields
@@ -140,7 +140,9 @@ Populates the **Open button** on the recipient's in-app message. Self-reported n
 
 **A malformed `link` fails the whole send** — 400 `INVALID_REQUEST`, no message is created. The cost of a bad link is not "no Open button", it is "the notification never went out".
 
-The server checks the **shape only**, in this order (first match wins):
+**An empty string is not malformed.** `link: ""` is treated exactly like omitting the field — accepted, no navigation from this source — so a form that serializes an untouched optional input as `""` needs no special handling. It is also excluded from the idempotency digest, so it cannot conflict with a pre-`link` request replayed inside the 24h window.
+
+For a non-empty value the server checks the **shape only**, in this order (first match wins):
 
 - Must start with `https://` (with at least one character after it) or `/`
 - **Protocol-relative `//host/path` is rejected** — it has a leading slash but resolves cross-origin, so it does not count as an in-app path
