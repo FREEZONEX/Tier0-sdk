@@ -265,10 +265,11 @@ const resp = await notificationsApi.openapiv1notificationssend({
   idempotencyKey: 'alert-tank01-overtemp-20260825T1500',
   mode: process.env.NODE_ENV === 'production' ? 'live' : 'test',
   channels: ['web', 'mobile'], // the user explicitly asked for push
-  // Open button target: a screen inside this App, so build it on the App's OWN origin
-  // (client: window.location.origin; server: the App's own config). A `/`-prefixed path
-  // would be resolved against the platform, not this App — see "Writing the path".
-  link: `${appBaseUrl}/alerts/tank01`,
+  // Open button target: a screen inside this App, so build it on the App's OWN base URL —
+  // here from the App's own config, since this runs server-side (client-side code can use
+  // window.location.origin). A `/`-prefixed path would be resolved against the platform,
+  // not this App — see "Writing the path".
+  link: `${process.env.APP_PUBLIC_URL}/alerts/tank01`,
   sender: {
     type: 'app',
     id: '550e8400-e29b-41d4-a716-446655440000', // appId: constant written at generation time
