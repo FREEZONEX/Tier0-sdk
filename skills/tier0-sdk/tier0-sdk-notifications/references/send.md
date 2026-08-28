@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.4.1
+version: 0.5.0
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -119,35 +119,30 @@ Four fields, and what to put in each:
 |---|---|---|
 | `sender.type` | no (default `other`) | `"app"` when an App Builder application is sending — it unlocks the icon and open-the-App behaviour below. `"other"` for anything else (scripts, integrations, backend jobs). Closed enum: any other value is 400 |
 | `sender.id` | **yes when `type` is `app`** | The **appId** (agent-platform UUID), charset `[0-9a-zA-Z-]{1,128}`. Accepted but pointless for `other` — nothing consumes it there |
-| `sender.name` | no | **When `type` is `app`: the App's own name** — not a free label, see below. For `other`: a name that makes the script or integration recognizable. ≤100 chars (successor of the deprecated `source`) |
+| `sender.name` | no | **Leave it out when `type` is `app`** — the platform resolves the real name from (projectId, appId), see below. For `other`: a name that makes the script or integration recognizable, since nothing can be looked up. ≤100 chars (successor of the deprecated `source`) |
 | `sender.meta` | no | For `app`: `{"projectId": "<the current project id>"}`. **Every value must be a string** — `{projectId: 123}` is not valid. ≤500 bytes serialized |
 
-There is no icon field: the App icon is never self-reported. The in-app message resolves it by looking up (projectId, appId), and a mobile push composes its URL from appId. `name` is the only display value you supply.
+Neither the name nor the icon is self-reported for an App: both are resolved server-side by looking up (projectId, appId). A mobile push composes the icon URL from appId.
 
-**For the `app` scenario always send all three**: `id` (appId) + `meta.projectId` + `name`. The BFF looks up the real app name/icon and builds the app-detail jump URL from the (projectId, appId) pair — without projectId, the mobile Open button and icon lookup break, leaving only the `name` fallback.
+**For the `app` scenario send exactly two fields**: `id` (appId) + `meta.projectId`. That pair drives the name lookup, the icon, and the app-detail jump URL — without `projectId` all three break.
 
-**`sender.name` must be the App's own name.** For an `app` sender the recipient normally sees the *real* app name, which the BFF resolves from (projectId, appId); `sender.name` is displayed only when that lookup misses (app deleted, not visible to the recipient, lookup failure). So it is a fallback for one specific string, not a free label: put anything else there — a product name, a team name, "Alert System" — and the same App shows up as two different senders depending on whether the lookup happened to succeed. Send the App's name and the two paths agree.
+**Do not send `sender.name` for an `app` sender.** The platform looks the real name up, so a self-reported copy can only disagree with it — and it goes stale the moment the App is renamed. Omit it and the displayed name always tracks the App's actual name. If the lookup finds nothing (App deleted, or not visible to this recipient), the message simply shows no sender name; that is the intended degradation, not something to paper over.
 
-`sender.name` is also the only sender identity an `other` sender has (no lookup applies), so scripts and integrations should name themselves recognizably there.
+`sender.name` is for `other` senders — scripts, integrations, backend jobs — which have no entity to look up. There it is the only identity available, so name them recognizably.
 
 **`sender.name` never reaches a push notification.** The push payload is title + content, plus — for `sender.type=app` on **Android** — an app icon thumbnail whose URL is composed from `sender.id` (appId) directly, with no lookup. So a push shows your App's icon but never its name: whatever must identify the source to someone reading the push has to be in the `title` or `content` you wrote. Web Push and iOS ignore the icon field too.
 
-**Where the three values come from**:
+**Where the two values come from**:
 
 - `meta.projectId`: **resolve at runtime** with `getCurrentProjectId()` from `@tier0/sdk` (the runtime injects `TIER0_PROJECT_ID`, see the root `references/configuration.md`). Never hard-code it at generation time — an App imported into another project would keep pointing at the source project, breaking icon lookup and Open-button navigation.
 - `sender.id` (appId): no runtime injection exists for it. The AI building the App knows it in its session context — write it in as a constant (or the App's own env var) at code-generation time.
-- `sender.name`: same as appId — **there is no runtime source for it**. The runtime injects only host, key, MQTT host/port and project id; no OpenAPI endpoint returns the calling App's own name; `package.json` `name` is the scaffold default (`scaffold`), not the App's name. So write the App's name in as a constant, from what you know when generating the App — and if the App already keeps its display name somewhere (a title, a brand constant), **reuse that one instead of writing a second copy**, or the two drift apart.
 
 ```typescript
-// Written at generation time — the App knows its own identity, the platform does not inject it.
-// Do NOT name these TIER0_*: that prefix belongs to values the platform really does inject
-// (TIER0_API_HOST / TIER0_API_KEY / TIER0_MQTT_* / TIER0_PROJECT_ID), and reusing it here
-// would suggest these arrive from the runtime when they do not.
+// Written at generation time — the App knows its own appId, the platform does not inject it.
+// Do NOT name it TIER0_*: that prefix belongs to values the platform really does inject
+// (TIER0_API_HOST / TIER0_API_KEY / TIER0_MQTT_* / TIER0_PROJECT_ID).
 const APP_ID = '550e8400-e29b-41d4-a716-446655440000';
-const APP_NAME = 'OEE Monitor'; // must match the App's name on the platform
 ```
-
-Keep the constant in step with the App if it is ever renamed on the platform. A stale value is not fatal — the in-app message shows the looked-up real name whenever the lookup succeeds, and the stale constant surfaces only on the fallback path — but that is exactly the inconsistency this field exists to avoid.
 
 ## link: the Open button target
 
@@ -294,8 +289,8 @@ const resp = await notificationsApi.openapiv1notificationssend({
   link: `${process.env.APP_PUBLIC_URL}/alerts/tank01`,
   sender: {
     type: 'app',
-    id: '550e8400-e29b-41d4-a716-446655440000', // appId: constant written at generation time
-    name: 'OEE Monitor', // this App's own name — the fallback shown when the app lookup misses
+    id: APP_ID, // appId: constant written at generation time
+    // no name: the platform resolves the real App name from (projectId, appId)
     meta: { projectId: getCurrentProjectId() }, // runtime value — correct even after the App is imported elsewhere
   },
 });
