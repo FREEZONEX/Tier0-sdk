@@ -126,7 +126,7 @@ Self-reported display/navigation hint — **not a verified identity; never base 
 
 `sender.name` is also the only sender identity an `other` sender has (no lookup applies), so scripts and integrations should name themselves recognizably there.
 
-**`sender` only reaches the in-app message.** A web/mobile push carries just the title and the content — no sender, no icon, no link. Whatever identifies the source to a recipient looking at a push notification has to be in the `title` or `content` you wrote.
+**`sender.name` never reaches a push notification.** The push payload is title + content, plus — for `sender.type=app` on **Android** — an app icon thumbnail whose URL is composed from `sender.id` (appId) directly, with no lookup. So a push shows your App's icon but never its name: whatever must identify the source to someone reading the push has to be in the `title` or `content` you wrote. Web Push and iOS ignore the icon field too.
 
 **Where appId/projectId come from**:
 
