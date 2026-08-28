@@ -44,6 +44,21 @@ const result = await unsApi.openapiv1unshistory(body);
 - `countMode=none` 时不执行精确 COUNT，`total=-1`、`totalExact=false`；通过每项 `meta.hasMore` 判断是否继续翻页。
 - 自动稀疏与免 COUNT 相互独立：不传 `page`/`size` 控制返回点数，显式 `countMode=none` 控制是否计算精确总数。
 
+### Performance parameter selection
+
+| Scenario | Recommended parameters | Caller behavior |
+|---|---|---|
+| Raw pages without an exact total | `countMode: 'none'`, explicit `page` and `size` | Treat `size` as the limit **per topic**, batch 50–100 topics per request, keep total HTTP concurrency at 2, and follow each item's `meta.hasMore` |
+| UI must display an exact total/page count | Omit `countMode` or set `countMode: 'exact'` | Accept the additional exact `COUNT` cost |
+| Trend chart with bounded points | Set `countMode: 'none'` and omit both `page` and `size` | Let automatic sparse sampling choose bounded points; omitting only one pagination field does not select this mode |
+| One aggregate for a complete window | `countMode: 'none'`, `aggregation.interval` covering the whole window | Return at most one aggregate bucket per topic; select only the required fields |
+| Cumulative Daily/Monthly usage | Two aggregate calls over the same window, one `first` and one `last` | Compute `last - first` in the application; do not use `avg` or `sum` as usage |
+
+`countMode: 'none'` removes exact counting work only; it does **not** reduce the
+number or size of returned values. Reduce `size`, use automatic sampling or
+aggregation, and batch topics when the response body is the bottleneck. Never
+treat `size` as a request-wide limit.
+
 ### aggregation 结构
 
 | 字段 | 类型 | 必填 | 说明 |
