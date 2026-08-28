@@ -113,12 +113,16 @@ This is a heuristic; an App overriding NODE_ENV breaks it. **When unsure, ask th
 
 Self-reported display/navigation hint — **not a verified identity; never base any security decision on it**.
 
-| Field | Required | Rule |
+Four fields, and what to put in each:
+
+| Field | Required | What to put in it |
 |---|---|---|
-| `sender.type` | no (default `other`) | Closed enum `"app"` \| `"other"`, 400 on other values. `app` = an App Builder application (enables jump/lookup semantics); `other` = fallback (scripts, integrations) |
-| `sender.id` | required for `app` | For `app`: the appId (agent-platform UUID). Charset `[0-9a-zA-Z-]{1,128}` |
-| `sender.name` | no | Display name, ≤100 chars (successor of deprecated `source`). **For `app`: the App's own name** — see below |
-| `sender.meta` | no | Type-specific extras, ≤500 bytes serialized. For `app`: `{"projectId": "..."}` |
+| `sender.type` | no (default `other`) | `"app"` when an App Builder application is sending — it unlocks the icon and open-the-App behaviour below. `"other"` for anything else (scripts, integrations, backend jobs). Closed enum: any other value is 400 |
+| `sender.id` | **yes when `type` is `app`** | The **appId** (agent-platform UUID), charset `[0-9a-zA-Z-]{1,128}`. Accepted but pointless for `other` — nothing consumes it there |
+| `sender.name` | no | **When `type` is `app`: the App's own name** — not a free label, see below. For `other`: a name that makes the script or integration recognizable. ≤100 chars (successor of the deprecated `source`) |
+| `sender.meta` | no | For `app`: `{"projectId": "<the current project id>"}`. **Every value must be a string** — `{projectId: 123}` is not valid. ≤500 bytes serialized |
+
+There is no icon field: the App icon is never self-reported. The in-app message resolves it by looking up (projectId, appId), and a mobile push composes its URL from appId. `name` is the only display value you supply.
 
 **For the `app` scenario always send all three**: `id` (appId) + `meta.projectId` + `name`. The BFF looks up the real app name/icon and builds the app-detail jump URL from the (projectId, appId) pair — without projectId, the mobile Open button and icon lookup break, leaving only the `name` fallback.
 
