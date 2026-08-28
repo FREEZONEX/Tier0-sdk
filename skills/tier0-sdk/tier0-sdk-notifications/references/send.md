@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.5.2
+version: 0.5.3
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -265,6 +265,8 @@ const resp = await notificationsApi.openapiv1notificationssend({
   content: 'The weekly inventory report is available on the Reports page.',
   idempotencyKey: 'inventory-weekly-2026W35',
   // no channels = silent: inbox only, no reminder
+  // an `other` sender has nothing to look up, so it must name itself
+  sender: { type: 'other', name: 'Inventory reporter' },
 });
 console.log(resp.messageId, resp.status); // "71234..." "accepted"
 ```
