@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-uns
-version: 1.1.0
+version: 1.2.0
 description: "Tier0 SDK UNS operations and modeling for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. Use it to browse/search namespace nodes, create/update/delete/restore modeled topics, read current VQT values, write data, query history, design topic schemas, integrate app-owned data, and choose UNS versus an app database. Use for any @tier0/sdk task involving UNS paths or topic data. Continuous/realtime receive routes to tier0-sdk-mq."
 metadata:
   requires:
@@ -18,6 +18,7 @@ metadata:
 - Create modeled topics explicitly before writing or publishing. Never rely on lazy creation.
 - Never guess request payload shapes or field values. Read the matching endpoint reference before composing a body.
 - Inspect both the outer batch result and every item-level `success` value.
+- When an App repeatedly displays a business statistic across many source topics or dimensions, do not scan and calculate raw history in every page request. Read [`../references/app-statistics-design.md`](../references/app-statistics-design.md) and model bounded statistic topics that a Source Flow maintains continuously.
 
 ## Receive Strategy
 
@@ -49,3 +50,4 @@ metadata:
 4. History is used only when enabled.
 5. Batch item failures are handled.
 6. Large history reads omit pagination for automatic sampling, or explicitly use `countMode: 'none'` and paginate with `hasMore` when an exact total is unnecessary.
+7. Reusable dashboard statistics read exact, pre-modeled statistic topics; arbitrary high-cardinality analytics remain in an App-owned analytical store instead of creating an unbounded topic cube.

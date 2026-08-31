@@ -59,6 +59,12 @@ number or size of returned values. Reduce `size`, use automatic sampling or
 aggregation, and batch topics when the response body is the bottleneck. Never
 treat `size` as a request-wide limit.
 
+### 业务统计边界
+
+自动稀疏、免 COUNT 和 SQL 聚合优化的是一次历史查询，不会自动获得“范围累计量”“分类占比”“跨实体合计”等业务语义。对于会被看板反复访问、需要跨大量源 topic 或按多个业务维度统计的需求，不要在每次页面请求中遍历原始历史再计算。
+
+这类需求应按 [`../../references/app-statistics-design.md`](../../references/app-statistics-design.md) 设计：由 Source Flow 持续维护有界的 Current 与时间桶 statistic topics，App 服务一次读取页面所需的精确 topic 列表，再返回前端 DTO。只有少量 topic 的临时分析或展示降采样，才直接使用本接口的 `aggregation` 或自动稀疏。
+
 ### aggregation 结构
 
 | 字段 | 类型 | 必填 | 说明 |

@@ -3,6 +3,12 @@ import { describe, expect, it } from 'vitest';
 
 const rootSkillUrl = new URL('../skills/tier0-sdk/SKILL.md', import.meta.url);
 const filesSkillUrl = new URL('../skills/tier0-sdk/tier0-sdk-files/SKILL.md', import.meta.url);
+const unsSkillUrl = new URL('../skills/tier0-sdk/tier0-sdk-uns/SKILL.md', import.meta.url);
+const flowSkillUrl = new URL('../skills/tier0-sdk/tier0-sdk-flow/SKILL.md', import.meta.url);
+const statisticsReferenceUrl = new URL(
+  '../skills/tier0-sdk/references/app-statistics-design.md',
+  import.meta.url,
+);
 const packageUrl = new URL('../package.json', import.meta.url);
 
 function rootDescription(): string {
@@ -47,5 +53,47 @@ describe('single-root Skill routing', () => {
       name: 'tier0-sdk-files',
       path: './skills/tier0-sdk/tier0-sdk-files',
     });
+  });
+
+  it('routes statistics requirements inside an App to reusable UNS and Flow guidance', () => {
+    const description = rootDescription();
+    const rootSkill = readFileSync(rootSkillUrl, 'utf8');
+    const unsSkill = readFileSync(unsSkillUrl, 'utf8');
+    const flowSkill = readFileSync(flowSkillUrl, 'utf8');
+    const statisticsReference = readFileSync(statisticsReferenceUrl, 'utf8');
+
+    for (const intent of [
+      /统计|statistic/i,
+      /Dashboard/i,
+      /Trend/i,
+      /范围分布|scope distribution/i,
+      /同比|period comparison/i,
+      /多维统计|multi-dimensional/i,
+    ]) {
+      expect(description).toMatch(intent);
+    }
+
+    expect(existsSync(statisticsReferenceUrl)).toBe(true);
+    expect(rootSkill).toContain('references/app-statistics-design.md');
+    expect(unsSkill).toContain('../references/app-statistics-design.md');
+    expect(flowSkill).toContain('../references/app-statistics-design.md');
+
+    for (const requiredGuidance of [
+      'App 中涉及统计需求时的设计',
+      '示例 1：范围 Dashboard 与当前周期总览',
+      '示例 2：电、水、热用量趋势',
+      '示例 3：范围分布',
+      '示例 4：多维分析',
+      '示例 5：同比、环比和连续周期比较',
+      '/_Statistics/',
+      'Source Flow',
+      'getTier0UnsApi',
+      "countMode: 'none'",
+      '一次页面级 bundle 请求',
+    ]) {
+      expect(statisticsReference).toContain(requiredGuidance);
+    }
+
+    expect(statisticsReference).not.toMatch(/SmartMeter|SmartCity|Ras_Tanura|\b602\b|\b202\b/);
   });
 });

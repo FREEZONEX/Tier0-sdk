@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-flow
-version: 1.3.0
+version: 1.4.0
 description: "Tier0 SDK Flow management for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. Use it to create, list, inspect, rename/update, read Node-RED nodes or flowdata, deploy canvas JSON, and delete SourceFlow/EventFlow resources through Tier0 OpenAPI; or expose and invoke application HTTP endpoints built with Node-RED http in/http response nodes through /flow/{source|event}. Use for @tier0/sdk Flow, Node-RED lifecycle, webhook, or Flow HTTP endpoint tasks."
 metadata:
   requires:
@@ -19,6 +19,7 @@ metadata:
 - Use the Tier0 CLI Skill protocol references when constructing SourceFlow/EventFlow Node-RED protocol JSON.
 - Use only the platform `flowApi` methods documented below for Flow management. Do not attempt management operations through `/flow/{source|event}/**`.
 - Use `/flow/{source|event}/**` only to invoke user-defined `http in` endpoints. Build an `http in -> processing -> http response` chain and read the dedicated HTTP endpoint reference.
+- When a Flow maintains statistics for an App's Dashboard, Trend, scope distribution, period comparison, or multi-dimensional analysis, first read [`../references/app-statistics-design.md`](../references/app-statistics-design.md). Keep its accumulator state recoverable, exclude the statistic output namespace from its own input, and publish only pre-modeled statistic topics.
 
 ## References
 
@@ -33,6 +34,7 @@ metadata:
 | Deploy canvas | [`references/deploy.md`](references/deploy.md) |
 | Delete | [`references/delete.md`](references/delete.md) |
 | Expose or invoke an `http in` endpoint | [`references/http-endpoints.md`](references/http-endpoints.md) |
+| Materialize reusable statistics required inside an App into UNS | [`../references/app-statistics-design.md`](../references/app-statistics-design.md) |
 
 ## 可调用接口速查（完整契约）
 
@@ -83,3 +85,4 @@ EventFlow:  {TIER0_API_HOST}/flow/event/<http-in path>
 2. The system MQTT broker node and ID are preserved.
 3. Deploy sends the intended full canvas.
 4. Every user-defined `http in` route ends in `http response` and is called with the required API-key permission.
+5. Statistical Flows have restart recovery, deduplication, bucket/time-zone rules, and no feedback loop from their output topics.
