@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk
-version: 0.4.1
-description: "Tier0 SDK 单根聚合路由及 TypeScript/JavaScript 共享配置。用于 Tier0 配置、UNS 数据、MQTT 实时订阅、Flow/Node-RED HTTP 接口、成员、通知和系统能力；Builder 在任意 App 中实现 Dashboard、Trend、范围分布、同比/环比或多维统计/multi-dimensional analytics 等统计需求时也必须触发，用于设计 UNS topic、Flow 物化、统计数据结构、App 服务和前端调用；当应用需要文件上传/upload、附件/attachment、头像/avatar、文件导入/import、生成或导出文件/报表、持久化文件、访问链接、下载或删除时也必须触发，即使用户未提到 Tier0、SDK、S3 或对象存储。业务运行时文件必须路由到 tier0-sdk-files 并使用 @tier0/sdk/files，不能持久化到 Sandbox/本地目录、public/ 或数据库 Blob。源码、随版本发布的静态资源、构建产物和可丢弃的临时处理文件除外。"
+version: 0.4.2
+description: "Tier0 SDK 单根聚合路由及 TypeScript/JavaScript 共享配置。用于 Tier0 配置、UNS 数据、MQTT 实时订阅、Flow/Node-RED HTTP 接口、成员、通知和系统能力；Builder 在使用 Tier0 数据能力或运行于 Tier0 托管环境的 App 中实现 Dashboard、Trend、范围分布、同比/环比或多维统计/multi-dimensional analytics 等统计需求时也必须触发，用于设计 UNS topic、Flow 物化、统计数据结构、App 服务和前端调用；当应用需要文件上传/upload、附件/attachment、头像/avatar、文件导入/import、生成或导出文件/报表、持久化文件、访问链接、下载或删除时也必须触发，即使用户未提到 Tier0、SDK、S3 或对象存储。业务运行时文件必须路由到 tier0-sdk-files 并使用 @tier0/sdk/files，不能持久化到 Sandbox/本地目录、public/ 或数据库 Blob。源码、随版本发布的静态资源、构建产物和可丢弃的临时处理文件除外。"
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -15,7 +15,7 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 
 1. Check the published version with `npm view @tier0/sdk version` and use the latest release. In a managed MonoApp, update `package.json` and let the platform install dependencies.
 2. Before making any actual `@tier0/sdk` call, read [`references/configuration.md`](references/configuration.md). This requirement applies even when a client already exists; verify host, credentials, runtime boundary, and project context instead of assuming them.
-3. When an App includes Dashboard, Trend, scope distribution, period comparison, or multi-dimensional statistics, read [`references/app-statistics-design.md`](references/app-statistics-design.md) before designing topics, Flow logic, data services, or frontend requests.
+3. When a Tier0-backed App or an App running in the managed Tier0 environment includes Dashboard, Trend, scope distribution, period comparison, or multi-dimensional statistics, read [`references/app-statistics-design.md`](references/app-statistics-design.md) before designing topics, Flow logic, data services, or frontend requests. Do not route an App backed only by another API or database to this Tier0 statistics design.
 4. Route the task to the matching domain Skill below and read that Skill before writing code.
 5. Import an official SDK entry point. Do not hand-write replacement REST, MQTT, object-storage, or environment-resolution clients.
 6. Keep SDK calls in services, workers, server actions, API routes, hooks, or stores; expose business-domain objects to UI components.
@@ -70,7 +70,7 @@ This rule does not apply to source files, static assets intentionally shipped wi
 | UNS modeling, browse/search, read/write/history, topic lifecycle, app data integration | [`tier0-sdk-uns/SKILL.md`](tier0-sdk-uns/SKILL.md) |
 | Continuous/realtime receive, MQTT subscribe/publish, connection lifecycle | [`tier0-sdk-mq/SKILL.md`](tier0-sdk-mq/SKILL.md) |
 | Flow/Node-RED create, inspect, edit, deploy, delete, or expose/invoke an `http in` endpoint or webhook | [`tier0-sdk-flow/SKILL.md`](tier0-sdk-flow/SKILL.md) |
-| Statistics requirements inside an App: Dashboard, Trend, scope distribution, period comparison, or multi-dimensional analysis | [`references/app-statistics-design.md`](references/app-statistics-design.md), then the UNS and Flow Skills |
+| Statistics requirements inside a Tier0-backed or managed Tier0 App: Dashboard, Trend, scope distribution, period comparison, or multi-dimensional analysis | [`references/app-statistics-design.md`](references/app-statistics-design.md), then the UNS and Flow Skills |
 | File upload, attachment, avatar, import, generated/exported file or report, persistent storage, access URL, download, or deletion—even without an explicit SDK request | [`tier0-sdk-files/SKILL.md`](tier0-sdk-files/SKILL.md) |
 | Launchpad project members or platform/workspace members and roles | [`tier0-sdk-members/SKILL.md`](tier0-sdk-members/SKILL.md) |
 | Select a recipient by human identity, send an in-app notification (inbox + optional web/mobile push), or query delivery status. Never ask an end user for a user ID | [`tier0-sdk-notifications/SKILL.md`](tier0-sdk-notifications/SKILL.md) |

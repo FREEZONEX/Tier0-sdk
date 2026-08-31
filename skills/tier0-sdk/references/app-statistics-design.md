@@ -1,12 +1,12 @@
 ---
 name: tier0-sdk-app-statistics-design
-version: 0.2.0
-description: "Builder 在普通 Tier0 App 中实现统计需求时的设计方法，包括业务口径、UNS topic、Source Flow、数据结构、App 服务和前端单次调用。"
+version: 0.2.1
+description: "Builder 在使用 Tier0 数据能力或运行于 Tier0 托管环境的 App 中实现统计需求时的设计方法，包括业务口径、UNS topic、Source Flow、数据结构、App 服务和前端单次调用。"
 ---
 
 # App 中涉及统计需求时的设计
 
-当一个普通 App 包含 Dashboard、Trend、范围分布、多维分析或同比/环比等统计需求时，先完成统计数据链路设计，再写页面。
+当一个使用 Tier0 数据能力或运行于 Tier0 托管环境的 App 包含 Dashboard、Trend、范围分布、多维分析或同比/环比等统计需求时，先完成统计数据链路设计，再写页面。仅使用其他 API 或数据库、没有 Tier0 依赖的 App 不适用本文。
 
 本文的业务示例来自一个真实的综合表计 App，已经泛化掉项目名、设备数量和完整业务字段。它不是要求 Builder 生成一类独立的“统计 App”，而是要求任何 App 在出现统计需求时，正确设计原始数据、UNS 统计 topic、Flow 物化、App 服务和前端调用。
 
@@ -28,7 +28,7 @@ description: "Builder 在普通 Tier0 App 中实现统计需求时的设计方�
 原始 Telemetry / Daily / Monthly topics
   -> Source Flow：目录映射、业务时间、去重、增量、范围汇总、分桶、校准
   -> _Statistics：Current + Hourly/Daily/Monthly/Yearly 等有界统计 topics
-  -> App Server：选择范围和粒度，一次批量 read/history，组合 App DB 数据
+  -> App Server：选择范围和粒度，执行受控批量 read/history，组合 App DB 数据
   -> Frontend：一次页面级 bundle 请求，直接渲染业务 DTO
 ```
 
@@ -37,7 +37,7 @@ description: "Builder 在普通 Tier0 App 中实现统计需求时的设计方�
 - 高频访问且口径固定的统计，在数据到达时持续物化，不在页面请求时扫描所有原始 topic。
 - 前端不认识 UNS topic、VQT、分页、`first/last` 或统计公式；这些都属于 App 服务层和 Flow。
 - 一个页面按“数据集”请求，不按“KPI 卡片”请求。同一批数据必须同时服务总量、趋势、范围分布和周期比较等多个组件。
-- “一次页面调用”指浏览器只调用一个 App bundle。App 服务可以并行执行一个有界 UNS 请求和 App DB 查询，但不能循环发出几十次原始 history。
+- “一次页面调用”指浏览器只调用一个 App bundle。App 服务可以把精确 topic 列表按每批 50–100 个拆成少数有界 UNS 请求，总并发不超过 2，并与 App DB 查询并行；不能循环发出几十次原始 history。
 - 不把图表类型当成数据模型。先定义业务指标、范围、时间语义和可加性，再决定折线图、饼图或表格。
 
 ### 1.2 三种实现方式
@@ -84,24 +84,26 @@ UNS statistic topics 适合表达可共享、持续更新、范围和维度有�
 
 范围成员关系必须来自 App 目录或明确配置，并保存 `leaf/subtotal/excluded`、有效期、权重和加入偏移。不能仅凭 topic 字符串猜归属，也不能把总表和分表同时计入上级范围。
 
+统计范围 topic 是固定 schema 规则的受限例外。只有产品预先声明、数量有硬上限、需要独立 retained Current 或独立历史的聚合范围才允许占用路径段；路径使用不含 `/` 的人类可读稳定 `scopeSlug`，不能使用 UUID、数据库主键或用户查询值。Topic manifest 必须列出范围并声明正整数 `maxStatisticScopes`，新增范围走 manifest 变更，达到上限后拒绝创建，禁止根据 App 目录记录在运行时无限建 topic。普通设备、订单、客户等实体仍使用共享 topic，并把实例 id 放进 payload。
+
 ### 3.2 Topic 家族
 
 沿用一个范围、一个粒度、一个组合 payload 的设计，使同一响应可同时派生多个指标：
 
 ```text
-{namespace}/_Statistics/{scopeType}/{scopeId}/Metric/Current
-{namespace}/_Statistics/{scopeType}/{scopeId}/Metric/Minute
-{namespace}/_Statistics/{scopeType}/{scopeId}/Metric/Hourly
-{namespace}/_Statistics/{scopeType}/{scopeId}/Metric/Daily
-{namespace}/_Statistics/{scopeType}/{scopeId}/Metric/Monthly
-{namespace}/_Statistics/{scopeType}/{scopeId}/Metric/Yearly
+{namespace}/_Statistics/{scopeType}/{scopeSlug}/Metric/Current
+{namespace}/_Statistics/{scopeType}/{scopeSlug}/Metric/Minute
+{namespace}/_Statistics/{scopeType}/{scopeSlug}/Metric/Hourly
+{namespace}/_Statistics/{scopeType}/{scopeSlug}/Metric/Daily
+{namespace}/_Statistics/{scopeType}/{scopeSlug}/Metric/Monthly
+{namespace}/_Statistics/{scopeType}/{scopeSlug}/Metric/Yearly
 ```
 
 约束：
 
 - 所有叶子符合 `.../(Metric|Action|State)/<leaf>`，统计结果通常使用 `Metric`。
 - topic 必须在 App 初始化阶段通过 UNS `create` 显式建模，禁止依赖首次 publish 懒创建。
-- `Current` 通常 `enableHistory: false` 并 retained，只保存最新统计包。
+- `Current` 创建时通常设置 `enableHistory: false`；Publisher 每次写入 Current 时必须在 UNS write 或 MQTT publish 上显式设置 `retain: true`，只保存最新统计包。`retain` 是写入参数，不是 topic schema 属性。
 - 时间桶 topic 开启 history；`WriteItem.timeStamp` 使用业务周期的 `periodEnd`，不是 Flow 补算或接收时间。
 - 只创建页面实际使用的粒度。Minute 通常只用于 Root 或少量高频范围，Building 可从 Hourly/Daily 开始。
 - 输入订阅必须排除 `{namespace}/_Statistics/#`，防止 Flow 消费自己的统计输出。
@@ -117,7 +119,7 @@ UNS statistic topics 适合表达可共享、持续更新、范围和维度有�
 | `Monthly` | 同比和多年趋势 | 240 点 |
 | `Yearly` | 多年汇总 | 按产品窗口限制 |
 
-App 根据时间范围选择已经预计算的最粗可用粒度。超过点数上限时切换 topic，不通过翻页拼接细粒度大响应。
+App 根据时间范围选择满足展示要求且不超过点数上限的最细可用粒度。超过上限时逐级切换到更粗的 topic，不通过翻页拼接细粒度大响应。
 
 ### 3.4 最小 payload 片段
 
@@ -131,6 +133,7 @@ type CurrentStatistics = {
   actualCount: number;
   expectedCount: number;
   revision: number;
+  statusCode?: string;
 };
 
 type PeriodStatistics = {
@@ -140,6 +143,7 @@ type PeriodStatistics = {
   actualCount: number;
   expectedCount: number;
   revision: number;
+  statusCode?: string;
 };
 ```
 
@@ -171,6 +175,8 @@ valueKind(register | interval | gauge), value, quality, fingerprint
 
 去重键至少包含源、profile、业务时间和 payload hash。相同业务时间但内容发生变化时视为修订，而不是重复累加。无效 schema、坏质量和 `/_Statistics/` 输出 topic 必须在这里拦截。
 
+累计源必须按 `sourceKey` 维护事件时间缓冲区：`maxSeenBusinessTime`、`watermark`、按 `businessTime` 排序的 `pendingEvents` 和 `lastAppliedBusinessTime`。在允许迟到窗口内，只按业务时间顺序释放 `businessTime <= watermark` 的事件给 Meter Delta。已经早于 `lastAppliedBusinessTime` 才到达的事件或历史修订不能直接与最新 cursor 求差，必须进入该源受影响窗口的重算队列，再由 Reconcile 修正相关桶。
+
 ### Flow 3：Meter Delta
 
 为每个累计源保存持久 cursor：
@@ -191,7 +197,7 @@ delta      = normalized - lastNormalizedUsage
 
 - 重复值产生 `delta=0`，不重复累计。
 - 可确认 reset/rollover/换表时开启新 epoch，但范围累计不归零。
-- 无法解释的下降不写负用量，标记 Invalid 并进入补算队列。
+- 无法解释的下降不写负用量，将来源 VQT `quality` 标为 `Bad`，并把业务字段 `statusCode` 标为 `Invalid` 后进入补算队列；`Invalid` 不是 VQT quality。
 - 直接区间值跳过 register delta，按业务时间归桶。
 
 ### Flow 4：Scope Accumulator
@@ -216,9 +222,10 @@ scopeCurrent = scopeCurrent - entityPrevious + entityCurrent
 
 ### Flow 5：Close Period and Publish
 
-- Current：有效事件后合并写入，避免同一批上报造成写放大。
+- Current：有效事件后合并写入，避免同一批上报造成写放大；调用 UNS write 或 MQTT publish 时显式设置 `retain: true`。
 - Minute/Hourly/Daily/Monthly/Yearly：按业务时区封桶。
-- 每个桶使用确定的业务键，写 `revision`、`quality`、`actualCount/expectedCount`。
+- Current 和时间桶必须分开写；时间桶通常使用 `retain: false`，不能把 `retain` 当作 UNS create 参数。
+- 每个桶使用确定的业务键；payload 写 `revision`、`actualCount/expectedCount`，`WriteItem` 顶层写受支持的 VQT `quality`。
 - `timeStamp=periodEnd`；开放桶只更新 Current，关闭桶才写 history。
 - 写失败进入有界重试和死信，不静默丢失。
 
@@ -229,7 +236,7 @@ scopeCurrent = scopeCurrent - entityPrevious + entityCurrent
 1. 找到受影响的小时、日、月、年桶。
 2. 重算正确值，并以 `correction = newValue - oldValue` 修正所有上级范围。
 3. 结果未变化时不发布；变化时增加 revision。
-4. App 对相同范围、粒度和周期只使用最高 revision 且非 Invalid 的记录。
+4. App 对相同范围、粒度和周期只使用最高 revision，并过滤 VQT `quality=Bad` 或业务字段 `statusCode=Invalid` 的记录。
 5. Flow 重启后从持久 context 恢复，并只补最近小窗口，不扫描全部历史。
 
 持久状态可使用平台允许的 Redis 或 Node-RED 持久 context。不能只放进程内存。
@@ -250,34 +257,46 @@ getPeriodComparisonBundle(scope, range)
 
 这些入口只接收业务范围、窗口和允许的筛选项，不接收浏览器提交的任意 topic。topic allowlist、范围成员、粒度选择和字段映射全部留在服务端。
 
-### 5.2 一次批量读取
+### 5.2 单次 App bundle 内的受控批量读取
 
 MonoApp 服务端通过 `getTier0UnsApi()` 延迟加载 SDK。下面示例只展示调用形态：
 
 ```typescript
 import { getTier0UnsApi } from '@/lib/tier0';
 
-const MAX_POINTS = 1200;
+const MAX_POINTS_PER_TOPIC = 1500;
+const TOPICS_PER_REQUEST = 100;
+const MAX_UNS_CONCURRENCY = 2;
 
 export async function getAnalyticsBundle(input: AnalyticsQuery) {
   const plan = resolveStatisticsPlan(input); // 服务端 allowlist
   const unsApi = await getTier0UnsApi();
-  const response = await unsApi.openapiv1unshistory({
-    topics: plan.scopeTopics,
-    start_time: plan.start.toISOString(),
-    end_time: plan.end.toISOString(),
-    page: 1,
-    size: MAX_POINTS,
-    countMode: 'none',
-  });
+  assertExpectedPointsAtMost(plan, MAX_POINTS_PER_TOPIC);
+  const topicBatches = chunk(plan.scopeTopics, TOPICS_PER_REQUEST);
+  const responses = await mapWithConcurrency(
+    topicBatches,
+    MAX_UNS_CONCURRENCY,
+    topics => unsApi.openapiv1unshistory({
+      topics,
+      start_time: plan.start.toISOString(),
+      end_time: plan.end.toISOString(),
+      page: 1,
+      size: MAX_POINTS_PER_TOPIC,
+      countMode: 'none',
+    }),
+  );
 
-  assertBatchSuccess(response);
-  assertNoTruncation(response); // 每项 meta.hasMore 都必须为 false
-  return buildAnalyticsDto(response, plan);
+  for (const response of responses) {
+    assertBatchSuccess(response);
+    assertNoTruncation(response); // 每项 meta.hasMore 都必须为 false
+  }
+  return buildAnalyticsDto(mergeBatchResponses(responses), plan);
 }
 ```
 
-Dashboard 对精确 Current topics 执行一次 `openapiv1unsread`。范围目录或页面权限等 App DB 查询可以与 UNS 请求放入同一个 `Promise.all`，最终仍只暴露一个前端 bundle。
+`chunk` 和 `mapWithConcurrency` 是 App 服务层的有界批处理辅助函数。Planner 必须先选择满足展示要求且预计每个 topic 不超过 1,500 点的最细可用粒度；24 小时 Minute 最多约 1,440 点。若仍出现 `hasMore=true`，应拒绝该计划并选择更粗的统计 topic，不能在页面请求内继续翻页拼接。批量 Current `read` 也遵守每批 50–100 topics、总并发不超过 2 的预算。
+
+Dashboard 对精确 Current topics 执行一次逻辑批量读取；超过 100 个 topics 时按上述预算拆批。范围目录或页面权限等 App DB 查询可以与 UNS 请求放入同一个 `Promise.all`，最终仍只暴露一个前端 bundle。
 
 ### 5.3 前端边界
 
@@ -311,7 +330,7 @@ const bundle = await fetch(apiUrl(`/api/analytics/bundle?${query}`)).then(r => {
 
 - **UNS**：按跨度选择同一范围的 Hourly、Daily、Monthly 或 Yearly；同一个 period payload 包含所需资源字段。
 - **Flow**：累计寄存器先转 delta，直接区间值直接归桶，再按范围汇总和封桶。
-- **App**：一次 history 返回所有资源 series；不同单位分别生成曲线，不能跨单位相加。
+- **App**：单次页面 bundle 内的受控 history 批次返回所有资源 series；不同单位分别生成曲线，不能跨单位相加。
 - **前端**：从同一个 bundle 切换指标，不重新请求同一时间窗。
 
 ### 示例 3：范围分布
@@ -320,7 +339,7 @@ const bundle = await fetch(apiUrl(`/api/analytics/bundle?${query}`)).then(r => {
 
 - **UNS**：当前分布批量 read 各子范围 Current；周期分布批量 history 各子范围 Daily/Monthly。
 - **Flow**：Catalog 维护父子范围和成员有效期；Scope Accumulator 为每个子范围维护相同口径的统计 topic。
-- **App**：一次批量读取后排序、计算占比和 Top N；topic 数等于参与展示的子范围数，不等于原始实体数。
+- **App**：在单次页面 bundle 内按每批 50–100 topics、总并发不超过 2 读取后排序、计算占比和 Top N；topic 数等于参与展示的受控子范围数，不等于原始实体数。
 - **前端**：饼图、条形图和排行榜复用同一个 distribution DTO，不分别请求。
 
 ### 示例 4：多维分析
@@ -329,7 +348,7 @@ const bundle = await fetch(apiUrl(`/api/analytics/bundle?${query}`)).then(r => {
 
 - **UNS**：Region/Building 等既有范围直接复用；高频且成员有限的其他维度建为稳定 `Dimension` 范围 topic。
 - **Flow**：Catalog 保存维度成员和有效期；每条 delta 只 fan-out 到产品声明的范围和维度，不生成任意笛卡尔积。
-- **App**：把所选维度成员的同粒度 topics 放进一次 read/history，在内存中 pivot 成 series、matrix 或 ranking DTO。
+- **App**：把所选维度成员的同粒度 topics 放进同一个受控批次计划，在内存中 pivot 成 series、matrix 或 ranking DTO。
 - **边界**：如果用户需要任意字段和任意组合钻取，改用 App 分析表或数仓。
 
 ### 示例 5：同比、环比和连续周期比较
@@ -355,7 +374,8 @@ const bundle = await fetch(apiUrl(`/api/analytics/bundle?${query}`)).then(r => {
 ### 7.2 Topic manifest
 
 - 实际需要的 scope、粒度和固定维度。
-- 每个 topic 的 `enableHistory`、retain、最小 fields、单位和描述。
+- 每个 topic 的 `enableHistory`、最小 fields、单位和描述。
+- 统计范围的稳定 `scopeSlug`、正整数 `maxStatisticScopes`、范围清单和 manifest 变更流程；禁止 UUID、数据库主键和运行时无限建 topic。
 - `timeStamp=periodEnd` 与 point limit。
 - 显式创建顺序和版本升级策略。
 
@@ -364,12 +384,14 @@ const bundle = await fetch(apiUrl(`/api/analytics/bundle?${query}`)).then(r => {
 - Catalog、Normalize、Delta、Accumulator、Publisher、Reconcile 六段输入输出。
 - 去重键、持久 cursor、range membership、joinOffset 和 correction。
 - 业务时区、水位线、迟到数据、revision、重启恢复和死信。
+- 累计事件按业务时间缓冲排序；越过水位线的迟到/修订走受影响窗口重算，不能直接推进最新 cursor。
+- Publisher 的写入契约：Current 单独写并显式 `retain: true`，时间桶通常 `retain: false`。
 - 防止 `/_Statistics/` 反馈环路。
 
 ### 7.4 App API contract
 
 - 页面级 bundle、服务端 topic allowlist 和粒度选择。
-- 一个 read/history 的请求预算、`countMode: 'none'` 和 `hasMore=false` 断言。
+- 单次页面 bundle 的 read/history 批次预算：每批 50–100 topics、总并发不超过 2、`countMode: 'none'` 和 `hasMore=false` 断言。
 - UNS 与 App DB 的并行组合边界。
 - 缓存键、TTL、请求合并、取消和稳定 DTO。
 
@@ -380,7 +402,7 @@ const bundle = await fetch(apiUrl(`/api/analytics/bundle?${query}`)).then(r => {
 最终验收必须确认：
 
 1. Dashboard 每次加载只有一个页面 bundle，统计主路径不遍历原始实体 history。
-2. Analytics 每次筛选使用一个有界 history；topic 数只与选择的范围数有关。
+2. Analytics 每次筛选使用一个有界批次计划；每批不超过 100 topics、总并发不超过 2，topic 总数只与选择的受控范围数有关。
 3. 同比/环比的当前、上一周期和去年同期来自同一批统计记录。
 4. 范围分布和多维分析的 topic 数只与受控范围/维度成员有关，不与原始实体数线性增长。
 5. 原始 history 不会成为 Dashboard、Trend、范围分布、多维分析或同比/环比的隐藏兜底。

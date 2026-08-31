@@ -90,10 +90,25 @@ describe('single-root Skill routing', () => {
       'getTier0UnsApi',
       "countMode: 'none'",
       '一次页面级 bundle 请求',
+      'Tier0 托管环境',
+      'MAX_POINTS_PER_TOPIC = 1500',
+      'TOPICS_PER_REQUEST = 100',
+      'MAX_UNS_CONCURRENCY = 2',
+      'scopeSlug',
+      'maxStatisticScopes',
+      'statusCode',
+      '`quality` 标为 `Bad`',
+      '`retain: true`',
+      '事件时间缓冲区',
     ]) {
       expect(statisticsReference).toContain(requiredGuidance);
     }
 
+    expect(description).toMatch(/Tier0 数据能力|Tier0 托管环境/);
+    expect(rootSkill).toContain('Do not route an App backed only by another API or database');
+    expect(statisticsReference).toContain('`retain` 是写入参数，不是 topic schema 属性');
+    expect(statisticsReference).toContain('`Invalid` 不是 VQT quality');
+    expect(statisticsReference).not.toContain('`enableHistory`、retain');
     expect(statisticsReference).not.toMatch(/SmartMeter|SmartCity|Ras_Tanura|\b602\b|\b202\b/);
   });
 });
