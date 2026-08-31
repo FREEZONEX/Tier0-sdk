@@ -3,10 +3,12 @@ import { describe, expect, it } from 'vitest';
 
 const rootSkillUrl = new URL('../skills/tier0-sdk/SKILL.md', import.meta.url);
 const filesSkillUrl = new URL('../skills/tier0-sdk/tier0-sdk-files/SKILL.md', import.meta.url);
-const unsSkillUrl = new URL('../skills/tier0-sdk/tier0-sdk-uns/SKILL.md', import.meta.url);
-const flowSkillUrl = new URL('../skills/tier0-sdk/tier0-sdk-flow/SKILL.md', import.meta.url);
-const statisticsReferenceUrl = new URL(
-  '../skills/tier0-sdk/references/app-statistics-design.md',
+const historyReferenceUrl = new URL(
+  '../skills/tier0-sdk/tier0-sdk-uns/references/history.md',
+  import.meta.url,
+);
+const monoAppReferenceUrl = new URL(
+  '../skills/tier0-sdk/references/scaffold-monoapp.md',
   import.meta.url,
 );
 const packageUrl = new URL('../package.json', import.meta.url);
@@ -55,60 +57,20 @@ describe('single-root Skill routing', () => {
     });
   });
 
-  it('routes statistics requirements inside an App to reusable UNS and Flow guidance', () => {
+  it('routes generated App history views to server-side UNS history guidance', () => {
     const description = rootDescription();
     const rootSkill = readFileSync(rootSkillUrl, 'utf8');
-    const unsSkill = readFileSync(unsSkillUrl, 'utf8');
-    const flowSkill = readFileSync(flowSkillUrl, 'utf8');
-    const statisticsReference = readFileSync(statisticsReferenceUrl, 'utf8');
+    const historyReference = readFileSync(historyReferenceUrl, 'utf8');
+    const monoAppReference = readFileSync(monoAppReferenceUrl, 'utf8');
 
-    for (const intent of [
-      /统计|statistic/i,
-      /Dashboard/i,
-      /Trend/i,
-      /范围分布|scope distribution/i,
-      /同比|period comparison/i,
-      /多维统计|multi-dimensional/i,
-    ]) {
-      expect(description).toMatch(intent);
-    }
-
-    expect(existsSync(statisticsReferenceUrl)).toBe(true);
-    expect(rootSkill).toContain('references/app-statistics-design.md');
-    expect(unsSkill).toContain('../references/app-statistics-design.md');
-    expect(flowSkill).toContain('../references/app-statistics-design.md');
-
-    for (const requiredGuidance of [
-      'App 统计需求设计',
-      '范围 Dashboard 与当前周期总览',
-      '电、水、热用量趋势',
-      '范围分布',
-      '多维分析',
-      '同比、环比',
-      '/_Statistics/',
-      'Source Flow',
-      'getTier0UnsApi',
-      "countMode: 'none'",
-      '一次页面级 bundle 请求',
-      'Tier0 托管环境',
-      'MAX_POINTS_PER_TOPIC = 1500',
-      'TOPICS_PER_REQUEST = 100',
-      'MAX_UNS_CONCURRENCY = 2',
-      'scopeSlug',
-      'maxStatisticScopes',
-      'statusCode',
-      '`quality=Bad`',
-      '`retain: true`',
-      '业务时间缓冲区',
-    ]) {
-      expect(statisticsReference).toContain(requiredGuidance);
-    }
-
-    expect(description).toMatch(/Tier0 数据能力|Tier0 托管环境/);
-    expect(rootSkill).toContain('Do not route an App backed only by another API or database');
-    expect(statisticsReference).toContain('`retain` 是写入参数，不是 topic schema 属性');
-    expect(statisticsReference).toContain('`Invalid` 不是 VQT quality');
-    expect(statisticsReference).not.toContain('`enableHistory`、retain');
-    expect(statisticsReference).not.toMatch(/SmartMeter|SmartCity|Ras_Tanura|\b602\b|\b202\b/);
+    expect(description).toMatch(/历史数据|history/i);
+    expect(description).toMatch(/趋势图|trend/i);
+    expect(rootSkill).toContain('tier0-sdk-uns/references/history.md');
+    expect(historyReference).toContain('getTier0UnsApi()');
+    expect(historyReference).toContain('openapiv1unshistory');
+    expect(historyReference).toContain("countMode: 'none'");
+    expect(historyReference).toContain('meta.hasMore');
+    expect(monoAppReference).toContain('../../tier0-sdk-uns/references/history.md');
+    expect(monoAppReference).toContain('OpenAPI `history` is for bounded time-range queries');
   });
 });

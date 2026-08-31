@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk
-version: 0.4.3
-description: "Tier0 SDK 单根聚合路由及 TypeScript/JavaScript 共享配置。用于 Tier0 配置、UNS 数据、MQTT 实时订阅、Flow/Node-RED HTTP 接口、成员、通知和系统能力；Tier0-backed 或 Tier0 托管环境中的 App，其 Dashboard、Trend、范围分布、同比/环比和多维统计需求也必须触发；应用涉及文件上传/upload、附件/attachment、头像/avatar、导入/import、生成或导出文件/报表、持久化文件、访问链接、下载或删除时也必须触发。业务运行时文件必须路由到 tier0-sdk-files 并使用 @tier0/sdk/files，不能持久化到 Sandbox/本地目录、public/ 或数据库 Blob。源码、随版本发布的静态资源、构建产物和可丢弃的临时文件除外。"
+version: 0.3.7
+description: "Tier0 SDK 单根聚合路由及 TypeScript/JavaScript 共享配置。用于 Tier0 配置、UNS 当前数据、历史数据/history、趋势图/trend、时间范围查询、MQTT 实时订阅、Flow/Node-RED HTTP 接口、成员、通知和系统能力；当应用需要文件上传/upload、附件/attachment、头像/avatar、文件导入/import、生成或导出文件/报表、持久化文件、访问链接、下载或删除时也必须触发，即使用户未提到 Tier0、SDK、S3 或对象存储。业务运行时文件必须路由到 tier0-sdk-files 并使用 @tier0/sdk/files，不能持久化到 Sandbox/本地目录、public/ 或数据库 Blob。源码、随版本发布的静态资源、构建产物和可丢弃的临时处理文件除外。"
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -15,11 +15,10 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 
 1. Check the published version with `npm view @tier0/sdk version` and use the latest release. In a managed MonoApp, update `package.json` and let the platform install dependencies.
 2. Before making any actual `@tier0/sdk` call, read [`references/configuration.md`](references/configuration.md). This requirement applies even when a client already exists; verify host, credentials, runtime boundary, and project context instead of assuming them.
-3. When a Tier0-backed App or an App running in the managed Tier0 environment includes Dashboard, Trend, scope distribution, period comparison, or multi-dimensional statistics, read [`references/app-statistics-design.md`](references/app-statistics-design.md) before designing topics, Flow logic, data services, or frontend requests. Do not route an App backed only by another API or database to this Tier0 statistics design.
-4. Route the task to the matching domain Skill below and read that Skill before writing code.
-5. Import an official SDK entry point. Do not hand-write replacement REST, MQTT, object-storage, or environment-resolution clients.
-6. Keep SDK calls in services, workers, server actions, API routes, hooks, or stores; expose business-domain objects to UI components.
-7. For MonoApp browser attachment downloads, read [`references/scaffold-monoapp.md`](references/scaffold-monoapp.md) and [`tier0-sdk-files/references/download.md`](tier0-sdk-files/references/download.md). Resolve the trusted `filePath` server-side, stream `downloadFile().response.body` through an authenticated same-origin route, and save the browser Blob with `<a download>`.
+3. Route the task to the matching domain Skill below and read that Skill before writing code.
+4. Import an official SDK entry point. Do not hand-write replacement REST, MQTT, object-storage, or environment-resolution clients.
+5. Keep SDK calls in services, workers, server actions, API routes, hooks, or stores; expose business-domain objects to UI components.
+6. For MonoApp browser attachment downloads, read [`references/scaffold-monoapp.md`](references/scaffold-monoapp.md) and [`tier0-sdk-files/references/download.md`](tier0-sdk-files/references/download.md). Resolve the trusted `filePath` server-side, stream `downloadFile().response.body` through an authenticated same-origin route, and save the browser Blob with `<a download>`.
 
 ## Mandatory File Routing
 
@@ -68,9 +67,9 @@ This rule does not apply to source files, static assets intentionally shipped wi
 | User need | Read |
 |---|---|
 | UNS modeling, browse/search, read/write/history, topic lifecycle, app data integration | [`tier0-sdk-uns/SKILL.md`](tier0-sdk-uns/SKILL.md) |
+| App history, trend chart, bounded time-range data, aggregate history, or MQTT reconnect backfill | [`tier0-sdk-uns/references/history.md`](tier0-sdk-uns/references/history.md); for MonoApp also read [`references/scaffold-monoapp.md`](references/scaffold-monoapp.md) |
 | Continuous/realtime receive, MQTT subscribe/publish, connection lifecycle | [`tier0-sdk-mq/SKILL.md`](tier0-sdk-mq/SKILL.md) |
 | Flow/Node-RED create, inspect, edit, deploy, delete, or expose/invoke an `http in` endpoint or webhook | [`tier0-sdk-flow/SKILL.md`](tier0-sdk-flow/SKILL.md) |
-| Statistics requirements inside a Tier0-backed or managed Tier0 App: Dashboard, Trend, scope distribution, period comparison, or multi-dimensional analysis | [`references/app-statistics-design.md`](references/app-statistics-design.md), then the UNS and Flow Skills |
 | File upload, attachment, avatar, import, generated/exported file or report, persistent storage, access URL, download, or deletion—even without an explicit SDK request | [`tier0-sdk-files/SKILL.md`](tier0-sdk-files/SKILL.md) |
 | Launchpad project members or platform/workspace members and roles | [`tier0-sdk-members/SKILL.md`](tier0-sdk-members/SKILL.md) |
 | Select a recipient by human identity, send an in-app notification (inbox + optional web/mobile push), or query delivery status. Never ask an end user for a user ID | [`tier0-sdk-notifications/SKILL.md`](tier0-sdk-notifications/SKILL.md) |
@@ -97,7 +96,6 @@ This rule does not apply to source files, static assets intentionally shipped wi
 | React Query integration | [`references/framework-react.md`](references/framework-react.md) |
 | Vue 3 integration | [`references/framework-vue.md`](references/framework-vue.md) |
 | MonoApp/TanStack Start integration | [`references/scaffold-monoapp.md`](references/scaffold-monoapp.md) |
-| Statistics requirements inside an App: UNS topic families, Flow materialization, payloads, and frontend bundle calls | [`references/app-statistics-design.md`](references/app-statistics-design.md) |
 
 ## Shared Guardrails
 
@@ -106,8 +104,6 @@ This rule does not apply to source files, static assets intentionally shipped wi
 - Browser bundles do not automatically read Node environment variables or `VITE_*`; pass browser runtime values explicitly.
 - Do not use these Skills for a non-Tier0 API, another named SDK, a generic external MQTT broker, or direct PLC/OPC UA/Modbus/device-protocol access outside Tier0 APIs.
 - Do not navigate to or `window.open()` a private presigned URL for an attachment download. In MonoApp, proxy `downloadFile` through an authenticated same-origin route and let the UI save a Blob with `<a download>`.
-- Do not implement a repeatedly viewed business dashboard by looping over hundreds of raw topics in a page request. Materialize reusable business statistics into bounded UNS statistic topics with Source Flow, then let one App endpoint read the exact topics required by the page.
-- Do not expose raw topic paths, arbitrary topic filters, or SDK response shapes to the browser. The App service owns the topic allowlist, resolution selection, quality checks, and UI DTO mapping.
 
 ## Final Checklist
 
@@ -117,4 +113,4 @@ This rule does not apply to source files, static assets intentionally shipped wi
 4. No platform-supplied host, credential, workspace, or project ID is hard-coded.
 5. SDK calls stay in the service/data layer and UI components receive domain objects.
 6. MonoApp attachment downloads resolve `filePath` from an authorized business record, stream `downloadFile().response.body` through the app route, and use Blob plus `<a download>` in the UI.
-7. Reusable business statistics are materialized by Flow and a page loads them through one bounded App bundle request instead of raw-topic loops.
+7. App history and trend queries call `openapiv1unshistory` from a server-side service, use server-owned exact topic paths, and return UI-facing DTOs; realtime updates use MQTT instead of polling history.

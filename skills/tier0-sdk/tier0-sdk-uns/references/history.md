@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-history
-version: 0.5.0
+version: 0.6.0
 description: "POST /openapi/v1/uns/history — 查询 UNS topic 历史数据"
 ---
 
@@ -11,6 +11,7 @@ description: "POST /openapi/v1/uns/history — 查询 UNS topic 历史数据"
 ## 目录
 
 - SDK 调用与请求参数
+- App 生成时的服务端调用方式
 - 聚合和响应结构
 - 原始数据、聚合、多 Topic 与分页示例
 - 常见错误
@@ -59,11 +60,59 @@ number or size of returned values. Reduce `size`, use automatic sampling or
 aggregation, and batch topics when the response body is the bottleneck. Never
 treat `size` as a request-wide limit.
 
-### 业务统计边界
+## App 生成时的调用方式
 
-自动稀疏、免 COUNT 和 SQL 聚合优化的是一次历史查询，不会自动获得“范围累计量”“分类占比”“跨实体合计”等业务语义。对于会被看板反复访问、需要跨大量源 topic 或按多个业务维度统计的需求，不要在每次页面请求中遍历原始历史再计算。
+App 页面需要历史列表、趋势图、时间范围数据或历史聚合时，应由服务端调用 history。浏览器只提交业务筛选和时间范围，不接触 Tier0 凭证、原始 topic 路径或 SDK 请求体。
 
-这类需求应按 [`../../references/app-statistics-design.md`](../../references/app-statistics-design.md) 设计：由 Source Flow 持续维护有界的 Current 与时间桶 statistic topics，App 服务一次读取页面所需的精确 topic 列表，再返回前端 DTO。只有少量 topic 的临时分析或展示降采样，才直接使用本接口的 `aggregation` 或自动稀疏。
+生成 App 时遵循以下边界：
+
+1. 在服务端 service、server action 或 API route 中通过 scaffold 的 `getTier0UnsApi()` 获取客户端。
+2. 将页面的设备、产线或指标选择映射为服务端维护的精确叶子 topic；history 不支持通配符，也不接受浏览器提供的任意 topic。
+3. 仅查询创建时已开启 `enableHistory` 的 Topic。
+4. 趋势图默认使用 `countMode: 'none'` 并同时省略 `page`、`size`，让服务端自动稀疏；原始明细分页才同时传 `page`、`size`，并按每个结果的 `meta.hasMore` 翻页。
+5. 检查外层 `data.success` 和每个 topic 的 `success`，再把成功记录转换为页面需要的 DTO。不要把 SDK envelope、topic、VQT 或分页元数据直接返回给 UI。
+6. 页面加载或用户改变时间范围时可以重新查询；持续变化和实时监听必须使用 MQTT subscribe，不能轮询 history。
+
+```typescript
+// src/services/equipment-history.ts
+import { getTier0UnsApi } from '@/lib/tier0';
+
+const TEMPERATURE_TOPICS = {
+  line1: 'Plant/Line1/Metric/Temperature',
+  line2: 'Plant/Line2/Metric/Temperature',
+} as const;
+
+export async function getTemperatureTrend(input: {
+  line: keyof typeof TEMPERATURE_TOPICS;
+  start: Date;
+  end: Date;
+}) {
+  const topic = TEMPERATURE_TOPICS[input.line];
+  const unsApi = await getTier0UnsApi();
+  const response = await unsApi.openapiv1unshistory({
+    topics: [topic],
+    start_time: input.start.toISOString(),
+    end_time: input.end.toISOString(),
+    countMode: 'none',
+    // 同时省略 page/size，趋势图使用自动稀疏模式。
+  });
+
+  const item = response.data.results?.[0];
+  if (!response.data.success || !item?.success) {
+    throw new Error(item?.error?.message ?? 'History query failed');
+  }
+
+  return {
+    points: (item.result?.values ?? []).map(record => ({
+      timestamp: record.timeStamp,
+      temperature: (record.value as { temperature?: number }).temperature,
+      quality: record.quality,
+    })),
+  };
+}
+```
+
+多个 topic 应优先放入同一个 `topics` 数组。数量较多时每批 50–100 个 topic、总 HTTP 并发不超过 2；`size` 是每个 topic 的限制，不是整次请求的总限制。
 
 ### aggregation 结构
 
