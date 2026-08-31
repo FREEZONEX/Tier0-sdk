@@ -79,12 +79,12 @@ describe('single-root Skill routing', () => {
     expect(flowSkill).toContain('../references/app-statistics-design.md');
 
     for (const requiredGuidance of [
-      'App 中涉及统计需求时的设计',
-      '示例 1：范围 Dashboard 与当前周期总览',
-      '示例 2：电、水、热用量趋势',
-      '示例 3：范围分布',
-      '示例 4：多维分析',
-      '示例 5：同比、环比和连续周期比较',
+      'App 统计需求设计',
+      '范围 Dashboard 与当前周期总览',
+      '电、水、热用量趋势',
+      '范围分布',
+      '多维分析',
+      '同比、环比',
       '/_Statistics/',
       'Source Flow',
       'getTier0UnsApi',
@@ -97,9 +97,9 @@ describe('single-root Skill routing', () => {
       'scopeSlug',
       'maxStatisticScopes',
       'statusCode',
-      '`quality` 标为 `Bad`',
+      '`quality=Bad`',
       '`retain: true`',
-      '事件时间缓冲区',
+      '业务时间缓冲区',
     ]) {
       expect(statisticsReference).toContain(requiredGuidance);
     }
