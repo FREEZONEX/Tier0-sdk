@@ -3,6 +3,14 @@ import { describe, expect, it } from 'vitest';
 
 const rootSkillUrl = new URL('../skills/tier0-sdk/SKILL.md', import.meta.url);
 const filesSkillUrl = new URL('../skills/tier0-sdk/tier0-sdk-files/SKILL.md', import.meta.url);
+const historyReferenceUrl = new URL(
+  '../skills/tier0-sdk/tier0-sdk-uns/references/history.md',
+  import.meta.url,
+);
+const monoAppReferenceUrl = new URL(
+  '../skills/tier0-sdk/references/scaffold-monoapp.md',
+  import.meta.url,
+);
 const packageUrl = new URL('../package.json', import.meta.url);
 
 function rootDescription(): string {
@@ -47,5 +55,22 @@ describe('single-root Skill routing', () => {
       name: 'tier0-sdk-files',
       path: './skills/tier0-sdk/tier0-sdk-files',
     });
+  });
+
+  it('routes generated App history views to server-side UNS history guidance', () => {
+    const description = rootDescription();
+    const rootSkill = readFileSync(rootSkillUrl, 'utf8');
+    const historyReference = readFileSync(historyReferenceUrl, 'utf8');
+    const monoAppReference = readFileSync(monoAppReferenceUrl, 'utf8');
+
+    expect(description).toMatch(/历史数据|history/i);
+    expect(description).toMatch(/趋势图|trend/i);
+    expect(rootSkill).toContain('tier0-sdk-uns/references/history.md');
+    expect(historyReference).toContain('getTier0UnsApi()');
+    expect(historyReference).toContain('openapiv1unshistory');
+    expect(historyReference).toContain("countMode: 'none'");
+    expect(historyReference).toContain('meta.hasMore');
+    expect(monoAppReference).toContain('../../tier0-sdk-uns/references/history.md');
+    expect(monoAppReference).toContain('OpenAPI `history` is for bounded time-range queries');
   });
 });
