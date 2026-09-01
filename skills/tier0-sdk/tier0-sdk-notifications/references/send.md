@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.8.0
+version: 0.8.1
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -157,7 +157,7 @@ Populates the **Open button** on the recipient's in-app message. Self-reported n
 
 | Form | Example | How it opens |
 |---|---|---|
-| `/`-prefixed path, message from an **`app` sender** | `/alerts/tank01` (your App's own route) | Inside the platform shell: the App launch page opens **your App on that screen** — the path is forwarded into the App's iframe, relative to the App's base URL |
+| `/`-prefixed path, message from a **complete `app` sender** (`id` + `meta.projectId`) | `/alerts/tank01` (your App's own route) | Inside the platform shell: the App launch page opens **your App on that screen** — the path is forwarded into the App's iframe, relative to the App's base URL |
 | `/`-prefixed path, message from an **`other` sender** | `/uns` | A platform route, inside the shell; the client prepends the recipient's workspace |
 | Absolute URL | `https://oee-monitor.example.com/alerts/tank01` | **`https://` only** (`http://` is rejected as cleartext; `javascript:` / `data:` and other pseudo-schemes are blocked by the same prefix allowlist). Opens in a **new tab** with `noopener`, outside the platform shell |
 
@@ -202,7 +202,9 @@ What a `/`-prefixed path means depends on **who the sender is**. The web client 
 link: '/alerts/tank01',
 ```
 
-Because the message carries your app sender, the web client opens the platform's App launch page and forwards the path into the App's iframe, resolved **relative to the App's own base URL** (`/alerts/tank01` and `alerts/tank01` are equivalent). The recipient stays inside the platform shell, on that exact screen. Do not prefix it with `/ws/<workspaceId>` and do not build an absolute URL from `window.location` — the path is yours, the surrounding address is the platform's job.
+Because the message carries your **complete** app sender (`id` + `meta.projectId` — the same pair everything else depends on), the web client opens the platform's App launch page and forwards the path into the App's iframe, resolved **relative to the App's own base URL**. The leading `/` is required by the server's validation (a slashless `alerts/tank01` fails the whole send with 400) and does not mean your App's site root. The recipient stays inside the platform shell, on that exact screen. Do not prefix it with `/ws/<workspaceId>` and do not build an absolute URL from `window.location` — the path is yours, the surrounding address is the platform's job.
+
+⚠️ With an **incomplete** app sender (missing `meta.projectId`) the client cannot build the App launch target, so the same path silently degrades to a platform route — `/ws/<workspace>/alerts/tank01`, a 404. One more failure mode of dropping `projectId`.
 
 An absolute `https://` URL also works but opens in a **new tab** (`noopener`), outside the platform shell — use it for destinations that genuinely live elsewhere, not for your own screens.
 
@@ -212,7 +214,7 @@ An absolute `https://` URL also works but opens in a **new tab** (`noopener`), o
 
 **An undeployed App gets no Open button.** If the sending App is not deployed (stopped, deleted), the web client suppresses the button entirely rather than navigating into a dead iframe — another reason not to treat the button as guaranteed.
 
-**Do not smuggle the path through `sender.meta`.** The web client also reads `sender.meta.path` as a last-resort fallback for callers that predate `link`, but it is exactly that — a fallback, last in priority, absent from the contract. New code sends the top-level `link`.
+**Do not smuggle the path through `sender.meta`.** The web client also reads `sender.meta.path` as a last-resort fallback for callers that predate `link`, but it is exactly that — a fallback, last in priority, absent from the contract. It even outranks the entry-screen fallback: a stored app message with `meta.path` and no `link` opens that path, not the App's entry screen. New code sends the top-level `link`.
 
 **Mobile ignores `link`.** The mobile app opens the sending App via appId + projectId regardless, so a notification with a `link` lands on different pages on web and mobile. Do not put a mobile-critical destination in `link` alone.
 
