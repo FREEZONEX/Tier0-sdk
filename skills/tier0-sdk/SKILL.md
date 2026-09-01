@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk
-version: 0.3.7
+version: 0.3.8
 description: "Tier0 SDK 单根聚合路由及 TypeScript/JavaScript 共享配置。用于 Tier0 配置、UNS 当前数据、历史数据/history、趋势图/trend、时间范围查询、MQTT 实时订阅、Flow/Node-RED HTTP 接口、成员、通知和系统能力；当应用需要文件上传/upload、附件/attachment、头像/avatar、文件导入/import、生成或导出文件/报表、持久化文件、访问链接、下载或删除时也必须触发，即使用户未提到 Tier0、SDK、S3 或对象存储。业务运行时文件必须路由到 tier0-sdk-files 并使用 @tier0/sdk/files，不能持久化到 Sandbox/本地目录、public/ 或数据库 Blob。源码、随版本发布的静态资源、构建产物和可丢弃的临时处理文件除外。"
 metadata:
   requires:
@@ -99,8 +99,9 @@ This rule does not apply to source files, static assets intentionally shipped wi
 
 ## Shared Guardrails
 
-- Never hard-code an API host, MQTT host, API key, workspace binding, or project ID when the platform supplies it at runtime.
+- Never hard-code an API host, MQTT host, API key, workspace binding, project ID, or app ID when the platform supplies it at runtime.
 - In generated project-scoped apps, call `getCurrentProjectId()` from server/runtime code. Imported apps receive a new local project context.
+- Where an app id is needed, call `getCurrentAppId()` — it validates that the injected `APP_ID` is the agent-platform App UUID rather than the scaffold default or a session id. Never read `process.env.APP_ID` directly; see [`references/configuration.md`](references/configuration.md).
 - Browser bundles do not automatically read Node environment variables or `VITE_*`; pass browser runtime values explicitly.
 - Do not use these Skills for a non-Tier0 API, another named SDK, a generic external MQTT broker, or direct PLC/OPC UA/Modbus/device-protocol access outside Tier0 APIs.
 - Do not navigate to or `window.open()` a private presigned URL for an attachment download. In MonoApp, proxy `downloadFile` through an authenticated same-origin route and let the UI save a Blob with `<a download>`.
