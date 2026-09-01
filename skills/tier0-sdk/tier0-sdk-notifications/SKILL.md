@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-notifications
-version: 1.5.0
+version: 1.5.2
 description: "Tier0 SDK message notifications for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. Use when selecting a human recipient from Tier0 members, sending an in-app notification with optional web/mobile push reminders, or querying delivery status through @tier0/sdk/openapi. Resolve recipient IDs internally from member data; never make users enter or understand a user ID."
 metadata:
   requires:
@@ -40,7 +40,7 @@ Sending a notification interrupts a real person. Never substitute defaults for t
 | `mode` | Agent detects the scenario; ask when unsure | See send.md. Never silently default to `live` when uncertain |
 | `idempotencyKey` | Agent | Business-event key discipline, see send.md |
 | `sender` | Agent | Filled from the calling app's identity, see send.md. An `app` sender sends `type: 'app'` + `id` from `getCurrentAppId()` + `meta.projectId` from `getCurrentProjectId()`, and **omits `name`** — the server looks the real App name up. Never hard-code the appId. Only an `other` sender names itself |
-| `link` | Agent (ask when ambiguous) | The Open-button target, derived from whatever the notification is about (the order, the alarming device, the work order). Ask when the destination is not obvious — and confirm the recipient can actually reach it. Omitting it is fine, but it does not guarantee no button: there are **two** navigation sources — `link`, and `sender.type=app` carrying **both** `id` (appId) and `meta.projectId`, which offers "open the sending App". No button appears only when both sources are absent |
+| `link` | Agent (ask when ambiguous) | The Open-button target, derived from whatever the notification is about (the order, the alarming device, the work order). For a screen inside the sending App this is simply the App's own router path (`/alerts/tank01`), see send.md. Ask when the destination is not obvious — and confirm the recipient can actually reach it. Omitting it is fine, but it does not guarantee no button: there are **two** navigation sources — `link`, and `sender.type=app` carrying **both** `id` (appId) and `meta.projectId`, which offers "open the sending App". No button appears when both sources are absent — and regardless of sources when the sending App is undeployed (stopped/deleted), see send.md |
 | `type` | No choice | Fixed `"inbox"`, the only accepted value |
 
 ## Scope Routing

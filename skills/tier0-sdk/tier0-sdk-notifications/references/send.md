@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.7.0
+version: 0.8.1
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -157,7 +157,8 @@ Populates the **Open button** on the recipient's in-app message. Self-reported n
 
 | Form | Example | How it opens |
 |---|---|---|
-| In-app path | `/launchpad/launch/<appId>?projectId=<projectId>` | Navigates inside the platform shell, in the recipient's own workspace |
+| `/`-prefixed path, message from a **complete `app` sender** (`id` + `meta.projectId`) | `/alerts/tank01` (your App's own route) | Inside the platform shell: the App launch page opens **your App on that screen** — the path is forwarded into the App's iframe, relative to the App's base URL |
+| `/`-prefixed path, message from an **`other` sender** | `/uns` | A platform route, inside the shell; the client prepends the recipient's workspace |
 | Absolute URL | `https://oee-monitor.example.com/alerts/tank01` | **`https://` only** (`http://` is rejected as cleartext; `javascript:` / `data:` and other pseudo-schemes are blocked by the same prefix allowlist). Opens in a **new tab** with `noopener`, outside the platform shell |
 
 ### What the server checks
@@ -193,24 +194,27 @@ With neither source present the message renders no Open button at all.
 
 ### Writing the path
 
-`link` is where the agent composes a route, so the first question is **whose route**. An App and the platform are two different origins, and a `/`-prefixed path always means the **platform**, never the App.
+What a `/`-prefixed path means depends on **who the sender is**. The web client treats a path on a message from a complete `app` sender as a route **inside that App**; only messages without an app identity have their paths resolved against the platform.
 
-**A. A screen inside your own App → its absolute `https://` URL.** The App is served from its own deployed origin, so build the URL on that origin and append your own router path:
+**A. A screen inside your own App → your own router path.** Send the path exactly as your App's router knows it:
 
 ```typescript
-// Client-side: the App's own origin is exactly where it is served from
-const appBase = window.location.origin;
-// Server-side (route handler / server action): the App's own config, e.g. APP_PUBLIC_URL
-const link = `${appBase}/alerts/tank01`;
+link: '/alerts/tank01',
 ```
 
-The web client opens it in a new tab (`noopener`). This is the normal way to deep-link into an App, not a fallback.
+Because the message carries your **complete** app sender (`id` + `meta.projectId` — the same pair everything else depends on), the web client opens the platform's App launch page and forwards the path into the App's iframe, resolved **relative to the App's own base URL**. The leading `/` is required by the server's validation (a slashless `alerts/tank01` fails the whole send with 400) and does not mean your App's site root. The recipient stays inside the platform shell, on that exact screen. Do not prefix it with `/ws/<workspaceId>` and do not build an absolute URL from `window.location` — the path is yours, the surrounding address is the platform's job.
 
-**B. A platform page (UNS, Flows, Launchpad, …) → a `/`-prefixed path with no workspace segment.** Platform routes live under `/ws/<workspaceId>/…`, but the web client prepends the **recipient's own** workspace to any `/`-prefixed path that does not already start with `/ws/`. So write `/launchpad/launch/<appId>?projectId=<projectId>`, not `/ws/1/launchpad/…` — a hard-coded `/ws/1` pins every recipient to workspace 1 and breaks the moment the App is imported into another workspace (same guardrail as `meta.projectId`, see the root [`SKILL.md`](../../SKILL.md)).
+⚠️ With an **incomplete** app sender (missing `meta.projectId`) the client cannot build the App launch target, so the same path silently degrades to a platform route — `/ws/<workspace>/alerts/tank01`, a 404. One more failure mode of dropping `projectId`.
 
-⚠️ **A `/`-prefixed path is resolved against the platform, not your App.** Sending your own router path (`/alerts/tank01`) makes the client navigate to `/ws/<recipient's workspace>/alerts/tank01` — a platform route that does not exist. For your own screens use form A.
+An absolute `https://` URL also works but opens in a **new tab** (`noopener`), outside the platform shell — use it for destinations that genuinely live elsewhere, not for your own screens.
 
-⚠️ **Do not try to deep-link into an App through the platform launch page.** Apps run in an iframe whose source is the App's own deployment URL; the launch page's query string is not forwarded into it, so `/launchpad/launch/<appId>?projectId=<projectId>` always lands on the App's entry screen — and that is exactly what the appId + projectId fallback already produces, so sending it as `link` adds nothing.
+**B. A platform page (UNS, Flows, …) → a `/`-prefixed path, from a sender with no app identity.** For an `other` sender (or no sender), a path is resolved against the platform: the client prepends the workspace, so write `/uns`, never `/ws/1/uns` — a hard-coded `/ws/1` pins every recipient to workspace 1 (same guardrail as `meta.projectId`, see the root [`SKILL.md`](../../SKILL.md)).
+
+⚠️ **An `app` sender cannot use a `/`-prefixed `link` to reach a platform page.** The app identity wins: the path is forwarded into your App, so `/launchpad` would look for a `/launchpad` route *inside your App*. If an App genuinely needs to send the recipient to a platform page, the only form left is an absolute `https://` platform URL — accepting the new-tab behaviour — or no `link` at all (the Open button then opens your App's entry screen).
+
+**An undeployed App gets no Open button.** If the sending App is not deployed (stopped, deleted), the web client suppresses the button entirely rather than navigating into a dead iframe — another reason not to treat the button as guaranteed.
+
+**Do not smuggle the path through `sender.meta`.** The web client also reads `sender.meta.path` as a last-resort fallback for callers that predate `link`, but it is exactly that — a fallback, last in priority, absent from the contract. It even outranks the entry-screen fallback: a stored app message with `meta.path` and no `link` opens that path, not the App's entry screen. New code sends the top-level `link`.
 
 **Mobile ignores `link`.** The mobile app opens the sending App via appId + projectId regardless, so a notification with a `link` lands on different pages on web and mobile. Do not put a mobile-critical destination in `link` alone.
 
@@ -291,11 +295,9 @@ const resp = await notificationsApi.openapiv1notificationssend({
   idempotencyKey: 'alert-tank01-overtemp-20260825T1500',
   mode: process.env.NODE_ENV === 'production' ? 'live' : 'test',
   channels: ['web', 'mobile'], // the user explicitly asked for push
-  // Open button target: a screen inside this App, so build it on the App's OWN base URL —
-  // here from the App's own config, since this runs server-side (client-side code can use
-  // window.location.origin). A `/`-prefixed path would be resolved against the platform,
-  // not this App — see "Writing the path".
-  link: `${process.env.APP_PUBLIC_URL}/alerts/tank01`,
+  // Open button target: this App's OWN router path. Because the message carries an app
+  // sender, the client forwards it into the App's iframe — see "Writing the path".
+  link: '/alerts/tank01',
   sender: {
     type: 'app',
     id: getCurrentAppId(), // validated at runtime — never a hard-coded UUID or a raw APP_ID read
