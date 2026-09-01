@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk
-version: 0.4.0
-description: "Tier0 SDK root/router Skill and shared configuration for TypeScript/JavaScript. Read this root Skill before every Tier0 SDK domain Skill, and read references/configuration.md before making any actual @tier0/sdk call. Use for installing or updating @tier0/sdk, configuring API/MQTT/runtime values, resolving the current project, selecting package entry points, React/Vue adapters, MonoApp integration, or routing work to UNS, realtime MQ, Flow and Node-RED HTTP endpoints, files, members, notifications, and system capabilities."
+version: 0.3.8
+description: "Tier0 SDK 单根聚合路由及 TypeScript/JavaScript 共享配置。用于 Tier0 配置、UNS 当前数据、历史数据/history、趋势图/trend、时间范围查询、MQTT 实时订阅、Flow/Node-RED HTTP 接口、成员、通知和系统能力；当应用需要文件上传/upload、附件/attachment、头像/avatar、文件导入/import、生成或导出文件/报表、持久化文件、访问链接、下载或删除时也必须触发，即使用户未提到 Tier0、SDK、S3 或对象存储。业务运行时文件必须路由到 tier0-sdk-files 并使用 @tier0/sdk/files，不能持久化到 Sandbox/本地目录、public/ 或数据库 Blob。源码、随版本发布的静态资源、构建产物和可丢弃的临时处理文件除外。"
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -19,6 +19,14 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 4. Import an official SDK entry point. Do not hand-write replacement REST, MQTT, object-storage, or environment-resolution clients.
 5. Keep SDK calls in services, workers, server actions, API routes, hooks, or stores; expose business-domain objects to UI components.
 6. For MonoApp browser attachment downloads, read [`references/scaffold-monoapp.md`](references/scaffold-monoapp.md) and [`tier0-sdk-files/references/download.md`](tier0-sdk-files/references/download.md). Resolve the trusted `filePath` server-side, stream `downloadFile().response.body` through an authenticated same-origin route, and save the browser Blob with `<a download>`.
+
+## Mandatory File Routing
+
+Route to [`tier0-sdk-files/SKILL.md`](tier0-sdk-files/SKILL.md) whenever an application needs file upload, attachment, avatar, file import, a generated or exported file/report, persistent file storage, an access URL, download, or deletion. This routing is mandatory even when the user does not mention Tier0 SDK, S3, RustFS, object storage, or a storage implementation.
+
+User uploads and application-generated runtime files that must survive a request, restart, deployment, or application update are business files. Store them through `@tier0/sdk/files` and persist the returned stable `filePath` in business data. Do not use Sandbox or application-local directories, `public/`, database blobs, handwritten S3/RustFS clients, or expiring presigned URLs as the persistent source of truth.
+
+This rule does not apply to source files, static assets intentionally shipped with an application version, build artifacts, or disposable local files used only during short-lived processing before upload.
 
 ## 可调用接口总览（OpenAPI，`@tier0/sdk/openapi`）
 
@@ -59,9 +67,10 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 | User need | Read |
 |---|---|
 | UNS modeling, browse/search, read/write/history, topic lifecycle, app data integration | [`tier0-sdk-uns/SKILL.md`](tier0-sdk-uns/SKILL.md) |
+| App history, trend chart, bounded time-range data, aggregate history, or MQTT reconnect backfill | [`tier0-sdk-uns/references/history.md`](tier0-sdk-uns/references/history.md); for MonoApp also read [`references/scaffold-monoapp.md`](references/scaffold-monoapp.md) |
 | Continuous/realtime receive, MQTT subscribe/publish, connection lifecycle | [`tier0-sdk-mq/SKILL.md`](tier0-sdk-mq/SKILL.md) |
 | Flow/Node-RED create, inspect, edit, deploy, delete, or expose/invoke an `http in` endpoint or webhook | [`tier0-sdk-flow/SKILL.md`](tier0-sdk-flow/SKILL.md) |
-| Upload, persist, access, download, or delete files/attachments | [`tier0-sdk-files/SKILL.md`](tier0-sdk-files/SKILL.md) |
+| File upload, attachment, avatar, import, generated/exported file or report, persistent storage, access URL, download, or deletion—even without an explicit SDK request | [`tier0-sdk-files/SKILL.md`](tier0-sdk-files/SKILL.md) |
 | Launchpad project members or platform/workspace members and roles | [`tier0-sdk-members/SKILL.md`](tier0-sdk-members/SKILL.md) |
 | Select a recipient by human identity, send an in-app notification (inbox + optional web/mobile push), or query delivery status. Never ask an end user for a user ID | [`tier0-sdk-notifications/SKILL.md`](tier0-sdk-notifications/SKILL.md) |
 | API-key credential diagnostics (not an App end-user identity), service info/capabilities, gateway reload | [`tier0-sdk-system/SKILL.md`](tier0-sdk-system/SKILL.md) |
@@ -105,3 +114,4 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 4. No platform-supplied host, credential, workspace, or project ID is hard-coded.
 5. SDK calls stay in the service/data layer and UI components receive domain objects.
 6. MonoApp attachment downloads resolve `filePath` from an authorized business record, stream `downloadFile().response.body` through the app route, and use Blob plus `<a download>` in the UI.
+7. App history and trend queries call `openapiv1unshistory` from a server-side service, use server-owned exact topic paths, and return UI-facing DTOs; realtime updates use MQTT instead of polling history.

@@ -1,12 +1,14 @@
 ---
 name: tier0-sdk-openapi-read
-version: 0.4.0
+version: 0.5.0
 description: "POST /openapi/v1/uns/read — 读取 UNS topic 当前值（VQT 结构）"
 ---
 
 # read — `POST /openapi/v1/uns/read`
 
 > `read` 只用于一次性读取当前值或实时功能的初始快照。持续变化、实时、一直监听的数据必须使用 MQTT `subscribe`；禁止用定时器、`refetchInterval` 或循环轮询本接口模拟订阅。断线补偿仅在 Topic 已开启 `enableHistory` 时使用 OpenAPI `history`。
+
+服务端会批量解析 topic、批量读取最新值缓存，并对缓存未命中执行受控并发回源；一次读取数百至上千个 topic 可以直接使用一个请求。响应体仍需由客户端下载和解析，持续刷新场景依然应使用 MQTT。
 
 ## 目录
 

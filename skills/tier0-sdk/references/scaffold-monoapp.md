@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-monoapptemplate
-version: 0.1.1
-description: "Using @tier0/sdk safely inside the MonoApp TanStack Start scaffold, including mandatory MQTT subscriptions for continuously changing or realtime data."
+version: 0.1.2
+description: "Using @tier0/sdk safely inside the MonoApp TanStack Start scaffold, including server-side UNS history queries and mandatory MQTT subscriptions for continuously changing or realtime data."
 ---
 
 # MonoApp Template Integration
@@ -16,7 +16,7 @@ The template already includes `@tier0/sdk` and server-side lazy loaders. Prefer 
 - Runtime configuration and application UX boundaries
 - Service-layer examples
 - SDK-managed file upload and persistence
-- Safe Flow deployment and realtime/MQ transport selection
+- Safe Flow deployment, historical queries, and realtime/MQ transport selection
 - Platform resource naming
 
 ## Required Pattern
@@ -90,7 +90,7 @@ Default UI behavior:
 - Do not render a UNS tree, path explorer, or namespace breadcrumb as the primary UI unless the user explicitly asks for browsing or managing the UNS hierarchy.
 - Avoid making users choose from raw `Metric` / `State` / `Action` folders unless the app is specifically an admin, diagnostics, or data-modeling tool.
 
-The app DB is the system of record for app-owned entities; UNS is the platform integration bus. Before wiring UNS I/O, decide the direction per data element (read external data inbound vs sync app-owned data outbound) using [`../tier0-sdk-uns/references/data-integration.md`](../tier0-sdk-uns/references/data-integration.md).
+The app DB is the system of record for app-owned entities; UNS is the platform integration bus. Before wiring UNS I/O, decide the direction per data element (read external data inbound vs sync app-owned data outbound) using [`../../tier0-sdk-uns/references/data-integration.md`](../../tier0-sdk-uns/references/data-integration.md).
 
 ## Recommended Service-Layer Examples
 
@@ -182,7 +182,7 @@ When a user asks for an upload, attachment, avatar, image, import, or other uplo
 
 Receive the browser `File` through a server action or API route, call `uploadFile` in a service, and save only the returned `filePath` in the business record. Resolve access with `getFileUrl`, download with `downloadFile`, and remove with `deleteFile`. Never persist an expiring presigned URL. Local temporary files are allowed only for short-lived processing before the SDK upload.
 
-If `src/lib/tier0.ts` does not yet expose a files loader, extend it with the same server-only lazy-load pattern used by `loadTier0OpenApi()` and `loadTier0Mq()`. Do not use the missing helper as a reason to fall back to local storage or a handwritten S3 client. Read [`../tier0-sdk-files/SKILL.md`](../tier0-sdk-files/SKILL.md) and [`../tier0-sdk-files/references/upload.md`](../tier0-sdk-files/references/upload.md) before implementing the feature.
+If `src/lib/tier0.ts` does not yet expose a files loader, extend it with the same server-only lazy-load pattern used by `loadTier0OpenApi()` and `loadTier0Mq()`. Do not use the missing helper as a reason to fall back to local storage or a handwritten S3 client. Read [`../../tier0-sdk-files/SKILL.md`](../../tier0-sdk-files/SKILL.md) and [`../../tier0-sdk-files/references/upload.md`](../../tier0-sdk-files/references/upload.md) before implementing the feature.
 
 ## Browser Attachment Downloads
 
@@ -309,6 +309,16 @@ export async function deployFlowPatch(flowId: number, buildNodes: (current: any[
 
 Flow deploy/delete are high-risk operations. Require explicit user confirmation before calling the service.
 
+## Historical Data Queries
+
+When a generated App needs a history page, trend chart, bounded time-range dataset, aggregate history, or MQTT reconnect backfill, read [`../../tier0-sdk-uns/references/history.md`](../../tier0-sdk-uns/references/history.md) before implementing it.
+
+- Call `openapiv1unshistory` through `getTier0UnsApi()` in a server-side service, server action, or API route. Do not call it from React components or expose the Tier0 API key to the browser.
+- Accept business filters and a time range from the UI, then map them to an allowlisted set of exact leaf topic paths on the server. Do not accept an arbitrary topic path, wildcard, aggregation field, or SDK request body from the browser.
+- Return a UI-facing DTO instead of raw topic paths, VQT records, pagination metadata, or the SDK response envelope.
+- Use one bounded history request for the page where practical. If many topics are required, follow the batching and concurrency guidance in the history reference.
+- A bounded history request may run when the page loads or the user changes its time range. Do not repeat it on a timer to simulate realtime behavior.
+
 ## Realtime Data Transport (Required)
 
 Choose the receive transport before implementing a MonoApp feature:
@@ -316,14 +326,15 @@ Choose the receive transport before implementing a MonoApp feature:
 | Data need | Required SDK path |
 |---|---|
 | Read the current value once, including an initial page snapshot | Use `getTier0UnsApi()` and OpenAPI `read` |
+| Load a history page, trend chart, aggregate window, or other bounded time range | Use `getTier0UnsApi()` and OpenAPI `history` when the Topic has `enableHistory` enabled |
 | Receive continuously changing, realtime, monitoring, watch, or always-listening data | Use `loadTier0Mq()` and MQTT `subscribe` |
 | Fill a gap after MQTT reconnect | Use OpenAPI `history` only when the Topic has `enableHistory` enabled, then resume the MQTT subscription |
 
-MQTT `subscribe` is the default and required receive path for realtime scaffold features. Never add `setInterval`, `refetchInterval`, a polling loop, or repeated OpenAPI `read`/`history` calls to simulate realtime. OpenAPI `history` is reconnect backfill, not a live transport.
+MQTT `subscribe` is the default and required receive path for realtime scaffold features. Never add `setInterval`, `refetchInterval`, a polling loop, or repeated OpenAPI `read`/`history` calls to simulate realtime. OpenAPI `history` is for bounded time-range queries and reconnect backfill, not a live transport.
 
 An initial OpenAPI `read` may seed the screen, but all subsequent updates must come from the MQTT subscription. Own long-lived subscriptions in a server runtime or worker that can manage reconnect, unsubscribe, and shutdown; do not start them from React render paths or route loaders. Push normalized business-domain updates to the UI through the app's own realtime channel instead of exposing raw MQTT topics.
 
-Read [`../tier0-sdk-mq/SKILL.md`](../tier0-sdk-mq/SKILL.md) and [`../tier0-sdk-mq/references/quickstart.md`](../tier0-sdk-mq/references/quickstart.md) before implementing the subscription. For reconnect backfill, also read [`../tier0-sdk-uns/references/history.md`](../tier0-sdk-uns/references/history.md).
+Read [`../../tier0-sdk-mq/SKILL.md`](../../tier0-sdk-mq/SKILL.md) and [`../../tier0-sdk-mq/references/quickstart.md`](../../tier0-sdk-mq/references/quickstart.md) before implementing the subscription. For reconnect backfill, also read [`../../tier0-sdk-uns/references/history.md`](../../tier0-sdk-uns/references/history.md).
 
 ## MQ Publish and Lifecycle
 
