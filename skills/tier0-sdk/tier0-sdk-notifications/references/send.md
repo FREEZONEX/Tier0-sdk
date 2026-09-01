@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.5.4
+version: 0.5.5
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -122,7 +122,7 @@ Four fields, and what to put in each:
 | `sender.name` | optional in the contract, but **required in practice for `other`** | **Leave it out when `type` is `app`** — the platform resolves the real name from (projectId, appId), see below. **Always send it for `other`**: nothing can be looked up, so omitting it leaves the message with no sender identity at all. ≤100 chars (successor of the deprecated `source`) |
 | `sender.meta` | no | For `app`: `{"projectId": "<the current project id>"}`. **Every value must be a string** — `{projectId: 123}` is not valid. ≤500 bytes serialized |
 
-Neither the name nor the icon is self-reported for an App: both are resolved server-side by looking up (projectId, appId). A mobile push composes the icon URL from appId.
+Neither the name nor the icon is self-reported for an App: both are resolved server-side by looking up (projectId, appId). An **Android** push is the one exception — it composes its icon URL from appId directly, with no lookup; iOS and Web Push carry no icon at all (see below).
 
 **For the `app` scenario send exactly three fields**: `type: 'app'` + `id` (appId) + `meta.projectId`. `type` is what selects the App behaviour at all — omit it and the sender silently defaults to `other`, losing the name lookup, the icon and the Open button. The (appId, projectId) pair then drives everything the in-app message shows: the name lookup, the App icon there, and the Open button. Without `projectId` those three break together — the Android push icon is the exception, since it is composed from `appId` alone (see below).
 
@@ -136,6 +136,7 @@ Neither the name nor the icon is self-reported for an App: both are resolved ser
 
 - `meta.projectId`: **resolve at runtime** with `getCurrentProjectId()` from `@tier0/sdk` (the runtime injects `TIER0_PROJECT_ID`, see the root `references/configuration.md`). Never hard-code it at generation time — an App imported into another project would keep pointing at the source project, breaking icon lookup and Open-button navigation.
 - `sender.id` (appId): no runtime injection exists for it. The AI building the App knows it in its session context — write it in as a constant (or the App's own env var) at code-generation time.
+  - ⚠️ **It is not `APP_ID`, and not `/api/manifest`'s `appId`.** In the MonoApp scaffold those carry the deployment's *session id* (`DB_SCHEMA` and `APP_ID` are normally set to the same session id, e.g. `session-xyz789`), not the agent-platform appId. Such a value passes the charset check and is accepted, then makes the lookup miss every time — no App name, no icon, no Open button. Use the agent-platform appId, the UUID the platform assigned this App.
 
 ```typescript
 // Written at generation time — the App knows its own appId, the platform does not inject it.
