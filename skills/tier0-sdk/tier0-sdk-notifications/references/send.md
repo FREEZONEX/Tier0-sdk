@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.6.0
+version: 0.7.0
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -118,23 +118,36 @@ Four fields, and what to put in each:
 | Field | Required | What to put in it |
 |---|---|---|
 | `sender.type` | no (default `other`) | `"app"` when an App Builder application is sending — it unlocks the icon and open-the-App behaviour below. `"other"` for anything else (scripts, integrations, backend jobs). Closed enum: any other value is 400 |
-| `sender.id` | **do not send** | The server resolves the real appId from the API Key. A self-reported value is not needed and cannot be more authoritative than the key |
+| `sender.id` | **yes when `type` is `app`** | The **appId** (agent-platform UUID) — always `getCurrentAppId()` from `@tier0/sdk`, never a literal, see below. Accepted but pointless for `other` — nothing consumes it there |
 | `sender.name` | optional in the contract, but **required in practice for `other`** | **Leave it out when `type` is `app`** — the platform resolves the real name from (projectId, appId), see below. **Always send it for `other`**: nothing can be looked up, so omitting it leaves the message with no sender identity at all. ≤100 chars (successor of the deprecated `source`) |
 | `sender.meta` | no | For `app`: `{"projectId": "<the current project id>"}`. **Every value must be a string** — `{projectId: 123}` is not valid. ≤500 bytes serialized |
 
 Neither the name nor the icon is self-reported for an App: both are resolved server-side by looking up (projectId, appId). An **Android** push is the one exception — it composes its icon URL from appId directly, with no lookup; iOS and Web Push carry no icon at all (see below).
 
-**For the `app` scenario send exactly two fields**: `type: 'app'` + `meta.projectId`. `type` is what selects the App behaviour at all — omit it and the sender silently defaults to `other`, losing the name lookup, the icon and the Open button. The appId comes from the API Key server-side; paired with your `projectId` it drives everything the in-app message shows: the name lookup, the App icon there, and the Open button. Without `projectId` those three break together — the Android push icon is the exception, since it is composed from the appId alone (see below).
+**For the `app` scenario send exactly three fields**: `type: 'app'` + `id` (appId) + `meta.projectId`. `type` is what selects the App behaviour at all — omit it and the sender silently defaults to `other`, losing the name lookup, the icon and the Open button. The (appId, projectId) pair then drives everything the in-app message shows: the name lookup, the App icon there, and the Open button. Without `projectId` those three break together — the Android push icon is the exception, since it is composed from `appId` alone (see below).
 
 **Do not send `sender.name` for an `app` sender.** The platform looks the real name up, so a self-reported copy can only disagree with it — and it goes stale the moment the App is renamed. Omit it and the displayed name always tracks the App's actual name. If the lookup finds nothing (App deleted, or not visible to this recipient), the message simply shows no sender name; that is the intended degradation, not something to paper over.
 
 `sender.name` is for `other` senders — scripts, integrations, backend jobs — which have no entity to look up. There it is the **only** identity available: send it every time, and make it recognizable to the person receiving the message ("Nightly stock sync", not "script"). Leave it out and the recipient sees a message from nobody.
 
-**`sender.name` never reaches a push notification.** The push payload is title + content, plus — for `sender.type=app` on **Android** — an app icon thumbnail whose URL is composed from the appId directly, with no lookup. So a push shows your App's icon but never its name: whatever must identify the source to someone reading the push has to be in the `title` or `content` you wrote. Web Push and iOS ignore the icon field too.
+**`sender.name` never reaches a push notification.** The push payload is title + content, plus — for `sender.type=app` on **Android** — an app icon thumbnail whose URL is composed from `sender.id` (appId) directly, with no lookup. So a push shows your App's icon but never its name: whatever must identify the source to someone reading the push has to be in the `title` or `content` you wrote. Web Push and iOS ignore the icon field too.
 
-**Where `projectId` comes from**:
+**Where the two values come from** — both at runtime, neither as a literal:
 
-- `meta.projectId`: **resolve at runtime** with `getCurrentProjectId()` from `@tier0/sdk` (the runtime injects `TIER0_PROJECT_ID`, see the root `references/configuration.md`). Never hard-code it at generation time — an App imported into another project would keep pointing at the source project, breaking icon lookup and Open-button navigation.
+- `meta.projectId`: `getCurrentProjectId()` from `@tier0/sdk` (the runtime injects `TIER0_PROJECT_ID`, see the root [`references/configuration.md`](../../references/configuration.md)). Never hard-code it at generation time — an App imported into another project would keep pointing at the source project, breaking icon lookup and Open-button navigation.
+- `sender.id`: `getCurrentAppId()` from `@tier0/sdk` (the runtime injects `APP_ID`).
+  - ⚠️ **Never write the appId in as a constant, and never read `APP_ID` yourself.** `getCurrentAppId()` validates that the value is an agent-platform UUID; a raw read gives you whatever is there. The MonoApp scaffold defaults `APP_ID` to the deployment *session id* (`DB_SCHEMA` and `APP_ID` are normally the same, e.g. `session-xyz789`) or to the literal `monoapp` — either passes the server's charset check, is accepted, and then makes the lookup miss every time: no App name, no icon, no Open button, and no error anywhere.
+  - **If `getCurrentAppId()` throws, that is the bug surfacing early.** It means the runtime is still injecting a session id instead of the real app id — a platform-side fix. Do not work around it by hard-coding a UUID or falling back to `process.env.APP_ID`.
+
+```typescript
+import { getCurrentAppId, getCurrentProjectId } from '@tier0/sdk';
+
+sender: {
+  type: 'app',
+  id: getCurrentAppId(),                    // validated agent-platform UUID
+  meta: { projectId: getCurrentProjectId() }, // no name: the server looks the real one up
+}
+```
 
 ## link: the Open button target
 
@@ -172,7 +185,7 @@ That is what "self-reported navigation hint" means in practice: getting it right
 Omitting `link` is normal and safe. There are **two** navigation sources, and the button is rendered when either one is complete:
 
 1. `link` — this field
-2. `sender.type=app` carrying `meta.projectId` — offers "open the sending App". Without `projectId` it is not a source: the appId alone (resolved from the API Key) is not enough to build the app-detail URL, so no button
+2. `sender.type=app` carrying **both** `id` (appId) **and** `meta.projectId` — offers "open the sending App". An incomplete pair is not a source: without `projectId` the app-detail URL cannot be built, so no button
 
 With neither source present the message renders no Open button at all.
 
@@ -236,7 +249,7 @@ The web client opens it in a new tab (`noopener`). This is the normal way to dee
 For an AI generating App code:
 
 1. API key: via App env vars (`TIER0_API_HOST` / `TIER0_API_KEY`); the key needs `notifications:send`
-2. `sender`: `type: 'app'` + `meta.projectId` from `getCurrentProjectId()` at runtime (server-side code — the runtime injects `TIER0_PROJECT_ID`). Send neither `id` nor `name` — the server resolves both from the API Key
+2. `sender`: `type: 'app'` + `id` from `getCurrentAppId()` + `meta.projectId` from `getCurrentProjectId()`, both resolved at runtime (server-side code). No `name` — the server looks the real App name up
 3. mode: `NODE_ENV === 'production' ? 'live' : 'test'`
 4. Recipient: selected by a human-readable member picker or resolved from a trusted business relation; `recipientUserId` remains internal and is never typed by the user
 5. Channels: from the user's explicit instruction (see the decision ladder in [`../SKILL.md`](../SKILL.md)) — never hard-coded defaults
@@ -266,7 +279,7 @@ console.log(resp.messageId, resp.status); // "71234..." "accepted"
 ### 2. Full send with push + sender (App scenario)
 
 ```typescript
-import { getCurrentProjectId } from '@tier0/sdk';
+import { getCurrentAppId, getCurrentProjectId } from '@tier0/sdk';
 
 const resp = await notificationsApi.openapiv1notificationssend({
   recipientUserId: selectedRecipient.value,
@@ -283,7 +296,8 @@ const resp = await notificationsApi.openapiv1notificationssend({
   link: `${process.env.APP_PUBLIC_URL}/alerts/tank01`,
   sender: {
     type: 'app',
-    // no id and no name: the server resolves the appId from the API Key and the App name from it
+    id: getCurrentAppId(), // validated at runtime — never a hard-coded UUID or a raw APP_ID read
+    // no name: the server resolves the real App name from (projectId, appId)
     meta: { projectId: getCurrentProjectId() }, // runtime value — correct even after the App is imported elsewhere
   },
 });

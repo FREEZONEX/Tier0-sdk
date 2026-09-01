@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-configuration
-version: 0.1.2
+version: 0.2.0
 description: "Tier0 SDK configuration for Node.js, browser/Vite, OpenAPI, and MQTT."
 ---
 
@@ -64,6 +64,18 @@ const projectId = getCurrentProjectId();
 The value is always exposed as a string: Cloud uses a UUID, while Enterprise uses its local numeric ID serialized as a string. An app imported into Enterprise receives the target Enterprise project ID, not the source Cloud project ID.
 
 Call `getCurrentProjectId()` from server/runtime code. Browser bundles cannot read Node.js `process.env` automatically.
+
+## Current App
+
+Tier0 application runtimes inject `APP_ID` with the **agent-platform App UUID**. Read it through the SDK, which validates the format:
+
+```typescript
+import { getCurrentAppId } from '@tier0/sdk';
+
+const appId = getCurrentAppId();
+```
+
+⚠️ **`APP_ID` is not always the App UUID.** The MonoApp scaffold defaults it to the literal `monoapp`, and a scaffold deployment normally sets it to the *session id* (the same value as `DB_SCHEMA`, e.g. `session-xyz789`). Those values are silently useless as an app identity — APIs that take an appId accept them and then fail to resolve anything. `getCurrentAppId()` throws instead of returning such a value, so read it through the SDK rather than `process.env.APP_ID`, and treat a throw as a platform-side injection problem, not something to work around with a hard-coded UUID.
 
 If `apiHost` has no scheme, the SDK normalizes it as `http://<host>`. For cloud deployments, pass `https://...` explicitly.
 

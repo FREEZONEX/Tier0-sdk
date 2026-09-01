@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk
-version: 0.3.5
+version: 0.4.0
 description: "Tier0 SDK root/router Skill and shared configuration for TypeScript/JavaScript. Read this root Skill before every Tier0 SDK domain Skill, and read references/configuration.md before making any actual @tier0/sdk call. Use for installing or updating @tier0/sdk, configuring API/MQTT/runtime values, resolving the current project, selecting package entry points, React/Vue adapters, MonoApp integration, or routing work to UNS, realtime MQ, Flow and Node-RED HTTP endpoints, files, members, notifications, and system capabilities."
 metadata:
   requires:
@@ -90,8 +90,9 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 
 ## Shared Guardrails
 
-- Never hard-code an API host, MQTT host, API key, workspace binding, or project ID when the platform supplies it at runtime.
+- Never hard-code an API host, MQTT host, API key, workspace binding, project ID, or app ID when the platform supplies it at runtime.
 - In generated project-scoped apps, call `getCurrentProjectId()` from server/runtime code. Imported apps receive a new local project context.
+- Where an app id is needed, call `getCurrentAppId()` — it validates that the injected `APP_ID` is the agent-platform App UUID rather than the scaffold default or a session id. Never read `process.env.APP_ID` directly; see [`references/configuration.md`](references/configuration.md).
 - Browser bundles do not automatically read Node environment variables or `VITE_*`; pass browser runtime values explicitly.
 - Do not use these Skills for a non-Tier0 API, another named SDK, a generic external MQTT broker, or direct PLC/OPC UA/Modbus/device-protocol access outside Tier0 APIs.
 - Do not navigate to or `window.open()` a private presigned URL for an attachment download. In MonoApp, proxy `downloadFile` through an authenticated same-origin route and let the UI save a Blob with `<a download>`.
