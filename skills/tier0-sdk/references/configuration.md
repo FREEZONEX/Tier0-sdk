@@ -75,6 +75,8 @@ import { getCurrentAppId } from '@tier0/sdk';
 const appId = getCurrentAppId();
 ```
 
+Call `getCurrentAppId()` from server/runtime code, like `getCurrentProjectId()`: a browser bundle cannot read Node.js `process.env`, so it throws there regardless of what the platform injected.
+
 ⚠️ **`APP_ID` is not always the App UUID.** The MonoApp scaffold defaults it to the literal `monoapp`, and a scaffold deployment normally sets it to the *session id* (the same value as `DB_SCHEMA`, e.g. `session-xyz789`). Those values are silently useless as an app identity — APIs that take an appId accept them and then fail to resolve anything. `getCurrentAppId()` throws instead of returning such a value, so read it through the SDK rather than `process.env.APP_ID`, and treat a throw as a platform-side injection problem, not something to work around with a hard-coded UUID.
 
 If `apiHost` has no scheme, the SDK normalizes it as `http://<host>`. For cloud deployments, pass `https://...` explicitly.

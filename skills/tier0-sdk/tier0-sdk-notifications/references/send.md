@@ -142,11 +142,13 @@ Neither the name nor the icon is self-reported for an App: both are resolved ser
 ```typescript
 import { getCurrentAppId, getCurrentProjectId } from '@tier0/sdk';
 
-sender: {
+// Both getters are server-side: they read platform-injected env vars,
+// which a browser bundle cannot see.
+const sender = {
   type: 'app',
-  id: getCurrentAppId(),                    // validated agent-platform UUID
+  id: getCurrentAppId(),                      // validated agent-platform UUID
   meta: { projectId: getCurrentProjectId() }, // no name: the server looks the real one up
-}
+};
 ```
 
 ## link: the Open button target
