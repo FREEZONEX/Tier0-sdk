@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-notifications
-version: 1.5.3
+version: 1.5.4
 description: "Tier0 SDK message notifications for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. Use when selecting a human recipient from Tier0 members, sending an in-app notification with optional web/mobile push reminders, or querying delivery status through @tier0/sdk/openapi. Resolve recipient IDs internally from member data; never make users enter or understand a user ID."
 metadata:
   requires:
@@ -28,14 +28,14 @@ The two notifications endpoints do **not** use the `{code, msg, data}` envelope:
 - A trusted business record may already contain a previously resolved `userId`; use it internally without exposing it. Do not accept an arbitrary ID supplied through ordinary end-user input.
 - If the API key cannot query members, treat that as an app configuration or permission error. Do not fall back to raw-ID input. Cloud member queries currently require `uns:read` in addition to the notification permissions.
 
-## Decision ladder: ask the user first
+## Decision ladder: map user intent to channels
 
-Sending a notification interrupts a real person. Never substitute defaults for these decisions:
+Sending a notification interrupts a real person. Confirm the recipient, content, and mode as described below. Do not ask a follow-up question only because the user did not name a terminal: an unqualified request to "notify" uses the normal reminder scope, Web & Desktop plus Mobile.
 
 | Parameter | Decided by | Rule |
 |---|---|---|
 | Recipient | **User** | Ask who should receive it using name/email or a member picker. Resolve `userId` internally from members; if multiple candidates match, show human-readable labels and let the user choose — never show IDs or guess |
-| `channels` | **User** | Present the options: inbox only (silent) / + web push / + mobile push. Ask if unspecified — never silently send silent (user thinks a push went out) and never silently push to all channels (over-interruption). `web` covers both browser Web Push and the Tier0 desktop client (a shell over the web client that raises its own system notification from the same message); there is no separate desktop channel |
+| `channels` | **User intent** | Generic "notify" or explicit "all reminders" → `['web', 'mobile']`; Web & Desktop only → `['web']`; Mobile only → `['mobile']`; inbox only / silent → `[]`. `web` covers both browser Web Push and the Tier0 desktop client; never generate `desktop`. Do not narrow the reminder scope from the App page type or other implementation context |
 | Title / content | **User** (agent may draft, user reviews) | The agent enforces length limits (50/800 chars); the content itself is the user's intent |
 | `mode` | Agent detects the scenario; ask when unsure | See send.md. Never silently default to `live` when uncertain |
 | `idempotencyKey` | Agent | Business-event key discipline, see send.md |
@@ -54,7 +54,7 @@ Sending a notification interrupts a real person. Never substitute defaults for t
 
 1. The user selected a recognizable member; no UI or prompt asked for a raw user ID.
 2. `recipientUserId` was resolved internally from member data or a trusted business relation.
-3. Recipient and channels came from the user's explicit instruction, not defaults.
+3. Channels match the user's wording: an unqualified notification uses explicit `['web', 'mobile']`; inbox-only uses explicit `[]`; no `desktop` value is generated.
 4. The recipient is an active member of the API key's workspace.
 5. `idempotencyKey` is a business-event key, reused verbatim on retries.
 6. Responses were parsed as bare JSON (no envelope) and errors via `ApiError.status` + JSON in `ApiError.msg`.
