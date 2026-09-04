@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-notifications
-version: 1.5.2
+version: 1.5.3
 description: "Tier0 SDK message notifications for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. Use when selecting a human recipient from Tier0 members, sending an in-app notification with optional web/mobile push reminders, or querying delivery status through @tier0/sdk/openapi. Resolve recipient IDs internally from member data; never make users enter or understand a user ID."
 metadata:
   requires:
@@ -35,7 +35,7 @@ Sending a notification interrupts a real person. Never substitute defaults for t
 | Parameter | Decided by | Rule |
 |---|---|---|
 | Recipient | **User** | Ask who should receive it using name/email or a member picker. Resolve `userId` internally from members; if multiple candidates match, show human-readable labels and let the user choose — never show IDs or guess |
-| `channels` | **User** | Present the options: inbox only (silent) / + web push / + mobile push. Ask if unspecified — never silently send silent (user thinks a push went out) and never silently push to all channels (over-interruption) |
+| `channels` | **User** | Present the options: inbox only (silent) / + web push / + mobile push. Ask if unspecified — never silently send silent (user thinks a push went out) and never silently push to all channels (over-interruption). `web` covers both browser Web Push and the Tier0 desktop client (a shell over the web client that raises its own system notification from the same message); there is no separate desktop channel |
 | Title / content | **User** (agent may draft, user reviews) | The agent enforces length limits (50/800 chars); the content itself is the user's intent |
 | `mode` | Agent detects the scenario; ask when unsure | See send.md. Never silently default to `live` when uncertain |
 | `idempotencyKey` | Agent | Business-event key discipline, see send.md |
