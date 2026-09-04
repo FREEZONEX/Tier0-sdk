@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.8.1
+version: 0.8.2
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -42,7 +42,7 @@ try {
 | `content` | `string` | **yes** | 1-800 characters (over the limit returns 422 `CONTENT_LIMIT_EXCEEDED`, not 400) |
 | `idempotencyKey` | `string` | **yes** | ≤128 characters, see "Idempotency key discipline" |
 | `mode` | `string` | no | `test` / `live`, default `live`. `test` auto-prefixes the title with `[Test]` |
-| `channels` | `string[]` | no | Push channels: `web` / `mobile`. **Omitting and `[]` are synonymous = silent message** (inbox only, no reminder). **Pushing requires explicit values**, e.g. `["web","mobile"]` |
+| `channels` | `string[]` | no | Push channels: `web` / `mobile`. **Omitting and `[]` are synonymous = silent message** (inbox only, no reminder). **Pushing requires explicit values**, e.g. `["web","mobile"]`. `web` also covers the Tier0 desktop client: it is a shell over the web client and raises its system notification from the same message, so web and desktop are one channel and there is no `desktop` value |
 | `sender` | `object` | no | Sender identity, see below. Server defaults to `{"type":"other"}` |
 | `link` | `string` | no | Open-button target, see below. **Omitting and `""` are synonymous**; the button then disappears only if the sender is not a complete `app` sender (see below) |
 | `source` | `string` | no | **Deprecated**: transitional alias for `sender.name` (`sender.name` wins). Do not send |
@@ -52,7 +52,7 @@ try {
 | Field | Controls | Values |
 |---|---|---|
 | `type` | What kind of message body | Only `"inbox"` (in-app message), fixed |
-| `channels` | Whether to **additionally ring a bell** beyond the inbox | `web` / `mobile` / omit = inbox only |
+| `channels` | Whether to **additionally ring a bell** beyond the inbox | `web` (browser + desktop client) / `mobile` / omit = inbox only |
 | `sender.type` | Who sent it | `app` / `other` |
 
 The inbox message is always created (it IS the message); `channels` only decides whether to interrupt.
