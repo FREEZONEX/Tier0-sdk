@@ -2,6 +2,7 @@
 // Do not edit manually
 
 import { getClient } from './client.js';
+import { normalizeNotificationRequest } from './notifications.js';
 import type { components } from './types.js';
 
 export const systemApi = {
@@ -27,7 +28,7 @@ export const launchpadApi = {
 
 export const notificationsApi = {
   openapiv1notificationsget: (body: components["schemas"]["GetNotificationReq"]) => getClient().post<components["schemas"]["GetNotificationResp"]>('/openapi/v1/notifications/get', body),
-  openapiv1notificationssend: (body: components["schemas"]["SendNotificationReq"]) => getClient().post<components["schemas"]["SendNotificationResp"]>('/openapi/v1/notifications/send', body),
+  openapiv1notificationssend: (body: components["schemas"]["SendNotificationReq"]) => getClient().post<components["schemas"]["SendNotificationResp"]>('/openapi/v1/notifications/send', normalizeNotificationRequest(body)),
 };
 
 export const platformApi = {

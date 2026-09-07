@@ -83,7 +83,7 @@
     "build:esm": "tsc -p tsconfig.esm.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "generate": "bash scripts/generate-openapi.sh",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit --strict --skipLibCheck --module nodenext --target es2020 tests/openapi/notifications.types.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

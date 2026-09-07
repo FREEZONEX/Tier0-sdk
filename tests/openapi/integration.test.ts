@@ -54,7 +54,7 @@ run('OpenAPI Integration Tests', () => {
   const isNotifyForbidden = (e: unknown): boolean =>
     e instanceof ApiError && e.status === 403;
 
-  // notifications 端到端：发给 Key 主人自己 + test 模式 + 静默（无 channels），不打扰任何真实用户
+  // notifications 端到端：发给 Key 主人自己 + test 模式 + 静默（channels: []），不打扰任何真实用户
   it('should send a silent test notification to self and reach a terminal status', async (ctx) => {
     const who = await systemApi.openapiv1authwhoami();
     expect(who.code).toBe(200);
@@ -73,7 +73,7 @@ run('OpenAPI Integration Tests', () => {
         content: 'Silent test notification sent by tier0-sdk integration tests. Safe to ignore.',
         idempotencyKey: `sdk-integration-${Date.now()}`,
         mode: 'test',
-        // no channels = silent: inbox only
+        channels: [], // silent: inbox only
       });
     } catch (e) {
       if (isNotifyForbidden(e)) return ctx.skip(); // key lacks notifications:send
