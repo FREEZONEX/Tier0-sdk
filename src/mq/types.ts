@@ -1,6 +1,18 @@
 export interface MQTTConfig {
+  /**
+   * broker 地址。支持三种形态：
+   * - 完整 WebSocket URL，如 `wss://host:8084/mqtt`（推荐浏览器场景显式使用）；
+   * - 裸 `host`（可含端口，如 `host:8084`）；
+   * - 平台 `/openapi/v1/info` 返回的原始 `mqttBroker`（如 `tcp://host:1883`，
+   *   建议先用 {@link toWebSocketUrl} 归一后再传入，见 `@tier0/sdk/mq` 的 broker 工具）。
+   */
   host?: string;
   port?: number;
+  /**
+   * 当 host 不带 ws(s) scheme 时，显式指定用 wss(true) 还是 ws(false)。
+   * 缺省自适应：浏览器 https 页面用 wss，其余（Node、http 页面）用 ws。
+   */
+  secure?: boolean;
   clientId?: string;
   username?: string;
   password?: string;

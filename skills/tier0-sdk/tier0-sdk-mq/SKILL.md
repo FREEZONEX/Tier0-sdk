@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-mq
-version: 1.0.0
-description: "Tier0 SDK MQTT/MQ over WebSocket for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. When any MQTT subscribe, publish, or wildcard targets Tier0 UNS topics, reading tier0-sdk-uns first is mandatory because UNS topic paths, modeling, ownership, and payload schemas are constrained. Use for continuously changing or realtime data, high-frequency/fan-out messages, and MQTT connection, wildcard, handler, unsubscribe, and shutdown lifecycle through @tier0/sdk/mq. Not for generic external brokers or implementing a broker."
+version: 1.1.0
+description: "Tier0 SDK MQTT/MQ over WebSocket for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. When any MQTT subscribe, publish, or wildcard targets Tier0 UNS topics, reading tier0-sdk-uns first is mandatory because UNS topic paths, modeling, ownership, and payload schemas are constrained. Use for continuously changing or realtime data, high-frequency/fan-out messages, and MQTT connection, wildcard, handler, unsubscribe, and shutdown lifecycle through @tier0/sdk/mq. For browser wss connections deriving the broker from /openapi/v1/info, use parseMqttBroker/toWebSocketUrl instead of parsing mqttBroker manually. Not for generic external brokers or implementing a broker."
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -26,6 +26,7 @@ metadata:
 - Reserve direct MQTT `publish` for high-frequency or fan-out sending; its payload must match the modeled Topic schema exactly.
 - Use OpenAPI `history` for reconnect backfill only when `enableHistory` is enabled.
 - Own long-lived subscriptions in a server runtime, service, or worker with explicit disconnect/shutdown handling; do not create durable subscriptions in component render paths.
+- When the browser connects to the broker directly (wss), derive the endpoint with `parseMqttBroker` / `toWebSocketUrl` from `@tier0/sdk/mq`; never hand-parse `/openapi/v1/info`'s `mqttBroker` or template it into a URL string (see [`references/quickstart.md`](references/quickstart.md) → "Broker Address Resolution").
 
 Read [`references/quickstart.md`](references/quickstart.md) before implementing connection, subscribe, publish, wildcard, handler, unsubscribe, event, or disconnect behavior.
 

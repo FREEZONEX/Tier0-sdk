@@ -100,6 +100,35 @@ describe('Tier0MQClient', () => {
     );
   });
 
+  it('should not reuse the TCP port from tcp:// broker URLs for wss', async () => {
+    const client = new Tier0MQClient({
+      host: 'tcp://mqtt.example.com:1883',
+      secure: true,
+    });
+    const connectPromise = client.connect();
+
+    emit('connect');
+    await connectPromise;
+
+    expect(mqtt.connect).toHaveBeenCalledWith(
+      'wss://mqtt.example.com:8084/mqtt',
+      expect.any(Object)
+    );
+  });
+
+  it('should honor ws port embedded in ws(s):// host', async () => {
+    const client = new Tier0MQClient({ host: 'wss://mqtt.example.com:9001' });
+    const connectPromise = client.connect();
+
+    emit('connect');
+    await connectPromise;
+
+    expect(mqtt.connect).toHaveBeenCalledWith(
+      'wss://mqtt.example.com:9001/mqtt',
+      expect.any(Object)
+    );
+  });
+
   it('should connect with override config', async () => {
     const client = new Tier0MQClient();
     const connectPromise = client.connect({
