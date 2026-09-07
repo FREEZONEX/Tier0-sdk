@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.8.2
+version: 0.8.3
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -42,7 +42,7 @@ try {
 | `content` | `string` | **yes** | 1-800 characters (over the limit returns 422 `CONTENT_LIMIT_EXCEEDED`, not 400) |
 | `idempotencyKey` | `string` | **yes** | ≤128 characters, see "Idempotency key discipline" |
 | `mode` | `string` | no | `test` / `live`, default `live`. `test` auto-prefixes the title with `[Test]` |
-| `channels` | `string[]` | no | Push channels: `web` / `mobile`. **Omitting and `[]` are synonymous = silent message** (inbox only, no reminder). **Pushing requires explicit values**, e.g. `["web","mobile"]`. `web` also covers the Tier0 desktop client: it is a shell over the web client and raises its system notification from the same message, so web and desktop are one channel and there is no `desktop` value |
+| `channels` | `string[]` | no | Push channels: `web` / `mobile`. At the current SDK/API contract, **omitting and `[]` are synonymous = silent message** (inbox only, no reminder). Skill-generated code therefore uses explicit arrays for every intent. `web` also covers the Tier0 desktop client, so there is no `desktop` value |
 | `sender` | `object` | no | Sender identity, see below. Server defaults to `{"type":"other"}` |
 | `link` | `string` | no | Open-button target, see below. **Omitting and `""` are synonymous**; the button then disappears only if the sender is not a complete `app` sender (see below) |
 | `source` | `string` | no | **Deprecated**: transitional alias for `sender.name` (`sender.name` wins). Do not send |
@@ -52,10 +52,24 @@ try {
 | Field | Controls | Values |
 |---|---|---|
 | `type` | What kind of message body | Only `"inbox"` (in-app message), fixed |
-| `channels` | Whether to **additionally ring a bell** beyond the inbox | `web` (browser + desktop client) / `mobile` / omit = inbox only |
+| `channels` | Whether to **additionally ring a bell** beyond the inbox | `web` (browser + desktop client) / `mobile` / `[]` = inbox only |
 | `sender.type` | Who sent it | `app` / `other` |
 
 The inbox message is always created (it IS the message); `channels` only decides whether to interrupt.
+
+### Channel selection for generated Apps
+
+Translate the user's words directly into an explicit array:
+
+| User intent | Generate | Result |
+|---|---|---|
+| "Notify the user" with no terminal qualifier | `channels: ['web', 'mobile']` | Inbox + Web & Desktop + Mobile |
+| All terminal reminders | `channels: ['web', 'mobile']` | Inbox + Web & Desktop + Mobile |
+| Web & Desktop only | `channels: ['web']` | Inbox + Web & Desktop |
+| Mobile only | `channels: ['mobile']` | Inbox + Mobile |
+| Inbox only / silent | `channels: []` | Inbox only |
+
+`web` and Desktop are one channel. Never emit `desktop`, and never infer a narrower channel set from whether the generated App is a web page, desktop shell, or mobile-facing view. Do not omit `channels` to express the default notification intent: `@tier0/sdk@0.3.5` forwards the body unchanged, so omission still means inbox only. Use `['web', 'mobile']` explicitly until the published SDK contract is verified to expand omission itself.
 
 ### Resolving the recipient
 
@@ -258,13 +272,13 @@ For an AI generating App code:
 2. `sender`: `type: 'app'` + `id` from `getCurrentAppId()` + `meta.projectId` from `getCurrentProjectId()`, both resolved at runtime (server-side code). No `name` — the server looks the real App name up
 3. mode: `NODE_ENV === 'production' ? 'live' : 'test'`
 4. Recipient: selected by a human-readable member picker or resolved from a trusted business relation; `recipientUserId` remains internal and is never typed by the user
-5. Channels: from the user's explicit instruction (see the decision ladder in [`../SKILL.md`](../SKILL.md)) — never hard-coded defaults
+5. Channels: map the user's wording with the decision ladder in [`../SKILL.md`](../SKILL.md). Generic notification → explicit `['web', 'mobile']`; explicit inbox-only → `[]`; never generate `desktop`
 
 ## Examples
 
 The examples assume `recipientUserId` came from the selected member option or a trusted business relation. It is never collected through a raw-ID field.
 
-### 1. Minimal silent inbox message (record only, no interruption)
+### 1. Explicit inbox-only message (record only, no interruption)
 
 ```typescript
 import { notificationsApi } from '@tier0/sdk/openapi';
@@ -275,14 +289,14 @@ const resp = await notificationsApi.openapiv1notificationssend({
   title: 'Weekly inventory report ready',
   content: 'The weekly inventory report is available on the Reports page.',
   idempotencyKey: 'inventory-weekly-2026W35',
-  // no channels = silent: inbox only, no reminder
+  channels: [], // the user explicitly requested inbox only
   // an `other` sender has nothing to look up, so it must name itself
   sender: { type: 'other', name: 'Inventory reporter' },
 });
 console.log(resp.messageId, resp.status); // "71234..." "accepted"
 ```
 
-### 2. Full send with push + sender (App scenario)
+### 2. Generic notification with all reminders + sender (App scenario)
 
 ```typescript
 import { getCurrentAppId, getCurrentProjectId } from '@tier0/sdk';
@@ -294,7 +308,9 @@ const resp = await notificationsApi.openapiv1notificationssend({
   content: 'Mixing tank 01 on line 1 exceeded temperature limit (82°C). Immediate action required.',
   idempotencyKey: 'alert-tank01-overtemp-20260825T1500',
   mode: process.env.NODE_ENV === 'production' ? 'live' : 'test',
-  channels: ['web', 'mobile'], // the user explicitly asked for push
+  // Generic "notify" uses the normal reminder scope. The same array represents
+  // an explicit request for all terminal reminders.
+  channels: ['web', 'mobile'],
   // Open button target: this App's OWN router path. Because the message carries an app
   // sender, the client forwards it into the App's iframe — see "Writing the path".
   link: '/alerts/tank01',
@@ -305,6 +321,13 @@ const resp = await notificationsApi.openapiv1notificationssend({
     meta: { projectId: getCurrentProjectId() }, // runtime value — correct even after the App is imported elsewhere
   },
 });
+```
+
+For an explicitly narrower reminder scope, change only the channel array:
+
+```typescript
+channels: ['web'];   // Web & Desktop only; never use 'desktop'
+channels: ['mobile']; // Mobile only
 ```
 
 ### 3. Retry on failure (reuse the idempotency key)
@@ -318,6 +341,7 @@ const body = {
   title: 'Order shipped',
   content: 'Your order #A1029 has shipped.',
   idempotencyKey: 'order-A1029-shipped-v1', // unchanged across retries
+  channels: ['web', 'mobile'], // generic notification = normal reminder scope
   sender: { type: 'other', name: 'Order service' }, // an `other` sender must name itself
 };
 
