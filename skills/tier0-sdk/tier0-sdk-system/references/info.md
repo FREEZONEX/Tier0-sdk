@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-openapi-info
-version: 0.3.0
-description: "POST /openapi/v1/info — 获取 Tier0 服务信息（连通性验证）"
+version: 0.3.1
+description: "POST /openapi/v1/info — 获取 Tier0 服务信息（连通性验证；mqttBroker 为服务端连接串，浏览器 wss 勿直接当 hostname 用）"
 ---
 
 # info — `POST /openapi/v1/info`
@@ -30,10 +30,29 @@ const result = await systemApi.openapiv1info({});
     name: string;           // 服务名称，如 "Tier0 UNS OpenAPI"
     version: string;        // API 版本，如 "v1"
     capabilities: string[]; // 支持的操作列表，如 ["read","write","browse","search","create","update","delete"]
-    mqttBroker: string;     // MQTT Broker 地址，由当前环境返回
+    mqttBroker: string;     // 服务端/边缘用 MQTT 连接串（见下节契约，格式随环境变化，勿当裸主机名用）
   };
 }
 ```
+
+## `mqttBroker` 字段契约（重要）
+
+`mqttBroker` 是**给服务端 / 边缘客户端用的 MQTT 连接串**，不是浏览器 wss 直连地址：
+
+- **enterprise 环境**：后端取 `EMQX_EXTERNAL_BROKER_HOST`（env 透传）；为空时兜底拼
+  `tcp://<ENTRANCE_DOMAIN>:<OS_MQTT_TCP_PORT>`（如 `tcp://example.tier0.dev:1883`）。
+- **SaaS（Tier0 Cloud）环境**：原样透传部署配置的 broker 地址，可能是裸主机、`host:port`，也可能带 scheme。
+- 因此**格式不保证统一**，消费方必须按 URL 解析而不是按"裸主机名"切分：
+  ```typescript
+  const broker = new URL(result.data.mqttBroker);   // tcp://host:1883
+  const host = broker.hostname;                     // 只取主机部分
+  ```
+- **浏览器 / MQTT.js wss 客户端**：不要直接 `` `wss://${mqttBroker}` ``（会得到
+  `wss://tcp://host:1883` 这类非法 URL）。正确做法：URL 解析取 `hostname`，再拼浏览器可达的
+  wss 端点（如 `wss://<hostname>:8084/mqtt`）；wss 端口与 tcp 端口（1883）不同，需来自部署配置
+  或约定，不能从 `mqttBroker` 里照搬。
+- **推荐**：直接使用 `@tier0/sdk/mq` 提供的 `parseMqttBroker` / `toWebSocketUrl`
+  处理以上归一化逻辑（见 tier0-sdk-mq skill）。
 
 ## 使用示例
 

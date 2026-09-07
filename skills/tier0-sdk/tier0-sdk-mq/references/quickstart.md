@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-mq-quickstart
-version: 0.2.2
-description: "MQ module quickstart: configuration, subscribe, publish, unsubscribe, backpressure, events. All topics follow the UNS naming contract: <business path>/<Metric|Action|State>/<leaf>."
+version: 0.3.0
+description: "MQ module quickstart: broker address resolution (parseMqttBroker/toWebSocketUrl), configuration, subscribe, publish, unsubscribe, backpressure, events. All topics follow the UNS naming contract: <business path>/<Metric|Action|State>/<leaf>."
 ---
 
 # MQ Quickstart
@@ -11,6 +11,7 @@ description: "MQ module quickstart: configuration, subscribe, publish, unsubscri
 ## Contents
 
 - Topic naming and configuration
+- Broker address resolution (browser wss)
 - Subscribe, wildcards, and multiple handlers
 - Publish and UNS payload requirements
 - Unsubscribe, lifecycle events, disconnect, and state
@@ -68,6 +69,43 @@ const client = new Tier0MQClient({
 > **No lazy creation**: never publish to a topic that has not been explicitly modeled. Create it first with the `create` endpoint (declaring `fields`) — do not treat publishing as a way to create topics. A publish to an unmodeled topic is a bug, not a provisioning mechanism.
 >
 > Default transport split: **HTTP write to send, MQTT subscribe to receive**. Both channels hit the same broker and topics — an HTTP write is delivered to MQTT subscribers in realtime. Reserve direct MQTT `publish` for high-frequency/fan-out sending. See [`../../tier0-sdk-uns/references/data-integration.md`](../../tier0-sdk-uns/references/data-integration.md) → "Transport selection".
+
+### Scheme 自适应（host 不带 ws(s) scheme 时）
+
+host 为裸 `host`/`host:port` 时，SDK 自动选择 scheme：浏览器 https 页面用 `wss`，Node/http 页面用 `ws`；也可用 `secure: true/false` 显式指定。`port` 默认 8084。
+
+```typescript
+const client = new Tier0MQClient({ host: 'broker.example.com', secure: true });
+// → 连接 wss://broker.example.com:8084/mqtt
+```
+
+## Broker Address Resolution（浏览器 wss）
+
+平台 `/openapi/v1/info` 返回的 `data.mqttBroker` **格式随环境变化，不保证统一**（enterprise 常见
+`tcp://host:1883`，Cloud/SaaS 常见裸 `host` 或 `host:port`），且它是面向服务端/边缘客户端的连接串，
+**浏览器 wss 客户端不能直接把它当 hostname 拼 URL**（`` `wss://${mqttBroker}` `` 会得到
+`wss://tcp://...` 这类非法地址）。用 SDK 的 broker 工具归一：
+
+```typescript
+import { parseMqttBroker, toWebSocketUrl } from '@tier0/sdk/mq';
+
+// 1) 结构化解析：任何形态都切成 { hostname, port?, scheme? }
+parseMqttBroker('tcp://example.tier0.dev:1883');
+// → { hostname: 'example.tier0.dev', port: 1883, scheme: 'tcp' }
+
+// 2) 一步到位推导 WebSocket URL（推荐）：tcp 端口不会被误沿用
+const wsUrl = toWebSocketUrl(info.data.mqttBroker, { secure: true });
+// → 'wss://example.tier0.dev:8084/mqtt'；无法解析时返回 undefined（走回退/报错，勿硬拼）
+
+const client = new Tier0MQClient({ host: wsUrl, password: apiKey });
+```
+
+规则：
+
+- 输入已是 `ws(s)://` URL：原样直通（自动补 `/mqtt` 路径，端口保留）；
+- 输入 `tcp://host:1883` / `host:port` / 裸 `host`：scheme 按 `secure`（缺省浏览器 https → wss），
+  **端口一律用 `wssPort`（默认 8084）**，1883 是 tcp 端口不能给浏览器用；
+- 输入为空/无法解析：返回 `undefined`，调用方必须回退或报错。
 
 ## Subscribe
 
