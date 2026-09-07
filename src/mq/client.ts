@@ -1,7 +1,7 @@
 import mqtt from 'mqtt';
 import type { MqttClient, IClientOptions } from 'mqtt';
 import { getEnvVar } from '../runtime-env.js';
-import { parseMqttBroker } from './broker.js';
+import { isBrowserHttps, parseMqttBroker } from './broker.js';
 import type { MQTTConfig, MQTTEventMap } from './types.js';
 
 /**
@@ -113,13 +113,16 @@ export class Tier0MQClient {
         ? normalizedHost
         : `${normalizedHost}/mqtt`;
     }
-    // 裸 host（可含端口）：按运行环境自适应 ws/wss，端口只补一次
+    // 裸 host（可含端口）：按运行环境自适应 ws/wss
     const endpoint = parseMqttBroker(normalizedHost);
     const hostname = endpoint?.hostname ?? normalizedHost;
-    const effectivePort = endpoint?.port ?? port;
-    const useSecure =
-      secure ??
-      (typeof window !== 'undefined' && window.location?.protocol === 'https:');
+    // 端口选择：ws(s) scheme 的端口是 WebSocket 端口，可直接沿用；
+    // tcp/mqtt/mqtts 的端口是 TCP 端口（如 1883），wss 下不能沿用，回退到配置的 port
+    const effectivePort =
+      endpoint?.scheme === 'ws' || endpoint?.scheme === 'wss'
+        ? endpoint.port ?? port
+        : port;
+    const useSecure = secure ?? isBrowserHttps();
     return `${useSecure ? 'wss' : 'ws'}://${hostname}:${effectivePort}/mqtt`;
   }
 

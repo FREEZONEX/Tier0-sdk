@@ -42,10 +42,13 @@ const result = await systemApi.openapiv1info({});
 - **enterprise 环境**：后端取 `EMQX_EXTERNAL_BROKER_HOST`（env 透传）；为空时兜底拼
   `tcp://<ENTRANCE_DOMAIN>:<OS_MQTT_TCP_PORT>`（如 `tcp://example.tier0.dev:1883`）。
 - **SaaS（Tier0 Cloud）环境**：原样透传部署配置的 broker 地址，可能是裸主机、`host:port`，也可能带 scheme。
-- 因此**格式不保证统一**，消费方必须按 URL 解析而不是按"裸主机名"切分：
+- 因此**格式不保证统一**，消费方必须解析后再取主机部分，而不是按"裸主机名"切分。
+  推荐直接用 `@tier0/sdk/mq` 的 `parseMqttBroker`（兼容带/不带 scheme、含/不含端口）：
   ```typescript
-  const broker = new URL(result.data.mqttBroker);   // tcp://host:1883
-  const host = broker.hostname;                     // 只取主机部分
+  import { parseMqttBroker } from '@tier0/sdk/mq';
+
+  const endpoint = parseMqttBroker(result.data.mqttBroker);
+  const host = endpoint?.hostname;   // 'tcp://host:1883' / 'host:1883' / 'host' 都能取到裸主机
   ```
 - **浏览器 / MQTT.js wss 客户端**：不要直接 `` `wss://${mqttBroker}` ``（会得到
   `wss://tcp://host:1883` 这类非法 URL）。正确做法：URL 解析取 `hostname`，再拼浏览器可达的

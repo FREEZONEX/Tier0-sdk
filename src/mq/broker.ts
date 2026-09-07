@@ -75,12 +75,16 @@ export interface ToWebSocketUrlOptions {
   secure?: boolean;
 }
 
-function isBrowserHttps(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    typeof window.location?.protocol === 'string' &&
-    window.location.protocol === 'https:'
-  );
+/**
+ * 当前运行环境是否处于 https 安全上下文。
+ *
+ * 用 `globalThis.location` 而不是 `window.location`：Web Worker
+ * （dedicated/shared）里 `window` 不存在，但 `location.protocol` 同样是 `https:`，
+ * 应同等视为安全上下文（否则会被降级为 ws 而被浏览器按 mixed content 拦截）。
+ */
+export function isBrowserHttps(): boolean {
+  const loc = (globalThis as { location?: { protocol?: string } }).location;
+  return typeof loc?.protocol === 'string' && loc.protocol === 'https:';
 }
 
 /**
@@ -88,7 +92,7 @@ function isBrowserHttps(): boolean {
  * `Tier0MQClient` 的 WebSocket URL。
  *
  * 规则：
- * - 输入已是 `ws(s)://` URL：原样归一（补 `/mqtt` 路径，端口保留）；
+ * - 输入已是 `ws(s)://` URL：原样归一（补 `/mqtt` 路径，端口、path、query 均保留）；
  * - 输入 `tcp://host:1883` / `host:port` / 裸 `host`：按 `secure` 推导 scheme，
  *   端口一律用 `wssPort`（8084），**不沿用** tcp 端口；
  * - 输入为空/无法解析：返回 undefined（调用方应回退或报错，勿硬拼 URL）。
@@ -103,14 +107,28 @@ export function toWebSocketUrl(
 ): string | undefined {
   if (broker == null || broker === '') return undefined;
 
-  // 已是 ws(s) URL：归一后直通（保留其 scheme/端口）
+  // 已是 ws(s) URL：解析后归一直通（保留其 scheme/端口/path/query，仅补 /mqtt 路径）
   if (typeof broker === 'string' && /^wss?:\/\//i.test(broker.trim())) {
-    const trimmed = broker.trim().replace(/\/+$/, '');
-    return trimmed.endsWith(DEFAULT_WS_PATH) ? trimmed : `${trimmed}${DEFAULT_WS_PATH}`;
+    try {
+      const u = new URL(broker.trim());
+      if (!u.hostname) return undefined;
+      if (!u.pathname || u.pathname === '/') {
+        u.pathname = DEFAULT_WS_PATH;
+      }
+      return u.toString();
+    } catch {
+      return undefined;
+    }
   }
 
   const endpoint = typeof broker === 'string' ? parseMqttBroker(broker) : broker;
   if (!endpoint?.hostname) return undefined;
+
+  // ws(s) 端点：保留其 scheme 与端口（"已是 WebSocket 地址"的直通语义）
+  if (endpoint.scheme === 'ws' || endpoint.scheme === 'wss') {
+    const port = endpoint.port ? `:${endpoint.port}` : '';
+    return `${endpoint.scheme}://${endpoint.hostname}${port}${DEFAULT_WS_PATH}`;
+  }
 
   const secure = opts.secure ?? isBrowserHttps();
   const port = opts.wssPort ?? DEFAULT_WSS_PORT;
