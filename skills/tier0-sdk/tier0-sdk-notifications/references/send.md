@@ -41,7 +41,7 @@ try {
 | `title` | `string` | **yes** | 1-50 characters |
 | `content` | `string` | **yes** | 1-800 characters (over the limit returns 422 `CONTENT_LIMIT_EXCEEDED`, not 400) |
 | `idempotencyKey` | `string` | **yes** | ≤128 characters, see "Idempotency key discipline" |
-| `mode` | `string` | no | `test` / `live`, default `live`. `test` auto-prefixes the title with `[Test]` |
+| `mode` | `string` | no | `test` / `live`, default `live` |
 | `channels` | `("web" ∣ "mobile")[]` | no | Omitted or `undefined`: SDK sends `['web', 'mobile']`. `[]`: inbox only. Explicit arrays are deduplicated without adding other channels. `web` covers Web & Desktop reminder eligibility; `mobile` covers Mobile. `desktop` and other values are rejected by the TypeScript type |
 | `sender` | `object` | no | Sender identity, see below. Server defaults to `{"type":"other"}` |
 | `link` | `string` | no | Open-button target, see below. **Omitting and `""` are synonymous**; the button then disappears only if the sender is not a complete `app` sender (see below) |
@@ -98,7 +98,7 @@ async function searchActiveRecipients(keyword: string) {
 
 The only open calling scenario today is an agent-platform App. Rule:
 
-- App **not yet published** (developing / previewing) → `mode: "test"` (recipients see the `[Test]` prefix and recognize a rehearsal)
+- App **not yet published** (developing / previewing) → `mode: "test"`
 - App **published** → `mode: "live"`
 
 Detection heuristic — Live Preview runs a dev server (`NODE_ENV=development`), a published App runs the production build:

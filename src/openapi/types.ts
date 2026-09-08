@@ -918,7 +918,7 @@ export interface components {
             /** @description 已废弃：过渡期作 sender.name 别名（sender.name 优先） */
             source?: string;
             /**
-             * @description test/live，缺省 live；test 模式标题自动加 [Test] 前缀
+             * @description test/live，缺省 live
              * @default live
              * @enum {string}
              */
