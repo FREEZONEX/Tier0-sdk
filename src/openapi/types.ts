@@ -923,7 +923,7 @@ export interface components {
              * @enum {string}
              */
             mode?: "test" | "live";
-            /** @description 推送渠道 web/mobile；不传或 [] 同义=静默（只建站内信不推送），推送须显式传值 */
+            /** @description SDK 提醒渠道：web 覆盖 Web 与 Desktop，mobile 覆盖 Mobile；不传时 SDK 展开为 [web, mobile]；[] 仅创建站内信；显式渠道去重且不补充其他渠道 */
             channels?: ("web" | "mobile")[];
             sender?: components["schemas"]["NotificationSender"];
             /** @description Open 跳转地址，可选；非空时须 https:// 或 / 开头、≤500 字符；不含任何空白/控制/不可见格式字符（含 U+00A0、U+200B、U+FEFF 等非 ASCII 形态），不含反斜杠；协议相对地址 //host 及其反斜杠变体视为跨站绝对地址一并拒绝。缺省=本字段不提供跳转（若 sender.type=app 且 id 与 meta.projectId 齐全，仍会渲染「打开发送 App」按钮；两者皆无才不渲染）。自报值仅导航提示，不可作安全判断依据 */

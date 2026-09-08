@@ -190,7 +190,7 @@ describe('API modules', () => {
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
         'http://api.example.com/openapi/v1/notifications/send',
-        expect.objectContaining({ method: 'POST', body: JSON.stringify(body) })
+        expect.objectContaining({ method: 'POST', body: JSON.stringify({ ...body, channels: ['web', 'mobile'] }) })
       );
     });
 

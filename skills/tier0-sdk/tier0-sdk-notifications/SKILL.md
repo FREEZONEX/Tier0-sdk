@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-notifications
-version: 1.5.3
+version: 1.5.5
 description: "Tier0 SDK message notifications for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. Use when selecting a human recipient from Tier0 members, sending an in-app notification with optional web/mobile push reminders, or querying delivery status through @tier0/sdk/openapi. Resolve recipient IDs internally from member data; never make users enter or understand a user ID."
 metadata:
   requires:
@@ -28,20 +28,34 @@ The two notifications endpoints do **not** use the `{code, msg, data}` envelope:
 - A trusted business record may already contain a previously resolved `userId`; use it internally without exposing it. Do not accept an arbitrary ID supplied through ordinary end-user input.
 - If the API key cannot query members, treat that as an app configuration or permission error. Do not fall back to raw-ID input. Cloud member queries currently require `uns:read` in addition to the notification permissions.
 
-## Decision ladder: ask the user first
+## Notification decisions
 
-Sending a notification interrupts a real person. Never substitute defaults for these decisions:
+Resolve the recipient and message from the user intent. Apply the SDK channel contract below:
 
 | Parameter | Decided by | Rule |
 |---|---|---|
 | Recipient | **User** | Ask who should receive it using name/email or a member picker. Resolve `userId` internally from members; if multiple candidates match, show human-readable labels and let the user choose — never show IDs or guess |
-| `channels` | **User** | Present the options: inbox only (silent) / + web push / + mobile push. Ask if unspecified — never silently send silent (user thinks a push went out) and never silently push to all channels (over-interruption). `web` covers both browser Web Push and the Tier0 desktop client (a shell over the web client that raises its own system notification from the same message); there is no separate desktop channel |
+| `channels` | **User intent / SDK default** | “Notify the user” → omit `channels` (SDK sends `['web', 'mobile']`); all reminders → `['web', 'mobile']`; Web & Desktop only → `['web']`; Mobile only → `['mobile']`; inbox only → `[]`. Never generate `desktop` or narrow channels based on the App page type |
 | Title / content | **User** (agent may draft, user reviews) | The agent enforces length limits (50/800 chars); the content itself is the user's intent |
 | `mode` | Agent detects the scenario; ask when unsure | See send.md. Never silently default to `live` when uncertain |
 | `idempotencyKey` | Agent | Business-event key discipline, see send.md |
 | `sender` | Agent | Filled from the calling app's identity, see send.md. An `app` sender sends `type: 'app'` + `id` from `getCurrentAppId()` + `meta.projectId` from `getCurrentProjectId()`, and **omits `name`** — the server looks the real App name up. Never hard-code the appId. Only an `other` sender names itself |
 | `link` | Agent (ask when ambiguous) | The Open-button target, derived from whatever the notification is about (the order, the alarming device, the work order). For a screen inside the sending App this is simply the App's own router path (`/alerts/tank01`), see send.md. Ask when the destination is not obvious — and confirm the recipient can actually reach it. Omitting it is fine, but it does not guarantee no button: there are **two** navigation sources — `link`, and `sender.type=app` carrying **both** `id` (appId) and `meta.projectId`, which offers "open the sending App". No button appears when both sources are absent — and regardless of sources when the sending App is undeployed (stopped/deleted), see send.md |
 | `type` | No choice | Fixed `"inbox"`, the only accepted value |
+
+## Channel examples
+
+For a resolved notification `body`, choose one request shape:
+
+```typescript
+notificationsApi.openapiv1notificationssend(body); // default: Web & Desktop + Mobile
+notificationsApi.openapiv1notificationssend({ ...body, channels: ['web', 'mobile'] }); // all
+notificationsApi.openapiv1notificationssend({ ...body, channels: ['web'] }); // Web & Desktop
+notificationsApi.openapiv1notificationssend({ ...body, channels: ['mobile'] }); // Mobile
+notificationsApi.openapiv1notificationssend({ ...body, channels: [] }); // inbox only
+```
+
+These are alternatives, not five sends for the same event. See [send.md](references/send.md) for the full request and upgrade notes.
 
 ## Scope Routing
 
@@ -54,7 +68,7 @@ Sending a notification interrupts a real person. Never substitute defaults for t
 
 1. The user selected a recognizable member; no UI or prompt asked for a raw user ID.
 2. `recipientUserId` was resolved internally from member data or a trusted business relation.
-3. Recipient and channels came from the user's explicit instruction, not defaults.
+3. Recipient came from user intent; channels follow the SDK default or the user's explicit scope. Inbox-only requests use `[]`.
 4. The recipient is an active member of the API key's workspace.
 5. `idempotencyKey` is a business-event key, reused verbatim on retries.
 6. Responses were parsed as bare JSON (no envelope) and errors via `ApiError.status` + JSON in `ApiError.msg`.

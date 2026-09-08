@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.8.2
+version: 0.8.5
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -42,7 +42,7 @@ try {
 | `content` | `string` | **yes** | 1-800 characters (over the limit returns 422 `CONTENT_LIMIT_EXCEEDED`, not 400) |
 | `idempotencyKey` | `string` | **yes** | ≤128 characters, see "Idempotency key discipline" |
 | `mode` | `string` | no | `test` / `live`, default `live`. `test` auto-prefixes the title with `[Test]` |
-| `channels` | `string[]` | no | Push channels: `web` / `mobile`. **Omitting and `[]` are synonymous = silent message** (inbox only, no reminder). **Pushing requires explicit values**, e.g. `["web","mobile"]`. `web` also covers the Tier0 desktop client: it is a shell over the web client and raises its system notification from the same message, so web and desktop are one channel and there is no `desktop` value |
+| `channels` | `("web" ∣ "mobile")[]` | no | Omitted or `undefined`: SDK sends `['web', 'mobile']`. `[]`: inbox only. Explicit arrays are deduplicated without adding other channels. `web` covers Web & Desktop reminder eligibility; `mobile` covers Mobile. `desktop` and other values are rejected by the TypeScript type |
 | `sender` | `object` | no | Sender identity, see below. Server defaults to `{"type":"other"}` |
 | `link` | `string` | no | Open-button target, see below. **Omitting and `""` are synonymous**; the button then disappears only if the sender is not a complete `app` sender (see below) |
 | `source` | `string` | no | **Deprecated**: transitional alias for `sender.name` (`sender.name` wins). Do not send |
@@ -52,7 +52,7 @@ try {
 | Field | Controls | Values |
 |---|---|---|
 | `type` | What kind of message body | Only `"inbox"` (in-app message), fixed |
-| `channels` | Whether to **additionally ring a bell** beyond the inbox | `web` (browser + desktop client) / `mobile` / omit = inbox only |
+| `channels` | Whether to **additionally ring a bell** beyond the inbox | `web` (Web & Desktop) / `mobile` / omit = all / `[]` = inbox only |
 | `sender.type` | Who sent it | `app` / `other` |
 
 The inbox message is always created (it IS the message); `channels` only decides whether to interrupt.
@@ -258,7 +258,34 @@ For an AI generating App code:
 2. `sender`: `type: 'app'` + `id` from `getCurrentAppId()` + `meta.projectId` from `getCurrentProjectId()`, both resolved at runtime (server-side code). No `name` — the server looks the real App name up
 3. mode: `NODE_ENV === 'production' ? 'live' : 'test'`
 4. Recipient: selected by a human-readable member picker or resolved from a trusted business relation; `recipientUserId` remains internal and is never typed by the user
-5. Channels: from the user's explicit instruction (see the decision ladder in [`../SKILL.md`](../SKILL.md)) — never hard-coded defaults
+5. Channels: generic “notify” uses the SDK default; explicit scope follows [`../SKILL.md`](../SKILL.md). Never infer a narrower scope from the App page type.
+
+## SDK channel contract and migration
+
+This SDK expands channels before HTTP serialization. Native, React and Vue send entries share this behavior; the raw backend endpoint does not need to expand defaults.
+
+| Input | Serialized channels | Reminder scope |
+|---|---|---|
+| Omitted or `undefined` | `["web", "mobile"]` | All |
+| `["web", "mobile"]` | `["web", "mobile"]` | All |
+| `["web"]` | `["web"]` | Web & Desktop |
+| `["mobile"]` | `["mobile"]` | Mobile |
+| `[]` | `[]` | Inbox only |
+| `["web", "web"]` | `["web"]` | Web & Desktop |
+
+**Upgrade note:** earlier SDK code forwarded omitted channels unchanged (including the 0.4.0 baseline). Any caller relying on omission for silent delivery must change to `channels: []` when adopting this implementation. For older installed SDK versions, explicitly pass `['web', 'mobile']` for all reminders. This change does not itself establish a published npm version.
+
+`web` expresses reminder eligibility for Web & Desktop, not proof of delivery. The SDK does no runtime channel validation; unsupported values are rejected by the TypeScript type and by the backend.
+
+Given a resolved request `body`, these are alternative calls:
+
+```typescript
+await notificationsApi.openapiv1notificationssend(body); // default all reminders
+await notificationsApi.openapiv1notificationssend({ ...body, channels: ['web', 'mobile'] }); // all
+await notificationsApi.openapiv1notificationssend({ ...body, channels: ['web'] }); // Web & Desktop
+await notificationsApi.openapiv1notificationssend({ ...body, channels: ['mobile'] }); // Mobile
+await notificationsApi.openapiv1notificationssend({ ...body, channels: [] }); // inbox only
+```
 
 ## Examples
 
@@ -275,7 +302,7 @@ const resp = await notificationsApi.openapiv1notificationssend({
   title: 'Weekly inventory report ready',
   content: 'The weekly inventory report is available on the Reports page.',
   idempotencyKey: 'inventory-weekly-2026W35',
-  // no channels = silent: inbox only, no reminder
+  channels: [], // inbox only, no reminder
   // an `other` sender has nothing to look up, so it must name itself
   sender: { type: 'other', name: 'Inventory reporter' },
 });
