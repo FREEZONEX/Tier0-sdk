@@ -47,9 +47,5 @@ for (const [name, createSend] of entrypoints) {
         expect.objectContaining({ method: 'POST', body: JSON.stringify({ ...body, channels: expected }) }));
       expect(body).toEqual(before);
     });
-    it.each([['desktop'], ['email'], ['web', 'desktop'], null, 'web', [1], new Array(1)].map(channels => [channels]))('rejects invalid runtime channels %j before sending', async (channels) => {
-      await expect(Promise.resolve().then(() => createSend()({ ...base, channels } as Request))).rejects.toThrow(TypeError);
-      expect(fetch).not.toHaveBeenCalled();
-    });
   });
 }

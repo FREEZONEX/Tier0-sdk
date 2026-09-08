@@ -2,8 +2,11 @@
 // Do not edit manually
 
 import { getClient } from './client.js';
-import { normalizeNotificationRequest } from './notifications.js';
 import type { components } from './types.js';
+
+// ponytail: SDK default differs from backend; omitted channels mean all reminders.
+const withDefaultChannels = <T extends { channels?: ("web" | "mobile")[] }>(body: T): T =>
+  ({ ...body, channels: [...new Set(body.channels ?? ['web', 'mobile'])] });
 
 export const systemApi = {
   gwreload: () => getClient().get<any>('/gw/reload'),
@@ -28,7 +31,7 @@ export const launchpadApi = {
 
 export const notificationsApi = {
   openapiv1notificationsget: (body: components["schemas"]["GetNotificationReq"]) => getClient().post<components["schemas"]["GetNotificationResp"]>('/openapi/v1/notifications/get', body),
-  openapiv1notificationssend: (body: components["schemas"]["SendNotificationReq"]) => getClient().post<components["schemas"]["SendNotificationResp"]>('/openapi/v1/notifications/send', normalizeNotificationRequest(body)),
+  openapiv1notificationssend: (body: components["schemas"]["SendNotificationReq"]) => getClient().post<components["schemas"]["SendNotificationResp"]>('/openapi/v1/notifications/send', withDefaultChannels(body)),
 };
 
 export const platformApi = {

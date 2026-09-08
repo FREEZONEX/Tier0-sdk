@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-openapi-notifications-send
-version: 0.8.4
+version: 0.8.5
 description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
@@ -42,7 +42,7 @@ try {
 | `content` | `string` | **yes** | 1-800 characters (over the limit returns 422 `CONTENT_LIMIT_EXCEEDED`, not 400) |
 | `idempotencyKey` | `string` | **yes** | ≤128 characters, see "Idempotency key discipline" |
 | `mode` | `string` | no | `test` / `live`, default `live`. `test` auto-prefixes the title with `[Test]` |
-| `channels` | `("web" ∣ "mobile")[]` | no | Omitted or `undefined`: SDK sends `['web', 'mobile']`. `[]`: inbox only. Explicit arrays are deduplicated without adding other channels. `web` covers Web & Desktop reminder eligibility; `mobile` covers Mobile. `desktop` and other values are rejected |
+| `channels` | `("web" ∣ "mobile")[]` | no | Omitted or `undefined`: SDK sends `['web', 'mobile']`. `[]`: inbox only. Explicit arrays are deduplicated without adding other channels. `web` covers Web & Desktop reminder eligibility; `mobile` covers Mobile. `desktop` and other values are rejected by the TypeScript type |
 | `sender` | `object` | no | Sender identity, see below. Server defaults to `{"type":"other"}` |
 | `link` | `string` | no | Open-button target, see below. **Omitting and `""` are synonymous**; the button then disappears only if the sender is not a complete `app` sender (see below) |
 | `source` | `string` | no | **Deprecated**: transitional alias for `sender.name` (`sender.name` wins). Do not send |
@@ -275,7 +275,7 @@ This SDK expands channels before HTTP serialization. Native, React and Vue send 
 
 **Upgrade note:** earlier SDK code forwarded omitted channels unchanged (including the 0.4.0 baseline). Any caller relying on omission for silent delivery must change to `channels: []` when adopting this implementation. For older installed SDK versions, explicitly pass `['web', 'mobile']` for all reminders. This change does not itself establish a published npm version.
 
-`web` expresses reminder eligibility for Web & Desktop, not proof of delivery. Unsupported runtime channel values throw `TypeError` before a request is sent.
+`web` expresses reminder eligibility for Web & Desktop, not proof of delivery. The SDK does no runtime channel validation; unsupported values are rejected by the TypeScript type and by the backend.
 
 Given a resolved request `body`, these are alternative calls:
 

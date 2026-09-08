@@ -117,6 +117,7 @@ run('OpenAPI Integration Tests', () => {
         idempotencyKey: `sdk-link-${Date.now()}`,
         mode: 'test',
         link: '/launchpad', // 站内路径不带 /ws 段：web 端自动补接收人所在空间
+        channels: [], // silent: inbox only
       });
     } catch (e) {
       if (isNotifyForbidden(e)) return ctx.skip(); // key lacks notifications:send
