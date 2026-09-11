@@ -39,10 +39,14 @@ In Node.js, the SDK can read `TIER0_*` environment variables.
 | Variable | Required | Description |
 |------|------|------|
 | `TIER0_MQTT_HOST` | Yes | MQTT WebSocket host injected by the platform/deployment. It may be a full `wss://host:port/mqtt` URL for TLS brokers. |
-| `TIER0_MQTT_PORT` | No | MQTT WebSocket port, used only when host has no `ws://` or `wss://` scheme |
+| `TIER0_MQTT_PORT` | No | MQTT WebSocket port used when a bare host does not embed a port; explicit TCP/MQTT URL ports are not reused |
 | `TIER0_API_KEY` | Yes | Original API key used as MQTT password; Cloud/Enterprise `sk-<type>-ws<base36>_<secret>` keys also supply the workspace MQTT identity |
 
 For browser/Vite projects, pass values explicitly from `import.meta.env`; do not rely on automatic `VITE_*` lookup.
+
+For `Tier0MQClient`, a bare `host:port` supplies the WebSocket port (for example, `emqx:8083` uses WS in Node.js). A full `ws://` or `wss://` URL keeps its explicit transport.
+
+A key supplied through `connect({ password })` derives the same workspace identity as a constructor key. When that key changes before a new connection, the SDK recalculates auto-generated username/clientId fields and preserves each field explicitly supplied by the caller. To change credentials on an established connection, disconnect first, then call `connect()` with the new key.
 
 ### .env Example
 

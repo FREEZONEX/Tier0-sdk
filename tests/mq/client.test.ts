@@ -58,6 +58,85 @@ describe('Tier0MQClient', () => {
     handlers.forEach((h) => h(...args));
   }
 
+  it.each([
+    [undefined, 'sk-per-ws1_test', '1'],
+    ['sk-svc-ws2_old', 'sk-svc-ws10_test', '36'],
+    ['sk-svc-ws2_old', 'sk-app-ws' + (9007199254740993n).toString(36) + '_test', '9007199254740993'],
+    ['sk-svc-ws2_old', 'legacy-key', 'enterprise'],
+  ])('derives identity from connect-time key %s -> %s', async (initial, password, workspace) => {
+    const client = new Tier0MQClient({ host: 'broker', password: initial });
+    const connected = client.connect({ password });
+    emit('connect');
+    await connected;
+    expect(mqtt.connect).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
+      password, username: workspace + '&open',
+      clientId: expect.stringMatching(new RegExp('^' + workspace + '&[a-z0-9]{8}$')),
+    }));
+  });
+
+  it.each(['constructor', 'connect'] as const)(
+    'preserves each explicit identity field supplied through %s', async (stage) => {
+      for (const explicit of [{ username: 'custom-user' }, { clientId: 'custom-client' },
+        { username: 'custom-user', clientId: 'custom-client' }]) {
+        const client = new Tier0MQClient({ host: 'broker', ...(stage === 'constructor' ? explicit : {}) });
+        const connected = client.connect({ password: 'sk-per-ws1_test', ...(stage === 'connect' ? explicit : {}) });
+        emit('connect');
+        await connected;
+        expect(mqtt.connect).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({
+          username: explicit.username ?? '1&open',
+          clientId: explicit.clientId ?? expect.stringMatching(/^1&[a-z0-9]{8}$/),
+        }));
+        await client.disconnect();
+      }
+    },
+  );
+
+  it('keeps explicit connect-time identity across a later disconnected key change', async () => {
+    const client = new Tier0MQClient({ host: 'broker' });
+    let connected = client.connect({ password: 'sk-per-ws1_test', username: 'custom-user' });
+    emit('connect');
+    await connected;
+    await client.disconnect();
+    connected = client.connect({ password: 'sk-per-ws2_test' });
+    emit('connect');
+    await connected;
+    expect(mqtt.connect).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({
+      password: 'sk-per-ws2_test', username: 'custom-user',
+      clientId: expect.stringMatching(/^2&[a-z0-9]{8}$/),
+    }));
+  });
+
+  it.each([
+    ['broker:8083', undefined, 'ws://broker:8083/mqtt'],
+    ['broker:8084', undefined, 'wss://broker:8084/mqtt'],
+    ['broker:9001', undefined, 'ws://broker:9001/mqtt'],
+    ['broker:8083', true, 'wss://broker:8083/mqtt'],
+    ['broker:8084', false, 'ws://broker:8084/mqtt'],
+  ] as const)('honors embedded host port %s with secure=%s', async (host, secure, url) => {
+    const client = new Tier0MQClient({ host, secure });
+    const connected = client.connect();
+    emit('connect');
+    await connected;
+    expect(mqtt.connect).toHaveBeenCalledWith(url, expect.any(Object));
+  });
+
+  it('honors the embedded port in TIER0_MQTT_HOST', async () => {
+    vi.stubEnv('TIER0_MQTT_HOST', 'emqx:8083');
+    const client = new Tier0MQClient();
+    const connected = client.connect();
+    emit('connect');
+    await connected;
+    expect(mqtt.connect).toHaveBeenCalledWith('ws://emqx:8083/mqtt', expect.any(Object));
+  });
+
+  it.each(['tcp', 'mqtt', 'mqtts'])('discards TCP ports from explicit %s URLs', async (scheme) => {
+    const client = new Tier0MQClient({ host: scheme + '://broker:1883', port: 8083 });
+    const connected = client.connect();
+    emit('connect');
+    await connected;
+    expect(mqtt.connect).toHaveBeenCalledWith('ws://broker:8083/mqtt', expect.any(Object));
+  });
+
   it('should throw error when URL is not provided on connect', async () => {
     const client = new Tier0MQClient();
     await expect(client.connect()).rejects.toThrow('MQTT host is required');
