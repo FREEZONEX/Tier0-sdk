@@ -70,7 +70,7 @@ export interface ToWebSocketUrlOptions {
   wssPort?: number;
   /**
    * 显式指定 ws(false)/wss(true)。缺省自适应：浏览器 https 页面用 wss，
-   * 其余（Node、http 页面）用 ws。
+   * 或 WebSocket 端口为 8084 时用 wss，其余用 ws。
    */
   secure?: boolean;
 }
@@ -130,7 +130,7 @@ export function toWebSocketUrl(
     return `${endpoint.scheme}://${endpoint.hostname}${port}${DEFAULT_WS_PATH}`;
   }
 
-  const secure = opts.secure ?? isBrowserHttps();
   const port = opts.wssPort ?? DEFAULT_WSS_PORT;
+  const secure = opts.secure ?? (isBrowserHttps() || port === DEFAULT_WSS_PORT);
   return `${secure ? 'wss' : 'ws'}://${endpoint.hostname}:${port}${DEFAULT_WS_PATH}`;
 }

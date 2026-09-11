@@ -1,7 +1,7 @@
 import mqtt from 'mqtt';
 import type { MqttClient, IClientOptions } from 'mqtt';
 import { getEnvVar } from '../runtime-env.js';
-import { isBrowserHttps, parseMqttBroker } from './broker.js';
+import { DEFAULT_WSS_PORT, isBrowserHttps, parseMqttBroker } from './broker.js';
 import type { MQTTConfig, MQTTEventMap } from './types.js';
 
 /**
@@ -13,33 +13,18 @@ import type { MQTTConfig, MQTTEventMap } from './types.js';
 export type TopicHandler = (topic: string, payload: string) => void;
 
 function parseWorkspaceIDFromApiKey(apiKey: string): string | undefined {
-  apiKey = apiKey.trim();
-  const prefix = 'sk-svc-';
-  if (!apiKey.startsWith(prefix)) {
-    return undefined;
+  // Match the backend's sk-<type>-ws<base36>_<secret> contract, not only
+  // service keys. Other workspace-encoded keys use the same MQTT identity.
+  const match = /^sk-[^-]+-ws([0-9a-zA-Z]+)_.+$/.exec(apiKey.trim());
+  if (!match) return undefined;
+
+  // Keep the int64 workspace ID exact; parseInt can round IDs above 2^53.
+  let workspaceID = 0n;
+  for (const digit of match[1]) {
+    workspaceID = workspaceID * 36n + BigInt(parseInt(digit, 36));
+    if (workspaceID > 9223372036854775807n) return undefined;
   }
-  const payload = apiKey.slice(prefix.length);
-  const sepIndex = payload.indexOf('_');
-  if (sepIndex <= 0) {
-    return undefined;
-  }
-  const workspacePart = payload.slice(0, sepIndex);
-  if (!workspacePart.startsWith('ws')) {
-    return undefined;
-  }
-  const workspaceID36 = workspacePart.slice(2);
-  if (!workspaceID36) {
-    return undefined;
-  }
-  try {
-    const workspaceID = parseInt(workspaceID36, 36);
-    if (workspaceID <= 0 || isNaN(workspaceID)) {
-      return undefined;
-    }
-    return String(workspaceID);
-  } catch {
-    return undefined;
-  }
+  return workspaceID > 0n ? workspaceID.toString() : undefined;
 }
 
 function generateRandomString(length = 8): string {
@@ -61,12 +46,16 @@ interface Subscription {
 export class Tier0MQClient {
   private client: MqttClient | null = null;
   private config: MQTTConfig;
+  private explicitClientId: boolean;
+  private explicitUsername: boolean;
   private listeners: { [K in keyof MQTTEventMap]?: Array<MQTTEventMap[K]> } = {};
   private subscriptions: Subscription[] = [];
   private connectingPromise: Promise<void> | null = null;
   private _connected = false;
 
   constructor(config?: MQTTConfig) {
+    this.explicitClientId = config?.clientId !== undefined;
+    this.explicitUsername = config?.username !== undefined;
     const envHost = getEnvVar('TIER0_MQTT_HOST');
     const envPort = getEnvVar('TIER0_MQTT_PORT');
 
@@ -116,13 +105,13 @@ export class Tier0MQClient {
     // 裸 host（可含端口）：按运行环境自适应 ws/wss
     const endpoint = parseMqttBroker(normalizedHost);
     const hostname = endpoint?.hostname ?? normalizedHost;
-    // 端口选择：ws(s) scheme 的端口是 WebSocket 端口，可直接沿用；
+    // 裸 host:port 和 ws(s) URL 的端口按 WebSocket 端口处理；
     // tcp/mqtt/mqtts 的端口是 TCP 端口（如 1883），wss 下不能沿用，回退到配置的 port
     const effectivePort =
-      endpoint?.scheme === 'ws' || endpoint?.scheme === 'wss'
-        ? endpoint.port ?? port
+      !endpoint?.scheme || endpoint.scheme === 'ws' || endpoint.scheme === 'wss'
+        ? endpoint?.port ?? port
         : port;
-    const useSecure = secure ?? isBrowserHttps();
+    const useSecure = secure ?? (isBrowserHttps() || effectivePort === DEFAULT_WSS_PORT);
     return `${useSecure ? 'wss' : 'ws'}://${hostname}:${effectivePort}/mqtt`;
   }
 
@@ -211,7 +200,20 @@ export class Tier0MQClient {
   // 显式连接（需要等待连接完成时使用）
   async connect(config?: MQTTConfig): Promise<void> {
     if (config) {
+      const previousPassword = this.config.password;
       this.config = { ...this.config, ...config };
+      if (config.clientId !== undefined) this.explicitClientId = true;
+      if (config.username !== undefined) this.explicitUsername = true;
+      // A connect-time key may belong to a different workspace. Preserve only
+      // caller-supplied identity fields, not values derived from the previous key.
+      if (config.password !== undefined && config.password !== previousPassword) {
+        const workspaceID = parseWorkspaceIDFromApiKey(config.password);
+        const prefix = workspaceID ?? 'enterprise';
+        if (!this.explicitClientId) {
+          this.config.clientId = prefix + '&' + generateRandomString(8);
+        }
+        if (!this.explicitUsername) this.config.username = prefix + '&open';
+      }
     }
     return this.ensureConnected();
   }

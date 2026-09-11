@@ -105,9 +105,9 @@ describe('toWebSocketUrl', () => {
     }
   });
 
-  it('Node 环境（无 window）缺省走 ws', () => {
+  it('Node 环境的默认 TLS 端口 8084 走 wss', () => {
     expect(toWebSocketUrl('tcp://broker:1883')).toBe(
-      `ws://broker:${DEFAULT_WSS_PORT}${DEFAULT_WS_PATH}`,
+      `wss://broker:${DEFAULT_WSS_PORT}${DEFAULT_WS_PATH}`,
     );
   });
 
@@ -117,6 +117,10 @@ describe('toWebSocketUrl', () => {
     expect(toWebSocketUrl('broker:1883')).toBe(
       `wss://broker:${DEFAULT_WSS_PORT}${DEFAULT_WS_PATH}`,
     );
+  });
+
+  it('Node 环境端口 8083 默认走 ws', () => {
+    expect(toWebSocketUrl('broker', { wssPort: 8083 })).toBe('ws://broker:8083/mqtt');
   });
 
   it('空输入返回 undefined，交由调用方回退', () => {
