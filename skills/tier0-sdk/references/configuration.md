@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-configuration
-version: 0.2.0
+version: 0.2.1
 description: "Tier0 SDK configuration for Node.js, browser/Vite, OpenAPI, and MQTT."
 ---
 
@@ -118,6 +118,8 @@ configureClient({
 
 ## MQTT
 
+Cloud and Enterprise workspace-encoded keys use `sk-<type>-ws<base36 workspace ID>_<secret>`. The SDK derives `<workspace ID>&open` and a workspace-prefixed client ID for all key types, including `svc`, `per`, and `agent`, and passes the original key as the password. Legacy keys without an encoded workspace retain the `enterprise&open` fallback; explicit username/clientId still take priority.
+
 The MQ client needs:
 
 | Value | Node.js environment | Explicit config |
@@ -129,7 +131,7 @@ The MQ client needs:
 Host normalization:
 
 - If `host` starts with `ws://` or `wss://`, the SDK uses it directly and appends `/mqtt` if missing.
-- If `host` has no WebSocket scheme, the SDK builds `ws://<host>:<port>/mqtt`.
+- If `host` has no WebSocket scheme, port `8084` or an HTTPS browser context selects `wss`; other ports use `ws`. Explicit `secure: true/false` overrides this inference.
 - For TLS/cloud brokers, prefer a full injected `wss://host:port/mqtt` URL. Do not hard-code a broker host; use `TIER0_MQTT_HOST` / `TIER0_MQTT_PORT` or runtime config supplied by the platform.
 
 ```typescript

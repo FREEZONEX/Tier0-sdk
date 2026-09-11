@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-mq-quickstart
-version: 0.3.0
+version: 0.3.1
 description: "MQ module quickstart: broker address resolution (parseMqttBroker/toWebSocketUrl), configuration, subscribe, publish, unsubscribe, backpressure, events. All topics follow the UNS naming contract: <business path>/<Metric|Action|State>/<leaf>."
 ---
 
@@ -40,7 +40,7 @@ In Node.js, the SDK can read `TIER0_*` environment variables.
 |------|------|------|
 | `TIER0_MQTT_HOST` | Yes | MQTT WebSocket host injected by the platform/deployment. It may be a full `wss://host:port/mqtt` URL for TLS brokers. |
 | `TIER0_MQTT_PORT` | No | MQTT WebSocket port, used only when host has no `ws://` or `wss://` scheme |
-| `TIER0_API_KEY` | Yes | API key used as MQTT password |
+| `TIER0_API_KEY` | Yes | Original API key used as MQTT password; Cloud/Enterprise `sk-<type>-ws<base36>_<secret>` keys also supply the workspace MQTT identity |
 
 For browser/Vite projects, pass values explicitly from `import.meta.env`; do not rely on automatic `VITE_*` lookup.
 
@@ -72,7 +72,7 @@ const client = new Tier0MQClient({
 
 ### Scheme 自适应（host 不带 ws(s) scheme 时）
 
-host 为裸 `host`/`host:port` 时，SDK 自动选择 scheme：浏览器 https 页面用 `wss`，Node/http 页面用 `ws`；也可用 `secure: true/false` 显式指定。`port` 默认 8084。
+host 为裸 `host`/`host:port` 时，SDK 自动选择 scheme：浏览器 https 页面或 WebSocket 端口为 `8084` 时用 `wss`，其他端口的 Node/http 场景用 `ws`；也可用 `secure: true/false` 显式指定。`port` 默认 8084。
 
 ```typescript
 const client = new Tier0MQClient({ host: 'broker.example.com', secure: true });
@@ -103,7 +103,7 @@ const client = new Tier0MQClient({ host: wsUrl, password: apiKey });
 规则：
 
 - 输入已是 `ws(s)://` URL：原样直通（自动补 `/mqtt` 路径，端口保留）；
-- 输入 `tcp://host:1883` / `host:port` / 裸 `host`：scheme 按 `secure`（缺省浏览器 https → wss），
+- 输入 `tcp://host:1883` / `host:port` / 裸 `host`：scheme 按 `secure`（缺省浏览器 https 或 WebSocket 端口 8084 → wss），
   **端口一律用 `wssPort`（默认 8084）**，1883 是 tcp 端口不能给浏览器用；
 - 输入为空/无法解析：返回 `undefined`，调用方必须回退或报错。
 

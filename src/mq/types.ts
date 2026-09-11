@@ -10,7 +10,7 @@ export interface MQTTConfig {
   port?: number;
   /**
    * 当 host 不带 ws(s) scheme 时，显式指定用 wss(true) 还是 ws(false)。
-   * 缺省自适应：浏览器 https 页面用 wss，其余（Node、http 页面）用 ws。
+   * 缺省自适应：浏览器 https 页面或端口 8084 用 wss，其余用 ws。
    */
   secure?: boolean;
   clientId?: string;

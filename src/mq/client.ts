@@ -1,7 +1,7 @@
 import mqtt from 'mqtt';
 import type { MqttClient, IClientOptions } from 'mqtt';
 import { getEnvVar } from '../runtime-env.js';
-import { isBrowserHttps, parseMqttBroker } from './broker.js';
+import { DEFAULT_WSS_PORT, isBrowserHttps, parseMqttBroker } from './broker.js';
 import type { MQTTConfig, MQTTEventMap } from './types.js';
 
 /**
@@ -13,33 +13,18 @@ import type { MQTTConfig, MQTTEventMap } from './types.js';
 export type TopicHandler = (topic: string, payload: string) => void;
 
 function parseWorkspaceIDFromApiKey(apiKey: string): string | undefined {
-  apiKey = apiKey.trim();
-  const prefix = 'sk-svc-';
-  if (!apiKey.startsWith(prefix)) {
-    return undefined;
+  // Match the backend's sk-<type>-ws<base36>_<secret> contract, not only
+  // service keys. Other workspace-encoded keys use the same MQTT identity.
+  const match = /^sk-[^-]+-ws([0-9a-zA-Z]+)_.+$/.exec(apiKey.trim());
+  if (!match) return undefined;
+
+  // Keep the int64 workspace ID exact; parseInt can round IDs above 2^53.
+  let workspaceID = 0n;
+  for (const digit of match[1]) {
+    workspaceID = workspaceID * 36n + BigInt(parseInt(digit, 36));
+    if (workspaceID > 9223372036854775807n) return undefined;
   }
-  const payload = apiKey.slice(prefix.length);
-  const sepIndex = payload.indexOf('_');
-  if (sepIndex <= 0) {
-    return undefined;
-  }
-  const workspacePart = payload.slice(0, sepIndex);
-  if (!workspacePart.startsWith('ws')) {
-    return undefined;
-  }
-  const workspaceID36 = workspacePart.slice(2);
-  if (!workspaceID36) {
-    return undefined;
-  }
-  try {
-    const workspaceID = parseInt(workspaceID36, 36);
-    if (workspaceID <= 0 || isNaN(workspaceID)) {
-      return undefined;
-    }
-    return String(workspaceID);
-  } catch {
-    return undefined;
-  }
+  return workspaceID > 0n ? workspaceID.toString() : undefined;
 }
 
 function generateRandomString(length = 8): string {
@@ -122,7 +107,7 @@ export class Tier0MQClient {
       endpoint?.scheme === 'ws' || endpoint?.scheme === 'wss'
         ? endpoint.port ?? port
         : port;
-    const useSecure = secure ?? isBrowserHttps();
+    const useSecure = secure ?? (isBrowserHttps() || effectivePort === DEFAULT_WSS_PORT);
     return `${useSecure ? 'wss' : 'ws'}://${hostname}:${effectivePort}/mqtt`;
   }
 
