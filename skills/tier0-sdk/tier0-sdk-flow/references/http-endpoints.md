@@ -140,5 +140,8 @@ const result = await response.json();
 
 - 推荐把业务路径放在 `/api/<domain>/...` 或明确的业务前缀下。
 - `/flow/{source|event}/**` 只用于调用 `http in` 业务接口；Flow 管理统一使用 `flowApi`。
+- **Node-RED Admin API 已被网关黑名单拦截**：`/flow/{source|event}/flows`、`/flow/:id`、`/nodes`、
+  `/settings`、`/comms`、`/auth` 等固定首段一律返回 `403`——不要通过本前缀读取画布、部署或查节点，
+  这些能力走 `flowApi`（`/openapi/v1/flow/*`）。
 - 同一 Node-RED 实例内的 `http in` 方法与路径组合必须唯一。
 - 修改画布前读取现有 flowdata；部署后用真实调用验证状态码、响应体和错误分支。
