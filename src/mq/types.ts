@@ -7,14 +7,16 @@ export interface MQTTConfig {
    *   建议先用 {@link toWebSocketUrl} 归一后再传入，见 `@tier0/sdk/mq` 的 broker 工具）。
    */
   host?: string;
+  /** WebSocket port fallback when host has no embedded WebSocket port. */
   port?: number;
   /**
    * 当 host 不带 ws(s) scheme 时，显式指定用 wss(true) 还是 ws(false)。
-   * 缺省自适应：浏览器 https 页面用 wss，其余（Node、http 页面）用 ws。
+   * 缺省自适应：浏览器 https 页面或端口 8084 用 wss，其余用 ws。
    */
   secure?: boolean;
   clientId?: string;
   username?: string;
+  /** Original API key; connect-time changes refresh automatically derived identity fields. */
   password?: string;
   keepAlive?: number;
   reconnectPeriod?: number;

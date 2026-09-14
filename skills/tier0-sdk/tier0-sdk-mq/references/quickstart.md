@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-mq-quickstart
-version: 0.3.0
+version: 0.3.2
 description: "MQ module quickstart: broker address resolution (parseMqttBroker/toWebSocketUrl), configuration, subscribe, publish, unsubscribe, backpressure, events. All topics follow the UNS naming contract: <business path>/<Metric|Action|State>/<leaf>."
 ---
 
@@ -39,10 +39,14 @@ In Node.js, the SDK can read `TIER0_*` environment variables.
 | Variable | Required | Description |
 |------|------|------|
 | `TIER0_MQTT_HOST` | Yes | MQTT WebSocket host injected by the platform/deployment. It may be a full `wss://host:port/mqtt` URL for TLS brokers. |
-| `TIER0_MQTT_PORT` | No | MQTT WebSocket port, used only when host has no `ws://` or `wss://` scheme |
-| `TIER0_API_KEY` | Yes | API key used as MQTT password |
+| `TIER0_MQTT_PORT` | No | MQTT WebSocket port used when a bare host does not embed a port; explicit TCP/MQTT URL ports are not reused |
+| `TIER0_API_KEY` | Yes | Original API key used as MQTT password; Cloud/Enterprise `sk-<type>-ws<base36>_<secret>` keys also supply the workspace MQTT identity |
 
 For browser/Vite projects, pass values explicitly from `import.meta.env`; do not rely on automatic `VITE_*` lookup.
+
+For `Tier0MQClient`, a bare `host:port` supplies the WebSocket port (for example, `emqx:8083` uses WS in Node.js). A full `ws://` or `wss://` URL keeps its explicit transport.
+
+A key supplied through `connect({ password })` derives the same workspace identity as a constructor key. When that key changes before a new connection, the SDK recalculates auto-generated username/clientId fields and preserves each field explicitly supplied by the caller. To change credentials on an established connection, disconnect first, then call `connect()` with the new key.
 
 ### .env Example
 
@@ -64,6 +68,16 @@ const client = new Tier0MQClient({
 });
 ```
 
+### Authentication troubleshooting
+
+When MQTT returns `Not authorized`/CONNACK code 5, reconnects continuously, or fails while OpenAPI works with the same key, run this from the application root:
+
+```bash
+node node_modules/@tier0/sdk/skills/tier0-sdk/scripts/check-api-key-compat.mjs --json
+```
+
+For MQTT, workspace-encoded App/personal/agent and other non-service keys require `@tier0/sdk >= 0.5.2`. If the diagnostic reports an older installed version, upgrade to `@tier0/sdk@latest` and restart the runtime. If it reports a compatible version, check runtime environment injection, key status/permissions, the broker endpoint and `ws`/`wss`, then backend support. Do not print the complete key or bypass SDK identity derivation with a hard-coded Workspace ID.
+
 > Use `unsApi.openapiv1unswrite()` when you need the API to validate and write a UNS topic current value. If publishing to a UNS-ingested MQTT topic directly, the MQTT topic must already exist in UNS and the JSON payload keys must match that topic's `fields` schema exactly. For example, a topic with field `temperature` must receive `{"temperature":26.4}`, not `{"value":26.4,"unit":"C"}` unless `value` and `unit` are the actual field names in that topic schema.
 >
 > **No lazy creation**: never publish to a topic that has not been explicitly modeled. Create it first with the `create` endpoint (declaring `fields`) — do not treat publishing as a way to create topics. A publish to an unmodeled topic is a bug, not a provisioning mechanism.
@@ -72,7 +86,7 @@ const client = new Tier0MQClient({
 
 ### Scheme 自适应（host 不带 ws(s) scheme 时）
 
-host 为裸 `host`/`host:port` 时，SDK 自动选择 scheme：浏览器 https 页面用 `wss`，Node/http 页面用 `ws`；也可用 `secure: true/false` 显式指定。`port` 默认 8084。
+host 为裸 `host`/`host:port` 时，SDK 自动选择 scheme：浏览器 https 页面或 WebSocket 端口为 `8084` 时用 `wss`，其他端口的 Node/http 场景用 `ws`；也可用 `secure: true/false` 显式指定。`port` 默认 8084。
 
 ```typescript
 const client = new Tier0MQClient({ host: 'broker.example.com', secure: true });
@@ -103,7 +117,7 @@ const client = new Tier0MQClient({ host: wsUrl, password: apiKey });
 规则：
 
 - 输入已是 `ws(s)://` URL：原样直通（自动补 `/mqtt` 路径，端口保留）；
-- 输入 `tcp://host:1883` / `host:port` / 裸 `host`：scheme 按 `secure`（缺省浏览器 https → wss），
+- 输入 `tcp://host:1883` / `host:port` / 裸 `host`：scheme 按 `secure`（缺省浏览器 https 或 WebSocket 端口 8084 → wss），
   **端口一律用 `wssPort`（默认 8084）**，1883 是 tcp 端口不能给浏览器用；
 - 输入为空/无法解析：返回 `undefined`，调用方必须回退或报错。
 
