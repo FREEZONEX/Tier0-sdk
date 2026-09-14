@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-mq
-version: 1.1.0
+version: 1.2.0
 description: "Tier0 SDK MQTT/MQ over WebSocket for TypeScript/JavaScript. Before using this Skill, first read tier0-sdk for shared SDK version, configuration, runtime, and layering rules. When any MQTT subscribe, publish, or wildcard targets Tier0 UNS topics, reading tier0-sdk-uns first is mandatory because UNS topic paths, modeling, ownership, and payload schemas are constrained. Use for continuously changing or realtime data, high-frequency/fan-out messages, and MQTT connection, wildcard, handler, unsubscribe, and shutdown lifecycle through @tier0/sdk/mq. For browser wss connections deriving the broker from /openapi/v1/info, use parseMqttBroker/toWebSocketUrl instead of parsing mqttBroker manually. Not for generic external brokers or implementing a broker."
 metadata:
   requires:
@@ -30,6 +30,15 @@ metadata:
 
 Read [`references/quickstart.md`](references/quickstart.md) before implementing connection, subscribe, publish, wildcard, handler, unsubscribe, event, or disconnect behavior.
 
+## Authentication Failure Routing
+
+For `Not authorized`, CONNACK code 5, a reconnect loop, or “OpenAPI works but MQTT fails,” do not immediately replace the API key or hard-code MQTT identity fields. Run the API-key compatibility diagnostic documented in [`../references/configuration.md`](../references/configuration.md).
+
+- Workspace-encoded non-service keys, including App keys, require `@tier0/sdk >= 0.5.2` for MQTT identity derivation.
+- If the installed version is older, tell the user that the SDK is incompatible and upgrade to `@tier0/sdk@latest`; restart the runtime and verify again.
+- If the version is already compatible, investigate runtime key injection, revocation/expiry/permissions, broker URL and `ws`/`wss`, then backend support for the key type.
+- Never expose the complete key while diagnosing it.
+
 ## Final Checklist
 
 1. For any UNS MQTT operation, the UNS Skill was read first.
@@ -37,3 +46,4 @@ Read [`references/quickstart.md`](references/quickstart.md) before implementing 
 3. Continuous receive uses `subscribe`, not polling.
 4. Concrete UNS Topic paths and payload fields match the modeled UNS schema, including when the subscription uses wildcards.
 5. The connection has a clear owner and shutdown path.
+6. Authentication failures were routed through SDK/key compatibility diagnostics before credentials or MQTT identity were changed.

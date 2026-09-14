@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-configuration
-version: 0.2.1
+version: 0.2.2
 description: "Tier0 SDK configuration for Node.js, browser/Vite, OpenAPI, and MQTT."
 ---
 
@@ -28,6 +28,39 @@ npm install @tier0/sdk@latest      # update to latest
 ```
 
 MonoApp/scaffold caveat: do not run `npm install` manually inside the scaffold — its install is managed (running it manually can corrupt `node_modules` on the shared volume). Instead, set `@tier0/sdk` to the latest version in `package.json` and let the managed install / preview restart apply it.
+
+## API Key Compatibility Diagnostics
+
+Do not treat every authentication failure as a bad key. First distinguish SDK compatibility from credential, host, permission, and broker failures.
+
+Run the bundled local diagnostic from the application root when any of these symptoms occurs:
+
+- MQTT reports `Not authorized`, CONNACK code 5, or repeatedly reconnects after the platform injects a new API key.
+- OpenAPI succeeds with the same key but MQTT fails.
+- The key type changed from a service key to an App, personal, agent, or another workspace-encoded key.
+
+```bash
+node node_modules/@tier0/sdk/skills/tier0-sdk/scripts/check-api-key-compat.mjs --json
+```
+
+If the Skill is installed outside `node_modules`, run the same script from that Skill directory. It reads only the installed package version and `TIER0_API_KEY`; it reports the key type and format but never prints the key or secret.
+
+Compatibility rules:
+
+| Path | Interpretation |
+|---|---|
+| OpenAPI/HTTP | The SDK sends the API key as an opaque credential. A 401 alone does not prove that the SDK is too old. Check the injected key, host, key status, and permissions. |
+| MQTT with `sk-svc-ws...` | Older SDKs already understand the service-key workspace encoding, although upgrading is still preferred. |
+| MQTT with `sk-<type>-ws...`, where type is not `svc` | Requires `@tier0/sdk >= 0.5.2` so the SDK derives the correct workspace MQTT username/client ID. Older versions fall back to the Enterprise identity and can be rejected even when OpenAPI works. |
+
+Agent action rules:
+
+1. Inspect the actually installed version (`npm ls @tier0/sdk` or the diagnostic output), not only the dependency range in `package.json`.
+2. If a workspace-encoded non-service key is present and the installed SDK is below `0.5.2`, explain the incompatibility and upgrade to `@tier0/sdk@latest`. In a managed MonoApp, update `package.json` and let the platform reinstall/restart it; do not run `npm install` manually inside the scaffold.
+3. After the upgrade, restart the application/preview and rerun the diagnostic before retrying MQTT.
+4. If the installed SDK is already compatible, do not keep recommending upgrades. Check, in order: whether `TIER0_API_KEY` is injected into the failing runtime, whether the key was revoked/expired or lacks permission, whether the broker URL and `ws`/`wss` transport are correct, and whether the target backend has deployed support for that key type.
+5. Do not work around this failure by hard-coding `username`, `clientId`, Workspace ID, or another API key unless the deployment explicitly requires custom MQTT credentials.
+6. Never print, log, paste, or return the complete API key. Error reports may include only whether a key is present, its non-secret type, and whether it uses workspace encoding.
 
 ## OpenAPI
 

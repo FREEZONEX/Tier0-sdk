@@ -1,6 +1,6 @@
 ---
 name: tier0-sdk-mq-quickstart
-version: 0.3.1
+version: 0.3.2
 description: "MQ module quickstart: broker address resolution (parseMqttBroker/toWebSocketUrl), configuration, subscribe, publish, unsubscribe, backpressure, events. All topics follow the UNS naming contract: <business path>/<Metric|Action|State>/<leaf>."
 ---
 
@@ -63,6 +63,16 @@ const client = new Tier0MQClient({
   password: process.env.TIER0_API_KEY,
 });
 ```
+
+### Authentication troubleshooting
+
+When MQTT returns `Not authorized`/CONNACK code 5, reconnects continuously, or fails while OpenAPI works with the same key, run this from the application root:
+
+```bash
+node node_modules/@tier0/sdk/skills/tier0-sdk/scripts/check-api-key-compat.mjs --json
+```
+
+For MQTT, workspace-encoded App/personal/agent and other non-service keys require `@tier0/sdk >= 0.5.2`. If the diagnostic reports an older installed version, upgrade to `@tier0/sdk@latest` and restart the runtime. If it reports a compatible version, check runtime environment injection, key status/permissions, the broker endpoint and `ws`/`wss`, then backend support. Do not print the complete key or bypass SDK identity derivation with a hard-coded Workspace ID.
 
 > Use `unsApi.openapiv1unswrite()` when you need the API to validate and write a UNS topic current value. If publishing to a UNS-ingested MQTT topic directly, the MQTT topic must already exist in UNS and the JSON payload keys must match that topic's `fields` schema exactly. For example, a topic with field `temperature` must receive `{"temperature":26.4}`, not `{"value":26.4,"unit":"C"}` unless `value` and `unit` are the actual field names in that topic schema.
 >
