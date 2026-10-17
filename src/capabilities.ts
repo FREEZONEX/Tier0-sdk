@@ -103,8 +103,7 @@ function discovery(value: unknown, status: number): CapabilityDiscoverResponse {
     if (typeof item.releaseEnabled !== 'boolean' || typeof item.enabled !== 'boolean' || typeof item.allowed !== 'boolean' ||
         !['disabled', 'not_supported', 'unavailable', 'readiness_unknown', 'ready'].includes(item.state as string) ||
         !['unavailable', 'unknown', 'available'].includes(item.availability as string) || !strings(item.contractVersions)) return fail();
-    if (contracts[code].some(version => !(item.contractVersions as string[]).includes(version)) ||
-        item.contractVersions.some(version => !contracts[code].includes(version))) return fail(true);
+    if (contracts[code].some(version => !(item.contractVersions as string[]).includes(version))) return fail(true);
     const ready = item.state === 'ready';
     const expectedAvailability = ready ? 'available' : item.state === 'readiness_unknown' ? 'unknown' : 'unavailable';
     if (item.enabled !== ready || item.availability !== expectedAvailability ||

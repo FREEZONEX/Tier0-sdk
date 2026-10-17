@@ -73,12 +73,23 @@ describe('frozen capability discovery contract', () => {
     { product: 'enterprise' }, { contractVersion: '2.0' }, { apiContractVersions: ['openapi/v2'] },
     { interpreterContractVersions: ['tier0-stream/v3'] }, { sdkContractVersions: ['0.5.4'] },
     { capabilities: [{ ...item, contractVersions: ['control/v2'] }] },
-    { capabilities: [{ ...item, contractVersions: [...item.contractVersions, 'control/v2'] }] },
+    { capabilities: [{ ...item, contractVersions: ['openapi/v1', 'tier0-stream/v2', 'control/v2'] }] },
   ])('fails unsupported versions with a typed error and never substitutes enabled', async patch => {
     const fetch = vi.fn().mockResolvedValue(reply({ ...fixture(), ...patch }));
     vi.stubGlobal('fetch', fetch);
     await expect(client().discover()).rejects.toMatchObject({ name: 'CapabilityError', status: 200, errorCode: 'CAPABILITY_UNSUPPORTED_VERSION', retryable: false });
     expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    { ...item, code: 'control.v1', contractVersions: ['openapi/v1', 'control/v1', 'control/v2'] },
+    { ...item, contractVersions: [...item.contractVersions, 'control/v2'] },
+  ])('preserves additional versions when all required versions remain without inferring readiness', async capability => {
+    const body = { ...fixture(), capabilities: [capability] };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reply(body)));
+    const response = await client().discover();
+    expect(response).toEqual(body);
+    expect(response.capabilities[0]).toMatchObject({ enabled: false, state: 'readiness_unknown', availability: 'unknown' });
   });
 
   it.each([
@@ -88,7 +99,10 @@ describe('frozen capability discovery contract', () => {
     { ...fixture(), productVersion: 12 }, { ...fixture(), productVersion: null },
     { ...fixture(), apiContractVersions: [1] }, { ...fixture(), sdkContractVersions: ['control/v1', 'control/v1'] },
     ...[{ enabled: 1 }, { allowed: 'true' }, { releaseEnabled: 1 }, { state: 'future' }, { availability: 'future' },
-      { contractVersions: [1] }, { enabled: true }, { state: 'ready', enabled: true, availability: 'unknown' },
+      { contractVersions: [1] }, { contractVersions: [...item.contractVersions, 2] },
+      { contractVersions: [...item.contractVersions, 'control/v2', 'control/v2'] },
+      { contractVersions: [...item.contractVersions, null] }, { contractVersions: [...item.contractVersions, ''] },
+      { enabled: true }, { state: 'ready', enabled: true, availability: 'unknown' },
       { state: 'ready', enabled: true, availability: 'available', allowed: false }, { releaseEnabled: false },
       { state: 'disabled' }, { state: 'unavailable', availability: 'available' }]
       .map(patch => ({ ...fixture(), capabilities: [{ ...item, ...patch }] })),
