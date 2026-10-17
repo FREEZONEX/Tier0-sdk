@@ -1,6 +1,7 @@
 import { getClient, HttpClient, type ClientConfig } from './openapi/client.js';
 import { CloudTransport, CloudTransportError, DEFAULT_CLOUD_TRANSPORT_TIMEOUT_MS } from './cloud-transport.js';
 import { CapabilitiesClient } from './capabilities.js';
+import { createUnsV2Client, type UnsV2Client } from './uns-v2/client.js';
 
 /** Cloud Control contracts are independent of generated OpenAPI / Enterprise flow types. */
 export type ControlJSON = null | boolean | number | string | ControlJSON[] | { [key: string]: ControlJSON };
@@ -33,6 +34,8 @@ export interface ControlDiscoverResponse {
 export interface ControlTransportConfig {
   /** Whole request including response body; positive integer milliseconds, default 60,000. */
   transportTimeoutMs?: number;
+  /** UNS v2 only: response limit up to the fixed 20 MiB contract/RPC ceiling. */
+  unsV2MaxResponseBytes?: number;
 }
 
 export interface CloudClientConfig extends ClientConfig, ControlTransportConfig {}
@@ -246,7 +249,16 @@ export const controls = new ControlsClient();
  * change the server execution contract. An invoke deadline means result unknown.
  * No global configuration changes, credential refresh, retries or generated API changes.
  */
-export function createClient(config: CloudClientConfig = {}): { controls: ControlsClient; capabilities: CapabilitiesClient } {
+export function createClient(config: CloudClientConfig = {}): {
+  controls: ControlsClient;
+  capabilities: CapabilitiesClient;
+  unsV2: UnsV2Client;
+} {
   const http = new HttpClient(config);
-  return { controls: new ControlsClient(() => http, config), capabilities: new CapabilitiesClient(() => http, config) };
+  const resolveClient = () => http;
+  return {
+    controls: new ControlsClient(resolveClient, config),
+    capabilities: new CapabilitiesClient(resolveClient, config),
+    unsV2: createUnsV2Client(resolveClient, config),
+  };
 }

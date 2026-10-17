@@ -1,0 +1,7 @@
+{
+  "repository": "FREEZONEX/Tier0-Enterprise-New",
+  "revision": "8710dc4ff286414b5525cfa99696ccdd6cb1a6c7",
+  "version": "3.17.0",
+  "source": "backend/internal/domain/unsv2/contract_generated.go",
+  "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs."
+}
