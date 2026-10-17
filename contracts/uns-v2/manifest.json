@@ -1,5 +1,6 @@
 {
   "version": "3.17.0",
+  "cloudContractRevision": "cloud-source-impact/1",
   "operations": [
     {
       "name": "dataDiscover",
@@ -2542,6 +2543,65 @@
       },
       "responseSchema": {
         "$ref": "#/components/schemas/CloudStreamDocumentValidateResponse"
+      }
+    },
+    {
+      "name": "sourceImpact",
+      "suffix": "/uns/sources/impact",
+      "handler": "UnsV2SourceImpact",
+      "request": "CloudSourceImpactReq",
+      "response": "CloudSourceImpactResponse",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3,
+      "resource": "source",
+      "mutation": "",
+      "runtime": true,
+      "resourceId": 3301,
+      "summary": "Source exact-intent impact",
+      "description": "Cloud source-impact/1; current authorization required. No endpoint, headers, credential references or secret material in responses.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "operation": "sourceImpact",
+      "path": "/uns/sources/impact",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudSourceImpactReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudSourceImpactResponse"
+      }
+    },
+    {
+      "name": "sourceHistory",
+      "suffix": "/uns/sources/history",
+      "handler": "UnsV2SourceHistory",
+      "request": "CloudSourceHistoryReq",
+      "response": "CloudSourceHistoryResponse",
+      "permission": "uns.source.view",
+      "scope": "source:read",
+      "minPermission": 1,
+      "resource": "source",
+      "mutation": "",
+      "runtime": true,
+      "resourceId": 3301,
+      "summary": "Redacted immutable Source history",
+      "description": "Cloud source-impact/1; current authorization required. No endpoint, headers, credential references or secret material in responses.",
+      "cloudExtension": true,
+      "permissionAnyOf": [
+        "uns.source.view",
+        "uns.source.manage"
+      ],
+      "operation": "sourceHistory",
+      "path": "/uns/sources/history",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudSourceHistoryReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudSourceHistoryResponse"
       }
     }
   ],
@@ -7889,7 +7949,7 @@
               "expectedRevision": {
                 "type": "integer",
                 "minimum": 1,
-                "description": "Optional optimistic concurrency guard; omission updates the current object."
+                "description": "Cloud source-impact/1: explicit positive revision is required."
               },
               "name": {
                 "maxLength": 63,
@@ -7899,10 +7959,19 @@
               "description": {
                 "maxLength": 512,
                 "type": "string"
+              },
+              "confirmedImpactRevision": {
+                "type": "string",
+                "pattern": "^si1_[A-Za-z0-9_-]{43}$",
+                "minLength": 47,
+                "maxLength": 47,
+                "description": "Cloud requires explicit expectedRevision and exact-intent confirmedImpactRevision for every existing Source mutation. Enterprise upstream remains immutable. Confirmation never substitutes authorization or idempotency."
               }
             },
             "required": [
-              "id"
+              "id",
+              "expectedRevision",
+              "confirmedImpactRevision"
             ]
           }
         }
@@ -9398,15 +9467,24 @@
               "expectedRevision": {
                 "type": "integer",
                 "minimum": 1,
-                "description": "Optional optimistic concurrency guard; omission updates the current object."
+                "description": "Cloud source-impact/1: explicit positive revision is required."
               },
               "connection": {
                 "$ref": "#/components/schemas/SourceDefinition"
+              },
+              "confirmedImpactRevision": {
+                "type": "string",
+                "pattern": "^si1_[A-Za-z0-9_-]{43}$",
+                "minLength": 47,
+                "maxLength": 47,
+                "description": "Cloud requires explicit expectedRevision and exact-intent confirmedImpactRevision for every existing Source mutation. Enterprise upstream remains immutable. Confirmation never substitutes authorization or idempotency."
               }
             },
             "required": [
               "id",
-              "connection"
+              "connection",
+              "expectedRevision",
+              "confirmedImpactRevision"
             ]
           }
         }
@@ -9705,7 +9783,7 @@
               "expectedRevision": {
                 "type": "integer",
                 "minimum": 1,
-                "description": "Optional optimistic concurrency guard; omission updates the current object."
+                "description": "Cloud source-impact/1: explicit positive revision is required."
               },
               "desiredState": {
                 "type": "string",
@@ -9713,11 +9791,20 @@
                   "enabled",
                   "disabled"
                 ]
+              },
+              "confirmedImpactRevision": {
+                "type": "string",
+                "pattern": "^si1_[A-Za-z0-9_-]{43}$",
+                "minLength": 47,
+                "maxLength": 47,
+                "description": "Cloud requires explicit expectedRevision and exact-intent confirmedImpactRevision for every existing Source mutation. Enterprise upstream remains immutable. Confirmation never substitutes authorization or idempotency."
               }
             },
             "required": [
               "id",
-              "desiredState"
+              "desiredState",
+              "expectedRevision",
+              "confirmedImpactRevision"
             ]
           }
         }
@@ -10900,15 +10987,13 @@
           "type": "integer",
           "minimum": 1,
           "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。 Optional optimistic concurrency guard; omission updates the current object."
-        },
-        "expectedSourceRevision": {
-          "type": "integer"
         }
       },
       "required": [
         "dryRun",
         "id"
-      ]
+      ],
+      "description": "Cloud source-impact/1: metadata-only Stop; no Source config parsing or Worker dependency. expectedSourceRevision is unsupported."
     },
     "UnsV2StreamProgramDisableResponse": {
       "type": "object",
@@ -20774,10 +20859,19 @@
               "expectedRevision": {
                 "type": "integer",
                 "minimum": 1
+              },
+              "confirmedImpactRevision": {
+                "type": "string",
+                "pattern": "^si1_[A-Za-z0-9_-]{43}$",
+                "minLength": 47,
+                "maxLength": 47,
+                "description": "Opaque exact-intent confirmation from sourceImpact. Never inferred, synthesized or refreshed automatically."
               }
             },
             "required": [
-              "id"
+              "id",
+              "expectedRevision",
+              "confirmedImpactRevision"
             ]
           },
           "minItems": 1,
@@ -21364,12 +21458,21 @@
         },
         "document": {
           "$ref": "#/components/schemas/CloudSourceDocument"
+        },
+        "confirmedImpactRevision": {
+          "type": "string",
+          "pattern": "^si1_[A-Za-z0-9_-]{43}$",
+          "minLength": 47,
+          "maxLength": 47,
+          "description": "Opaque exact-intent confirmation from sourceImpact. Never inferred, synthesized or refreshed automatically."
         }
       },
       "required": [
         "id",
         "dryRun",
-        "document"
+        "document",
+        "expectedRevision",
+        "confirmedImpactRevision"
       ]
     },
     "CloudSourceDocumentUpdateResponse": {
@@ -21753,7 +21856,7 @@
         "data": {
           "oneOf": [
             {
-              "$ref": "#/components/schemas/CloudStreamDocumentView"
+              "$ref": "#/components/schemas/CloudStreamStopView"
             },
             {
               "$ref": "#/components/schemas/CloudPreviewResult"
@@ -21984,6 +22087,382 @@
         "updatedAt"
       ],
       "description": "Cloud deployment inventory. model and activeRelease are the stored native values; activeVersion is the immutable release row ID. The redacted document is display-only and has no script, entries or Source bindings."
+    },
+    "CloudSourceImpactReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*$",
+          "maxLength": 19
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "update",
+            "enable",
+            "disable",
+            "delete"
+          ]
+        },
+        "document": {
+          "$ref": "#/components/schemas/CloudSourceDocument"
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "impactRevision": {
+          "type": "string",
+          "pattern": "^si1_[A-Za-z0-9_-]{43}$",
+          "minLength": 47,
+          "maxLength": 47,
+          "description": "Opaque exact-intent confirmation from sourceImpact. Never inferred, synthesized or refreshed automatically."
+        }
+      },
+      "required": [
+        "id",
+        "expectedRevision",
+        "action"
+      ]
+    },
+    "CloudSourceHistoryReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*$",
+          "maxLength": 19
+        },
+        "beforeRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "CloudSourceImpactResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "impactRevision": {
+              "type": "string",
+              "pattern": "^si1_[A-Za-z0-9_-]{43}$",
+              "minLength": 47,
+              "maxLength": 47,
+              "description": "Opaque exact-intent confirmation from sourceImpact. Never inferred, synthesized or refreshed automatically."
+            },
+            "sourceID": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$",
+              "maxLength": 19
+            },
+            "sourceRevision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "action": {
+              "type": "string",
+              "enum": [
+                "update",
+                "enable",
+                "disable",
+                "delete"
+              ]
+            },
+            "complete": {
+              "type": "integer",
+              "enum": [
+                1
+              ]
+            },
+            "counts": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "draft": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "activeRelease": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "historicalRelease": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "draft",
+                "activeRelease",
+                "historicalRelease"
+              ]
+            },
+            "restrictedCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "references": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "draft",
+                      "active_release",
+                      "historical_release"
+                    ]
+                  },
+                  "streamID": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]*$",
+                    "maxLength": 19
+                  },
+                  "streamRevision": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "release": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "alias": {
+                    "type": "string"
+                  },
+                  "configRevision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "streamDeleted": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "parentMissing": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "streamID",
+                  "streamRevision",
+                  "release",
+                  "alias",
+                  "configRevision",
+                  "streamDeleted",
+                  "parentMissing"
+                ]
+              }
+            },
+            "nextOffset": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "expiresAt": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "impactRevision",
+            "sourceID",
+            "sourceRevision",
+            "action",
+            "complete",
+            "counts",
+            "restrictedCount",
+            "references",
+            "nextOffset",
+            "expiresAt"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudSourceHistoryResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "sourceID": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$",
+              "maxLength": 19
+            },
+            "currentRevision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "deleted": {
+              "type": "integer",
+              "enum": [
+                1,
+                2
+              ]
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "missingRevisionCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "nextBeforeRevision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "revisions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "protocol": {
+                    "type": "string"
+                  },
+                  "origin": {
+                    "type": "string",
+                    "enum": [
+                      "create",
+                      "mutation",
+                      "backfill_current",
+                      "unknown"
+                    ]
+                  },
+                  "createdTime": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "integrity": {
+                    "type": "string",
+                    "enum": [
+                      "verified",
+                      "unavailable"
+                    ]
+                  }
+                },
+                "required": [
+                  "revision",
+                  "protocol",
+                  "origin",
+                  "createdTime",
+                  "integrity"
+                ]
+              }
+            }
+          },
+          "required": [
+            "sourceID",
+            "currentRevision",
+            "deleted",
+            "total",
+            "missingRevisionCount",
+            "nextBeforeRevision",
+            "revisions"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudStreamStopView": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string"
+        },
+        "activeRelease": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "integer"
+        },
+        "updatedAt": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "status",
+        "activeRelease",
+        "createdAt",
+        "updatedAt"
+      ]
     }
   }
 }

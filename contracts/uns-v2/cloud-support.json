@@ -33,6 +33,8 @@
     {"name":"streamDocumentUpdate","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
     {"name":"sourceDocumentList","permission":"uns.source.view","scope":"source:read","minPermission":1},
     {"name":"streamDocumentDisable","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
-    {"name":"streamDocumentValidate","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3}
+    {"name":"streamDocumentValidate","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
+    {"name":"sourceImpact","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
+    {"name":"sourceHistory","permission":"uns.source.view","scope":"source:read","minPermission":1}
   ]
 }

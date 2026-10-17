@@ -31,6 +31,38 @@ const client = (timeout = 2_000, unsV2MaxResponseBytes?: number) => createClient
 });
 
 describe('UNS v2 localhost HTTP fixture', () => {
+  it('preserves explicit Source impact review and history without automatic confirmation or mutation retries', async () => {
+    const start = received.length;
+    respond = (req, res) => {
+      if (req.url === '/openapi/v2/uns/sources/impact') {
+        return send(res, { code: 200, msg: 'ok', requestId: 'impact', data: {
+          impactRevision: 'reviewed-token', sourceID: '101', sourceRevision: 2, action: 'disable', complete: 1,
+          counts: { draft: 1, activeRelease: 1, historicalRelease: 0 }, restrictedCount: 0, references: [], nextOffset: 0, expiresAt: 2_000_000_000_000,
+        } });
+      }
+      if (req.url === '/openapi/v2/uns/sources/history') {
+        return send(res, { code: 200, msg: 'ok', requestId: 'history', data: {
+          sourceID: '101', currentRevision: 2, deleted: 2, total: 0, missingRevisionCount: 0, nextBeforeRevision: 0, revisions: [],
+        } });
+      }
+      return send(res, { code: 409, msg: 'SOURCE_IMPACT_CHANGED', requestId: 'conflict' }, 409);
+    };
+    const api = client().unsV2;
+    const review = await api.sourceImpact({ id: '101', expectedRevision: 2, action: 'disable', size: 20 });
+    expect(review.data.impactRevision).toBe('reviewed-token');
+    expect(received.length - start).toBe(1);
+    expect(received[start].path).toBe('/openapi/v2/uns/sources/impact');
+    const history = await api.sourceHistory({ id: '101', size: 20 });
+    expect(history.data.sourceID).toBe('101');
+    await expect(api.sourceStateUpdate({ dryRun: false, items: [{
+      id: '101', expectedRevision: 2, desiredState: 'disabled', confirmedImpactRevision: review.data.impactRevision,
+    }] })).rejects.toBeInstanceOf(UnsV2Error);
+    expect(received.length - start).toBe(3);
+    expect(JSON.parse(received[start + 2].body).items[0].confirmedImpactRevision).toBe('reviewed-token');
+    expect(received[start + 2].body).not.toContain('workspace');
+    expect(received[start + 2].body).not.toContain('tenant');
+  });
+
   it('rejects inherited, unknown and non-string operation names before encoding or fetch', async () => {
     const start = received.length;
     const core = client().unsV2 as unknown as { call(name: unknown, request: unknown): Promise<unknown> };
