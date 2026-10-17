@@ -1,4 +1,6 @@
 import { getClient, HttpClient, type ClientConfig } from './openapi/client.js';
+import { CloudTransport, CloudTransportError, DEFAULT_CLOUD_TRANSPORT_TIMEOUT_MS } from './cloud-transport.js';
+import { CapabilitiesClient } from './capabilities.js';
 
 /** Cloud Control contracts are independent of generated OpenAPI / Enterprise flow types. */
 export type ControlJSON = null | boolean | number | string | ControlJSON[] | { [key: string]: ControlJSON };
@@ -35,7 +37,7 @@ export interface ControlTransportConfig {
 
 export interface CloudClientConfig extends ClientConfig, ControlTransportConfig {}
 
-export const DEFAULT_CONTROL_TRANSPORT_TIMEOUT_MS = 60_000;
+export const DEFAULT_CONTROL_TRANSPORT_TIMEOUT_MS = DEFAULT_CLOUD_TRANSPORT_TIMEOUT_MS;
 
 export interface ControlInvokeOptions {
   /** Stable caller-owned key for one business intent, at most 128 UTF-8 bytes. Never generated or retried by the SDK. */
@@ -148,82 +150,38 @@ export interface ControlHandle<Input = ControlJSON, Result = ControlJSON> {
 }
 
 export class ControlsClient {
-  private readonly transportTimeoutMs: number;
+  private readonly transport: CloudTransport;
 
-  constructor(private readonly resolveClient: () => HttpClient = getClient, config: ControlTransportConfig = {}) {
-    const timeout = config.transportTimeoutMs ?? DEFAULT_CONTROL_TRANSPORT_TIMEOUT_MS;
-    // Browsers and Node use signed 32-bit timer delays; reject overflow rather than scheduling an immediate timeout.
-    if (!Number.isInteger(timeout) || timeout < 1 || timeout > 2_147_483_647) {
-      throw new TypeError('Tier0 SDK: transportTimeoutMs must be an integer between 1 and 2147483647.');
-    }
-    this.transportTimeoutMs = timeout;
+  constructor(resolveClient: () => HttpClient = getClient, config: ControlTransportConfig = {}) {
+    this.transport = new CloudTransport(resolveClient, config);
   }
 
   private async post(path: string, body: unknown, invoked: boolean): Promise<{ value: unknown; status: number }> {
-    // Reuse the existing dynamic config/environment resolution and workspace-scoped key.
-    // Keep this transport outside generated wrappers, axios interceptors and refresh/reconnect loops.
-    const client = this.resolveClient();
-    const url = `${client.getBaseURL()}${path}`;
-    const key = client.getApiKey();
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (key) {
-      headers.Authorization = `Bearer ${key}`;
-      headers['X-API-Key'] = key;
-    }
-    const serialized = JSON.stringify(body);
-    const controller = new AbortController();
-    let response: Response | undefined;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const exchange = async (): Promise<{ value: unknown; status: number }> => {
-      try {
-        response = await fetch(url, { method: 'POST', headers, body: serialized, redirect: 'manual', signal: controller.signal });
-      } catch {
-        // Never retain raw transport errors: they may contain URLs, headers or credentials.
-        const info = { errorCode: 'CONTROL_TRANSPORT_ERROR' };
-        if (invoked) throw new ControlResultUnknownError(info);
-        throw new ControlError('Control transport failed.', info);
-      }
-      let value: unknown;
-      try {
-        value = await response.json();
-      } catch {
-        const info = { status: response.status, errorCode: 'CONTROL_PROTOCOL_ERROR' };
-        if (invoked) throw new ControlResultUnknownError(info);
-        throw new ControlError('Invalid Control response.', info);
-      }
-      if (!response.ok) {
-        const error = record(value) ? value : {};
-        const valid = typeof error.errorCode === 'string' && typeof error.message === 'string';
-        const info: ControlErrorInfo = {
-          ...runInfo(value), status: response.status,
-          errorCode: valid ? error.errorCode as string : 'CONTROL_PROTOCOL_ERROR',
-        };
-        if (info.errorCode === 'CONTROL_RESULT_UNKNOWN' || (invoked && !valid)) {
-          throw new ControlResultUnknownError(info);
-        }
-        throw new ControlError(valid ? error.message as string : 'Invalid Control error response.', info);
-      }
-      return { value, status: response.status };
-    };
+    let response: Awaited<ReturnType<CloudTransport['post']>>;
     try {
-      const deadline = new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(() => {
-          controller.abort();
-          reject(new Error('Control HTTP transport deadline exceeded.'));
-        }, this.transportTimeoutMs);
-      });
-      // The race also bounds transports that fail to honor AbortSignal. Native fetch aborts the connection/body.
-      return await Promise.race([exchange(), deadline]);
+      response = await this.transport.post(path, body);
     } catch (error) {
-      if (controller.signal.aborted) {
-        const info = { status: response?.status, errorCode: 'CONTROL_TRANSPORT_TIMEOUT' };
-        if (invoked) throw new ControlResultUnknownError(info);
-        throw new ControlError('Control HTTP transport deadline exceeded.', info);
-      }
-      throw error;
-    } finally {
-      clearTimeout(timer);
+      if (!(error instanceof CloudTransportError)) throw error;
+      const info = { status: error.status, errorCode: `CONTROL_${error.kind}` };
+      if (invoked) throw new ControlResultUnknownError(info);
+      const message = error.kind === 'TRANSPORT_TIMEOUT' ? 'Control HTTP transport deadline exceeded.' :
+        error.kind === 'PROTOCOL_ERROR' ? 'Invalid Control response.' : 'Control transport failed.';
+      throw new ControlError(message, info);
     }
+    const { value, status, ok } = response;
+    if (!ok) {
+      const error = record(value) ? value : {};
+      const valid = typeof error.errorCode === 'string' && typeof error.message === 'string';
+      const info: ControlErrorInfo = {
+        ...runInfo(value), status,
+        errorCode: valid ? error.errorCode as string : 'CONTROL_PROTOCOL_ERROR',
+      };
+      if (info.errorCode === 'CONTROL_RESULT_UNKNOWN' || (invoked && !valid)) {
+        throw new ControlResultUnknownError(info);
+      }
+      throw new ControlError(valid ? error.message as string : 'Invalid Control error response.', info);
+    }
+    return { value, status };
   }
 
   /** Discover visible contracts; defaults and authorization are resolved by the server. */
@@ -288,7 +246,7 @@ export const controls = new ControlsClient();
  * change the server execution contract. An invoke deadline means result unknown.
  * No global configuration changes, credential refresh, retries or generated API changes.
  */
-export function createClient(config: CloudClientConfig = {}): { controls: ControlsClient } {
+export function createClient(config: CloudClientConfig = {}): { controls: ControlsClient; capabilities: CapabilitiesClient } {
   const http = new HttpClient(config);
-  return { controls: new ControlsClient(() => http, config) };
+  return { controls: new ControlsClient(() => http, config), capabilities: new CapabilitiesClient(() => http, config) };
 }

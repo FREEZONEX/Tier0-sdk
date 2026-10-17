@@ -3,3 +3,4 @@ export * from './mq/index.js';
 export * from './files.js';
 export * from './runtime-context.js';
 export * from './controls.js';
+export * from './capabilities.js';
