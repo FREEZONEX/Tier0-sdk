@@ -73,6 +73,19 @@ function record(value: unknown): value is RecordValue {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
+function resourcePath(operation: { path: string; readonly pathParams: readonly string[] }, request: unknown): string {
+  let path = operation.path;
+  for (const key of operation.pathParams) {
+    const value = record(request) && Object.prototype.hasOwnProperty.call(request, key) ? request[key] : undefined;
+    if (typeof value !== 'string' || value.length < 1 || value.length > 128 ||
+        value === '.' || value === '..' || /[/\\\u0000-\u001f\u007f]/.test(value)) {
+      throw new TypeError(`Tier0 SDK: invalid UNS v2 path identity ${key}.`);
+    }
+    path = path.replace(`:${key}`, encodeURIComponent(value));
+  }
+  return path;
+}
+
 function errorInfo(value: unknown, status: number, operation: UnsV2OperationName): UnsV2ErrorInfo | undefined {
   if (!record(value) || !record(value.error) || typeof value.error.code !== 'string' ||
       typeof value.error.retryable !== 'boolean' || !Array.isArray(value.error.details) ||
@@ -110,13 +123,14 @@ export class UnsV2ClientCore {
     }
     const operation = UNS_V2_OPERATIONS[name];
     const mutation = operation.mutation;
+    const path = resourcePath(operation, request);
     const body = encodeUnsV2JSON(request, operation.request);
     if (new TextEncoder().encode(body).byteLength > UNS_V2_MAX_REQUEST_BYTES) {
       throw new TypeError('Tier0 SDK: UNS v2 request body exceeds the 16777216-byte contract limit.');
     }
     let response: Awaited<ReturnType<CloudTransport['postText']>>;
     try {
-      response = await this.transport.postText(operation.path, body);
+      response = await this.transport.postText(path, body);
     } catch (error) {
       if (!(error instanceof CloudTransportError)) throw error;
       const info: UnsV2ErrorInfo = {

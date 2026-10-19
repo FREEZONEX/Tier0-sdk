@@ -1,5 +1,5 @@
 {
-  "version": "3.17.0",
+  "version": "4.0.0",
   "cloudContractRevision": "cloud-source-impact/1",
   "operations": [
     {
@@ -213,19 +213,19 @@
             "pipeline": [
               {
                 "$match": {
-                  "data.status": "running"
+                  "status": "running"
                 }
               },
               {
                 "$sort": [
-                  {
-                    "field": "createdAt",
-                    "direction": "desc"
-                  },
-                  {
-                    "field": "id",
-                    "direction": "asc"
-                  }
+                  [
+                    "_meta.createdAt",
+                    -1
+                  ],
+                  [
+                    "_id",
+                    1
+                  ]
                 ]
               }
             ],
@@ -238,6 +238,76 @@
             "page": {
               "size": 20
             }
+          },
+          {
+            "queryId": "statuses",
+            "collectionId": "example-work-orders",
+            "pipeline": [
+              {
+                "$distinct": {
+                  "by": {
+                    "status": "$status"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "queryId": "statusFrequency",
+            "collectionId": "example-work-orders",
+            "pipeline": [
+              {
+                "$frequencies": {
+                  "by": {
+                    "status": "$status"
+                  }
+                }
+              },
+              {
+                "$sort": [
+                  [
+                    "count",
+                    -1
+                  ],
+                  [
+                    "status",
+                    1
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "queryId": "hasRunning",
+            "collectionId": "example-work-orders",
+            "pipeline": [
+              {
+                "$match": {
+                  "status": "running"
+                }
+              },
+              {
+                "$exists": "exists"
+              }
+            ],
+            "resultMode": "first"
+          },
+          {
+            "queryId": "distinctStatusCount",
+            "collectionId": "example-work-orders",
+            "pipeline": [
+              {
+                "$distinct": {
+                  "by": {
+                    "status": "$status"
+                  }
+                }
+              },
+              {
+                "$count": "count"
+              }
+            ],
+            "resultMode": "first"
           }
         ]
       },
@@ -273,7 +343,7 @@
             "pipeline": [
               {
                 "$match": {
-                  "time": {
+                  "_meta.time": {
                     "$gte": 1791936000000,
                     "$lt": 1792022400000
                   }
@@ -281,14 +351,14 @@
               },
               {
                 "$sort": [
-                  {
-                    "field": "time",
-                    "direction": "desc"
-                  },
-                  {
-                    "field": "id",
-                    "direction": "desc"
-                  }
+                  [
+                    "_meta.time",
+                    -1
+                  ],
+                  [
+                    "_id",
+                    -1
+                  ]
                 ]
               }
             ]
@@ -532,8 +602,8 @@
             "action": "record.check",
             "collectionId": "inventory",
             "filter": {
-              "id": "material-1",
-              "data.available": {
+              "_id": "material-1",
+              "available": {
                 "$gte": 2
               }
             }
@@ -543,7 +613,7 @@
             "action": "record.update",
             "collectionId": "inventory",
             "filter": {
-              "id": "material-1"
+              "_id": "material-1"
             },
             "dependsOn": [
               "check"
@@ -551,7 +621,7 @@
             "operations": [
               {
                 "op": "increment",
-                "path": "data.available",
+                "path": "available",
                 "value": -2
               }
             ]
@@ -600,8 +670,8 @@
             "action": "record.check",
             "collectionId": "inventory",
             "filter": {
-              "id": "material-1",
-              "data.available": {
+              "_id": "material-1",
+              "available": {
                 "$gte": 2
               }
             }
@@ -611,7 +681,7 @@
             "action": "record.update",
             "collectionId": "inventory",
             "filter": {
-              "id": "material-1"
+              "_id": "material-1"
             },
             "dependsOn": [
               "check"
@@ -619,7 +689,7 @@
             "operations": [
               {
                 "op": "increment",
-                "path": "data.available",
+                "path": "available",
                 "value": -2
               }
             ]
@@ -1370,7 +1440,7 @@
       "resource": "collection",
       "mutation": "meta.resourcePatch",
       "permission": "uns.write",
-      "summary": "Replace Collection schemas; omitted sampleSchema, uniqueKeys and queryIndexes are preserved; empty arrays remove keys/indexes; indexes build asynchronously; existing data must satisfy constraints; may return a job",
+      "summary": "Replace Collection schemas; omitted sampleSchema and indexes are preserved; indexes=[] removes declarations; indexes build asynchronously; existing data must satisfy constraints; may return a job",
       "example": {
         "dryRun": true,
         "items": [
@@ -2022,12 +2092,12 @@
         "items": [
           {
             "filter": {
-              "id": "order-1"
+              "_id": "order-1"
             },
             "operations": [
               {
                 "op": "set",
-                "path": "data.status",
+                "path": "status",
                 "value": "completed"
               }
             ]
@@ -2052,7 +2122,7 @@
     {
       "name": "sampleAppend",
       "handler": "UnsV2SampleAppend",
-      "suffix": "/uns/samples/append",
+      "suffix": "/uns/collections/:collectionId/records/:recordId/samples",
       "request": "UnsV2SampleAppendReq",
       "response": "UnsV2SampleAppendResponse",
       "resourceId": 214,
@@ -2073,11 +2143,15 @@
           }
         ]
       },
+      "pathParams": [
+        "collectionId",
+        "recordId"
+      ],
       "permissionAnyOf": [],
       "minPermission": 2,
       "scope": "uns:write",
       "operation": "sampleAppend",
-      "path": "/uns/samples/append",
+      "path": "/uns/collections/:collectionId/records/:recordId/samples",
       "method": "POST",
       "supported": true,
       "requestSchema": {
@@ -2085,6 +2159,710 @@
       },
       "responseSchema": {
         "$ref": "#/components/schemas/UnsV2SampleAppendResponse"
+      }
+    },
+    {
+      "name": "recordFind",
+      "handler": "UnsV2RecordFind",
+      "request": "UnsV2RecordFindReq",
+      "response": "UnsV2RecordFindResponse",
+      "suffix": "/uns/collections/:collectionId/records:find",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "find",
+      "resourceId": 212,
+      "permission": "uns.read",
+      "mutation": "",
+      "destructive": false,
+      "summary": "Nova find: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection"
+      },
+      "permissionAnyOf": [],
+      "minPermission": 1,
+      "scope": "uns:read",
+      "operation": "recordFind",
+      "path": "/uns/collections/:collectionId/records:find",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordFindReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordFindResponse"
+      }
+    },
+    {
+      "name": "recordCount",
+      "handler": "UnsV2RecordCount",
+      "request": "UnsV2RecordCountReq",
+      "response": "UnsV2RecordCountResponse",
+      "suffix": "/uns/collections/:collectionId/records:count",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "count",
+      "resourceId": 212,
+      "permission": "uns.read",
+      "mutation": "",
+      "destructive": false,
+      "summary": "Nova count: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection"
+      },
+      "permissionAnyOf": [],
+      "minPermission": 1,
+      "scope": "uns:read",
+      "operation": "recordCount",
+      "path": "/uns/collections/:collectionId/records:count",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordCountReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordCountResponse"
+      }
+    },
+    {
+      "name": "recordDistinct",
+      "handler": "UnsV2RecordDistinct",
+      "request": "UnsV2RecordDistinctReq",
+      "response": "UnsV2RecordDistinctResponse",
+      "suffix": "/uns/collections/:collectionId/records:distinct",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "distinct",
+      "resourceId": 212,
+      "permission": "uns.read",
+      "mutation": "",
+      "destructive": false,
+      "summary": "Nova distinct: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection",
+        "field": "name"
+      },
+      "permissionAnyOf": [],
+      "minPermission": 1,
+      "scope": "uns:read",
+      "operation": "recordDistinct",
+      "path": "/uns/collections/:collectionId/records:distinct",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordDistinctReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordDistinctResponse"
+      }
+    },
+    {
+      "name": "recordAggregatePipeline",
+      "handler": "UnsV2RecordAggregatePipeline",
+      "request": "UnsV2RecordAggregatePipelineReq",
+      "response": "UnsV2RecordAggregatePipelineResponse",
+      "suffix": "/uns/collections/:collectionId/records:aggregate",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "aggregate",
+      "resourceId": 212,
+      "permission": "uns.read",
+      "mutation": "",
+      "destructive": false,
+      "summary": "Nova aggregatePipeline: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection",
+        "pipeline": []
+      },
+      "permissionAnyOf": [],
+      "minPermission": 1,
+      "scope": "uns:read",
+      "operation": "recordAggregatePipeline",
+      "path": "/uns/collections/:collectionId/records:aggregate",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordAggregatePipelineReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordAggregatePipelineResponse"
+      }
+    },
+    {
+      "name": "recordExplain",
+      "handler": "UnsV2RecordExplain",
+      "request": "UnsV2RecordExplainReq",
+      "response": "UnsV2RecordExplainResponse",
+      "suffix": "/uns/collections/:collectionId/records:explain",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "explain",
+      "resourceId": 212,
+      "permission": "uns.read",
+      "mutation": "",
+      "destructive": false,
+      "summary": "Validate the document query and authorization without executing it",
+      "example": {
+        "collectionId": "example-collection"
+      },
+      "permissionAnyOf": [],
+      "minPermission": 1,
+      "scope": "uns:read",
+      "operation": "recordExplain",
+      "path": "/uns/collections/:collectionId/records:explain",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordExplainReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordExplainResponse"
+      }
+    },
+    {
+      "name": "recordInsertOne",
+      "handler": "UnsV2RecordInsertOne",
+      "request": "UnsV2RecordInsertOneReq",
+      "response": "UnsV2RecordInsertOneResponse",
+      "suffix": "/uns/collections/:collectionId/records",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "insertOne",
+      "resourceId": 214,
+      "permission": "uns.write",
+      "mutation": "record.create",
+      "destructive": false,
+      "summary": "Nova insertOne: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection",
+        "dryRun": true,
+        "data": {
+          "name": "Example"
+        }
+      },
+      "permissionAnyOf": [],
+      "minPermission": 2,
+      "scope": "uns:write",
+      "operation": "recordInsertOne",
+      "path": "/uns/collections/:collectionId/records",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordInsertOneReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordInsertOneResponse"
+      }
+    },
+    {
+      "name": "recordInsertMany",
+      "handler": "UnsV2RecordInsertMany",
+      "request": "UnsV2RecordInsertManyReq",
+      "response": "UnsV2RecordInsertManyResponse",
+      "suffix": "/uns/collections/:collectionId/records:insertMany",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "insertMany",
+      "resourceId": 214,
+      "permission": "uns.write",
+      "mutation": "record.create",
+      "destructive": false,
+      "summary": "Nova insertMany: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection",
+        "dryRun": true,
+        "documents": [
+          {
+            "id": "example-record",
+            "data": {
+              "name": "Example"
+            }
+          }
+        ]
+      },
+      "permissionAnyOf": [],
+      "minPermission": 2,
+      "scope": "uns:write",
+      "operation": "recordInsertMany",
+      "path": "/uns/collections/:collectionId/records:insertMany",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordInsertManyReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordInsertManyResponse"
+      }
+    },
+    {
+      "name": "recordUpdateOne",
+      "handler": "UnsV2RecordUpdateOne",
+      "request": "UnsV2RecordUpdateOneReq",
+      "response": "UnsV2RecordUpdateOneResponse",
+      "suffix": "/uns/collections/:collectionId/records:updateOne",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "updateOne",
+      "resourceId": 214,
+      "permission": "uns.write",
+      "mutation": "record.update",
+      "destructive": false,
+      "summary": "Nova updateOne: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection",
+        "dryRun": true,
+        "filter": {
+          "_id": "example-record"
+        },
+        "update": {
+          "$inc": {
+            "quantity": 1
+          }
+        }
+      },
+      "permissionAnyOf": [],
+      "minPermission": 2,
+      "scope": "uns:write",
+      "operation": "recordUpdateOne",
+      "path": "/uns/collections/:collectionId/records:updateOne",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordUpdateOneReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordUpdateOneResponse"
+      }
+    },
+    {
+      "name": "recordFindOneAndUpdate",
+      "handler": "UnsV2RecordFindOneAndUpdate",
+      "request": "UnsV2RecordFindOneAndUpdateReq",
+      "response": "UnsV2RecordFindOneAndUpdateResponse",
+      "suffix": "/uns/collections/:collectionId/records:findOneAndUpdate",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "findOneAndUpdate",
+      "resourceId": 214,
+      "permission": "uns.write",
+      "mutation": "record.update",
+      "destructive": false,
+      "summary": "Nova findOneAndUpdate: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection",
+        "dryRun": true,
+        "filter": {
+          "_id": "example-record"
+        },
+        "update": {
+          "$inc": {
+            "quantity": 1
+          }
+        }
+      },
+      "permissionAnyOf": [],
+      "minPermission": 2,
+      "scope": "uns:write",
+      "operation": "recordFindOneAndUpdate",
+      "path": "/uns/collections/:collectionId/records:findOneAndUpdate",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordFindOneAndUpdateReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordFindOneAndUpdateResponse"
+      }
+    },
+    {
+      "name": "recordReplaceOne",
+      "handler": "UnsV2RecordReplaceOne",
+      "request": "UnsV2RecordReplaceOneReq",
+      "response": "UnsV2RecordReplaceOneResponse",
+      "suffix": "/uns/collections/:collectionId/records:replaceOne",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "replaceOne",
+      "resourceId": 214,
+      "permission": "uns.write",
+      "mutation": "record.update",
+      "destructive": false,
+      "summary": "Nova replaceOne: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection",
+        "dryRun": true,
+        "filter": {
+          "_id": "example-record"
+        },
+        "replacement": {
+          "name": "Example"
+        }
+      },
+      "permissionAnyOf": [],
+      "minPermission": 2,
+      "scope": "uns:write",
+      "operation": "recordReplaceOne",
+      "path": "/uns/collections/:collectionId/records:replaceOne",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordReplaceOneReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordReplaceOneResponse"
+      }
+    },
+    {
+      "name": "recordFindOneAndReplace",
+      "handler": "UnsV2RecordFindOneAndReplace",
+      "request": "UnsV2RecordFindOneAndReplaceReq",
+      "response": "UnsV2RecordFindOneAndReplaceResponse",
+      "suffix": "/uns/collections/:collectionId/records:findOneAndReplace",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "findOneAndReplace",
+      "resourceId": 214,
+      "permission": "uns.write",
+      "mutation": "record.update",
+      "destructive": false,
+      "summary": "Nova findOneAndReplace: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection",
+        "dryRun": true,
+        "filter": {
+          "_id": "example-record"
+        },
+        "replacement": {
+          "name": "Example"
+        }
+      },
+      "permissionAnyOf": [],
+      "minPermission": 2,
+      "scope": "uns:write",
+      "operation": "recordFindOneAndReplace",
+      "path": "/uns/collections/:collectionId/records:findOneAndReplace",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordFindOneAndReplaceReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordFindOneAndReplaceResponse"
+      }
+    },
+    {
+      "name": "recordDeleteOne",
+      "handler": "UnsV2RecordDeleteOne",
+      "request": "UnsV2RecordDeleteOneReq",
+      "response": "UnsV2RecordDeleteOneResponse",
+      "suffix": "/uns/collections/:collectionId/records:deleteOne",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "deleteOne",
+      "resourceId": 215,
+      "permission": "uns.delete",
+      "mutation": "record.delete",
+      "destructive": true,
+      "summary": "Nova deleteOne: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection",
+        "dryRun": true,
+        "filter": {
+          "_id": "example-record"
+        }
+      },
+      "permissionAnyOf": [],
+      "minPermission": 2,
+      "scope": "uns:write",
+      "operation": "recordDeleteOne",
+      "path": "/uns/collections/:collectionId/records:deleteOne",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordDeleteOneReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordDeleteOneResponse"
+      }
+    },
+    {
+      "name": "recordFindOneAndDelete",
+      "handler": "UnsV2RecordFindOneAndDelete",
+      "request": "UnsV2RecordFindOneAndDeleteReq",
+      "response": "UnsV2RecordFindOneAndDeleteResponse",
+      "suffix": "/uns/collections/:collectionId/records:findOneAndDelete",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "findOneAndDelete",
+      "resourceId": 215,
+      "permission": "uns.delete",
+      "mutation": "record.delete",
+      "destructive": true,
+      "summary": "Nova findOneAndDelete: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection",
+        "dryRun": true,
+        "filter": {
+          "_id": "example-record"
+        }
+      },
+      "permissionAnyOf": [],
+      "minPermission": 2,
+      "scope": "uns:write",
+      "operation": "recordFindOneAndDelete",
+      "path": "/uns/collections/:collectionId/records:findOneAndDelete",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordFindOneAndDeleteReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordFindOneAndDeleteResponse"
+      }
+    },
+    {
+      "name": "recordUpdateMany",
+      "handler": "UnsV2RecordUpdateMany",
+      "request": "UnsV2RecordUpdateManyReq",
+      "response": "UnsV2RecordUpdateManyResponse",
+      "suffix": "/uns/collections/:collectionId/records:updateMany",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "updateMany",
+      "resourceId": 214,
+      "permission": "uns.write",
+      "mutation": "record.update",
+      "destructive": false,
+      "summary": "Nova updateMany: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection",
+        "dryRun": true,
+        "filter": {
+          "_id": "example-record"
+        },
+        "update": {
+          "$inc": {
+            "quantity": 1
+          }
+        }
+      },
+      "permissionAnyOf": [],
+      "minPermission": 2,
+      "scope": "uns:write",
+      "operation": "recordUpdateMany",
+      "path": "/uns/collections/:collectionId/records:updateMany",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordUpdateManyReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordUpdateManyResponse"
+      }
+    },
+    {
+      "name": "recordDeleteMany",
+      "handler": "UnsV2RecordDeleteMany",
+      "request": "UnsV2RecordDeleteManyReq",
+      "response": "UnsV2RecordDeleteManyResponse",
+      "suffix": "/uns/collections/:collectionId/records:deleteMany",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "deleteMany",
+      "resourceId": 215,
+      "permission": "uns.delete",
+      "mutation": "record.delete",
+      "destructive": true,
+      "summary": "Nova deleteMany: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection",
+        "dryRun": true,
+        "filter": {
+          "_id": "example-record"
+        }
+      },
+      "permissionAnyOf": [],
+      "minPermission": 2,
+      "scope": "uns:write",
+      "operation": "recordDeleteMany",
+      "path": "/uns/collections/:collectionId/records:deleteMany",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordDeleteManyReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordDeleteManyResponse"
+      }
+    },
+    {
+      "name": "recordBulkWrite",
+      "handler": "UnsV2RecordBulkWrite",
+      "request": "UnsV2RecordBulkWriteReq",
+      "response": "UnsV2RecordBulkWriteResponse",
+      "suffix": "/uns/collections/:collectionId/records:bulkWrite",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "record",
+      "novaAction": "bulkWrite",
+      "resourceId": 214,
+      "permission": "uns.write",
+      "mutation": "record.update",
+      "destructive": false,
+      "summary": "Nova bulkWrite: bare business fields, _id and _meta.* system fields",
+      "example": {
+        "collectionId": "example-collection",
+        "dryRun": true,
+        "operations": []
+      },
+      "permissionAnyOf": [],
+      "minPermission": 2,
+      "scope": "uns:write",
+      "operation": "recordBulkWrite",
+      "path": "/uns/collections/:collectionId/records:bulkWrite",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordBulkWriteReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2RecordBulkWriteResponse"
+      }
+    },
+    {
+      "name": "sampleQuerySeries",
+      "handler": "UnsV2SampleQuerySeries",
+      "request": "UnsV2SampleQuerySeriesReq",
+      "response": "UnsV2SampleQuerySeriesResponse",
+      "suffix": "/uns/samples:query",
+      "resource": "sample",
+      "novaAction": "sample.query",
+      "resourceId": 212,
+      "permission": "uns.read",
+      "mutation": "",
+      "summary": "Nova Sample query: [from,to), per-record raw cursors or numeric buckets (avg/min/max/count/sum/first/last); empty buckets stay absent",
+      "example": {
+        "collectionId": "example-collection",
+        "recordIds": [
+          "example-record"
+        ],
+        "from": 1700000000000,
+        "to": 1700003600000
+      },
+      "permissionAnyOf": [],
+      "minPermission": 1,
+      "scope": "uns:read",
+      "operation": "sampleQuerySeries",
+      "path": "/uns/samples:query",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2SampleQuerySeriesReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2SampleQuerySeriesResponse"
+      }
+    },
+    {
+      "name": "sampleLatestValues",
+      "handler": "UnsV2SampleLatestValues",
+      "request": "UnsV2SampleLatestValuesReq",
+      "response": "UnsV2SampleLatestValuesResponse",
+      "suffix": "/uns/latest",
+      "resource": "sample",
+      "novaAction": "sample.latest",
+      "resourceId": 212,
+      "permission": "uns.read",
+      "mutation": "",
+      "summary": "Latest real Sample per Record; null means no Sample; never substitute Record data",
+      "example": {
+        "collectionId": "example-collection",
+        "recordIds": [
+          "example-record"
+        ]
+      },
+      "permissionAnyOf": [],
+      "minPermission": 1,
+      "scope": "uns:read",
+      "operation": "sampleLatestValues",
+      "path": "/uns/latest",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2SampleLatestValuesReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2SampleLatestValuesResponse"
+      }
+    },
+    {
+      "name": "sampleDeleteRange",
+      "handler": "UnsV2SampleDeleteRange",
+      "request": "UnsV2SampleDeleteRangeReq",
+      "response": "UnsV2SampleDeleteRangeResponse",
+      "suffix": "/uns/collections/:collectionId/samples:delete",
+      "pathParams": [
+        "collectionId"
+      ],
+      "resource": "sample",
+      "novaAction": "sample.delete",
+      "resourceId": 215,
+      "permission": "uns.delete",
+      "mutation": "sample.delete",
+      "mcp": false,
+      "destructive": true,
+      "summary": "Physically delete Samples inside an explicit Record and [from,to) range; Record tombstones/history outside the range are retained",
+      "example": {
+        "collectionId": "example-collection",
+        "recordIds": [
+          "example-record"
+        ],
+        "from": 1700000000000,
+        "to": 1700003600000,
+        "dryRun": true
+      },
+      "permissionAnyOf": [],
+      "minPermission": 3,
+      "scope": "uns:update",
+      "operation": "sampleDeleteRange",
+      "path": "/uns/collections/:collectionId/samples:delete",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/UnsV2SampleDeleteRangeReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/UnsV2SampleDeleteRangeResponse"
       }
     },
     {
@@ -2863,26 +3641,6 @@
         "keyId"
       ]
     },
-    "UnsV2RecordOrder": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "field": {
-          "type": "string"
-        },
-        "direction": {
-          "type": "string",
-          "enum": [
-            "asc",
-            "desc"
-          ]
-        }
-      },
-      "required": [
-        "field",
-        "direction"
-      ]
-    },
     "UnsV2TransactionQuery": {
       "type": "object",
       "additionalProperties": false,
@@ -3010,7 +3768,7 @@
       "properties": {
         "path": {
           "type": "string",
-          "description": "data.field、operations.N.value，或 filter/ 开头的 JSON Pointer（如 filter/data.available/$gte、filter/id/$eq）。filter 指针只能替换已存在的标量/null 占位值，不能替换谓词结构。id 可绑定同 Collection 查询结果中的记录身份。"
+          "description": "data.field DTO 路径、operations.N.value，或 filter/ 开头的 JSON Pointer（如 filter/available/$gte、filter/_id/$eq）。filter 指针只能替换已存在的标量/null 占位值，不能替换谓词结构。id 可绑定同 Collection 查询结果中的记录身份。"
         },
         "ref": {
           "type": "string"
@@ -3222,7 +3980,7 @@
           }
         }
       ],
-      "description": "first 只返回完整流水线处理后的首项，无匹配为 null，不接受 page。all 默认返回分页列表，不是无限量取回全集。需要确定首项时显式排序并提供唯一同值排序依据。 每个 Sample query 必须指定外层 recordId；跨 Record 查询使用多条 queries。"
+      "description": "first 只返回完整流水线处理后的首项，无匹配为 null，不接受 page。all 默认返回分页列表，不是无限量取回全集。需要确定首项时显式排序并提供唯一同值排序依据。末阶段是 $count/$exists 时，first/all 均禁止显式 page（包括空对象），空输入仍返回一行 0/false；后面还有其他阶段时恢复普通分页规则。 每个 Sample query 必须指定外层 recordId；跨 Record 查询使用多条 queries。"
     },
     "UnsV2DataQuery": {
       "type": "object",
@@ -3291,7 +4049,7 @@
           }
         }
       ],
-      "description": "first 只返回完整流水线处理后的首项，无匹配为 null，不接受 page。all 默认返回分页列表，不是无限量取回全集。需要确定首项时显式排序并提供唯一同值排序依据。"
+      "description": "first 只返回完整流水线处理后的首项，无匹配为 null，不接受 page。all 默认返回分页列表，不是无限量取回全集。需要确定首项时显式排序并提供唯一同值排序依据。末阶段是 $count/$exists 时，first/all 均禁止显式 page（包括空对象），空输入仍返回一行 0/false；后面还有其他阶段时恢复普通分页规则。"
     },
     "UnsV2PipelinePage": {
       "type": "object",
@@ -3730,6 +4488,13 @@
           "type": "string",
           "description": "集合 ID，业务记录和采样所属的 Collection。"
         },
+        "indexes": {
+          "items": {
+            "$ref": "#/components/schemas/IndexSpec"
+          },
+          "type": "array",
+          "description": "统一索引声明，例如 [{\"path\":\"orderNo\",\"unique\":true}] 或 [{\"paths\":[\"factoryId\",\"externalId\"],\"unique\":true}]。省略保留，[] 移除；字段不带 data.，唯一索引仅 Record B-tree，异步构建并通过 indexStatus 检查就绪。"
+        },
         "permissions": {
           "items": {
             "type": "string"
@@ -3741,12 +4506,6 @@
         },
         "sampleSchema": {
           "$ref": "#/components/schemas/Schema"
-        },
-        "uniqueKeys": {
-          "items": {
-            "$ref": "#/components/schemas/UniqueKey"
-          },
-          "type": "array"
         }
       },
       "required": [
@@ -4094,18 +4853,19 @@
           "maxLength": 512,
           "type": "string"
         },
+        "indexes": {
+          "items": {
+            "$ref": "#/components/schemas/IndexSpec"
+          },
+          "maxItems": 16,
+          "type": "array",
+          "description": "统一索引声明，例如 [{\"path\":\"orderNo\",\"unique\":true}] 或 [{\"paths\":[\"factoryId\",\"externalId\"],\"unique\":true}]。省略保留，[] 移除；字段不带 data.，唯一索引仅 Record B-tree，异步构建并通过 indexStatus 检查就绪。"
+        },
         "name": {
           "description": "Unique display name; no surrounding whitespace",
           "maxLength": 63,
           "minLength": 1,
           "type": "string"
-        },
-        "queryIndexes": {
-          "items": {
-            "$ref": "#/components/schemas/QueryIndex"
-          },
-          "maxItems": 16,
-          "type": "array"
         },
         "recordSchema": {
           "$ref": "#/components/schemas/Schema"
@@ -4122,13 +4882,6 @@
         },
         "semantics": {
           "$ref": "#/components/schemas/CollectionSemantics"
-        },
-        "uniqueKeys": {
-          "items": {
-            "$ref": "#/components/schemas/UniqueKey"
-          },
-          "maxItems": 16,
-          "type": "array"
         }
       },
       "required": [
@@ -4178,23 +4931,25 @@
           },
           "type": "array"
         },
+        "indexStatus": {
+          "items": {
+            "$ref": "#/components/schemas/IndexState"
+          },
+          "type": "array",
+          "description": "只读索引状态：name/spec/state/error；只有 ready 表示当前声明的物理索引有效，pending/building/failed 均不能用于业务键 upsert；挂载集合由源端管理唯一约束。"
+        },
+        "indexes": {
+          "items": {
+            "$ref": "#/components/schemas/IndexSpec"
+          },
+          "type": "array",
+          "description": "统一索引声明，例如 [{\"path\":\"orderNo\",\"unique\":true}] 或 [{\"paths\":[\"factoryId\",\"externalId\"],\"unique\":true}]。省略保留，[] 移除；字段不带 data.，唯一索引仅 Record B-tree，异步构建并通过 indexStatus 检查就绪。"
+        },
         "metadataNotice": {
           "type": "string"
         },
         "name": {
           "type": "string"
-        },
-        "queryIndexStates": {
-          "items": {
-            "$ref": "#/components/schemas/QueryIndexState"
-          },
-          "type": "array"
-        },
-        "queryIndexes": {
-          "items": {
-            "$ref": "#/components/schemas/QueryIndex"
-          },
-          "type": "array"
         },
         "recordGrain": {
           "type": "string"
@@ -4216,13 +4971,6 @@
         },
         "sampleSchema": {
           "$ref": "#/components/schemas/Schema"
-        },
-        "uniqueKeys": {
-          "items": {
-            "$ref": "#/components/schemas/UniqueKey"
-          },
-          "nullable": true,
-          "type": "array"
         }
       },
       "required": [
@@ -4231,9 +4979,8 @@
         "description",
         "revision",
         "recordSchema",
-        "uniqueKeys",
-        "queryIndexes",
-        "queryIndexStates",
+        "indexes",
+        "indexStatus",
         "metadataNotice",
         "fields",
         "relationships"
@@ -4723,6 +5470,103 @@
       ],
       "type": "object"
     },
+    "IndexSpec": {
+      "additionalProperties": false,
+      "description": "Nova index declaration. Unique is supported only for Record B-tree indexes; GIN takes one path. Unique values retain JSON types, exclude soft-deleted Records, allow missing paths, and treat explicit JSON null as a value. Constraints become effective only when indexStatus.state=ready.",
+      "oneOf": [
+        {
+          "not": {
+            "required": [
+              "paths"
+            ]
+          },
+          "required": [
+            "path"
+          ]
+        },
+        {
+          "not": {
+            "required": [
+              "path"
+            ]
+          },
+          "required": [
+            "paths"
+          ]
+        }
+      ],
+      "properties": {
+        "kind": {
+          "default": "btree",
+          "enum": [
+            "btree",
+            "gin"
+          ],
+          "type": "string"
+        },
+        "path": {
+          "description": "Bare business field path; _id and _meta.* cannot be declared as business indexes.",
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "paths": {
+          "items": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "target": {
+          "default": "records",
+          "enum": [
+            "records",
+            "samples"
+          ],
+          "type": "string"
+        },
+        "unique": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "IndexState": {
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "spec": {
+          "$ref": "#/components/schemas/IndexSpec"
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "building",
+            "ready",
+            "failed",
+            "removing",
+            "managedAtSource"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "spec",
+        "state"
+      ],
+      "type": "object"
+    },
     "MQTTCollection": {
       "additionalProperties": false,
       "properties": {
@@ -5125,99 +5969,6 @@
         "language",
         "code",
         "timeoutMs"
-      ],
-      "type": "object"
-    },
-    "QueryIndex": {
-      "additionalProperties": false,
-      "description": "B-tree: 1..8 declared scalar fields. GIN: exactly one declared array field, direction asc. Built asynchronously; usable only when queryIndexStates reports ready.",
-      "properties": {
-        "fields": {
-          "items": {
-            "$ref": "#/components/schemas/QueryIndexField"
-          },
-          "maxItems": 8,
-          "minItems": 1,
-          "type": "array"
-        },
-        "kind": {
-          "enum": [
-            "records",
-            "samples"
-          ],
-          "type": "string"
-        },
-        "name": {
-          "maxLength": 63,
-          "minLength": 1,
-          "type": "string"
-        },
-        "type": {
-          "enum": [
-            "btree",
-            "gin"
-          ],
-          "type": "string"
-        }
-      },
-      "required": [
-        "name",
-        "kind",
-        "type",
-        "fields"
-      ],
-      "type": "object"
-    },
-    "QueryIndexField": {
-      "additionalProperties": false,
-      "properties": {
-        "direction": {
-          "enum": [
-            "asc",
-            "desc"
-          ],
-          "type": "string"
-        },
-        "field": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "field",
-        "direction"
-      ],
-      "type": "object"
-    },
-    "QueryIndexState": {
-      "additionalProperties": false,
-      "properties": {
-        "errorCode": {
-          "type": "string"
-        },
-        "kind": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "status": {
-          "enum": [
-            "pending",
-            "building",
-            "ready",
-            "failed",
-            "removing"
-          ],
-          "type": "string"
-        }
-      },
-      "required": [
-        "name",
-        "kind",
-        "status"
       ],
       "type": "object"
     },
@@ -5712,6 +6463,12 @@
       ],
       "type": "object"
     },
+    "Time": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
     "TopicData": {
       "additionalProperties": false,
       "description": "Leaf node: cannot have children; parentId is directory or null; viewMode=records uses one collectionId: Topics N:1 Collection; viewMode=fields uses explicit fields (kind=record/sample, collectionId, recordId, fieldPath), describing one object, not an inferred multi-row join; Record field reads current Record; Sample field reads that Record's latest sample; missing is not zero; Move/copy retains data; archive blocked by retained references",
@@ -5920,32 +6677,6 @@
       ],
       "type": "object"
     },
-    "UniqueKey": {
-      "additionalProperties": false,
-      "properties": {
-        "fields": {
-          "items": {
-            "description": "Declared scalar Record schema path; missing/null components do not reserve a key",
-            "pattern": "^data\\.",
-            "type": "string"
-          },
-          "maxItems": 8,
-          "minItems": 1,
-          "type": "array",
-          "uniqueItems": true
-        },
-        "name": {
-          "maxLength": 63,
-          "minLength": 1,
-          "type": "string"
-        }
-      },
-      "required": [
-        "name",
-        "fields"
-      ],
-      "type": "object"
-    },
     "UnsRecord": {
       "additionalProperties": false,
       "properties": {
@@ -5966,6 +6697,9 @@
         },
         "sourceId": {
           "type": "string"
+        },
+        "sourceTime": {
+          "$ref": "#/components/schemas/Time"
         },
         "updatedAt": {
           "type": "integer"
@@ -7419,18 +8153,18 @@
                 "maxLength": 512,
                 "type": "string"
               },
+              "indexes": {
+                "items": {
+                  "$ref": "#/components/schemas/IndexSpec"
+                },
+                "maxItems": 16,
+                "type": "array"
+              },
               "name": {
                 "description": "Unique display name; no surrounding whitespace",
                 "maxLength": 63,
                 "minLength": 1,
                 "type": "string"
-              },
-              "queryIndexes": {
-                "items": {
-                  "$ref": "#/components/schemas/QueryIndex"
-                },
-                "maxItems": 16,
-                "type": "array"
               },
               "recordSchema": {
                 "$ref": "#/components/schemas/Schema"
@@ -7440,13 +8174,6 @@
               },
               "semantics": {
                 "$ref": "#/components/schemas/CollectionSemantics"
-              },
-              "uniqueKeys": {
-                "items": {
-                  "$ref": "#/components/schemas/UniqueKey"
-                },
-                "maxItems": 16,
-                "type": "array"
               }
             },
             "required": [
@@ -9308,17 +10035,12 @@
                 ],
                 "nullable": true
               },
-              "uniqueKeys": {
+              "indexes": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/UniqueKey"
-                }
-              },
-              "queryIndexes": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/QueryIndex"
-                }
+                  "$ref": "#/components/schemas/IndexSpec"
+                },
+                "maxItems": 16
               }
             },
             "required": [
@@ -12608,83 +13330,6 @@
         "data"
       ]
     },
-    "UnsV2SampleAppendReq": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "idempotencyKey": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128,
-          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。 Optional durable intent key, shared across ordinary UNS resource routes for the same user/API key/MCP grant. Use a different key for each new write intent; retry the original identity, route, body and key. Not isolated per route."
-        },
-        "dryRun": {
-          "type": "boolean",
-          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
-        },
-        "allowPartial": {
-          "type": "boolean",
-          "default": false,
-          "description": "仅普通数组写入支持，默认 false。true 按项独立提交；检查 summary 和 results[].error，失败项修正后作为新请求提交。事务接口不接受。 Optional. false keeps whole-request rollback; true independently commits each item, continues after business errors and returns per-item errors. Transactions never accept this field. Partial writes retain a jobId for recovery."
-        },
-        "collectionId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128,
-          "description": "集合 ID，业务记录和采样所属的 Collection。"
-        },
-        "recordId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128,
-          "description": "采样所属业务记录 ID。"
-        },
-        "mode": {
-          "type": "string",
-          "enum": [
-            "auto",
-            "sync",
-            "async"
-          ]
-        },
-        "items": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 10000,
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "time": {
-                "type": "integer"
-              },
-              "quality": {
-                "type": "string"
-              },
-              "data": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            },
-            "required": [
-              "time",
-              "data"
-            ]
-          }
-        }
-      },
-      "required": [
-        "dryRun",
-        "collectionId",
-        "recordId",
-        "items"
-      ]
-    },
     "UnsV2SampleAppendResponse": {
       "type": "object",
       "additionalProperties": false,
@@ -12700,6 +13345,1405 @@
         },
         "data": {
           "$ref": "#/components/schemas/Outcome"
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordFindResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordCountResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordDistinctResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordAggregatePipelineResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordExplainResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordInsertOneResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "matchedCount": {
+              "type": "integer"
+            },
+            "modifiedCount": {
+              "type": "integer"
+            },
+            "deletedCount": {
+              "type": "integer"
+            },
+            "insertedCount": {
+              "type": "integer"
+            },
+            "upsertedCount": {
+              "type": "integer"
+            },
+            "upsertedId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "upsertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "insertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "document": {
+              "type": "object",
+              "nullable": true
+            },
+            "writeErrors": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "resumeAfter": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "type": "string"
+            },
+            "replayed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "matchedCount",
+            "modifiedCount",
+            "deletedCount",
+            "insertedCount",
+            "upsertedCount"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordInsertManyResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "matchedCount": {
+              "type": "integer"
+            },
+            "modifiedCount": {
+              "type": "integer"
+            },
+            "deletedCount": {
+              "type": "integer"
+            },
+            "insertedCount": {
+              "type": "integer"
+            },
+            "upsertedCount": {
+              "type": "integer"
+            },
+            "upsertedId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "upsertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "insertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "document": {
+              "type": "object",
+              "nullable": true
+            },
+            "writeErrors": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "resumeAfter": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "type": "string"
+            },
+            "replayed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "matchedCount",
+            "modifiedCount",
+            "deletedCount",
+            "insertedCount",
+            "upsertedCount"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordUpdateOneResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "matchedCount": {
+              "type": "integer"
+            },
+            "modifiedCount": {
+              "type": "integer"
+            },
+            "deletedCount": {
+              "type": "integer"
+            },
+            "insertedCount": {
+              "type": "integer"
+            },
+            "upsertedCount": {
+              "type": "integer"
+            },
+            "upsertedId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "upsertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "insertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "document": {
+              "type": "object",
+              "nullable": true
+            },
+            "writeErrors": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "resumeAfter": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "type": "string"
+            },
+            "replayed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "matchedCount",
+            "modifiedCount",
+            "deletedCount",
+            "insertedCount",
+            "upsertedCount"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordFindOneAndUpdateResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "matchedCount": {
+              "type": "integer"
+            },
+            "modifiedCount": {
+              "type": "integer"
+            },
+            "deletedCount": {
+              "type": "integer"
+            },
+            "insertedCount": {
+              "type": "integer"
+            },
+            "upsertedCount": {
+              "type": "integer"
+            },
+            "upsertedId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "upsertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "insertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "document": {
+              "type": "object",
+              "nullable": true
+            },
+            "writeErrors": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "resumeAfter": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "type": "string"
+            },
+            "replayed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "matchedCount",
+            "modifiedCount",
+            "deletedCount",
+            "insertedCount",
+            "upsertedCount"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordReplaceOneResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "matchedCount": {
+              "type": "integer"
+            },
+            "modifiedCount": {
+              "type": "integer"
+            },
+            "deletedCount": {
+              "type": "integer"
+            },
+            "insertedCount": {
+              "type": "integer"
+            },
+            "upsertedCount": {
+              "type": "integer"
+            },
+            "upsertedId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "upsertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "insertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "document": {
+              "type": "object",
+              "nullable": true
+            },
+            "writeErrors": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "resumeAfter": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "type": "string"
+            },
+            "replayed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "matchedCount",
+            "modifiedCount",
+            "deletedCount",
+            "insertedCount",
+            "upsertedCount"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordFindOneAndReplaceResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "matchedCount": {
+              "type": "integer"
+            },
+            "modifiedCount": {
+              "type": "integer"
+            },
+            "deletedCount": {
+              "type": "integer"
+            },
+            "insertedCount": {
+              "type": "integer"
+            },
+            "upsertedCount": {
+              "type": "integer"
+            },
+            "upsertedId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "upsertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "insertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "document": {
+              "type": "object",
+              "nullable": true
+            },
+            "writeErrors": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "resumeAfter": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "type": "string"
+            },
+            "replayed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "matchedCount",
+            "modifiedCount",
+            "deletedCount",
+            "insertedCount",
+            "upsertedCount"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordDeleteOneResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "matchedCount": {
+              "type": "integer"
+            },
+            "modifiedCount": {
+              "type": "integer"
+            },
+            "deletedCount": {
+              "type": "integer"
+            },
+            "insertedCount": {
+              "type": "integer"
+            },
+            "upsertedCount": {
+              "type": "integer"
+            },
+            "upsertedId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "upsertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "insertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "document": {
+              "type": "object",
+              "nullable": true
+            },
+            "writeErrors": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "resumeAfter": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "type": "string"
+            },
+            "replayed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "matchedCount",
+            "modifiedCount",
+            "deletedCount",
+            "insertedCount",
+            "upsertedCount"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordFindOneAndDeleteResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "matchedCount": {
+              "type": "integer"
+            },
+            "modifiedCount": {
+              "type": "integer"
+            },
+            "deletedCount": {
+              "type": "integer"
+            },
+            "insertedCount": {
+              "type": "integer"
+            },
+            "upsertedCount": {
+              "type": "integer"
+            },
+            "upsertedId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "upsertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "insertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "document": {
+              "type": "object",
+              "nullable": true
+            },
+            "writeErrors": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "resumeAfter": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "type": "string"
+            },
+            "replayed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "matchedCount",
+            "modifiedCount",
+            "deletedCount",
+            "insertedCount",
+            "upsertedCount"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordUpdateManyResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "matchedCount": {
+              "type": "integer"
+            },
+            "modifiedCount": {
+              "type": "integer"
+            },
+            "deletedCount": {
+              "type": "integer"
+            },
+            "insertedCount": {
+              "type": "integer"
+            },
+            "upsertedCount": {
+              "type": "integer"
+            },
+            "upsertedId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "upsertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "insertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "document": {
+              "type": "object",
+              "nullable": true
+            },
+            "writeErrors": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "resumeAfter": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "type": "string"
+            },
+            "replayed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "matchedCount",
+            "modifiedCount",
+            "deletedCount",
+            "insertedCount",
+            "upsertedCount"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordDeleteManyResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "matchedCount": {
+              "type": "integer"
+            },
+            "modifiedCount": {
+              "type": "integer"
+            },
+            "deletedCount": {
+              "type": "integer"
+            },
+            "insertedCount": {
+              "type": "integer"
+            },
+            "upsertedCount": {
+              "type": "integer"
+            },
+            "upsertedId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "upsertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "insertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "document": {
+              "type": "object",
+              "nullable": true
+            },
+            "writeErrors": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "resumeAfter": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "type": "string"
+            },
+            "replayed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "matchedCount",
+            "modifiedCount",
+            "deletedCount",
+            "insertedCount",
+            "upsertedCount"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2RecordBulkWriteResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "matchedCount": {
+              "type": "integer"
+            },
+            "modifiedCount": {
+              "type": "integer"
+            },
+            "deletedCount": {
+              "type": "integer"
+            },
+            "insertedCount": {
+              "type": "integer"
+            },
+            "upsertedCount": {
+              "type": "integer"
+            },
+            "upsertedId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "upsertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "insertedIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "document": {
+              "type": "object",
+              "nullable": true
+            },
+            "writeErrors": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "minItems": 0,
+              "maxItems": 10000
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "resumeAfter": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "status": {
+              "type": "string"
+            },
+            "replayed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "matchedCount",
+            "modifiedCount",
+            "deletedCount",
+            "insertedCount",
+            "upsertedCount"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2SampleQuerySeriesReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "recordIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "minItems": 1,
+          "maxItems": 20,
+          "description": "记录 ID 列表，不是集合 ID。"
+        },
+        "from": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "时间范围起点，Unix 毫秒。"
+        },
+        "to": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "时间范围终点，Unix 毫秒。"
+        },
+        "bucket": {
+          "type": "string",
+          "description": "Fixed UTC duration, e.g. 5m/1h/1d; 1ms to 365d."
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0,
+          "maxItems": 8
+        },
+        "quality": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "cursors": {
+          "type": "object",
+          "maxProperties": 20,
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "collectionId",
+        "recordIds",
+        "from",
+        "to"
+      ]
+    },
+    "UnsV2SampleQuerySeriesResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2SampleLatestValuesReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "recordIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "minItems": 1,
+          "maxItems": 20,
+          "description": "记录 ID 列表，不是集合 ID。"
+        }
+      },
+      "required": [
+        "collectionId",
+        "recordIds"
+      ]
+    },
+    "UnsV2SampleLatestValuesResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "UnsV2SampleDeleteRangeResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
         }
       },
       "required": [
@@ -12822,18 +14866,19 @@
           "maxLength": 512,
           "type": "string"
         },
+        "indexes": {
+          "items": {
+            "$ref": "#/components/schemas/IndexSpec"
+          },
+          "maxItems": 16,
+          "type": "array",
+          "description": "统一索引声明，例如 [{\"path\":\"orderNo\",\"unique\":true}] 或 [{\"paths\":[\"factoryId\",\"externalId\"],\"unique\":true}]。省略保留，[] 移除；字段不带 data.，唯一索引仅 Record B-tree，异步构建并通过 indexStatus 检查就绪。"
+        },
         "name": {
           "description": "Unique display name; no surrounding whitespace",
           "maxLength": 63,
           "minLength": 1,
           "type": "string"
-        },
-        "queryIndexes": {
-          "items": {
-            "$ref": "#/components/schemas/QueryIndex"
-          },
-          "maxItems": 16,
-          "type": "array"
         },
         "recordSchema": {
           "$ref": "#/components/schemas/Schema"
@@ -12850,13 +14895,6 @@
         },
         "semantics": {
           "$ref": "#/components/schemas/CollectionSemantics"
-        },
-        "uniqueKeys": {
-          "items": {
-            "$ref": "#/components/schemas/UniqueKey"
-          },
-          "maxItems": 16,
-          "type": "array"
         }
       },
       "required": [
@@ -13090,6 +15128,15 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "update": {},
+        "arrayFilters": {
+          "type": "array",
+          "items": {}
+        },
+        "upsert": {
+          "type": "boolean",
+          "description": "true 时 filter 必须有 _id 等值条件，或覆盖某个 ready 唯一索引全部字段的等值条件，否则返回 UPSERT_REQUIRES_UNIQUE_INDEX。未匹配则插入，唯一冲突返回 409 DUPLICATE_KEY。"
+        },
         "opId": {
           "type": "string",
           "description": "本事务内唯一操作标识，供依赖和结果引用使用。"
@@ -13180,9 +15227,7 @@
         },
         "sort": {
           "type": "array",
-          "items": {
-            "$ref": "#/components/schemas/UnsV2RecordOrder"
-          }
+          "items": {}
         },
         "returnDocument": {
           "type": "string"
@@ -13444,6 +15489,24 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "update": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Nova update document, mutually exclusive with legacy operations."
+        },
+        "arrayFilters": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "minItems": 0,
+          "maxItems": 8
+        },
+        "upsert": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 时 filter 必须有 _id 等值条件，或覆盖某个 ready 唯一索引全部字段的等值条件，否则返回 UPSERT_REQUIRES_UNIQUE_INDEX。未匹配则插入，唯一冲突返回 409 DUPLICATE_KEY。"
+        },
         "opId": {
           "type": "string",
           "description": "本事务内唯一操作标识，供依赖和结果引用使用。"
@@ -13514,7 +15577,7 @@
               "$ref": "#/components/schemas/UnsV2PipelineSort"
             }
           ],
-          "description": "仅 selection=first。服务端追加 id 升序确保同值顺序稳定。"
+          "description": "仅 selection=first。服务端追加 _id 升序确保同值顺序稳定。"
         },
         "returnDocument": {
           "type": "string",
@@ -13576,6 +15639,35 @@
           "required": [
             "action",
             "collectionId"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "operations"
+              ],
+              "not": {
+                "required": [
+                  "update"
+                ]
+              }
+            },
+            {
+              "required": [
+                "update"
+              ],
+              "properties": {
+                "action": {
+                  "enum": [
+                    "record.update"
+                  ]
+                }
+              },
+              "not": {
+                "required": [
+                  "operations"
+                ]
+              }
+            }
           ]
         },
         {
@@ -13686,14 +15778,14 @@
           }
         ]
       },
-      "description": "统一谓词：字段路径使用 id、data.field，Sample 另支持 recordId/time/receivedAt/quality。直接值等同 $eq；支持标量比较、数组 $elemMatch/$all/$size、逻辑组合与受限 $expr。路径以点分段；字面点写 \\.、反斜杠写 \\\\，JSON 中反斜杠需再次转义；最多 512 字节/10 段，数组使用显式下标，不隐式穿透。字段类型按 Schema 校验，不接受 SQL 或脚本。Record 写入默认必须精确匹配一条。 $eq:null 匹配 null 或缺失；$ne:null 匹配存在且非 null；$ne:非空值包含缺失。$exists 区分存在与缺失，显式 null 算存在。",
+      "description": "统一谓词：业务路径直接使用 field 或 customer.name；系统路径使用 _id、_meta.revision/createdAt/updatedAt/sourceId/sourceTime/locked。Sample 使用 _meta.recordId/time/receivedAt/quality/streamId/bindingId。直接值等同 $eq；支持标量比较、数组 $elemMatch/$all/$size、逻辑组合与受限 $expr。路径以点分段；字面点写 \\.、反斜杠写 \\\\，JSON 中反斜杠需再次转义；最多 512 字节/10 段，数组使用显式下标，不隐式穿透。字段类型按 Schema 校验，不接受 SQL 或脚本。Record 写入默认必须精确匹配一条。 $eq:null 匹配 null 或缺失；$ne:null 匹配存在且非 null；$ne:非空值包含缺失。$exists 区分存在与缺失，显式 null 算存在。",
       "example": {
         "$and": [
           {
-            "id": "example-record"
+            "_id": "example-record"
           },
           {
-            "data.available": {
+            "available": {
               "$gte": 20
             }
           }
@@ -14453,27 +16545,77 @@
     "UnsV2PipelineSort": {
       "type": "array",
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "field": {
-            "type": "string"
-          },
-          "direction": {
-            "type": "string",
-            "enum": [
-              "asc",
-              "desc"
-            ]
-          }
+        "type": "array",
+        "items": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "integer",
+              "enum": [
+                1,
+                -1
+              ]
+            }
+          ]
         },
-        "required": [
-          "field",
-          "direction"
-        ]
+        "minItems": 2,
+        "maxItems": 2
       },
       "minItems": 1,
-      "maxItems": 16
+      "maxItems": 4,
+      "description": "Nova ordered sort pairs: [[field, 1|-1], ...]. Server appends _id as a stable tie breaker."
+    },
+    "UnsV2DistinctBy": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 16,
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 513,
+        "pattern": "^\\$[^$].*$",
+        "description": "单个 $ 前缀的已声明字段路径，例如 $status；不接受表达式或 $$ 变量。"
+      },
+      "description": "输出别名到输入字段引用的映射。别名必须是合法顶层字段路径（转义规则相同），禁止空名、$ 前缀、控制字符及保留原型名。任一引用字段缺失则丢弃该输入行；显式 null 保留。数组按整体值比较，需元素去重时先 $unwind。"
+    },
+    "UnsV2Distinct": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "by": {
+          "$ref": "#/components/schemas/UnsV2DistinctBy"
+        }
+      },
+      "required": [
+        "by"
+      ],
+      "description": "按 by 指定的字段组合去重，输出各别名字段。结果使用普通 offset 分页；唯一值数量用 $distinct 后接 $count，不新增 countDistinct 阶段。"
+    },
+    "UnsV2Frequencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "by": {
+          "allOf": [
+            {
+              "$ref": "#/components/schemas/UnsV2DistinctBy"
+            }
+          ],
+          "not": {
+            "required": [
+              "count"
+            ]
+          },
+          "description": "沿用 distinct 的字段组合与缺失/null 规则；别名不能为 count。"
+        }
+      },
+      "required": [
+        "by"
+      ],
+      "description": "按 by 指定的字段组合统计频次，输出各别名字段和固定 count 字段。计数基于当前阶段输入；结果可继续排序或过滤。"
     },
     "UnsV2PipelineStage": {
       "oneOf": [
@@ -14500,7 +16642,7 @@
               "additionalProperties": {
                 "$ref": "#/components/schemas/UnsV2PipelineExpression"
               },
-              "description": "字段包含/排除（1/0）或表达式；支持 data.field 嵌套输出路径，引用为 $data.field。不能混合包含与排除（_id 除外）。"
+              "description": "字段包含/排除（1/0）或表达式；支持 field 嵌套输出路径，引用为 $field。不能混合包含与排除（_id 除外）。"
             }
           },
           "required": [
@@ -14569,6 +16711,30 @@
           },
           "required": [
             "$group"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "$distinct": {
+              "$ref": "#/components/schemas/UnsV2Distinct"
+            }
+          },
+          "required": [
+            "$distinct"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "$frequencies": {
+              "$ref": "#/components/schemas/UnsV2Frequencies"
+            }
+          },
+          "required": [
+            "$frequencies"
           ]
         },
         {
@@ -14718,11 +16884,28 @@
           "properties": {
             "$count": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "maxLength": 512,
+              "description": "合法顶层输出字段名，遵循统一路径转义及保留名规则。 输出一行计数；空输入返回 0。作为末阶段时禁止显式 page，后面还有阶段时按最终结果正常分页。"
             }
           },
           "required": [
             "$count"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "$exists": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "description": "合法顶层输出字段名，遵循统一路径转义及保留名规则。 输出一行布尔值，判断当前阶段是否有输入行；空输入返回 false。作为末阶段时禁止显式 page，后面还有阶段时按最终结果正常分页。"
+            }
+          },
+          "required": [
+            "$exists"
           ]
         }
       ],
@@ -16718,6 +18901,835 @@
         "data"
       ]
     },
+    "UnsV2SampleAppendReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。 Optional durable intent key, shared across ordinary UNS resource routes for the same user/API key/MCP grant. Use a different key for each new write intent; retry the original identity, route, body and key. Not isolated per route."
+        },
+        "dryRun": {
+          "type": "boolean",
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "allowPartial": {
+          "type": "boolean",
+          "default": false,
+          "description": "仅普通数组写入支持，默认 false。true 按项独立提交；检查 summary 和 results[].error，失败项修正后作为新请求提交。事务接口不接受。 Optional. false keeps whole-request rollback; true independently commits each item, continues after business errors and returns per-item errors. Transactions never accept this field. Partial writes retain a jobId for recovery."
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "sync",
+            "async"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "time": {
+                "type": "integer"
+              },
+              "quality": {
+                "type": "string"
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "time",
+              "data"
+            ]
+          }
+        }
+      },
+      "required": [
+        "dryRun",
+        "items"
+      ]
+    },
+    "UnsV2RecordFindReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        },
+        "projection": {
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "enum": [
+                  0,
+                  1
+                ]
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "description": "Include or exclude declared fields; computed expressions use aggregate-pipeline. System identity is retained."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "cursor": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "UnsV2RecordCountReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        }
+      },
+      "required": []
+    },
+    "UnsV2RecordDistinctReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "field": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "required": [
+        "field"
+      ]
+    },
+    "UnsV2RecordAggregatePipelineReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pipeline": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/UnsV2PipelineStage"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "required": [
+        "pipeline"
+      ]
+    },
+    "UnsV2RecordExplainReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        }
+      },
+      "required": []
+    },
+    "UnsV2RecordInsertOneReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "对象 ID（字符串），从发现或读取接口取得；不要把名称当成 ID。"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "data"
+      ]
+    },
+    "UnsV2RecordInsertManyReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "data"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 10000
+        },
+        "ordered": {
+          "type": "boolean",
+          "default": true
+        },
+        "atomic": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 整批原子提交，文档动作最多 200 项；false 为逐文档提交。"
+        }
+      },
+      "required": [
+        "documents"
+      ]
+    },
+    "UnsV2RecordUpdateOneReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        },
+        "update": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Nova update operators: $set/$unset/$inc/$mul/$min/$max/$rename/$currentDate/$setOnInsert/$push/$addToSet/$pop/$pull/$pullAll. Business paths omit data.; _id and _meta are read-only."
+        },
+        "arrayFilters": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "minItems": 0,
+          "maxItems": 8
+        },
+        "upsert": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 时 filter 必须有 _id 等值条件，或覆盖某个 ready 唯一索引全部字段的等值条件，否则返回 UPSERT_REQUIRES_UNIQUE_INDEX。未匹配则插入，唯一冲突返回 409 DUPLICATE_KEY。"
+        }
+      },
+      "required": [
+        "filter",
+        "update"
+      ]
+    },
+    "UnsV2RecordFindOneAndUpdateReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        },
+        "update": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Nova update operators: $set/$unset/$inc/$mul/$min/$max/$rename/$currentDate/$setOnInsert/$push/$addToSet/$pop/$pull/$pullAll. Business paths omit data.; _id and _meta are read-only."
+        },
+        "arrayFilters": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "minItems": 0,
+          "maxItems": 8
+        },
+        "upsert": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 时 filter 必须有 _id 等值条件，或覆盖某个 ready 唯一索引全部字段的等值条件，否则返回 UPSERT_REQUIRES_UNIQUE_INDEX。未匹配则插入，唯一冲突返回 409 DUPLICATE_KEY。"
+        },
+        "returnDocument": {
+          "type": "string",
+          "enum": [
+            "before",
+            "after"
+          ],
+          "default": "before"
+        }
+      },
+      "required": [
+        "filter",
+        "update"
+      ]
+    },
+    "UnsV2RecordReplaceOneReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        },
+        "replacement": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "upsert": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 时 filter 必须有 _id 等值条件，或覆盖某个 ready 唯一索引全部字段的等值条件，否则返回 UPSERT_REQUIRES_UNIQUE_INDEX。未匹配则插入，唯一冲突返回 409 DUPLICATE_KEY。"
+        }
+      },
+      "required": [
+        "filter",
+        "replacement"
+      ]
+    },
+    "UnsV2RecordFindOneAndReplaceReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        },
+        "replacement": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "upsert": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 时 filter 必须有 _id 等值条件，或覆盖某个 ready 唯一索引全部字段的等值条件，否则返回 UPSERT_REQUIRES_UNIQUE_INDEX。未匹配则插入，唯一冲突返回 409 DUPLICATE_KEY。"
+        },
+        "returnDocument": {
+          "type": "string",
+          "enum": [
+            "before",
+            "after"
+          ],
+          "default": "before"
+        }
+      },
+      "required": [
+        "filter",
+        "replacement"
+      ]
+    },
+    "UnsV2RecordDeleteOneReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        }
+      },
+      "required": [
+        "filter"
+      ]
+    },
+    "UnsV2RecordFindOneAndDeleteReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        }
+      },
+      "required": [
+        "filter"
+      ]
+    },
+    "UnsV2RecordUpdateManyReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "update": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Nova update operators: $set/$unset/$inc/$mul/$min/$max/$rename/$currentDate/$setOnInsert/$push/$addToSet/$pop/$pull/$pullAll. Business paths omit data.; _id and _meta are read-only."
+        },
+        "arrayFilters": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "minItems": 0,
+          "maxItems": 8
+        },
+        "maxDocs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Default 1000; atomic requests default to 200."
+        },
+        "resumeAfter": {
+          "type": "string"
+        },
+        "atomic": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 整批原子提交，文档动作最多 200 项；false 为逐文档提交。 All selected writes commit together; maxDocs must be <= 200 and the complete match set must fit."
+        },
+        "ordered": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "filter",
+        "update"
+      ]
+    },
+    "UnsV2RecordDeleteManyReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "maxDocs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Default 1000; atomic requests default to 200."
+        },
+        "resumeAfter": {
+          "type": "string"
+        },
+        "atomic": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 整批原子提交，文档动作最多 200 项；false 为逐文档提交。 All selected writes commit together; maxDocs must be <= 200 and the complete match set must fit."
+        },
+        "ordered": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "filter"
+      ]
+    },
+    "UnsV2RecordBulkWriteReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "insertOne": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "data": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ]
+                  }
+                },
+                "required": [
+                  "insertOne"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "updateOne": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "filter": {
+                        "$ref": "#/components/schemas/UnsV2DataFilter"
+                      },
+                      "sort": {
+                        "$ref": "#/components/schemas/UnsV2PipelineSort"
+                      },
+                      "update": {
+                        "type": "object",
+                        "minProperties": 1,
+                        "description": "Nova update operators: $set/$unset/$inc/$mul/$min/$max/$rename/$currentDate/$setOnInsert/$push/$addToSet/$pop/$pull/$pullAll. Business paths omit data.; _id and _meta are read-only."
+                      },
+                      "arrayFilters": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        },
+                        "minItems": 0,
+                        "maxItems": 8
+                      },
+                      "upsert": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "filter",
+                      "update"
+                    ]
+                  }
+                },
+                "required": [
+                  "updateOne"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "replaceOne": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "filter": {
+                        "$ref": "#/components/schemas/UnsV2DataFilter"
+                      },
+                      "sort": {
+                        "$ref": "#/components/schemas/UnsV2PipelineSort"
+                      },
+                      "replacement": {
+                        "type": "object",
+                        "additionalProperties": true
+                      },
+                      "upsert": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "filter",
+                      "replacement"
+                    ]
+                  }
+                },
+                "required": [
+                  "replaceOne"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "deleteOne": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "filter": {
+                        "$ref": "#/components/schemas/UnsV2DataFilter"
+                      },
+                      "sort": {
+                        "$ref": "#/components/schemas/UnsV2PipelineSort"
+                      }
+                    },
+                    "required": [
+                      "filter"
+                    ]
+                  }
+                },
+                "required": [
+                  "deleteOne"
+                ]
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 10000
+        },
+        "ordered": {
+          "type": "boolean",
+          "default": true
+        },
+        "atomic": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 整批原子提交，文档动作最多 200 项；false 为逐文档提交。"
+        }
+      },
+      "required": [
+        "operations"
+      ]
+    },
+    "UnsV2SampleDeleteRangeReqBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "recordIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "minItems": 1,
+          "maxItems": 20,
+          "description": "记录 ID 列表，不是集合 ID。"
+        },
+        "from": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "时间范围起点，Unix 毫秒。"
+        },
+        "to": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "时间范围终点，Unix 毫秒。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        }
+      },
+      "required": [
+        "recordIds",
+        "from",
+        "to"
+      ]
+    },
     "UnsV2RecordFilter": {
       "type": "object",
       "additionalProperties": false,
@@ -16745,6 +19757,26 @@
         "field",
         "op",
         "value"
+      ]
+    },
+    "UnsV2RecordOrder": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "asc",
+            "desc"
+          ]
+        }
+      },
+      "required": [
+        "field",
+        "direction"
       ]
     },
     "UnsV2QueryJoinOn": {
@@ -17432,6 +20464,24 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "update": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Nova update document, mutually exclusive with legacy operations."
+        },
+        "arrayFilters": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "minItems": 0,
+          "maxItems": 8
+        },
+        "upsert": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 时 filter 必须有 _id 等值条件，或覆盖某个 ready 唯一索引全部字段的等值条件，否则返回 UPSERT_REQUIRES_UNIQUE_INDEX。未匹配则插入，唯一冲突返回 409 DUPLICATE_KEY。"
+        },
         "opId": {
           "type": "string",
           "description": "本事务内唯一操作标识，供依赖和结果引用使用。"
@@ -17502,7 +20552,7 @@
               "$ref": "#/components/schemas/UnsV2PipelineSort"
             }
           ],
-          "description": "仅 selection=first。服务端追加 id 升序确保同值顺序稳定。"
+          "description": "仅 selection=first。服务端追加 _id 升序确保同值顺序稳定。"
         },
         "returnDocument": {
           "type": "string",
@@ -17740,6 +20790,35 @@
           "required": [
             "action",
             "collectionId"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "operations"
+              ],
+              "not": {
+                "required": [
+                  "update"
+                ]
+              }
+            },
+            {
+              "required": [
+                "update"
+              ],
+              "properties": {
+                "action": {
+                  "enum": [
+                    "record.update"
+                  ]
+                }
+              },
+              "not": {
+                "required": [
+                  "operations"
+                ]
+              }
+            }
           ]
         },
         {
@@ -17905,7 +20984,7 @@
             true
           ],
           "default": true,
-          "description": "仅允许 true：同一批次全部成功才提交。"
+          "description": "true 整批原子提交，文档动作最多 200 项；false 为逐文档提交。"
         },
         "dryRun": {
           "type": "boolean",
@@ -18119,7 +21198,7 @@
             true
           ],
           "default": true,
-          "description": "仅允许 true：同一批次全部成功才提交。"
+          "description": "true 整批原子提交，文档动作最多 200 项；false 为逐文档提交。"
         },
         "dryRun": {
           "type": "boolean",
@@ -18516,6 +21595,14 @@
           },
           "type": "array"
         },
+        "indexes": {
+          "items": {
+            "$ref": "#/components/schemas/IndexSpec"
+          },
+          "maxItems": 16,
+          "type": "array",
+          "description": "统一索引声明，例如 [{\"path\":\"orderNo\",\"unique\":true}] 或 [{\"paths\":[\"factoryId\",\"externalId\"],\"unique\":true}]。省略保留，[] 移除；字段不带 data.，唯一索引仅 Record B-tree，异步构建并通过 indexStatus 检查就绪。"
+        },
         "name": {
           "description": "Unique display name; no surrounding whitespace",
           "maxLength": 63,
@@ -18527,13 +21614,6 @@
         },
         "parentId": {
           "type": "string"
-        },
-        "queryIndexes": {
-          "items": {
-            "$ref": "#/components/schemas/QueryIndex"
-          },
-          "maxItems": 16,
-          "type": "array"
         },
         "recordSchema": {
           "$ref": "#/components/schemas/Schema"
@@ -18550,13 +21630,6 @@
         },
         "semantics": {
           "$ref": "#/components/schemas/CollectionSemantics"
-        },
-        "uniqueKeys": {
-          "items": {
-            "$ref": "#/components/schemas/UniqueKey"
-          },
-          "maxItems": 16,
-          "type": "array"
         },
         "viewMode": {
           "type": "string"
@@ -18772,11 +21845,6 @@
             "status"
           ],
           "type": "object"
-        },
-        "mountId": {
-          "description": "Receiving mount identity; null for local resources. Mounted metadata and Collection data are read-only.",
-          "nullable": true,
-          "type": "string"
         },
         "revision": {
           "type": "integer"
@@ -19285,7 +22353,7 @@
     },
     "RecordRow": {
       "additionalProperties": true,
-      "description": "Identity is (collectionId,id); sourceId may be null for business data; data must match the Collection recordSchema and uniqueKeys; Record revisions are optional; record.check/read require collection read permission; shared filters support bounded declared field, array and expression predicates; record.update supports declared escaped paths with set/unset/increment/append/addToSet/pull; update/modify/replace may explicitly select first and return before/after document; exactOne is the default; Explicit bindings reference permitted prior results through the existing dependency graph; no arbitrary scripts or SQL; Record batches lock participating identities through commit; failure rolls back the whole batch; Schema and Source protection always apply; Deletion has a separate permission and retained Sample/reference guards; Sample does not replace the Record",
+      "description": "Identity is (collectionId,id); sourceId may be null for business data; data must match the Collection recordSchema and indexes; Record revisions are optional; record.check/read require collection read permission; shared filters support bounded declared field, array and expression predicates; Document actions support find/count/distinct, Nova update operators and single upsert, ordered/atomic bulk writes; use bare business fields and _id/_meta.* system fields; Explicit bindings reference permitted prior results through the existing dependency graph; no arbitrary scripts or SQL; Record batches lock participating identities through commit; failure rolls back the whole batch; Schema and Source protection always apply; Deletion requires a separate permission and uses a shared tombstone; retained Samples keep their Record identity; active Topic references remain protected",
       "properties": {
         "collectionId": {
           "type": "string",
@@ -19416,7 +22484,7 @@
     },
     "SampleRow": {
       "additionalProperties": true,
-      "description": "History is append-only; requires existing (collectionId,recordId) and Collection sampleSchema; Query uses the shared pipeline grammar: outer id,recordId,time,receivedAt,quality and nested data fields participate in the same match predicate; time and receivedAt are Unix milliseconds; Use explicit sorting and resultMode=first for the latest matching sample; all returns paginated items; no separate public history/latest query language; No sample replace/delete/purge operation in this batch API",
+      "description": "History is append-only; requires existing (collectionId,recordId) and Collection sampleSchema; Queries use bare business paths plus _id and _meta.* system fields; time and receivedAt are Unix milliseconds; Sample query-series supports raw per-Record cursors and numeric buckets; latest-values returns real Samples or null without substituting Record data; No sample replace/delete/purge operation in this batch API",
       "properties": {
         "collectionId": {
           "type": "string",
@@ -20016,6 +23084,971 @@
         "msg",
         "requestId",
         "data"
+      ]
+    },
+    "UnsV2SampleAppendReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。 Optional durable intent key, shared across ordinary UNS resource routes for the same user/API key/MCP grant. Use a different key for each new write intent; retry the original identity, route, body and key. Not isolated per route."
+        },
+        "dryRun": {
+          "type": "boolean",
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "allowPartial": {
+          "type": "boolean",
+          "default": false,
+          "description": "仅普通数组写入支持，默认 false。true 按项独立提交；检查 summary 和 results[].error，失败项修正后作为新请求提交。事务接口不接受。 Optional. false keeps whole-request rollback; true independently commits each item, continues after business errors and returns per-item errors. Transactions never accept this field. Partial writes retain a jobId for recovery."
+        },
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "采样所属业务记录 ID。"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "sync",
+            "async"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "time": {
+                "type": "integer"
+              },
+              "quality": {
+                "type": "string"
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "time",
+              "data"
+            ]
+          }
+        }
+      },
+      "required": [
+        "dryRun",
+        "collectionId",
+        "recordId",
+        "items"
+      ]
+    },
+    "UnsV2RecordFindReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        },
+        "projection": {
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "enum": [
+                  0,
+                  1
+                ]
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "description": "Include or exclude declared fields; computed expressions use aggregate-pipeline. System identity is retained."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "cursor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "collectionId"
+      ]
+    },
+    "UnsV2RecordCountReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        }
+      },
+      "required": [
+        "collectionId"
+      ]
+    },
+    "UnsV2RecordDistinctReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "field": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "required": [
+        "collectionId",
+        "field"
+      ]
+    },
+    "UnsV2RecordAggregatePipelineReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "pipeline": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/UnsV2PipelineStage"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "required": [
+        "collectionId",
+        "pipeline"
+      ]
+    },
+    "UnsV2RecordExplainReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        }
+      },
+      "required": [
+        "collectionId"
+      ]
+    },
+    "UnsV2RecordInsertOneReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "对象 ID（字符串），从发现或读取接口取得；不要把名称当成 ID。"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "collectionId",
+        "data"
+      ]
+    },
+    "UnsV2RecordInsertManyReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "data"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 10000
+        },
+        "ordered": {
+          "type": "boolean",
+          "default": true
+        },
+        "atomic": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 整批原子提交，文档动作最多 200 项；false 为逐文档提交。"
+        }
+      },
+      "required": [
+        "collectionId",
+        "documents"
+      ]
+    },
+    "UnsV2RecordUpdateOneReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        },
+        "update": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Nova update operators: $set/$unset/$inc/$mul/$min/$max/$rename/$currentDate/$setOnInsert/$push/$addToSet/$pop/$pull/$pullAll. Business paths omit data.; _id and _meta are read-only."
+        },
+        "arrayFilters": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "minItems": 0,
+          "maxItems": 8
+        },
+        "upsert": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 时 filter 必须有 _id 等值条件，或覆盖某个 ready 唯一索引全部字段的等值条件，否则返回 UPSERT_REQUIRES_UNIQUE_INDEX。未匹配则插入，唯一冲突返回 409 DUPLICATE_KEY。"
+        }
+      },
+      "required": [
+        "collectionId",
+        "filter",
+        "update"
+      ]
+    },
+    "UnsV2RecordFindOneAndUpdateReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        },
+        "update": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Nova update operators: $set/$unset/$inc/$mul/$min/$max/$rename/$currentDate/$setOnInsert/$push/$addToSet/$pop/$pull/$pullAll. Business paths omit data.; _id and _meta are read-only."
+        },
+        "arrayFilters": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "minItems": 0,
+          "maxItems": 8
+        },
+        "upsert": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 时 filter 必须有 _id 等值条件，或覆盖某个 ready 唯一索引全部字段的等值条件，否则返回 UPSERT_REQUIRES_UNIQUE_INDEX。未匹配则插入，唯一冲突返回 409 DUPLICATE_KEY。"
+        },
+        "returnDocument": {
+          "type": "string",
+          "enum": [
+            "before",
+            "after"
+          ],
+          "default": "before"
+        }
+      },
+      "required": [
+        "collectionId",
+        "filter",
+        "update"
+      ]
+    },
+    "UnsV2RecordReplaceOneReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        },
+        "replacement": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "upsert": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 时 filter 必须有 _id 等值条件，或覆盖某个 ready 唯一索引全部字段的等值条件，否则返回 UPSERT_REQUIRES_UNIQUE_INDEX。未匹配则插入，唯一冲突返回 409 DUPLICATE_KEY。"
+        }
+      },
+      "required": [
+        "collectionId",
+        "filter",
+        "replacement"
+      ]
+    },
+    "UnsV2RecordFindOneAndReplaceReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        },
+        "replacement": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "upsert": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 时 filter 必须有 _id 等值条件，或覆盖某个 ready 唯一索引全部字段的等值条件，否则返回 UPSERT_REQUIRES_UNIQUE_INDEX。未匹配则插入，唯一冲突返回 409 DUPLICATE_KEY。"
+        },
+        "returnDocument": {
+          "type": "string",
+          "enum": [
+            "before",
+            "after"
+          ],
+          "default": "before"
+        }
+      },
+      "required": [
+        "collectionId",
+        "filter",
+        "replacement"
+      ]
+    },
+    "UnsV2RecordDeleteOneReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        }
+      },
+      "required": [
+        "collectionId",
+        "filter"
+      ]
+    },
+    "UnsV2RecordFindOneAndDeleteReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "sort": {
+          "$ref": "#/components/schemas/UnsV2PipelineSort"
+        }
+      },
+      "required": [
+        "collectionId",
+        "filter"
+      ]
+    },
+    "UnsV2RecordUpdateManyReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "update": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Nova update operators: $set/$unset/$inc/$mul/$min/$max/$rename/$currentDate/$setOnInsert/$push/$addToSet/$pop/$pull/$pullAll. Business paths omit data.; _id and _meta are read-only."
+        },
+        "arrayFilters": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "minItems": 0,
+          "maxItems": 8
+        },
+        "maxDocs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Default 1000; atomic requests default to 200."
+        },
+        "resumeAfter": {
+          "type": "string"
+        },
+        "atomic": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 整批原子提交，文档动作最多 200 项；false 为逐文档提交。 All selected writes commit together; maxDocs must be <= 200 and the complete match set must fit."
+        },
+        "ordered": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "collectionId",
+        "filter",
+        "update"
+      ]
+    },
+    "UnsV2RecordDeleteManyReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "filter": {
+          "$ref": "#/components/schemas/UnsV2DataFilter"
+        },
+        "maxDocs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Default 1000; atomic requests default to 200."
+        },
+        "resumeAfter": {
+          "type": "string"
+        },
+        "atomic": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 整批原子提交，文档动作最多 200 项；false 为逐文档提交。 All selected writes commit together; maxDocs must be <= 200 and the complete match set must fit."
+        },
+        "ordered": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "collectionId",
+        "filter"
+      ]
+    },
+    "UnsV2RecordBulkWriteReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "description": "本次业务意图的唯一键。相同请求重试必须复用；不同请求不得复用。"
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "insertOne": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "data": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ]
+                  }
+                },
+                "required": [
+                  "insertOne"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "updateOne": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "filter": {
+                        "$ref": "#/components/schemas/UnsV2DataFilter"
+                      },
+                      "sort": {
+                        "$ref": "#/components/schemas/UnsV2PipelineSort"
+                      },
+                      "update": {
+                        "type": "object",
+                        "minProperties": 1,
+                        "description": "Nova update operators: $set/$unset/$inc/$mul/$min/$max/$rename/$currentDate/$setOnInsert/$push/$addToSet/$pop/$pull/$pullAll. Business paths omit data.; _id and _meta are read-only."
+                      },
+                      "arrayFilters": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        },
+                        "minItems": 0,
+                        "maxItems": 8
+                      },
+                      "upsert": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "filter",
+                      "update"
+                    ]
+                  }
+                },
+                "required": [
+                  "updateOne"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "replaceOne": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "filter": {
+                        "$ref": "#/components/schemas/UnsV2DataFilter"
+                      },
+                      "sort": {
+                        "$ref": "#/components/schemas/UnsV2PipelineSort"
+                      },
+                      "replacement": {
+                        "type": "object",
+                        "additionalProperties": true
+                      },
+                      "upsert": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "filter",
+                      "replacement"
+                    ]
+                  }
+                },
+                "required": [
+                  "replaceOne"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "deleteOne": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "filter": {
+                        "$ref": "#/components/schemas/UnsV2DataFilter"
+                      },
+                      "sort": {
+                        "$ref": "#/components/schemas/UnsV2PipelineSort"
+                      }
+                    },
+                    "required": [
+                      "filter"
+                    ]
+                  }
+                },
+                "required": [
+                  "deleteOne"
+                ]
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 10000
+        },
+        "ordered": {
+          "type": "boolean",
+          "default": true
+        },
+        "atomic": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 整批原子提交，文档动作最多 200 项；false 为逐文档提交。"
+        }
+      },
+      "required": [
+        "collectionId",
+        "operations"
+      ]
+    },
+    "UnsV2SampleDeleteRangeReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "集合 ID，业务记录和采样所属的 Collection。"
+        },
+        "recordIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "minItems": 1,
+          "maxItems": 20,
+          "description": "记录 ID 列表，不是集合 ID。"
+        },
+        "from": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "时间范围起点，Unix 毫秒。"
+        },
+        "to": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "时间范围终点，Unix 毫秒。"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+        }
+      },
+      "required": [
+        "collectionId",
+        "recordIds",
+        "from",
+        "to"
       ]
     },
     "UnsV2RecordSearchResponse": {
@@ -20659,9 +24692,7 @@
       "properties": {
         "configVersion": {
           "type": "integer",
-          "enum": [
-            1
-          ]
+          "const": 2
         },
         "endpoint": {
           "type": "string",
@@ -20862,6 +24893,11 @@
             "maxLength": 2048
           },
           "description": "Explicit frozen Source resource references. Empty or omitted preserves native empty-snapshot semantics and never grants newly discovered resources. The native validator also limits the entire Stream to 1000 resource references."
+        },
+        "acquisition": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Frozen protocol acquisition options for connection-only Source v2; cannot override endpoint or credentials."
         }
       },
       "required": [

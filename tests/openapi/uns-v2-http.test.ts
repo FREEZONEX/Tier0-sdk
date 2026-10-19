@@ -31,6 +31,65 @@ const client = (timeout = 2_000, unsV2MaxResponseBytes?: number) => createClient
 });
 
 describe('UNS v2 localhost HTTP fixture', () => {
+  it('sends unified index declarations and reads exact business numbers through the 4.0 find route', async () => {
+    const start = received.length;
+    respond = (req, res) => {
+      if (req.url === '/openapi/v2/uns/collections/devices/records:find') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end('{"code":200,"msg":"ok","requestId":"find-4","data":{"items":[{"_id":"device-1","serial":9007199254740993}],"indexStatus":{"state":"building"}}}');
+      } else send(res, { code: 200, msg: 'ok', requestId: 'collection-4', data: { status: 'completed' } });
+    };
+    const api = client().unsV2;
+    const item = {
+      id: 'devices', name: 'Devices', recordSchema: { type: 'object' as const, properties: { serial: { type: 'integer' as const } } },
+      indexes: [{ path: 'serial', kind: 'btree' as const, target: 'records' as const, unique: true }],
+    };
+    await api.collectionCreate({ dryRun: false, idempotencyKey: 'index-intent-4', items: [item] });
+    const response = await api.recordFind({ collectionId: 'devices', filter: {}, limit: 10 });
+    expect(received.slice(start).map(row => row.path)).toEqual([
+      '/openapi/v2/uns/collections/create', '/openapi/v2/uns/collections/devices/records:find',
+    ]);
+    expect(JSON.parse(received[start].body)).toEqual({ dryRun: false, idempotencyKey: 'index-intent-4', items: [item] });
+    expect(received[start].body).not.toContain('uniqueKeys');
+    expect(received[start].body).not.toContain('queryIndexes');
+    expect(response.data.items).toEqual([{ _id: 'device-1', serial: new UnsV2RawNumber('9007199254740993') }]);
+    expect(response.data.indexStatus).toEqual({ state: 'building' });
+  });
+
+  it('keeps one frozen intent and does not retry a 4.0 upsert after an ambiguous response', async () => {
+    const start = received.length;
+    respond = (_req, res) => send(res, { code: 503, msg: 'unavailable', requestId: 'update-4' }, 503);
+    const request = { collectionId: 'devices', filter: { serial: 'A' }, update: { $set: { enabled: true } }, upsert: true, idempotencyKey: 'upsert-intent-4' };
+    await expect(client().unsV2.recordUpdateOne(request)).rejects.toBeInstanceOf(UnsV2Error);
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start].path).toBe('/openapi/v2/uns/collections/devices/records:updateOne');
+    expect(JSON.parse(received[start].body)).toEqual(request);
+  });
+
+  it('encodes resource identities once and preserves both Sample append owners', async () => {
+    const start = received.length;
+    respond = (_req, res) => send(res, { code: 200, msg: 'ok', requestId: 'scoped-4', data: {} });
+    const api = client().unsV2;
+    await api.recordFind({ collectionId: '设备 #%2F', limit: 1 });
+    const request = { dryRun: false, collectionId: 'equipment', recordId: 'device #1', items: [{ time: 1, data: { temperature: 23 } }] };
+    await api.sampleAppend(request);
+    expect(received.slice(start).map(row => row.path)).toEqual([
+      '/openapi/v2/uns/collections/' + encodeURIComponent('设备 #%2F') + '/records:find',
+      '/openapi/v2/uns/collections/equipment/records/device%20%231/samples',
+    ]);
+    expect(JSON.parse(received[start + 1].body)).toEqual(request);
+  });
+
+  it('rejects missing, inherited and route-changing path identities before sending a request', async () => {
+    const start = received.length;
+    const api = client().unsV2;
+    for (const value of ['', '.', '..', 'a/b', 'a\\b', 'a\n', 101, null]) {
+      await expect(api.recordFind({ collectionId: value as string })).rejects.toThrow('path identity');
+    }
+    await expect(api.recordFind(Object.create({ collectionId: 'inherited' }))).rejects.toThrow('path identity');
+    expect(received.length).toBe(start);
+  });
+
   it('routes public Connect observations while retaining admission coverage and nullable metrics', async () => {
     const start = received.length;
     respond = (req, res) => {
@@ -72,8 +131,9 @@ describe('UNS v2 localhost HTTP fixture', () => {
     for (const name of ['CloudSourceCredentialCreateReq', 'CloudSourceCredentialCreateResponse', 'CloudSourceIngressGetReq', 'CloudSourceIngressRotateReq']) {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(80);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(84);
+    expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(99);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(103);
     expect(received.slice(start)).toHaveLength(1);
   });
 
@@ -405,7 +465,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     const start = received.length;
     respond = req => req.socket.destroy();
     await expect(client().unsV2.sampleAppend({
-      dryRun: false, collectionId: 'telemetry', items: [{ recordId: 'machine-1', time: 1, data: { value: 3 } }],
+      dryRun: false, collectionId: 'telemetry', recordId: 'machine-1', items: [{ time: 1, data: { value: 3 } }],
     })).rejects.toMatchObject({ name: 'UnsV2OutcomeUnknownError', code: 'UNS_V2_TRANSPORT_ERROR' });
     await new Promise(resolve => setTimeout(resolve, 30));
     expect(received.length - start).toBe(1);

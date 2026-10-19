@@ -1,5 +1,6 @@
 import {
   createClient,
+  type IndexSpec,
   UnsV2RawNumber,
   type PlatformV2UsersListReq,
   type UnsV2JSONValue,
@@ -36,6 +37,13 @@ const documentValidation = client.unsV2.streamDocumentValidate({ document: {
   sources: [{ alias: 'plant', sourceId: 'source-1', configRevision: 2, resources: ['line/1'] }],
 } });
 const operation: UnsV2OperationName = 'recordCreate';
+const singleIndex: IndexSpec = { path: 'serial', unique: true };
+const compositeIndex: IndexSpec = { paths: ['plant', 'serial'], kind: 'btree', target: 'records', unique: true };
+// @ts-expect-error IndexSpec requires one path declaration.
+const missingIndexPath: IndexSpec = { unique: true };
+// @ts-expect-error Single and composite declarations are mutually exclusive.
+const ambiguousIndexPath: IndexSpec = { path: 'serial', paths: ['serial'] };
+void [singleIndex, compositeIndex, missingIndexPath, ambiguousIndexPath];
 const request: UnsV2Request<'directoryGet'> = { id: 'directory-1' };
 type DirectoryGetResponse = UnsV2Response<'directoryGet'>;
 const exactInt64: PlatformV2UsersListReq = { page: 9_223_372_036_854_775_807n };

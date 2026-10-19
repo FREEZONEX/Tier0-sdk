@@ -53,6 +53,10 @@ for (const operation of manifest.operations) {
       operation.method !== 'POST' || operation.supported !== true) {
     fail(`${operation.name} has an unsupported route contract`);
   }
+  const pathParams = operation.path.split('/').filter(part => part.startsWith(':')).map(part => part.slice(1));
+  if (JSON.stringify(pathParams) !== JSON.stringify(operation.pathParams || [])) {
+    fail(`${operation.name} path parameters differ from its route`);
+  }
   if (!manifest.schemas[operation.request] || !manifest.schemas[operation.response]) {
     fail(`${operation.name} references a missing schema`);
   }
@@ -108,6 +112,21 @@ const union = values => [...new Set(values.filter(Boolean))].join(' | ') || 'nev
 
 function typeFor(schema, nested = false) {
   if (!schema || typeof schema !== 'object' || Object.keys(schema).length === 0) return 'UnsV2JSONValue';
+  // Required-only object alternatives inherit the parent's field definitions.
+  // IndexSpec uses this to require exactly one of path/paths.
+  if (schema.type === 'object' && schema.properties && Array.isArray(schema.oneOf) &&
+      schema.oneOf.every(branch => Array.isArray(branch.required) &&
+        Object.keys(branch).every(key => key === 'required' || key === 'not') &&
+        (!branch.not || (Object.keys(branch.not).length === 1 && Array.isArray(branch.not.required) && branch.not.required.length === 1)))) {
+    const own = { ...schema };
+    delete own.oneOf;
+    const alternatives = schema.oneOf.map(branch => {
+      const shape = typeFor({ ...own, required: [...new Set([...(own.required || []), ...branch.required])] });
+      const excluded = branch.not?.required?.[0];
+      return `(${shape}${excluded ? ` & { ${JSON.stringify(excluded)}?: never }` : ''})`;
+    });
+    return `(${union(alternatives)}${schema.nullable === true ? ' | null' : ''})`;
+  }
   const composed = [];
   const hasOwnShape = schema.$ref || schema.const !== undefined || schema.enum || schema.type || schema.properties || schema.additionalProperties !== undefined;
   if (hasOwnShape && (schema.oneOf || schema.anyOf || schema.allOf)) {
@@ -178,7 +197,7 @@ function codecFor(schema) {
 const schemaTypes = Object.entries(exportedSchemas).map(([name, schema]) =>
   `export type ${name} = ${typeFor(schema)};`).join('\n\n');
 const operationRows = publicOperations.map(operation =>
-  `  ${JSON.stringify(operation.name)}: { path: ${JSON.stringify(`/openapi/v2${operation.path}`)}, request: ${JSON.stringify(requestType(operation))}, response: ${JSON.stringify(responseType(operation))}, mutation: ${JSON.stringify(Boolean(operation.mutation))}, scope: ${JSON.stringify(operation.scope)} },`).join('\n');
+  `  ${JSON.stringify(operation.name)}: { path: ${JSON.stringify(`/openapi/v2${operation.path}`)}, pathParams: ${JSON.stringify(operation.pathParams || [])}, request: ${JSON.stringify(requestType(operation))}, response: ${JSON.stringify(responseType(operation))}, mutation: ${JSON.stringify(Boolean(operation.mutation))}, scope: ${JSON.stringify(operation.scope)} },`).join('\n');
 const operationTypes = publicOperations.map(operation =>
   `  ${JSON.stringify(operation.name)}: { request: ${requestType(operation)}; response: ${responseType(operation)} };`).join('\n');
 const operationMethods = publicOperations.map(operation =>

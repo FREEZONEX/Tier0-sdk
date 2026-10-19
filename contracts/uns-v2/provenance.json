@@ -1,8 +1,8 @@
 {
   "repository": "FREEZONEX/Tier0-Enterprise-New",
-  "revision": "8710dc4ff286414b5525cfa99696ccdd6cb1a6c7",
-  "version": "3.17.0",
+  "revision": "ba2b953a47d54fbec10a419920554507399b85d3",
+  "version": "4.0.0",
   "source": "backend/internal/domain/unsv2/contract_generated.go",
-  "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs. Reviewed Cloud public Connect observation/sample contracts; Core-only credential and ingress operations remain unavailable in the App SDK.",
-  "cloudRevision": "4f1ba379498d559944ea555b71928659f137ba35"
+  "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs. SDK snapshots reviewed Cloud public 4.0 contracts, including unified indexes and frozen Source acquisition options; Core-only credential and ingress operations remain unavailable in the App SDK.",
+  "cloudRevision": "7fc8dc79328f794ac074684ad3be25764c715801"
 }
