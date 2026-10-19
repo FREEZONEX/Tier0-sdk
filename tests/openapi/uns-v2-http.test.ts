@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createClient, UnsV2Error, UnsV2OutcomeUnknownError, UnsV2RawNumber } from '../../src/index.js';
+import { createClient, UNS_V2_CODEC_SCHEMAS, UNS_V2_CONTRACT_PROVENANCE, UNS_V2_OPERATIONS, UnsV2Error, UnsV2OutcomeUnknownError, UnsV2RawNumber } from '../../src/index.js';
 
 const received: Array<{ method?: string; path?: string; body: string; headers: IncomingMessage['headers'] }> = [];
 let respond: (req: IncomingMessage, res: ServerResponse) => void;
@@ -31,6 +31,52 @@ const client = (timeout = 2_000, unsV2MaxResponseBytes?: number) => createClient
 });
 
 describe('UNS v2 localhost HTTP fixture', () => {
+  it('routes public Connect observations while retaining admission coverage and nullable metrics', async () => {
+    const start = received.length;
+    respond = (req, res) => {
+      const common = { window: { from: 1, to: 2 }, checkedAt: 2, coverage: 'durable-admissions' };
+      const data = req.url?.includes('/sources/')
+        ? { ...common, items: [{ id: '101', revision: 3, acceptedCaptures: 0, committedWrites: 0, failedRuns: 0, lastDataAt: null }] }
+        : req.url?.includes('/runs/')
+          ? { items: [], nextCursor: '', checkedAt: 2 }
+          : { ...common, id: '202', revision: 4, stats: { admitted: 0, completed: 0, failed: 0, unknown: 0, pending: 0, durationSamples: 0, successRate: null, averageDurationMs: null } };
+      send(res, { code: 200, msg: 'ok', requestId: 'connect-observations', data });
+    };
+    const api = client().unsV2;
+    const source = await api.sourceObservationsGet({ items: [{ id: '101', expectedRevision: 3 }] });
+    expect(source.data.coverage).toBe('durable-admissions');
+    expect(source.data.items[0].lastDataAt).toBeNull();
+    const stream = await api.streamObservationGet({ id: '202' });
+    expect(stream.data.stats.successRate).toBeNull();
+    const runs = await api.streamRunsList({ id: '202', size: 10, cursor: 'opaque-cursor' });
+    expect(runs.data.items).toEqual([]);
+    expect(received.slice(start).map(row => row.path)).toEqual([
+      '/openapi/v2/uns/sources/observations/get', '/openapi/v2/uns/streams/observation/get', '/openapi/v2/uns/streams/runs/list',
+    ]);
+    expect(JSON.parse(received[start + 2].body)).toEqual({ id: '202', size: 10, cursor: 'opaque-cursor' });
+    expect(received.slice(start).every(row => row.headers['x-api-key'] === 'workspace-bound-key')).toBe(true);
+  });
+
+  it('never retries isolated sample execution or exposes Core-only credentials and ingress routes', async () => {
+    const start = received.length;
+    respond = (_req, res) => send(res, { code: 503, msg: 'sample runtime unavailable', requestId: 'sample-unavailable' }, 503);
+    const api = client().unsV2;
+    await expect(api.streamSampleTest({ document: { name: 'sample', model: 'script', script: { sdkVersion: 'tier0-stream/v2', code: '', timeoutMs: 1000 } }, entryId: 'sample', input: { value: 1 } })).rejects.toBeInstanceOf(UnsV2Error);
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start].path).toBe('/openapi/v2/uns/streams/sample/test');
+    const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
+    for (const name of ['graph', 'sourceCredentialCreate', 'sourceIngressGet', 'sourceIngressRotate']) {
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
+      await expect(core.call(name, {})).rejects.toThrow('unknown UNS v2 operation');
+    }
+    for (const name of ['CloudSourceCredentialCreateReq', 'CloudSourceCredentialCreateResponse', 'CloudSourceIngressGetReq', 'CloudSourceIngressRotateReq']) {
+      expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
+    }
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(80);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(84);
+    expect(received.slice(start)).toHaveLength(1);
+  });
+
   it('preserves explicit Source impact review and history without automatic confirmation or mutation retries', async () => {
     const start = received.length;
     respond = (req, res) => {

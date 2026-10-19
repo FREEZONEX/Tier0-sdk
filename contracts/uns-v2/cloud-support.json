@@ -35,6 +35,13 @@
     {"name":"streamDocumentDisable","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
     {"name":"streamDocumentValidate","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
     {"name":"sourceImpact","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
-    {"name":"sourceHistory","permission":"uns.source.view","scope":"source:read","minPermission":1}
+    {"name":"sourceHistory","permission":"uns.source.view","scope":"source:read","minPermission":1},
+    {"name":"sourceCredentialCreate","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
+    {"name":"sourceIngressGet","permission":"uns.source.view","scope":"source:read","minPermission":1},
+    {"name":"sourceIngressRotate","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
+    {"name":"sourceObservationsGet","permission":"uns.source.view","scope":"source:read","minPermission":1},
+    {"name":"streamObservationGet","permission":"uns.stream.view","scope":"stream:read","minPermission":1},
+    {"name":"streamRunsList","permission":"uns.stream.view","scope":"stream:read","minPermission":1},
+    {"name":"streamSampleTest","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3}
   ]
 }

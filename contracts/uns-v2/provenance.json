@@ -3,8 +3,6 @@
   "revision": "8710dc4ff286414b5525cfa99696ccdd6cb1a6c7",
   "version": "3.17.0",
   "source": "backend/internal/domain/unsv2/contract_generated.go",
-  "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs.",
-  "cloudRepository": "FREEZONEX/Tier0-Backend",
-  "cloudRevision": "0f73ee899cb6e9bec19cf97be8d74e55e6033750",
-  "cloudContractRevision": "cloud-source-impact/1"
+  "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs. Reviewed Cloud public Connect observation/sample contracts; Core-only credential and ingress operations remain unavailable in the App SDK.",
+  "cloudRevision": "4f1ba379498d559944ea555b71928659f137ba35"
 }

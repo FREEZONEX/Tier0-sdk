@@ -2603,6 +2603,205 @@
       "responseSchema": {
         "$ref": "#/components/schemas/CloudSourceHistoryResponse"
       }
+    },
+    {
+      "name": "sourceCredentialCreate",
+      "suffix": "/uns/sources/credentials/create",
+      "handler": "UnsV2SourceCredentialCreate",
+      "request": "CloudSourceCredentialCreateReq",
+      "response": "CloudSourceCredentialCreateResponse",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3,
+      "resource": "source",
+      "mutation": "runtime",
+      "runtime": true,
+      "coreOnly": true,
+      "resourceId": 3301,
+      "summary": "Create encrypted Source credentials",
+      "description": "Create an immutable encrypted credential and endpoint-bound reference for the authenticated principal. Secret material is never returned.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "operation": "sourceCredentialCreate",
+      "path": "/uns/sources/credentials/create",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudSourceCredentialCreateReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudSourceCredentialCreateResponse"
+      }
+    },
+    {
+      "name": "sourceIngressGet",
+      "suffix": "/uns/sources/ingress/get",
+      "handler": "UnsV2SourceIngressGet",
+      "request": "CloudSourceIngressGetReq",
+      "response": "CloudSourceIngressGetResponse",
+      "permission": "uns.source.view",
+      "scope": "source:read",
+      "minPermission": 1,
+      "resource": "source",
+      "mutation": "",
+      "runtime": true,
+      "coreOnly": true,
+      "resourceId": 3301,
+      "summary": "Read Source ingestion status",
+      "description": "Returns configured ingestion address and status without token material.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "operation": "sourceIngressGet",
+      "path": "/uns/sources/ingress/get",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudSourceIngressGetReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudSourceIngressGetResponse"
+      }
+    },
+    {
+      "name": "sourceIngressRotate",
+      "suffix": "/uns/sources/ingress/rotate",
+      "handler": "UnsV2SourceIngressRotate",
+      "request": "CloudSourceIngressRotateReq",
+      "response": "CloudSourceIngressRotateResponse",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3,
+      "resource": "source",
+      "mutation": "runtime",
+      "runtime": true,
+      "coreOnly": true,
+      "resourceId": 3301,
+      "summary": "Rotate Source ingestion token",
+      "description": "Replaces the token for the exact enabled Source revision. The token is returned only once.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "operation": "sourceIngressRotate",
+      "path": "/uns/sources/ingress/rotate",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudSourceIngressRotateReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudSourceIngressRotateResponse"
+      }
+    },
+    {
+      "name": "sourceObservationsGet",
+      "suffix": "/uns/sources/observations/get",
+      "handler": "UnsV2SourceObservationsGet",
+      "request": "CloudSourceObservationsGetReq",
+      "response": "CloudSourceObservationsGetResponse",
+      "permission": "uns.source.view",
+      "scope": "source:read",
+      "minPermission": 1,
+      "resource": "source",
+      "mutation": "",
+      "runtime": true,
+      "resourceId": 3301,
+      "summary": "SourceObservationsGet",
+      "description": "Connect durable ledger metadata or isolated sample execution. Statistics cover admitted work only. Samples cannot access external hosts or commit writes.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "operation": "sourceObservationsGet",
+      "path": "/uns/sources/observations/get",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudSourceObservationsGetReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudSourceObservationsGetResponse"
+      }
+    },
+    {
+      "name": "streamObservationGet",
+      "suffix": "/uns/streams/observation/get",
+      "handler": "UnsV2StreamObservationGet",
+      "request": "CloudStreamObservationGetReq",
+      "response": "CloudStreamObservationGetResponse",
+      "permission": "uns.stream.view",
+      "scope": "stream:read",
+      "minPermission": 1,
+      "resource": "stream",
+      "mutation": "",
+      "runtime": true,
+      "resourceId": 3311,
+      "summary": "StreamObservationGet",
+      "description": "Connect durable ledger metadata or isolated sample execution. Statistics cover admitted work only. Samples cannot access external hosts or commit writes.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "operation": "streamObservationGet",
+      "path": "/uns/streams/observation/get",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudStreamObservationGetReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudStreamObservationGetResponse"
+      }
+    },
+    {
+      "name": "streamRunsList",
+      "suffix": "/uns/streams/runs/list",
+      "handler": "UnsV2StreamRunsList",
+      "request": "CloudStreamRunsListReq",
+      "response": "CloudStreamRunsListResponse",
+      "permission": "uns.stream.view",
+      "scope": "stream:read",
+      "minPermission": 1,
+      "resource": "stream",
+      "mutation": "",
+      "runtime": true,
+      "resourceId": 3311,
+      "summary": "StreamRunsList",
+      "description": "Connect durable ledger metadata or isolated sample execution. Statistics cover admitted work only. Samples cannot access external hosts or commit writes.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "operation": "streamRunsList",
+      "path": "/uns/streams/runs/list",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudStreamRunsListReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudStreamRunsListResponse"
+      }
+    },
+    {
+      "name": "streamSampleTest",
+      "suffix": "/uns/streams/sample/test",
+      "handler": "UnsV2StreamSampleTest",
+      "request": "CloudStreamSampleTestReq",
+      "response": "CloudStreamSampleTestResponse",
+      "permission": "uns.stream.manage",
+      "scope": "stream:manage",
+      "minPermission": 3,
+      "resource": "stream",
+      "mutation": "",
+      "runtime": true,
+      "resourceId": 3311,
+      "summary": "StreamSampleTest",
+      "description": "Connect durable ledger metadata or isolated sample execution. Statistics cover admitted work only. Samples cannot access external hosts or commit writes.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "operation": "streamSampleTest",
+      "path": "/uns/streams/sample/test",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudStreamSampleTestReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudStreamSampleTestResponse"
+      }
     }
   ],
   "schemas": {
@@ -20465,7 +20664,8 @@
           ]
         },
         "endpoint": {
-          "type": "string"
+          "type": "string",
+          "minLength": 0
         },
         "options": {
           "type": "object",
@@ -20535,7 +20735,10 @@
             "mqtt",
             "opcua",
             "sap",
-            "teamcenter"
+            "teamcenter",
+            "mqtt_device",
+            "http_push",
+            "sql"
           ]
         },
         "config": {
@@ -21706,7 +21909,10 @@
             "mqtt",
             "opcua",
             "sap",
-            "teamcenter"
+            "teamcenter",
+            "mqtt_device",
+            "http_push",
+            "sql"
           ]
         },
         "desiredState": {
@@ -22462,6 +22668,859 @@
         "activeRelease",
         "createdAt",
         "updatedAt"
+      ]
+    },
+    "CloudSourceCredentialCreateReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "protocol",
+        "endpoint",
+        "kind",
+        "material"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63
+        },
+        "protocol": {
+          "type": "string",
+          "enum": [
+            "http",
+            "mqtt",
+            "sql",
+            "opcua"
+          ]
+        },
+        "endpoint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "basic",
+            "bearer",
+            "usernamePassword"
+          ]
+        },
+        "method": {
+          "type": "string",
+          "pattern": "^[A-Z]{1,32}$"
+        },
+        "material": {
+          "type": "object",
+          "writeOnly": true,
+          "additionalProperties": false,
+          "properties": {
+            "username": {
+              "type": "string",
+              "maxLength": 32768,
+              "writeOnly": true
+            },
+            "password": {
+              "type": "string",
+              "maxLength": 32768,
+              "writeOnly": true
+            },
+            "token": {
+              "type": "string",
+              "maxLength": 32768,
+              "writeOnly": true
+            },
+            "clientCertificate": {
+              "type": "string",
+              "maxLength": 32768,
+              "writeOnly": true
+            },
+            "clientPrivateKey": {
+              "type": "string",
+              "maxLength": 32768,
+              "writeOnly": true
+            },
+            "serverCertificate": {
+              "type": "string",
+              "maxLength": 32768,
+              "writeOnly": true
+            }
+          }
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "protocol": {
+              "enum": [
+                "http"
+              ]
+            },
+            "kind": {
+              "enum": [
+                "basic",
+                "bearer"
+              ]
+            }
+          },
+          "required": [
+            "method"
+          ]
+        },
+        {
+          "properties": {
+            "protocol": {
+              "enum": [
+                "sql",
+                "mqtt",
+                "opcua"
+              ]
+            },
+            "kind": {
+              "enum": [
+                "usernamePassword"
+              ]
+            }
+          },
+          "not": {
+            "required": [
+              "method"
+            ]
+          }
+        }
+      ]
+    },
+    "CloudSourceCredentialCreateResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "credentialRef"
+          ],
+          "properties": {
+            "credentialRef": {
+              "type": "string"
+            },
+            "tls": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "caRef": {
+                  "type": "string"
+                },
+                "clientIdentityRef": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudSourceIngressGetReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*$"
+        }
+      }
+    },
+    "CloudSourceIngressGetResponse": {
+      "type": "object",
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "available",
+            "active",
+            "endpoint",
+            "topic",
+            "clientIdPrefix"
+          ],
+          "properties": {
+            "available": {
+              "type": "integer",
+              "enum": [
+                1,
+                2
+              ],
+              "description": "1 = yes, 2 = no."
+            },
+            "active": {
+              "type": "integer",
+              "enum": [
+                1,
+                2
+              ],
+              "description": "1 = yes, 2 = no."
+            },
+            "endpoint": {
+              "type": "string"
+            },
+            "topic": {
+              "type": "string"
+            },
+            "clientIdPrefix": {
+              "type": "string"
+            },
+            "expiresAt": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Unix epoch milliseconds; omitted when no event has occurred."
+            },
+            "lastReceivedAt": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Unix epoch milliseconds; omitted when no event has occurred."
+            }
+          }
+        }
+      }
+    },
+    "CloudSourceIngressRotateReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "expectedRevision"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*$"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "CloudSourceIngressRotateResponse": {
+      "type": "object",
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "available",
+            "active",
+            "endpoint",
+            "topic",
+            "clientIdPrefix",
+            "token",
+            "expiresAt"
+          ],
+          "properties": {
+            "available": {
+              "type": "integer",
+              "enum": [
+                1,
+                2
+              ],
+              "description": "1 = yes, 2 = no."
+            },
+            "active": {
+              "type": "integer",
+              "enum": [
+                1,
+                2
+              ],
+              "description": "1 = yes, 2 = no."
+            },
+            "endpoint": {
+              "type": "string"
+            },
+            "topic": {
+              "type": "string"
+            },
+            "clientIdPrefix": {
+              "type": "string"
+            },
+            "expiresAt": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Unix epoch milliseconds; omitted when no event has occurred."
+            },
+            "lastReceivedAt": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Unix epoch milliseconds; omitted when no event has occurred."
+            },
+            "token": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "CloudSourceObservationsGetReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]*$",
+                "maxLength": 19
+              },
+              "expectedRevision": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "id",
+              "expectedRevision"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "items"
+      ]
+    },
+    "CloudSourceObservationsGetResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]*$",
+                    "maxLength": 19
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "acceptedCaptures": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "committedWrites": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "failedRuns": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lastDataAt": {
+                    "type": "integer",
+                    "format": "int64",
+                    "nullable": true,
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "id",
+                  "revision",
+                  "acceptedCaptures",
+                  "committedWrites",
+                  "failedRuns",
+                  "lastDataAt"
+                ]
+              }
+            },
+            "window": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                },
+                "to": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "from",
+                "to"
+              ]
+            },
+            "coverage": {
+              "type": "string",
+              "enum": [
+                "durable-admissions"
+              ]
+            },
+            "checkedAt": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "items",
+            "window",
+            "coverage",
+            "checkedAt"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudStreamObservationGetReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*$",
+          "maxLength": 19
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "CloudStreamObservationGetResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$",
+              "maxLength": 19
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "stats": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "admitted": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "completed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "failed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unknown": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pending": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "durationSamples": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "successRate": {
+                  "type": "number",
+                  "minimum": 0,
+                  "nullable": true,
+                  "maximum": 100
+                },
+                "averageDurationMs": {
+                  "type": "number",
+                  "minimum": 0,
+                  "nullable": true
+                }
+              },
+              "required": [
+                "admitted",
+                "completed",
+                "failed",
+                "unknown",
+                "pending",
+                "durationSamples",
+                "successRate",
+                "averageDurationMs"
+              ]
+            },
+            "window": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                },
+                "to": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "from",
+                "to"
+              ]
+            },
+            "coverage": {
+              "type": "string",
+              "enum": [
+                "durable-admissions"
+              ]
+            },
+            "checkedAt": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "id",
+            "revision",
+            "stats",
+            "window",
+            "coverage",
+            "checkedAt"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudStreamRunsListReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*$",
+          "maxLength": 19
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "type": "string",
+          "maxLength": 1024
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "CloudStreamRunsListResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "delivery",
+                      "control"
+                    ]
+                  },
+                  "release": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]*$",
+                    "maxLength": 19
+                  },
+                  "entryId": {
+                    "type": "string"
+                  },
+                  "trigger": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0
+                  },
+                  "finishedAt": {
+                    "type": "integer",
+                    "format": "int64",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "durationMs": {
+                    "type": "number",
+                    "minimum": 0,
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "kind",
+                  "release",
+                  "entryId",
+                  "trigger",
+                  "status",
+                  "createdAt",
+                  "finishedAt",
+                  "durationMs"
+                ]
+              }
+            },
+            "nextCursor": {
+              "type": "string"
+            },
+            "checkedAt": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "items",
+            "nextCursor",
+            "checkedAt"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudStreamSampleTestReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "document": {
+          "$ref": "#/components/schemas/CloudStreamDocument"
+        },
+        "entryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "input": {}
+      },
+      "required": [
+        "document",
+        "entryId",
+        "input"
+      ]
+    },
+    "CloudStreamSampleTestResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "completed",
+                "failed"
+              ]
+            },
+            "errorCode": {
+              "type": "string"
+            },
+            "snapshot": {
+              "type": "string"
+            },
+            "entryId": {
+              "type": "string"
+            },
+            "data": {},
+            "writePreview": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "logs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "level": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "level",
+                  "message"
+                ]
+              }
+            },
+            "durationMs": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "isolated-sample"
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "errorCode",
+            "snapshot",
+            "entryId",
+            "data",
+            "writePreview",
+            "logs",
+            "durationMs",
+            "mode"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
       ]
     }
   }
