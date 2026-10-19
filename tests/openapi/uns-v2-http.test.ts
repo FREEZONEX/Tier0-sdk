@@ -36,7 +36,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     respond = (req, res) => {
       if (req.url === '/openapi/v2/uns/collections/devices/records:find') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end('{"code":200,"msg":"ok","requestId":"find-4","data":{"items":[{"_id":"device-1","serial":9007199254740993}],"pageInfo":{"hasMore":false}}}');
+        res.end('{"code":200,"msg":"ok","requestId":"find-4","data":{"items":[{"id":"device-1","collectionId":"devices","revision":1,"createdAt":1,"updatedAt":2,"sourceId":null,"sourceTime":null,"data":{"serial":9007199254740993}}],"pageInfo":{"hasMore":false,"mode":"cursor","nextCursor":null,"nextPage":null,"snapshotScope":"thisRequestOnly"}}}');
       } else send(res, { code: 200, msg: 'ok', requestId: 'collection-4', data: { status: 'completed' } });
     };
     const api = client().unsV2;
@@ -52,8 +52,8 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(JSON.parse(received[start].body)).toEqual({ dryRun: false, idempotencyKey: 'index-intent-4', items: [item] });
     expect(received[start].body).not.toContain('uniqueKeys');
     expect(received[start].body).not.toContain('queryIndexes');
-    expect(response.data.items).toEqual([{ _id: 'device-1', serial: new UnsV2RawNumber('9007199254740993') }]);
-    expect(response.data.pageInfo).toEqual({ hasMore: false });
+    expect(response.data.items).toEqual([{ id: 'device-1', collectionId: 'devices', revision: 1, createdAt: 1, updatedAt: 2, sourceId: null, sourceTime: null, data: { serial: new UnsV2RawNumber('9007199254740993') } }]);
+    expect(response.data.pageInfo).toEqual({ hasMore: false, mode: 'cursor', nextCursor: null, nextPage: null, snapshotScope: 'thisRequestOnly' });
   });
 
   it('keeps one frozen intent and does not retry a 4.0 upsert after an ambiguous response', async () => {
@@ -132,7 +132,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+data/2');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+data/3');
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(96);
     expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(100);
     expect(received.slice(start)).toHaveLength(1);
@@ -202,10 +202,10 @@ describe('UNS v2 localhost HTTP fixture', () => {
   it('preserves numeric and prototype-shaped business fields over HTTP', async () => {
     respond = (_req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end('{"code":200,"msg":"ok","requestId":"req-business","data":{"items":[{"numeric":"123","unit":"bar","nested":{"numeric":false},"nullable":null,"int64Max":9223372036854775807,"int64Min":-9223372036854775808,"decimal":1.0000000000000001,"exponent":9.007199254740993e15,"__proto__":{"polluted":true},"constructor":"business","prototype":"field"}],"pageInfo":{"hasMore":false,"nextCursor":null,"snapshotScope":"thisRequestOnly"}}}');
+      res.end('{"code":200,"msg":"ok","requestId":"req-business","data":{"items":[{"id":"measurement-1","collectionId":"measurements","revision":1,"createdAt":1,"updatedAt":1,"sourceId":null,"sourceTime":null,"data":{"numeric":"123","unit":"bar","nested":{"numeric":false},"nullable":null,"int64Max":9223372036854775807,"int64Min":-9223372036854775808,"decimal":1.0000000000000001,"exponent":9.007199254740993e15,"__proto__":{"polluted":true},"constructor":"business","prototype":"field"}}],"pageInfo":{"hasMore":false,"nextCursor":null,"snapshotScope":"thisRequestOnly"}}}');
     };
     const response = await client().unsV2.recordFind({ collectionId: 'measurements', limit: 1 });
-    const item = response.data.items[0];
+    const item = response.data.items[0].data;
     expect(item).toEqual({
       ...JSON.parse('{"numeric":"123","unit":"bar","nested":{"numeric":false},"nullable":null,"__proto__":{"polluted":true},"constructor":"business","prototype":"field"}'),
       int64Max: new UnsV2RawNumber('9223372036854775807'),
@@ -265,12 +265,52 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received.length - start).toBe(1);
   });
 
-  it('preserves lease tokens and explicit restore intent on their frozen data/2 routes', async () => {
+  it('reads Sample resources consistently from find and latest while keeping business numbers exact', async () => {
+    const start = received.length;
+    const sampleJSON = '{"id":"sample-1","collectionId":"measurements","recordId":"machine-1","time":1000,"receivedAt":1001,"quality":"good","sourceId":null,"data":{"counter":9007199254740993,"temperature":23.5}}';
+    respond = (req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      const data = req.url?.endsWith('samples:latest')
+        ? '{"series":[{"recordId":"machine-1","sample":' + sampleJSON + '}]}'
+        : '{"items":[' + sampleJSON + '],"pageInfo":{"mode":"cursor","hasMore":false,"nextCursor":null,"nextPage":null,"snapshotScope":"thisRequestOnly"}}';
+      res.end('{"code":200,"msg":"ok","requestId":"sample-resources-3","data":' + data + '}');
+    };
+    const api = client().unsV2;
+    const found = await api.sampleFind({ collectionId: 'measurements', recordIds: ['machine-1'], from: 1000, to: 1002 });
+    const latest = await api.sampleLatestValues({ collectionId: 'measurements', recordIds: ['machine-1'] });
+    const sample = found.data.items[0];
+    expect(sample.id).toBe('sample-1');
+    expect(sample.time).toBe(1000);
+    expect(sample.data.counter).toEqual(new UnsV2RawNumber('9007199254740993'));
+    expect(latest.data.series[0].sample).toEqual(sample);
+    expect(Object.hasOwn(sample, '_meta')).toBe(false);
+    expect(received.slice(start).map(row => row.path)).toEqual([
+      '/openapi/v2/uns/collections/measurements/samples:find',
+      '/openapi/v2/uns/collections/measurements/samples:latest',
+    ]);
+  });
+
+  it('uses the single-record write response without inventing batch counters', async () => {
+    const start = received.length;
+    respond = (_req, res) => send(res, {
+      code: 200, msg: 'ok', requestId: 'insert-one-3',
+      data: { insertedId: 'order-1', status: 'committed', replayed: true },
+    });
+    const response = await client().unsV2.recordInsertOne({
+      collectionId: 'orders', id: 'order-1', data: { total: 10 }, idempotencyKey: 'insert-intent-3',
+    });
+    expect(response.data).toEqual({ insertedId: 'order-1', status: 'committed', replayed: true });
+    expect(Object.hasOwn(response.data, 'insertedCount')).toBe(false);
+    expect(received.slice(start)).toHaveLength(1);
+    expect(JSON.parse(received[start].body).data).toEqual({ total: 10 });
+  });
+
+  it('preserves lease tokens and explicit restore intent on their frozen data/3 routes', async () => {
     const start = received.length;
     respond = (req, res) => send(res, {
       code: 200, msg: 'ok', requestId: 'lease-2',
       data: req.url?.endsWith(':lock')
-        ? { locks: [{ id: 'order-1', token: 'opaque-lease', expiresAt: 2000, fence: 1 }] }
+        ? { locks: [{ id: 'order-1', token: 'opaque-lease', expiresAt: 2000, fence: 1, record: { id: 'order-1', collectionId: 'orders', data: { total: 10 }, revision: 1, createdAt: 1, updatedAt: 1, sourceId: null, sourceTime: null } }] }
         : req.url?.endsWith(':unlock') ? { unlockedCount: 1 }
         : { restoredCount: 1, restoredIds: ['order-1'], status: 'committed', replayed: false },
     });
@@ -278,6 +318,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     const lease = await api.recordLock({ collectionId: 'orders', ids: ['order-1'], ttlMs: 1000 });
     const token = lease.data.locks[0].token;
     expect(token).toBe('opaque-lease');
+    expect(lease.data.locks[0].record.data).toEqual({ total: 10 });
     await api.recordUnlock({ collectionId: 'orders', locks: [{ id: 'order-1', token }] });
     const restored = await api.recordRestore({ collectionId: 'orders', ids: ['order-1'], idempotencyKey: 'restore-intent-1' });
     expect(restored.data.restoredIds).toEqual(['order-1']);

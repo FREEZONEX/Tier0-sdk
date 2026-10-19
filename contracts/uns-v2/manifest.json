@@ -1,6 +1,6 @@
 {
   "version": "4.0.0",
-  "cloudContractRevision": "cloud-source-impact/1+data/2",
+  "cloudContractRevision": "cloud-source-impact/1+data/3",
   "operations": [
     {
       "name": "dataDiscover",
@@ -6160,29 +6160,48 @@
       "type": "object"
     },
     "RecordDocument": {
+      "type": "object",
       "additionalProperties": false,
       "properties": {
-        "collectionId": {
-          "type": "string",
-          "description": "集合 ID，业务记录和采样所属的 Collection。"
-        },
-        "createdAt": {
-          "type": "integer"
-        },
-        "data": {},
         "id": {
           "type": "string",
-          "description": "对象 ID（字符串），从发现或读取接口取得；不要把名称当成 ID。"
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
         },
         "revision": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
+        },
+        "createdAt": {
+          "type": "integer",
+          "description": "Unix 毫秒。"
+        },
+        "updatedAt": {
+          "type": "integer",
+          "description": "Unix 毫秒。"
         },
         "sourceId": {
           "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
           "nullable": true
         },
-        "updatedAt": {
-          "type": "integer"
+        "sourceTime": {
+          "type": "integer",
+          "description": "Unix 毫秒。",
+          "nullable": true
+        },
+        "lock": {
+          "$ref": "#/components/schemas/CloudRecordLockView"
         }
       },
       "required": [
@@ -6192,9 +6211,10 @@
         "revision",
         "createdAt",
         "updatedAt",
-        "sourceId"
+        "sourceId",
+        "sourceTime"
       ],
-      "type": "object"
+      "description": "普通业务记录。业务字段位于 data；系统属性位于同级。filter/projection 使用业务裸字段名及 _id/_meta.*，不按本响应对象路径编写。lock 仅描述有效租约，不返回令牌。"
     },
     "Release": {
       "additionalProperties": false,
@@ -6227,7 +6247,9 @@
           "type": "string",
           "description": "集合 ID，业务记录和采样所属的 Collection。"
         },
-        "data": {},
+        "data": {
+          "description": "事务结果绑定使用的业务数据载荷；读取完整资源对象使用 document。"
+        },
         "document": {
           "$ref": "#/components/schemas/RecordDocument"
         },
@@ -6784,10 +6806,10 @@
           "type": "boolean"
         },
         "records": {
+          "type": "array",
           "items": {
-            "$ref": "#/components/schemas/UnsRecord"
-          },
-          "type": "array"
+            "$ref": "#/components/schemas/RecordDocument"
+          }
         },
         "total": {
           "type": "integer"
@@ -13555,7 +13577,7 @@
           "type": "string"
         },
         "data": {
-          "$ref": "#/components/schemas/CloudDataPage"
+          "$ref": "#/components/schemas/CloudRecordPage"
         }
       },
       "required": [
@@ -13580,7 +13602,16 @@
         },
         "data": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": false,
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "count"
+          ]
         }
       },
       "required": [
@@ -13605,7 +13636,20 @@
         },
         "data": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": false,
+          "properties": {
+            "values": {
+              "type": "array",
+              "items": {}
+            },
+            "pageInfo": {
+              "$ref": "#/components/schemas/CloudPageInfo"
+            }
+          },
+          "required": [
+            "values",
+            "pageInfo"
+          ]
         }
       },
       "required": [
@@ -13718,79 +13762,24 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "matchedCount": {
-              "type": "integer"
-            },
-            "modifiedCount": {
-              "type": "integer"
-            },
-            "deletedCount": {
-              "type": "integer"
-            },
-            "insertedCount": {
-              "type": "integer"
-            },
-            "upsertedCount": {
-              "type": "integer"
-            },
-            "upsertedId": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            },
-            "upsertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "insertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "document": {
-              "type": "object",
-              "nullable": true
-            },
-            "writeErrors": {
-              "type": "array",
-              "items": {
-                "type": "object"
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "hasMore": {
-              "type": "boolean"
-            },
-            "resumeAfter": {
+            "insertedId": {
               "type": "string",
               "minLength": 1,
               "maxLength": 128
             },
             "status": {
-              "type": "string"
+              "type": "string",
+              "description": "执行状态；validated 为回滚预检，committed 为提交成功，partiallyCommitted/failed 表示部分写入结果。"
             },
             "replayed": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否返回同一幂等请求的已保存结果。"
             }
           },
           "required": [
-            "matchedCount",
-            "modifiedCount",
-            "deletedCount",
-            "insertedCount",
-            "upsertedCount"
+            "insertedId",
+            "status",
+            "replayed"
           ]
         }
       },
@@ -13818,57 +13807,32 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "matchedCount": {
-              "type": "integer"
-            },
-            "modifiedCount": {
-              "type": "integer"
-            },
-            "deletedCount": {
-              "type": "integer"
-            },
             "insertedCount": {
-              "type": "integer"
-            },
-            "upsertedCount": {
-              "type": "integer"
-            },
-            "upsertedId": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            },
-            "upsertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
+              "type": "integer",
+              "minimum": 0
             },
             "insertedIds": {
-              "type": "array",
-              "items": {
+              "type": "object",
+              "additionalProperties": {
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 128
               },
-              "minItems": 0,
-              "maxItems": 10000
+              "description": "键为原始输入中从 0 开始的操作索引，值为对应成功记录 ID；部分失败时不重新编号。"
             },
-            "document": {
-              "type": "object",
-              "nullable": true
+            "status": {
+              "type": "string",
+              "description": "执行状态；validated 为回滚预检，committed 为提交成功，partiallyCommitted/failed 表示部分写入结果。"
+            },
+            "replayed": {
+              "type": "boolean",
+              "description": "是否返回同一幂等请求的已保存结果。"
             },
             "writeErrors": {
               "type": "array",
               "items": {
-                "type": "object"
-              },
-              "minItems": 0,
-              "maxItems": 10000
+                "$ref": "#/components/schemas/CloudWriteError"
+              }
             },
             "hasMore": {
               "type": "boolean"
@@ -13877,20 +13841,13 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 128
-            },
-            "status": {
-              "type": "string"
-            },
-            "replayed": {
-              "type": "boolean"
             }
           },
           "required": [
-            "matchedCount",
-            "modifiedCount",
-            "deletedCount",
             "insertedCount",
-            "upsertedCount"
+            "insertedIds",
+            "status",
+            "replayed"
           ]
         }
       },
@@ -13919,78 +13876,32 @@
           "additionalProperties": false,
           "properties": {
             "matchedCount": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0
             },
             "modifiedCount": {
-              "type": "integer"
-            },
-            "deletedCount": {
-              "type": "integer"
-            },
-            "insertedCount": {
-              "type": "integer"
-            },
-            "upsertedCount": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0
             },
             "upsertedId": {
               "type": "string",
               "minLength": 1,
               "maxLength": 128
             },
-            "upsertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "insertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "document": {
-              "type": "object",
-              "nullable": true
-            },
-            "writeErrors": {
-              "type": "array",
-              "items": {
-                "type": "object"
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "hasMore": {
-              "type": "boolean"
-            },
-            "resumeAfter": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            },
             "status": {
-              "type": "string"
+              "type": "string",
+              "description": "执行状态；validated 为回滚预检，committed 为提交成功，partiallyCommitted/failed 表示部分写入结果。"
             },
             "replayed": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否返回同一幂等请求的已保存结果。"
             }
           },
           "required": [
             "matchedCount",
             "modifiedCount",
-            "deletedCount",
-            "insertedCount",
-            "upsertedCount"
+            "status",
+            "replayed"
           ]
         }
       },
@@ -14018,79 +13929,27 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "matchedCount": {
-              "type": "integer"
-            },
-            "modifiedCount": {
-              "type": "integer"
-            },
-            "deletedCount": {
-              "type": "integer"
-            },
-            "insertedCount": {
-              "type": "integer"
-            },
-            "upsertedCount": {
-              "type": "integer"
+            "value": {
+              "$ref": "#/components/schemas/CloudNullableRecordDocument"
             },
             "upsertedId": {
               "type": "string",
               "minLength": 1,
               "maxLength": 128
             },
-            "upsertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "insertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "document": {
-              "type": "object",
-              "nullable": true
-            },
-            "writeErrors": {
-              "type": "array",
-              "items": {
-                "type": "object"
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "hasMore": {
-              "type": "boolean"
-            },
-            "resumeAfter": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            },
             "status": {
-              "type": "string"
+              "type": "string",
+              "description": "执行状态；validated 为回滚预检，committed 为提交成功，partiallyCommitted/failed 表示部分写入结果。"
             },
             "replayed": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否返回同一幂等请求的已保存结果。"
             }
           },
           "required": [
-            "matchedCount",
-            "modifiedCount",
-            "deletedCount",
-            "insertedCount",
-            "upsertedCount"
+            "value",
+            "status",
+            "replayed"
           ]
         }
       },
@@ -14119,78 +13978,32 @@
           "additionalProperties": false,
           "properties": {
             "matchedCount": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0
             },
             "modifiedCount": {
-              "type": "integer"
-            },
-            "deletedCount": {
-              "type": "integer"
-            },
-            "insertedCount": {
-              "type": "integer"
-            },
-            "upsertedCount": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0
             },
             "upsertedId": {
               "type": "string",
               "minLength": 1,
               "maxLength": 128
             },
-            "upsertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "insertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "document": {
-              "type": "object",
-              "nullable": true
-            },
-            "writeErrors": {
-              "type": "array",
-              "items": {
-                "type": "object"
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "hasMore": {
-              "type": "boolean"
-            },
-            "resumeAfter": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            },
             "status": {
-              "type": "string"
+              "type": "string",
+              "description": "执行状态；validated 为回滚预检，committed 为提交成功，partiallyCommitted/failed 表示部分写入结果。"
             },
             "replayed": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否返回同一幂等请求的已保存结果。"
             }
           },
           "required": [
             "matchedCount",
             "modifiedCount",
-            "deletedCount",
-            "insertedCount",
-            "upsertedCount"
+            "status",
+            "replayed"
           ]
         }
       },
@@ -14218,79 +14031,27 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "matchedCount": {
-              "type": "integer"
-            },
-            "modifiedCount": {
-              "type": "integer"
-            },
-            "deletedCount": {
-              "type": "integer"
-            },
-            "insertedCount": {
-              "type": "integer"
-            },
-            "upsertedCount": {
-              "type": "integer"
+            "value": {
+              "$ref": "#/components/schemas/CloudNullableRecordDocument"
             },
             "upsertedId": {
               "type": "string",
               "minLength": 1,
               "maxLength": 128
             },
-            "upsertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "insertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "document": {
-              "type": "object",
-              "nullable": true
-            },
-            "writeErrors": {
-              "type": "array",
-              "items": {
-                "type": "object"
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "hasMore": {
-              "type": "boolean"
-            },
-            "resumeAfter": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            },
             "status": {
-              "type": "string"
+              "type": "string",
+              "description": "执行状态；validated 为回滚预检，committed 为提交成功，partiallyCommitted/failed 表示部分写入结果。"
             },
             "replayed": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否返回同一幂等请求的已保存结果。"
             }
           },
           "required": [
-            "matchedCount",
-            "modifiedCount",
-            "deletedCount",
-            "insertedCount",
-            "upsertedCount"
+            "value",
+            "status",
+            "replayed"
           ]
         }
       },
@@ -14318,79 +14079,23 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "matchedCount": {
-              "type": "integer"
-            },
-            "modifiedCount": {
-              "type": "integer"
-            },
             "deletedCount": {
-              "type": "integer"
-            },
-            "insertedCount": {
-              "type": "integer"
-            },
-            "upsertedCount": {
-              "type": "integer"
-            },
-            "upsertedId": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            },
-            "upsertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "insertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "document": {
-              "type": "object",
-              "nullable": true
-            },
-            "writeErrors": {
-              "type": "array",
-              "items": {
-                "type": "object"
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "hasMore": {
-              "type": "boolean"
-            },
-            "resumeAfter": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
+              "type": "integer",
+              "minimum": 0
             },
             "status": {
-              "type": "string"
+              "type": "string",
+              "description": "执行状态；validated 为回滚预检，committed 为提交成功，partiallyCommitted/failed 表示部分写入结果。"
             },
             "replayed": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否返回同一幂等请求的已保存结果。"
             }
           },
           "required": [
-            "matchedCount",
-            "modifiedCount",
             "deletedCount",
-            "insertedCount",
-            "upsertedCount"
+            "status",
+            "replayed"
           ]
         }
       },
@@ -14418,79 +14123,27 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "matchedCount": {
-              "type": "integer"
-            },
-            "modifiedCount": {
-              "type": "integer"
-            },
-            "deletedCount": {
-              "type": "integer"
-            },
-            "insertedCount": {
-              "type": "integer"
-            },
-            "upsertedCount": {
-              "type": "integer"
+            "value": {
+              "$ref": "#/components/schemas/CloudNullableRecordDocument"
             },
             "upsertedId": {
               "type": "string",
               "minLength": 1,
               "maxLength": 128
             },
-            "upsertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "insertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "document": {
-              "type": "object",
-              "nullable": true
-            },
-            "writeErrors": {
-              "type": "array",
-              "items": {
-                "type": "object"
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "hasMore": {
-              "type": "boolean"
-            },
-            "resumeAfter": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            },
             "status": {
-              "type": "string"
+              "type": "string",
+              "description": "执行状态；validated 为回滚预检，committed 为提交成功，partiallyCommitted/failed 表示部分写入结果。"
             },
             "replayed": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否返回同一幂等请求的已保存结果。"
             }
           },
           "required": [
-            "matchedCount",
-            "modifiedCount",
-            "deletedCount",
-            "insertedCount",
-            "upsertedCount"
+            "value",
+            "status",
+            "replayed"
           ]
         }
       },
@@ -14519,56 +14172,26 @@
           "additionalProperties": false,
           "properties": {
             "matchedCount": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0
             },
             "modifiedCount": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0
             },
-            "deletedCount": {
-              "type": "integer"
-            },
-            "insertedCount": {
-              "type": "integer"
-            },
-            "upsertedCount": {
-              "type": "integer"
-            },
-            "upsertedId": {
+            "status": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 128
+              "description": "执行状态；validated 为回滚预检，committed 为提交成功，partiallyCommitted/failed 表示部分写入结果。"
             },
-            "upsertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "insertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "document": {
-              "type": "object",
-              "nullable": true
+            "replayed": {
+              "type": "boolean",
+              "description": "是否返回同一幂等请求的已保存结果。"
             },
             "writeErrors": {
               "type": "array",
               "items": {
-                "type": "object"
-              },
-              "minItems": 0,
-              "maxItems": 10000
+                "$ref": "#/components/schemas/CloudWriteError"
+              }
             },
             "hasMore": {
               "type": "boolean"
@@ -14577,20 +14200,13 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 128
-            },
-            "status": {
-              "type": "string"
-            },
-            "replayed": {
-              "type": "boolean"
             }
           },
           "required": [
             "matchedCount",
             "modifiedCount",
-            "deletedCount",
-            "insertedCount",
-            "upsertedCount"
+            "status",
+            "replayed"
           ]
         }
       },
@@ -14618,57 +14234,23 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "matchedCount": {
-              "type": "integer"
-            },
-            "modifiedCount": {
-              "type": "integer"
-            },
             "deletedCount": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0
             },
-            "insertedCount": {
-              "type": "integer"
-            },
-            "upsertedCount": {
-              "type": "integer"
-            },
-            "upsertedId": {
+            "status": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 128
+              "description": "执行状态；validated 为回滚预检，committed 为提交成功，partiallyCommitted/failed 表示部分写入结果。"
             },
-            "upsertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "insertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
-            },
-            "document": {
-              "type": "object",
-              "nullable": true
+            "replayed": {
+              "type": "boolean",
+              "description": "是否返回同一幂等请求的已保存结果。"
             },
             "writeErrors": {
               "type": "array",
               "items": {
-                "type": "object"
-              },
-              "minItems": 0,
-              "maxItems": 10000
+                "$ref": "#/components/schemas/CloudWriteError"
+              }
             },
             "hasMore": {
               "type": "boolean"
@@ -14677,20 +14259,12 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 128
-            },
-            "status": {
-              "type": "string"
-            },
-            "replayed": {
-              "type": "boolean"
             }
           },
           "required": [
-            "matchedCount",
-            "modifiedCount",
             "deletedCount",
-            "insertedCount",
-            "upsertedCount"
+            "status",
+            "replayed"
           ]
         }
       },
@@ -14718,57 +14292,57 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "insertedCount": {
+              "type": "integer",
+              "minimum": 0
+            },
             "matchedCount": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0
             },
             "modifiedCount": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0
             },
             "deletedCount": {
-              "type": "integer"
-            },
-            "insertedCount": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0
             },
             "upsertedCount": {
-              "type": "integer"
-            },
-            "upsertedId": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            },
-            "upsertedIds": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "minItems": 0,
-              "maxItems": 10000
+              "type": "integer",
+              "minimum": 0
             },
             "insertedIds": {
-              "type": "array",
-              "items": {
+              "type": "object",
+              "additionalProperties": {
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 128
               },
-              "minItems": 0,
-              "maxItems": 10000
+              "description": "键为原始输入中从 0 开始的操作索引，值为对应成功记录 ID；部分失败时不重新编号。"
             },
-            "document": {
+            "upsertedIds": {
               "type": "object",
-              "nullable": true
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "description": "键为原始输入中从 0 开始的操作索引，值为对应成功记录 ID；部分失败时不重新编号。"
+            },
+            "status": {
+              "type": "string",
+              "description": "执行状态；validated 为回滚预检，committed 为提交成功，partiallyCommitted/failed 表示部分写入结果。"
+            },
+            "replayed": {
+              "type": "boolean",
+              "description": "是否返回同一幂等请求的已保存结果。"
             },
             "writeErrors": {
               "type": "array",
               "items": {
-                "type": "object"
-              },
-              "minItems": 0,
-              "maxItems": 10000
+                "$ref": "#/components/schemas/CloudWriteError"
+              }
             },
             "hasMore": {
               "type": "boolean"
@@ -14777,20 +14351,18 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 128
-            },
-            "status": {
-              "type": "string"
-            },
-            "replayed": {
-              "type": "boolean"
             }
           },
           "required": [
+            "insertedCount",
             "matchedCount",
             "modifiedCount",
             "deletedCount",
-            "insertedCount",
-            "upsertedCount"
+            "upsertedCount",
+            "insertedIds",
+            "upsertedIds",
+            "status",
+            "replayed"
           ]
         }
       },
@@ -14941,7 +14513,33 @@
         },
         "data": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": false,
+          "properties": {
+            "series": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "recordId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "sample": {
+                    "$ref": "#/components/schemas/CloudNullableSampleDocument"
+                  }
+                },
+                "required": [
+                  "recordId",
+                  "sample"
+                ]
+              }
+            }
+          },
+          "required": [
+            "series"
+          ]
         }
       },
       "required": [
@@ -14966,7 +14564,20 @@
         },
         "data": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": false,
+          "properties": {
+            "deletedCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "dryRun": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "deletedCount",
+            "dryRun"
+          ]
         }
       },
       "required": [
@@ -23501,12 +23112,26 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 200
+        },
+        "page": {
+          "$ref": "#/components/schemas/CloudDistinctPage"
         }
       },
       "required": [
         "collectionId",
         "field"
-      ]
+      ],
+      "allOf": [
+        {
+          "not": {
+            "required": [
+              "limit",
+              "page"
+            ]
+          }
+        }
+      ],
+      "description": "去重值使用 offset 分页；首屏可用 limit，续页使用 page:{page:nextPage,size}，二者互斥。"
     },
     "UnsV2RecordAggregatePipelineReq": {
       "type": "object",
@@ -28494,7 +28119,7 @@
           "type": "string"
         },
         "data": {
-          "$ref": "#/components/schemas/CloudDataPage"
+          "$ref": "#/components/schemas/CloudSamplePage"
         }
       },
       "required": [
@@ -28698,32 +28323,8 @@
             "locks": {
               "type": "array",
               "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 128
-                  },
-                  "token": {
-                    "type": "string"
-                  },
-                  "expiresAt": {
-                    "type": "integer"
-                  },
-                  "fence": {
-                    "type": "integer"
-                  }
-                },
-                "required": [
-                  "id",
-                  "token",
-                  "expiresAt",
-                  "fence"
-                ]
-              },
-              "maxItems": 100
+                "$ref": "#/components/schemas/CloudRecordLeaseGrant"
+              }
             }
           },
           "required": [
@@ -28812,24 +28413,16 @@
                     "minLength": 1,
                     "maxLength": 128
                   },
-                  "token": {
-                    "type": "string"
-                  },
                   "expiresAt": {
-                    "type": "integer"
-                  },
-                  "fence": {
-                    "type": "integer"
+                    "type": "integer",
+                    "description": "Unix 毫秒。"
                   }
                 },
                 "required": [
                   "id",
-                  "token",
-                  "expiresAt",
-                  "fence"
+                  "expiresAt"
                 ]
-              },
-              "maxItems": 100
+              }
             }
           },
           "required": [
@@ -29033,20 +28626,22 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 128
-              },
-              "maxItems": 100
+              }
             },
             "status": {
-              "type": "string"
+              "type": "string",
+              "description": "执行状态；validated 为回滚预检，committed 为提交成功，partiallyCommitted/failed 表示部分写入结果。"
             },
             "replayed": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否返回同一幂等请求的已保存结果。"
             }
           },
           "required": [
             "restoredCount",
             "restoredIds",
-            "status"
+            "status",
+            "replayed"
           ]
         }
       },
@@ -29066,39 +28661,380 @@
           "items": {
             "type": "object",
             "additionalProperties": true
-          },
-          "maxItems": 200
+          }
         },
         "pageInfo": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "hasMore": {
-              "type": "boolean"
-            },
-            "nextCursor": {
-              "type": "string",
-              "nullable": true
-            },
-            "nextPage": {
-              "type": "integer",
-              "nullable": true
-            },
-            "mode": {
-              "type": "string"
-            },
-            "snapshotScope": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "hasMore"
-          ]
+          "$ref": "#/components/schemas/CloudPageInfo"
         }
       },
       "required": [
         "items",
         "pageInfo"
+      ],
+      "description": "聚合管线的输出文档，不包装为 Record/Sample。字段由 pipeline 决定。"
+    },
+    "CloudRecordLockView": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "integer",
+          "description": "Unix 毫秒。"
+        },
+        "fence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "since": {
+          "type": "integer",
+          "description": "Unix 毫秒。"
+        }
+      },
+      "required": [
+        "label",
+        "expiresAt",
+        "fence",
+        "since"
+      ]
+    },
+    "CloudNullableRecordDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "createdAt": {
+          "type": "integer",
+          "description": "Unix 毫秒。"
+        },
+        "updatedAt": {
+          "type": "integer",
+          "description": "Unix 毫秒。"
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "nullable": true
+        },
+        "sourceTime": {
+          "type": "integer",
+          "description": "Unix 毫秒。",
+          "nullable": true
+        },
+        "lock": {
+          "$ref": "#/components/schemas/CloudRecordLockView"
+        }
+      },
+      "required": [
+        "id",
+        "collectionId",
+        "data",
+        "revision",
+        "createdAt",
+        "updatedAt",
+        "sourceId",
+        "sourceTime"
+      ],
+      "description": "普通业务记录。业务字段位于 data；系统属性位于同级。filter/projection 使用业务裸字段名及 _id/_meta.*，不按本响应对象路径编写。lock 仅描述有效租约，不返回令牌。",
+      "nullable": true
+    },
+    "SampleDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "time": {
+          "type": "integer",
+          "description": "Unix 毫秒。"
+        },
+        "receivedAt": {
+          "type": "integer",
+          "description": "Unix 毫秒。"
+        },
+        "quality": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "nullable": true
+        },
+        "streamId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "bindingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "id",
+        "collectionId",
+        "recordId",
+        "time",
+        "receivedAt",
+        "quality",
+        "data",
+        "sourceId"
+      ],
+      "description": "普通采样对象。业务字段位于 data；时间、质量、记录身份及可用来源信息位于同级。"
+    },
+    "CloudNullableSampleDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "time": {
+          "type": "integer",
+          "description": "Unix 毫秒。"
+        },
+        "receivedAt": {
+          "type": "integer",
+          "description": "Unix 毫秒。"
+        },
+        "quality": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "nullable": true
+        },
+        "streamId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "bindingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "id",
+        "collectionId",
+        "recordId",
+        "time",
+        "receivedAt",
+        "quality",
+        "data",
+        "sourceId"
+      ],
+      "description": "普通采样对象。业务字段位于 data；时间、质量、记录身份及可用来源信息位于同级。",
+      "nullable": true
+    },
+    "CloudPageInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "cursor",
+            "offset"
+          ]
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string",
+          "nullable": true
+        },
+        "nextPage": {
+          "type": "integer",
+          "minimum": 1,
+          "nullable": true
+        },
+        "snapshotScope": {
+          "type": "string",
+          "enum": [
+            "thisRequestOnly"
+          ]
+        }
+      },
+      "required": [
+        "mode",
+        "hasMore",
+        "nextCursor",
+        "nextPage",
+        "snapshotScope"
+      ]
+    },
+    "CloudRecordPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/RecordDocument"
+          }
+        },
+        "pageInfo": {
+          "$ref": "#/components/schemas/CloudPageInfo"
+        }
+      },
+      "required": [
+        "items",
+        "pageInfo"
+      ]
+    },
+    "CloudSamplePage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/SampleDocument"
+          }
+        },
+        "pageInfo": {
+          "$ref": "#/components/schemas/CloudPageInfo"
+        }
+      },
+      "required": [
+        "items",
+        "pageInfo"
+      ]
+    },
+    "CloudDistinctPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "offset"
+          ]
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 20
+        }
+      },
+      "required": []
+    },
+    "CloudWriteError": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "id": {
+          "type": "string"
+        },
+        "error": {
+          "$ref": "#/components/schemas/Fault"
+        }
+      },
+      "required": [
+        "index",
+        "error"
+      ]
+    },
+    "CloudRecordLeaseGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "token": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "integer",
+          "description": "Unix 毫秒。"
+        },
+        "fence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "record": {
+          "$ref": "#/components/schemas/RecordDocument"
+        }
+      },
+      "required": [
+        "id",
+        "token",
+        "expiresAt",
+        "fence",
+        "record"
       ]
     }
   }

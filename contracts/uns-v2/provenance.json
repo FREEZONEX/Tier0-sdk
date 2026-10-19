@@ -1,10 +1,10 @@
 {
   "repository": "FREEZONEX/Tier0-Backend",
-  "revision": "8e5a8f89baaa8114f8cfee286a42d57118365ee6",
+  "revision": "52a30b80fd51f748fb97434f04ba9e29cb2764f5",
   "version": "4.0.0",
   "source": "service/unssvr/internal/domain/unsv2/contract_generated.go#ContractJSON",
-  "cloudRevision": "8e5a8f89baaa8114f8cfee286a42d57118365ee6",
-  "cloudContractRevision": "cloud-source-impact/1+data/2",
+  "cloudRevision": "52a30b80fd51f748fb97434f04ba9e29cb2764f5",
+  "cloudContractRevision": "cloud-source-impact/1+data/3",
   "resolvedCloudContract": true,
   "enterpriseBase": {
     "repository": "FREEZONEX/Tier0-Enterprise-New",
@@ -13,6 +13,6 @@
     "source": "backend/internal/domain/unsv2/contract_generated.go",
     "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs."
   },
-  "sourceDerivedContractSHA256": "59845076660e588bc7f6cabbfd41771145228b468009f309456dbd1f514e72a1",
+  "sourceDerivedContractSHA256": "3676c21e8aafd36b3fa767c788d646e3b85bdb79ac7be4d89b9cd029b9f520f3",
   "note": "Resolved Cloud runtime contract after reviewed Cloud data overlay; matches the published manifest and registry. Enterprise import provenance retained separately; no claim of Enterprise deployment or npm publication."
 }

@@ -68,3 +68,18 @@ void [lease, unlock, restore];
 client.unsV2.records({ queries: [] });
 // @ts-expect-error Retired recordCreate is replaced by explicit recordInsertOne/Many operations.
 client.unsV2.recordCreate({ collectionId: 'orders', items: [] });
+
+const resourceShape = list.then(response => {
+  const id: string = response.data.items[0].id;
+  const business: Record<string, UnsV2JSONValue> = response.data.items[0].data;
+  // @ts-expect-error Query-language aliases are not ordinary resource response fields.
+  response.data.items[0]._meta;
+  return { id, business };
+});
+const insertedShape = client.unsV2.recordInsertOne({ collectionId: 'orders', data: { total: 10 } }).then(response => {
+  const id: string = response.data.insertedId;
+  // @ts-expect-error insertOne returns one ID; counters belong to batch writes.
+  response.data.insertedCount;
+  return id;
+});
+void [resourceShape, insertedShape];
