@@ -1,8 +1,18 @@
 {
-  "repository": "FREEZONEX/Tier0-Enterprise-New",
-  "revision": "ba2b953a47d54fbec10a419920554507399b85d3",
+  "repository": "FREEZONEX/Tier0-Backend",
+  "revision": "8e5a8f89baaa8114f8cfee286a42d57118365ee6",
   "version": "4.0.0",
-  "source": "backend/internal/domain/unsv2/contract_generated.go",
-  "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs. SDK snapshots reviewed Cloud public 4.0 contracts, including unified indexes and frozen Source acquisition options; Core-only credential and ingress operations remain unavailable in the App SDK.",
-  "cloudRevision": "7fc8dc79328f794ac074684ad3be25764c715801"
+  "source": "service/unssvr/internal/domain/unsv2/contract_generated.go#ContractJSON",
+  "cloudRevision": "8e5a8f89baaa8114f8cfee286a42d57118365ee6",
+  "cloudContractRevision": "cloud-source-impact/1+data/2",
+  "resolvedCloudContract": true,
+  "enterpriseBase": {
+    "repository": "FREEZONEX/Tier0-Enterprise-New",
+    "revision": "ba2b953a47d54fbec10a419920554507399b85d3",
+    "version": "4.0.0",
+    "source": "backend/internal/domain/unsv2/contract_generated.go",
+    "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs."
+  },
+  "sourceDerivedContractSHA256": "59845076660e588bc7f6cabbfd41771145228b468009f309456dbd1f514e72a1",
+  "note": "Resolved Cloud runtime contract after reviewed Cloud data overlay; matches the published manifest and registry. Enterprise import provenance retained separately; no claim of Enterprise deployment or npm publication."
 }

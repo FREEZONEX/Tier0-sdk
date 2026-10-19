@@ -10,18 +10,14 @@ import {
 } from '../../src/index.js';
 
 const client = createClient({ apiHost: 'https://example.invalid', apiKey: 'workspace-bound' });
-const list = client.unsV2.records({ queries: [{
-  queryId: 'records', collectionId: 'orders', pipeline: [], page: { mode: 'cursor', cursor: 'opaque' },
-}] });
+const list = client.unsV2.recordFind({ collectionId: 'orders', limit: 20, cursor: 'opaque' });
 const jobs = client.unsV2.jobs({ queries: [{ queryId: 'job', jobIds: ['job-1'] }] });
 const transaction = client.unsV2.recordTransactionExecute({ items: [] });
 const sources = client.unsV2.sourceList({ page: 1, size: 20, archived: false });
 const deployment = client.unsV2.streamProgramDeploy({
   id: 'stream-1', dryRun: false, expectedRevision: 3, expectedSourceRevision: 7, idempotencyKey: 'deploy-1',
 });
-const scopedSamples = client.unsV2.samples({ queries: [{
-  queryId: 'samples', collectionId: 'measurements', recordId: 'machine-1', pipeline: [], resultMode: 'all',
-}] });
+const scopedSamples = client.unsV2.sampleFind({ collectionId: 'measurements', recordIds: ['machine-1'], from: 0, to: 1000, page: { mode: 'cursor', size: 20 } });
 const sourceState = client.unsV2.sourceStateUpdate({
   dryRun: false, items: [{ id: '101', expectedRevision: 2, desiredState: 'enabled', confirmedImpactRevision: 'reviewed-confirmation' }],
 });
@@ -36,7 +32,7 @@ const documentValidation = client.unsV2.streamDocumentValidate({ document: {
   script: { sdkVersion: 'tier0-stream/v2', code: 'module.exports = api => api;', timeoutMs: 1_000 },
   sources: [{ alias: 'plant', sourceId: 'source-1', configRevision: 2, resources: ['line/1'] }],
 } });
-const operation: UnsV2OperationName = 'recordCreate';
+const operation: UnsV2OperationName = 'recordInsertOne';
 const singleIndex: IndexSpec = { path: 'serial', unique: true };
 const compositeIndex: IndexSpec = { paths: ['plant', 'serial'], kind: 'btree', target: 'records', unique: true };
 // @ts-expect-error IndexSpec requires one path declaration.
@@ -63,3 +59,12 @@ client.unsV2.sourceIngressRotate({ id: '101' });
 client.unsV2.directoryList({ workspaceId: 'other-workspace' });
 // @ts-expect-error Source mutations must carry an explicitly reviewed confirmation.
 client.unsV2.sourceDelete({ dryRun: false, items: [{ id: '101', expectedRevision: 2 }] });
+
+const lease = client.unsV2.recordLock({ collectionId: 'orders', ids: ['order-1'], ttlMs: 30000 });
+const unlock = client.unsV2.recordUnlock({ collectionId: 'orders', locks: [{ id: 'order-1', token: 'lease' }] });
+const restore = client.unsV2.recordRestore({ collectionId: 'orders', ids: ['order-1'], idempotencyKey: 'restore-1' });
+void [lease, unlock, restore];
+// @ts-expect-error Retired Cloud batch-query route must not silently map to another contract.
+client.unsV2.records({ queries: [] });
+// @ts-expect-error Retired recordCreate is replaced by explicit recordInsertOne/Many operations.
+client.unsV2.recordCreate({ collectionId: 'orders', items: [] });

@@ -36,7 +36,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     respond = (req, res) => {
       if (req.url === '/openapi/v2/uns/collections/devices/records:find') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end('{"code":200,"msg":"ok","requestId":"find-4","data":{"items":[{"_id":"device-1","serial":9007199254740993}],"indexStatus":{"state":"building"}}}');
+        res.end('{"code":200,"msg":"ok","requestId":"find-4","data":{"items":[{"_id":"device-1","serial":9007199254740993}],"pageInfo":{"hasMore":false}}}');
       } else send(res, { code: 200, msg: 'ok', requestId: 'collection-4', data: { status: 'completed' } });
     };
     const api = client().unsV2;
@@ -53,7 +53,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received[start].body).not.toContain('uniqueKeys');
     expect(received[start].body).not.toContain('queryIndexes');
     expect(response.data.items).toEqual([{ _id: 'device-1', serial: new UnsV2RawNumber('9007199254740993') }]);
-    expect(response.data.indexStatus).toEqual({ state: 'building' });
+    expect(response.data.pageInfo).toEqual({ hasMore: false });
   });
 
   it('keeps one frozen intent and does not retry a 4.0 upsert after an ambiguous response', async () => {
@@ -132,8 +132,9 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(99);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(103);
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+data/2');
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(96);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(100);
     expect(received.slice(start)).toHaveLength(1);
   });
 
@@ -172,7 +173,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
   it('rejects inherited, unknown and non-string operation names before encoding or fetch', async () => {
     const start = received.length;
     const core = client().unsV2 as unknown as { call(name: unknown, request: unknown): Promise<unknown> };
-    for (const name of ['constructor', '__proto__', 'toString', 'ordinaryUnknown', { toString: () => 'records' }]) {
+    for (const name of ['constructor', '__proto__', 'toString', 'ordinaryUnknown', 'records', 'samples', 'recordCreate', 'recordDelete', { toString: () => 'records' }]) {
       await expect(core.call(name, {})).rejects.toThrow('unknown UNS v2 operation');
     }
     expect(received.length).toBe(start);
@@ -181,21 +182,15 @@ describe('UNS v2 localhost HTTP fixture', () => {
   it('uses only the frozen operation path and preserves omission, null and workspace authentication', async () => {
     const start = received.length;
     respond = (_req, res) => send(res, {
-      code: 200, msg: 'ok', requestId: 'req-list', data: { results: [{
-        queryId: 'orders', resultMode: 'all', items: [],
-        pageInfo: { hasMore: true, nextCursor: 'opaque-next', snapshotScope: 'thisRequestOnly' },
-      }] },
+      code: 200, msg: 'ok', requestId: 'req-list', data: { items: [], pageInfo: { hasMore: true, nextCursor: 'opaque-next', snapshotScope: 'thisRequestOnly' } },
     });
-    const response = await client().unsV2.records({ queries: [{
-      queryId: 'orders', collectionId: 'orders', pipeline: [],
-      page: { mode: 'cursor', size: 20 },
-    }] });
-    const result = response.data.results[0];
-    expect(result.resultMode === 'all' && result.pageInfo.nextCursor).toBe('opaque-next');
+    const response = await client().unsV2.recordFind({ collectionId: 'orders', limit: 20, cursor: 'opaque' });
+    const result = response.data;
+    expect(result.pageInfo.nextCursor).toBe('opaque-next');
     expect(received.slice(start)).toHaveLength(1);
     expect(received[start]).toMatchObject({
-      method: 'POST', path: '/openapi/v2/uns/records/query',
-      body: '{"queries":[{"queryId":"orders","collectionId":"orders","pipeline":[],"page":{"mode":"cursor","size":20}}]}',
+      method: 'POST', path: '/openapi/v2/uns/collections/orders/records:find',
+      body: '{"collectionId":"orders","limit":20,"cursor":"opaque"}',
       headers: {
         authorization: 'Bearer workspace-bound-key',
         'x-api-key': 'workspace-bound-key',
@@ -207,12 +202,10 @@ describe('UNS v2 localhost HTTP fixture', () => {
   it('preserves numeric and prototype-shaped business fields over HTTP', async () => {
     respond = (_req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end('{"code":200,"msg":"ok","requestId":"req-business","data":{"results":[{"queryId":"q","resultMode":"all","items":[{"numeric":"123","unit":"bar","nested":{"numeric":false},"nullable":null,"int64Max":9223372036854775807,"int64Min":-9223372036854775808,"decimal":1.0000000000000001,"exponent":9.007199254740993e15,"__proto__":{"polluted":true},"constructor":"business","prototype":"field"}],"pageInfo":{"hasMore":false,"nextCursor":null,"snapshotScope":"thisRequestOnly"}}]}}');
+      res.end('{"code":200,"msg":"ok","requestId":"req-business","data":{"items":[{"numeric":"123","unit":"bar","nested":{"numeric":false},"nullable":null,"int64Max":9223372036854775807,"int64Min":-9223372036854775808,"decimal":1.0000000000000001,"exponent":9.007199254740993e15,"__proto__":{"polluted":true},"constructor":"business","prototype":"field"}],"pageInfo":{"hasMore":false,"nextCursor":null,"snapshotScope":"thisRequestOnly"}}}');
     };
-    const response = await client().unsV2.records({ queries: [{
-      queryId: 'q', collectionId: 'measurements', pipeline: [], page: { mode: 'cursor', size: 1 },
-    }] });
-    const item = response.data.results[0].resultMode === 'all' ? response.data.results[0].items[0] : undefined;
+    const response = await client().unsV2.recordFind({ collectionId: 'measurements', limit: 1 });
+    const item = response.data.items[0];
     expect(item).toEqual({
       ...JSON.parse('{"numeric":"123","unit":"bar","nested":{"numeric":false},"nullable":null,"__proto__":{"polluted":true},"constructor":"business","prototype":"field"}'),
       int64Max: new UnsV2RawNumber('9223372036854775807'),
@@ -254,21 +247,63 @@ describe('UNS v2 localhost HTTP fixture', () => {
     });
   });
 
-  it('uses record-scoped Sample queries from the v3.17 contract', async () => {
+  it('uses collection-scoped Sample find with record and time bounds', async () => {
     const start = received.length;
     respond = (_req, res) => send(res, {
-      code: 200, msg: 'ok', requestId: 'req-samples', data: { results: [{
-        queryId: 'sample', resultMode: 'all', items: [],
-        pageInfo: { hasMore: false, nextCursor: null, snapshotScope: 'thisRequestOnly' },
-      }] },
+      code: 200, msg: 'ok', requestId: 'req-samples',
+      data: { items: [], pageInfo: { hasMore: false, nextCursor: null } },
     });
-    await client().unsV2.samples({ queries: [{
-      queryId: 'sample', collectionId: 'measurements', recordId: 'machine-1', pipeline: [], resultMode: 'all',
-    }] });
+    const response = await client().unsV2.sampleFind({
+      collectionId: 'measurements', recordIds: ['machine-1', 'machine-2'],
+      from: 1000, to: 2000, page: { mode: 'cursor', size: 20 },
+    });
+    expect(response.data.pageInfo.hasMore).toBe(false);
     expect(received[start]).toMatchObject({
-      path: '/openapi/v2/uns/samples/query',
-      body: '{"queries":[{"queryId":"sample","collectionId":"measurements","recordId":"machine-1","pipeline":[],"resultMode":"all"}]}',
+      path: '/openapi/v2/uns/collections/measurements/samples:find',
+      body: '{"collectionId":"measurements","recordIds":["machine-1","machine-2"],"from":1000,"to":2000,"page":{"mode":"cursor","size":20}}',
     });
+    expect(received.length - start).toBe(1);
+  });
+
+  it('preserves lease tokens and explicit restore intent on their frozen data/2 routes', async () => {
+    const start = received.length;
+    respond = (req, res) => send(res, {
+      code: 200, msg: 'ok', requestId: 'lease-2',
+      data: req.url?.endsWith(':lock')
+        ? { locks: [{ id: 'order-1', token: 'opaque-lease', expiresAt: 2000, fence: 1 }] }
+        : req.url?.endsWith(':unlock') ? { unlockedCount: 1 }
+        : { restoredCount: 1, restoredIds: ['order-1'], status: 'committed', replayed: false },
+    });
+    const api = client().unsV2;
+    const lease = await api.recordLock({ collectionId: 'orders', ids: ['order-1'], ttlMs: 1000 });
+    const token = lease.data.locks[0].token;
+    expect(token).toBe('opaque-lease');
+    await api.recordUnlock({ collectionId: 'orders', locks: [{ id: 'order-1', token }] });
+    const restored = await api.recordRestore({ collectionId: 'orders', ids: ['order-1'], idempotencyKey: 'restore-intent-1' });
+    expect(restored.data.restoredIds).toEqual(['order-1']);
+    expect(received.slice(start).map(row => row.path)).toEqual([
+      '/openapi/v2/uns/collections/orders/records:lock',
+      '/openapi/v2/uns/collections/orders/records:unlock',
+      '/openapi/v2/uns/collections/orders/records:restore',
+    ]);
+    expect(JSON.parse(received[start + 1].body)).toEqual({ collectionId: 'orders', locks: [{ id: 'order-1', token: 'opaque-lease' }] });
+    expect(JSON.parse(received[start + 2].body).idempotencyKey).toBe('restore-intent-1');
+  });
+
+  it('returns a lease conflict without automatically reacquiring or resending the write', async () => {
+    const start = received.length;
+    respond = (_req, res) => send(res, {
+      code: 409, msg: 'locked', requestId: 'lease-conflict', data: null,
+      error: { code: 'LOCK_CONFLICT', retryable: false, details: [],
+        retryAdvice: { recommendedAction: 'doNotRetry', canRetrySameRequest: false, keepIdempotencyKey: true } },
+    }, 409);
+    await expect(client().unsV2.recordInsertOne({
+      collectionId: 'orders', id: 'order-1', data: { total: 10 },
+      idempotencyKey: 'write-intent', assertLocks: [{ collectionId: 'stock', id: 'part-1', token: 'lease' }],
+    })).rejects.toMatchObject({ name: 'UnsV2Error', status: 409, code: 'LOCK_CONFLICT', requestId: 'lease-conflict', retryable: false });
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start].path).toBe('/openapi/v2/uns/collections/orders/records');
+    expect(JSON.parse(received[start].body).assertLocks).toEqual([{ collectionId: 'stock', id: 'part-1', token: 'lease' }]);
   });
 
   it('exposes Source state update and keeps the mutation single-shot', async () => {
@@ -353,7 +388,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
       respond = (_req, res) => send(res, {
         code: testCase.code, msg: 'not canonical', requestId: 'req-mismatch', data: { results: [] },
       }, testCase.status);
-      await expect(client().unsV2.records({ queries: [] })).rejects.toMatchObject({
+      await expect(client().unsV2.recordFind({ collectionId: 'orders' })).rejects.toMatchObject({
         name: 'UnsV2Error', status: testCase.status, code: 'UNS_V2_PROTOCOL_ERROR', retryable: false,
       });
     }
@@ -367,7 +402,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
         retryAdvice: { recommendedAction: 'doNotRetry', canRetrySameRequest: false, keepIdempotencyKey: false },
       },
     }, 500);
-    await expect(client().unsV2.records({ queries: [] })).rejects.toMatchObject({
+    await expect(client().unsV2.recordFind({ collectionId: 'orders' })).rejects.toMatchObject({
       name: 'UnsV2Error', status: 500, code: 'UNS_V2_PROTOCOL_ERROR', retryable: false,
     });
   });
@@ -376,8 +411,8 @@ describe('UNS v2 localhost HTTP fixture', () => {
     respond = (_req, res) => send(res, {
       code: 500, msg: 'not canonical', requestId: 'req-mutation-mismatch', data: null,
     });
-    await expect(client().unsV2.recordDelete({
-      dryRun: false, collectionId: 'orders', items: [{ id: 'order-1' }],
+    await expect(client().unsV2.recordDeleteOne({
+      dryRun: false, collectionId: 'orders', filter: { _id: 'order-1' },
     })).rejects.toMatchObject({
       name: 'UnsV2OutcomeUnknownError', status: 200, code: 'UNS_V2_PROTOCOL_ERROR', outcomeUnknown: true,
     });
@@ -385,10 +420,10 @@ describe('UNS v2 localhost HTTP fixture', () => {
 
   it('rejects a request above the 16 MiB contract limit before fetch', async () => {
     const start = received.length;
-    await expect(client().unsV2.recordCreate({
+    await expect(client().unsV2.recordInsertOne({
       dryRun: false,
       collectionId: 'orders',
-      items: [{ data: { payload: 'x'.repeat((16 << 20) + 1) } }],
+      data: { payload: 'x'.repeat((16 << 20) + 1) },
     })).rejects.toThrow('UNS v2 request body exceeds the 16777216-byte contract limit');
     expect(received.length).toBe(start);
   });
@@ -400,14 +435,14 @@ describe('UNS v2 localhost HTTP fixture', () => {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Transfer-Encoding': 'chunked' });
       res.end('x'.repeat(513));
     };
-    await expect(client(2_000, 512).unsV2.records({ queries: [] })).rejects.toMatchObject({
+    await expect(client(2_000, 512).unsV2.recordFind({ collectionId: 'orders' })).rejects.toMatchObject({
       name: 'UnsV2Error', status: 200, code: 'UNS_V2_PROTOCOL_ERROR', retryable: false,
     });
     await expect.poll(() => closed).toBe(true);
   });
 
   it('accepts a valid response exactly at the configured byte limit', async () => {
-    const prefix = '{"code":200,"msg":"ok","requestId":"req-limit","data":{"results":[],"padding":"';
+    const prefix = '{"code":200,"msg":"ok","requestId":"req-limit","data":{"items":[],"pageInfo":{"hasMore":false},"padding":"';
     const suffix = '"}}';
     const body = `${prefix}${'x'.repeat(512 - prefix.length - suffix.length)}${suffix}`;
     expect(new TextEncoder().encode(body)).toHaveLength(512);
@@ -415,8 +450,8 @@ describe('UNS v2 localhost HTTP fixture', () => {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Length': String(body.length) });
       res.end(body);
     };
-    await expect(client(2_000, 512).unsV2.records({ queries: [] })).resolves.toMatchObject({
-      code: 200, requestId: 'req-limit', data: { results: [] },
+    await expect(client(2_000, 512).unsV2.recordFind({ collectionId: 'orders' })).resolves.toMatchObject({
+      code: 200, requestId: 'req-limit', data: { items: [], pageInfo: { hasMore: false } },
     });
   });
 
@@ -430,7 +465,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
       res.write('y'.repeat(300));
       lateWrite = setTimeout(() => res.end('z'), 1_000);
     };
-    await expect(client(2_000, 512).unsV2.records({ queries: [] })).rejects.toMatchObject({
+    await expect(client(2_000, 512).unsV2.recordFind({ collectionId: 'orders' })).rejects.toMatchObject({
       name: 'UnsV2Error', status: 200, code: 'UNS_V2_PROTOCOL_ERROR', retryable: false,
     });
     await expect.poll(() => closed).toBe(true);
@@ -443,7 +478,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Length': '513' });
       res.write('x');
     };
-    await expect(client(2_000, 512).unsV2.records({ queries: [] })).rejects.toMatchObject({
+    await expect(client(2_000, 512).unsV2.recordFind({ collectionId: 'orders' })).rejects.toMatchObject({
       name: 'UnsV2Error', status: 200, code: 'UNS_V2_PROTOCOL_ERROR', retryable: false,
     });
     await expect.poll(() => closed).toBe(true);
@@ -452,10 +487,10 @@ describe('UNS v2 localhost HTTP fixture', () => {
   it('does not follow redirects or resend mutations', async () => {
     const start = received.length;
     respond = (_req, res) => { res.writeHead(307, { Location: '/redirected' }); res.end('{}'); };
-    await expect(client().unsV2.recordCreate({
-      dryRun: false, collectionId: 'orders', items: [{ data: { status: 'new' } }],
+    await expect(client().unsV2.recordInsertOne({
+      dryRun: false, collectionId: 'orders', data: { status: 'new' },
     })).rejects.toMatchObject({
-      name: 'UnsV2OutcomeUnknownError', status: 307, operation: 'recordCreate',
+      name: 'UnsV2OutcomeUnknownError', status: 307, operation: 'recordInsertOne',
       code: 'UNS_V2_PROTOCOL_ERROR', retryable: false, outcomeUnknown: true,
     });
     expect(received.length - start).toBe(1);
@@ -479,11 +514,11 @@ describe('UNS v2 localhost HTTP fixture', () => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.write('{"code":200,"msg":"partial"');
     };
-    const error = await client(100).unsV2.recordDelete({
-      dryRun: false, collectionId: 'orders', items: [{ id: 'order-1' }],
+    const error = await client(100).unsV2.recordDeleteOne({
+      dryRun: false, collectionId: 'orders', filter: { _id: 'order-1' },
     }).catch(value => value);
     expect(error).toMatchObject({
-      name: 'UnsV2OutcomeUnknownError', operation: 'recordDelete',
+      name: 'UnsV2OutcomeUnknownError', operation: 'recordDeleteOne',
       code: 'UNS_V2_TRANSPORT_TIMEOUT', status: 200, retryable: false, outcomeUnknown: true,
     });
     await expect.poll(() => closed).toBe(true);

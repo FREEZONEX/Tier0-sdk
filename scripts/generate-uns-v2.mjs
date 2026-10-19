@@ -30,6 +30,10 @@ const provenance = JSON.parse(provenanceText);
 if (contract.version !== manifest.version || contract.version !== provenance.version) {
   fail('contract, manifest and provenance versions differ');
 }
+if (contract.cloudContractRevision !== manifest.cloudContractRevision ||
+    manifest.cloudContractRevision !== provenance.cloudContractRevision) {
+  fail('contract, manifest and provenance Cloud revisions differ');
+}
 const contractOperations = new Map(contract.operations.map(operation => [operation.name, operation]));
 const cloudOperations = new Map();
 for (const operation of cloudSupport.operations || []) {
@@ -103,10 +107,24 @@ function reachableSchemas(operations) {
 
 const publicSchemaNames = reachableSchemas(publicOperations);
 const privateSchemaNames = reachableSchemas(manifest.operations.filter(operation => operation.coreOnly));
-// Keep existing base-contract type exports compatible, but do not export new
-// Cloud-only credential/ingress schemas that have no public Gateway operation.
+// A resolved Cloud source also contains Core-only schemas. Export only those
+// reachable publicly or unrelated to private operations; never expose private DTOs.
 const exportedSchemas = Object.fromEntries(Object.entries(manifest.schemas).filter(([name]) =>
-  !privateSchemaNames.has(name) || publicSchemaNames.has(name) || Object.hasOwn(contract.schemas, name)));
+  !privateSchemaNames.has(name) || publicSchemaNames.has(name)));
+// Retained legacy DTO exports may share query primitives with Core graph schemas.
+// Include their transitive dependencies so generated public declarations remain closed.
+const dependencyQueue = Object.values(exportedSchemas);
+const includeDependencies = value => {
+  if (!value || typeof value !== 'object') return;
+  const name = refName(value.$ref);
+  if (name && !Object.hasOwn(exportedSchemas, name)) {
+    if (!manifest.schemas[name]) fail(`missing retained schema dependency ${name}`);
+    exportedSchemas[name] = manifest.schemas[name];
+    dependencyQueue.push(manifest.schemas[name]);
+  }
+  for (const nested of Object.values(value)) includeDependencies(nested);
+};
+while (dependencyQueue.length) includeDependencies(dependencyQueue.pop());
 const literal = value => JSON.stringify(value);
 const union = values => [...new Set(values.filter(Boolean))].join(' | ') || 'never';
 
