@@ -58,7 +58,7 @@ export class CapabilityError extends Error {
 }
 
 const contracts: Record<CapabilityCode, string[]> = {
-  'namespace.v2': ['openapi/v1'],
+  'namespace.v2': ['openapi/v2'],
   'source.v1': ['openapi/v1'],
   'stream.v2': ['tier0-stream/v2'],
   'control.v1': ['openapi/v1', 'control/v1'],
@@ -103,7 +103,9 @@ function discovery(value: unknown, status: number): CapabilityDiscoverResponse {
     if (typeof item.releaseEnabled !== 'boolean' || typeof item.enabled !== 'boolean' || typeof item.allowed !== 'boolean' ||
         !['disabled', 'not_supported', 'unavailable', 'readiness_unknown', 'ready'].includes(item.state as string) ||
         !['unavailable', 'unknown', 'available'].includes(item.availability as string) || !strings(item.contractVersions)) return fail();
-    if (contracts[code].some(version => !(item.contractVersions as string[]).includes(version))) return fail(true);
+    if (contracts[code].some(version =>
+      !(item.contractVersions as string[]).includes(version) ||
+      (version.startsWith('openapi/') && !(value.apiContractVersions as string[]).includes(version)))) return fail(true);
     const ready = item.state === 'ready';
     const expectedAvailability = ready ? 'available' : item.state === 'readiness_unknown' ? 'unknown' : 'unavailable';
     if (item.enabled !== ready || item.availability !== expectedAvailability ||

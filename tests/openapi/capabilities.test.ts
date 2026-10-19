@@ -44,12 +44,39 @@ describe('frozen capability discovery contract', () => {
 
   it('accepts every known capability with its exact version labels', async () => {
     const body = fixture();
+    body.apiContractVersions.push('openapi/v2');
     body.capabilities = Object.entries({
-      'namespace.v2': ['openapi/v1'], 'source.v1': ['openapi/v1'], 'stream.v2': ['tier0-stream/v2'],
+      'namespace.v2': ['openapi/v2'], 'source.v1': ['openapi/v1'], 'stream.v2': ['tier0-stream/v2'],
       'control.v1': ['openapi/v1', 'control/v1'], 'control.invoke.v1': item.contractVersions,
     }).map(([code, contractVersions]) => ({ ...item, code, contractVersions }));
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reply(body)));
     expect(await client().discover()).toEqual(body);
+  });
+
+  it('accepts the mixed Cloud API versions while preserving unavailable Control execution', async () => {
+    const body = { ...fixture(), apiContractVersions: ['openapi/v1', 'openapi/v2'], capabilities: [
+      { code: 'namespace.v2', releaseEnabled: true, allowed: true, enabled: true,
+        state: 'ready', availability: 'available', contractVersions: ['openapi/v2'] },
+      { ...item, state: 'unavailable', availability: 'unavailable' },
+    ] };
+    const fetch = vi.fn().mockResolvedValue(reply(body));
+    vi.stubGlobal('fetch', fetch);
+    expect(await client().discover()).toEqual(body);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    { apiContractVersions: ['openapi/v1', 'openapi/v2'], contractVersions: ['openapi/v1'] },
+    { apiContractVersions: ['openapi/v1'], contractVersions: ['openapi/v2'] },
+  ])('rejects a Namespace v2 API version mismatch without retrying', async versions => {
+    const body = { ...fixture(), apiContractVersions: versions.apiContractVersions, capabilities: [
+      { code: 'namespace.v2', releaseEnabled: true, allowed: true, enabled: true,
+        state: 'ready', availability: 'available', contractVersions: versions.contractVersions },
+    ] };
+    const fetch = vi.fn().mockResolvedValue(reply(body));
+    vi.stubGlobal('fetch', fetch);
+    await expect(client().discover()).rejects.toMatchObject({ errorCode: 'CAPABILITY_UNSUPPORTED_VERSION', retryable: false });
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it('projects known fields, skips future capabilities (even unsupported versions) and preserves deprecations', async () => {

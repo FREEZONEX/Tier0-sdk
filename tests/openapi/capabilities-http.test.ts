@@ -44,6 +44,21 @@ describe('capability real HTTP fixture (no device execution or external credenti
     expect(received[start].headers['idempotency-key']).toBeUndefined();
   });
 
+  it('accepts Namespace API v2 beside Control API v1 over the actual HTTP transport', async () => {
+    const start = received.length;
+    const body = { ...fixture, apiContractVersions: ['openapi/v1', 'openapi/v2'], capabilities: [
+      { code: 'namespace.v2', releaseEnabled: true, allowed: true, enabled: true,
+        state: 'ready', availability: 'available', contractVersions: ['openapi/v2'] },
+      ...fixture.capabilities,
+    ] };
+    respond = (_req, res) => send(res, body);
+    const result = await client().capabilities.discover();
+    expect(result).toEqual(body);
+    expect(result.capabilities[1]).toMatchObject({ enabled: false, state: 'unavailable' });
+    expect(received.length - start).toBe(1);
+    expect(received[start].path).toBe('/openapi/v1/capabilities/discover');
+  });
+
   it('does not cache a release or readiness transition', async () => {
     const api = client();
     const start = received.length;
