@@ -84,6 +84,8 @@
     ]
   },
   "scripts": {
+    "package:cloud-app": "node scripts/package-cloud-uns-app.mjs",
+    "test:cloud-app": "node scripts/test-cloud-uns-app.mjs",
     "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && node scripts/finalize-build.mjs",
     "build:esm": "tsc -p tsconfig.esm.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",

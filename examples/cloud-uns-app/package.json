@@ -1,0 +1,9 @@
+{
+  "name": "tier0-cloud-uns-app-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "node .runtime/server.mjs"
+  }
+}
