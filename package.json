@@ -41,6 +41,11 @@
       "types": "./dist/esm/mq/index.d.ts",
       "import": "./dist/esm/mq/index.js",
       "require": "./dist/cjs/mq/index.js"
+    },
+    "./cloud/server": {
+      "types": "./dist/esm/cloud-server.d.ts",
+      "import": "./dist/esm/cloud-server.js",
+      "require": "./dist/cjs/cloud-server.js"
     }
   },
   "files": [
@@ -95,7 +100,8 @@
     "typecheck": "tsc --noEmit && tsc --noEmit --strict --skipLibCheck --module nodenext --target es2020 tests/openapi/notifications.types.ts tests/openapi/controls.types.ts tests/openapi/capabilities.types.ts tests/openapi/uns-v2.types.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "sync:app-identity": "node scripts/sync-app-identity-contract.mjs"
   },
   "optionalDependencies": {
     "@tanstack/react-query": "^5.0.0",
