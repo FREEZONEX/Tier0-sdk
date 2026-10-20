@@ -3,26 +3,28 @@ const messages = {
     controlTitle: '设备采集', controlHelp: '通过应用服务端执行已授权的采集操作。重放保留同一请求标识。', controlRun: '执行或重放', controlNew: '新建操作',
     controlLoading: '正在读取控制权限…', controlReady: '已就绪，请确认后执行', controlBusy: '正在执行…', controlDone: '操作已完成', controlReplay: '已返回原操作结果',
     controlUnavailable: '控制不可用，请联系管理员检查应用配置和授权', controlUnknown: '操作结果尚未确认，请先核对设备；重放会使用原请求标识',
-    title: '工单数据', create: '新增工单', orderNo: '工单号', amount: '金额（分）', save: '保存', records: '工单列表',
+    operator: '当前员工', title: '工单数据', create: '新增工单', orderNo: '工单号', amount: '金额（分）', save: '保存', records: '我的工单',
     refresh: '刷新列表', state: '状态', revision: '版本', theme: '切换主题', loading: '正在读取…', empty: '暂无工单',
     loaded: '已读取工单', saved: '已保存', replayed: '已返回原保存结果', readonly: '当前应用只有读取权限',
-    writable: '当前应用可以读取并新增工单', noAccess: '当前应用没有数据访问权限', denied: '访问被拒绝，请联系管理员检查应用的数据授权',
+    writable: '可以查看与新增本人的工单', noAccess: '当前应用没有数据访问权限', denied: '访问被拒绝，请联系管理员检查应用的数据授权',
     unknown: '保存结果尚未确认。请刷新列表核对；再次点击保存会使用相同请求标识。', failed: '请求失败', draft: '草稿',
   },
   en: {
     controlTitle: 'Device collection', controlHelp: 'Run an authorized collection through this App server. Replay keeps the same request identity.', controlRun: 'Execute or replay', controlNew: 'New operation',
     controlLoading: 'Loading control access…', controlReady: 'Ready. Confirm before executing.', controlBusy: 'Executing…', controlDone: 'Operation completed', controlReplay: 'Original operation result returned',
     controlUnavailable: 'Control unavailable. Ask an administrator to check App configuration and grants.', controlUnknown: 'Operation outcome is unconfirmed. Check the device first; replay preserves the original request identity.',
-    title: 'Work orders', create: 'New work order', orderNo: 'Order number', amount: 'Amount (cents)', save: 'Save', records: 'Work orders',
+    operator: 'Employee', title: 'Work orders', create: 'New work order', orderNo: 'Order number', amount: 'Amount (cents)', save: 'Save', records: 'My work orders',
     refresh: 'Refresh list', state: 'Status', revision: 'Revision', theme: 'Switch theme', loading: 'Loading…', empty: 'No work orders',
     loaded: 'Work orders loaded', saved: 'Saved', replayed: 'Original save result returned', readonly: 'This App has read access',
-    writable: 'This App can read and create work orders', noAccess: 'This App has no data access', denied: 'Access denied. Ask an administrator to check App data grants.',
+    writable: 'You can view and create your own work orders', noAccess: 'This App has no data access', denied: 'Access denied. Ask an administrator to check App data grants.',
     unknown: 'Save outcome is unconfirmed. Refresh the list to check; saving again uses the same request identity.', failed: 'Request failed', draft: 'Draft',
   },
 };
 const $ = (selector) => document.querySelector(selector);
 let language = localStorage.getItem('uns-orders-language') === 'en' ? 'en' : 'zh';
 let canWrite = false;
+let dataIntentStorageKey;
+let dataOperator;
 let busy = false;
 let controlState = 'controlLoading';
 let controlError = '';
@@ -39,6 +41,7 @@ function translate() {
   $('#language').value = language;
   document.querySelectorAll('[data-i18n]').forEach((element) => { element.textContent = text(element.dataset.i18n); });
   $('#write-state').textContent = text(canWrite ? 'writable' : 'readonly');
+  $('#employee').textContent = dataOperator ? `${text('operator')}: ${dataOperator}` : '';
   $('#control-status').textContent = `${text(controlState)}${controlError ? ` (${controlError})` : ''}`;
 }
 async function request(path, options) {
@@ -48,20 +51,30 @@ async function request(path, options) {
   return result;
 }
 function errorState(error) {
-  if (error.status === 403 || error.status === 401) {
-    canWrite = false;
-    $('#records').replaceChildren();
-    $('#save').disabled = true;
-    $('#write-state').textContent = text('noAccess');
-    status('denied', true, error.code);
-  } else status(error.code === 'OUTCOME_UNKNOWN' ? 'unknown' : 'failed', true, error.code);
+  canWrite = false;
+  dataIntentStorageKey = undefined;
+  dataOperator = undefined;
+  $('#employee').textContent = '';
+  $('#records').replaceChildren();
+  $('#save').disabled = true;
+  $('#write-state').textContent = text('noAccess');
+  if (error.status === 403 || error.status === 401) status('denied', true, error.code);
+  else status(error.code === 'OUTCOME_UNKNOWN' ? 'unknown' : 'failed', true, error.code);
 }
 async function refresh() {
   $('#refresh').disabled = true;
+  canWrite = false;
+  $('#save').disabled = true;
+  $('#records').replaceChildren();
   status('loading');
   try {
     const result = await request('/api/orders');
-    canWrite = result.canWrite;
+    if (typeof result.operator !== 'string' || !/^[1-9]\d{0,18}$/.test(result.operator)) throw new Error('Invalid employee context');
+    const storageKey = `uns-orders-intent:v2:${location.host}:${result.operator}`;
+    if (dataIntentStorageKey && dataIntentStorageKey !== storageKey) $('#order-form').reset();
+    dataOperator = result.operator;
+    dataIntentStorageKey = storageKey;
+    canWrite = result.canWrite === true;
     $('#app-name').textContent = result.app;
     $('#records').replaceChildren();
     for (const item of result.items) {
@@ -79,15 +92,15 @@ async function refresh() {
 }
 $('#order-form').addEventListener('submit', async (event) => {
   event.preventDefault();
-  if (busy || !canWrite) return;
+  if (busy || !canWrite || !dataIntentStorageKey) return;
   const form = new FormData(event.currentTarget);
   const input = { orderNo: String(form.get('orderNo')), amount: Number(form.get('amount')) };
   const fingerprint = JSON.stringify(input);
   let intent;
-  try { intent = JSON.parse(localStorage.getItem('uns-orders-intent')); } catch { /* Start a new intent. */ }
+  try { intent = JSON.parse(localStorage.getItem(dataIntentStorageKey)); } catch { /* Start a new intent. */ }
   if (intent?.fingerprint !== fingerprint) {
     intent = { fingerprint, key: crypto.randomUUID() };
-    localStorage.setItem('uns-orders-intent', JSON.stringify(intent));
+    localStorage.setItem(dataIntentStorageKey, JSON.stringify(intent));
   }
   busy = true;
   $('#save').disabled = true;

@@ -16,26 +16,23 @@ function reply(res, status, value) {
   res.end(JSON.stringify(value));
 }
 
-async function ordersContext(permission) {
+async function ordersContext(permission, subject) {
   const response = await client.unsV2.dataAppContext({});
   const grant = response.data.collections.find((item) => item.alias === 'orders');
-  if (!grant || !grant.permissions.includes(permission)) throw Object.assign(new Error(), { status: 403, code: 'FORBIDDEN' });
+  if (response.data.appId !== subject.appID || !grant || !grant.permissions.includes(permission)) throw Object.assign(new Error(), { status: 403, code: 'FORBIDDEN' });
+  if (grant.recordSchema?.properties?.ownerUserId?.type !== 'string' ||
+      !grant.recordSchema.required?.includes('ownerUserId')) {
+    throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_POLICY_UNAVAILABLE' });
+  }
   return { response, grant };
 }
 
-async function body(req) {
+function orderInput(req, raw) {
   if (req.headers['content-type']?.split(';')[0].trim() !== 'application/json') {
     throw Object.assign(new Error(), { status: 400, code: 'INVALID_INPUT' });
   }
-  const parts = [];
-  let size = 0;
-  for await (const chunk of req) {
-    size += chunk.length;
-    if (size > 65536) throw Object.assign(new Error(), { status: 413, code: 'INVALID_INPUT' });
-    parts.push(chunk);
-  }
   let value;
-  try { value = JSON.parse(Buffer.concat(parts).toString('utf8')); } catch {
+  try { value = JSON.parse(raw.toString('utf8')); } catch {
     throw Object.assign(new Error(), { status: 400, code: 'INVALID_INPUT' });
   }
   if (!value || Array.isArray(value) || typeof value !== 'object' ||
@@ -48,22 +45,52 @@ async function body(req) {
   return value;
 }
 
-// Control authority is pinned by the App operator, never by browser input.
-const identityFields = ['CLOUD_APP_ID', 'CLOUD_WORKSPACE_ID', 'CLOUD_APP_IDENTITY_PUBLIC_KEYS', 'CLOUD_CONTROL_USER_IDS', 'CLOUD_CONTROL_CODE'];
-let controlAuthority;
+// Identity and user grants are pinned by the App operator, never browser input.
+const identityFields = ['CLOUD_APP_ID', 'CLOUD_WORKSPACE_ID', 'CLOUD_APP_IDENTITY_PUBLIC_KEYS'];
+let verifyIdentity;
 if (identityFields.some((key) => process.env[key])) {
-  if (identityFields.some((key) => !process.env[key])) throw new Error('CONTROL_CONFIGURATION_INVALID');
-  const users = process.env.CLOUD_CONTROL_USER_IDS.split(',');
-  if (!users.length || users.some((id) => !/^[1-9]\d{0,18}$/.test(id) || BigInt(id) > 9223372036854775807n) ||
-      new Set(users).size !== users.length || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(process.env.CLOUD_CONTROL_CODE)) {
+  if (identityFields.some((key) => !process.env[key])) throw new Error('APP_IDENTITY_CONFIGURATION_INVALID');
+  verifyIdentity = createCloudAppRequestVerifier({ appID: process.env.CLOUD_APP_ID,
+    workspaceID: process.env.CLOUD_WORKSPACE_ID, publicKeys: process.env.CLOUD_APP_IDENTITY_PUBLIC_KEYS });
+}
+function userGrant(name) {
+  if (!process.env[name]) return undefined;
+  const users = process.env[name].split(',');
+  if (!verifyIdentity || !users.length || users.some((id) => !/^[1-9]\d{0,18}$/.test(id) || BigInt(id) > 9223372036854775807n) ||
+      new Set(users).size !== users.length) throw new Error('APP_IDENTITY_CONFIGURATION_INVALID');
+  return new Set(users);
+}
+const dataUsers = userGrant('CLOUD_DATA_USER_IDS');
+let controlAuthority;
+if (process.env.CLOUD_CONTROL_USER_IDS || process.env.CLOUD_CONTROL_CODE) {
+  const users = userGrant('CLOUD_CONTROL_USER_IDS');
+  if (!users || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(process.env.CLOUD_CONTROL_CODE || '')) {
     throw new Error('CONTROL_CONFIGURATION_INVALID');
   }
-  controlAuthority = {
-    users: new Set(users), code: process.env.CLOUD_CONTROL_CODE,
-    verify: createCloudAppRequestVerifier({ appID: process.env.CLOUD_APP_ID,
-      workspaceID: process.env.CLOUD_WORKSPACE_ID, publicKeys: process.env.CLOUD_APP_IDENTITY_PUBLIC_KEYS }),
-  };
+  controlAuthority = { users, code: process.env.CLOUD_CONTROL_CODE, verify: verifyIdentity };
 }
+async function orderSubject(req) {
+  if (!dataUsers) throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_UNAVAILABLE' });
+  const parts = []; let size = 0;
+  for await (const part of req) {
+    size += part.length;
+    if (size > 65536) throw Object.assign(new Error(), { status: 413, code: 'INVALID_INPUT' });
+    parts.push(part);
+  }
+  const raw = Buffer.concat(parts);
+  let subject;
+  try {
+    subject = verifyIdentity({ assertion: req.headers[APP_REQUEST_IDENTITY_HEADER.toLowerCase()],
+      method: req.method, requestURI: req.url, body: raw });
+  } catch { throw Object.assign(new Error(), { status: 401, code: 'APP_IDENTITY_INVALID' }); }
+  if (!dataUsers.has(subject.userID)) throw Object.assign(new Error(), { status: 403, code: 'APP_DATA_FORBIDDEN' });
+  if (req.url !== '/api/orders' || (req.method === 'GET' && raw.length)) {
+    throw Object.assign(new Error(), { status: 400, code: 'INVALID_INPUT' });
+  }
+  return { subject, raw };
+}
+const orderIdentity = (kind, subject, intent) => kind + ':' + createHash('sha256')
+  .update(JSON.stringify([subject.appID, subject.workspaceID, subject.userID, intent])).digest('hex');
 
 async function deviceControl(req) {
   if (!controlAuthority || !process.env.TIER0_CONTROL_API_KEY?.trim()) {
@@ -120,10 +147,16 @@ const server = createServer(async (req, res) => {
       return reply(res, 200, await deviceControl(req));
     }
     if (req.method === 'GET' && path === '/api/orders') {
-      const { response, grant } = await ordersContext('record:read');
-      const records = await client.unsV2.recordFind({ collectionId: grant.collectionId, limit: 20 });
+      const { subject } = await orderSubject(req);
+      const { response, grant } = await ordersContext('record:read', subject);
+      const records = await client.unsV2.recordFind({ collectionId: grant.collectionId,
+        filter: { ownerUserId: { $eq: subject.userID } },
+        projection: { orderNo: 1, amount: 1, status: 1, ownerUserId: 1 }, limit: 20 });
+      if (records.data.items.some((item) => item.data.ownerUserId !== subject.userID)) {
+        throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_POLICY_UNAVAILABLE' });
+      }
       return reply(res, 200, {
-        app: response.data.name,
+        app: response.data.name, operator: subject.userID,
         policyRevision: response.data.revision,
         canWrite: grant.permissions.includes('record:write'),
         items: records.data.items.map((item) => ({ id: item.id, revision: item.revision, data: {
@@ -132,11 +165,13 @@ const server = createServer(async (req, res) => {
       });
     }
     if (req.method === 'POST' && path === '/api/orders') {
-      const input = await body(req);
-      const { grant } = await ordersContext('record:write');
+      const { subject, raw } = await orderSubject(req);
+      const input = orderInput(req, raw);
+      const { grant } = await ordersContext('record:write', subject);
       const result = await client.unsV2.recordInsertOne({
-        collectionId: grant.collectionId, id: input.orderNo, idempotencyKey: input.idempotencyKey,
-        data: { orderNo: input.orderNo, amount: input.amount, status: 'draft' },
+        collectionId: grant.collectionId, id: orderIdentity('app-order', subject, input.orderNo),
+        idempotencyKey: orderIdentity('app-order-intent', subject, input.idempotencyKey),
+        data: { orderNo: input.orderNo, amount: input.amount, status: 'draft', ownerUserId: subject.userID },
       });
       return reply(res, 200, { status: result.data.status, replayed: result.data.replayed });
     }
