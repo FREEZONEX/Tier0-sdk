@@ -4,10 +4,21 @@ import { createClient } from '@tier0/sdk/cloud';
 import { createHash } from 'node:crypto';
 import { createCloudAppRequestVerifier, APP_REQUEST_IDENTITY_HEADER } from '@tier0/sdk/cloud/server';
 
-const client = createClient({ transportTimeoutMs: 15000 });
+// Explicit deployment migration: legacy preserves v5 receipts and App-side filtering.
+// Core never falls back to legacy. Enable writes only after reconciling old receipts
+// and provisioning cloud-app-data-rule/v1: ownerField=ownerUserId, stateField=status,
+// initialState=draft, own rows, writeFields=[orderNo,amount], and readFields including
+// orderNo, amount, status AND ownerUserId. Schema alone does not grant field access.
+const dataMode = process.env.CLOUD_APP_DATA_MODE ?? 'legacy';
+const coreWrite = process.env.CLOUD_APP_CORE_WRITE_ENABLED ?? 'false';
+if (!['legacy', 'core'].includes(dataMode) || !['true', 'false'].includes(coreWrite) ||
+    (dataMode !== 'core' && coreWrite === 'true')) throw new Error('APP_DATA_CONFIGURATION_INVALID');
+const receiptDomain = dataMode === 'core' ? 'core-app-data/v1' : 'legacy-app-data/v5';
+const coreWritesEnabled = dataMode === 'core' && coreWrite === 'true';
 const staticFiles = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
+  ['/order-intent.mjs', ['order-intent.mjs', 'text/javascript; charset=utf-8']],
   ['/style.css', ['style.css', 'text/css; charset=utf-8']],
 ]);
 
@@ -16,7 +27,7 @@ function reply(res, status, value) {
   res.end(JSON.stringify(value));
 }
 
-async function ordersContext(permission, subject) {
+async function ordersContext(client, permission, subject) {
   const response = await client.unsV2.dataAppContext({});
   const grant = response.data.collections.find((item) => item.alias === 'orders');
   if (response.data.appId !== subject.appID || !grant || !grant.permissions.includes(permission)) throw Object.assign(new Error(), { status: 403, code: 'FORBIDDEN' });
@@ -36,11 +47,17 @@ function orderInput(req, raw) {
     throw Object.assign(new Error(), { status: 400, code: 'INVALID_INPUT' });
   }
   if (!value || Array.isArray(value) || typeof value !== 'object' ||
-      Object.keys(value).some((key) => !['orderNo', 'amount', 'idempotencyKey'].includes(key)) ||
+      Object.keys(value).some((key) => !['orderNo', 'amount', 'idempotencyKey', ...(dataMode === 'core' ? ['receiptDomain'] : [])].includes(key)) ||
       typeof value.orderNo !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(value.orderNo) ||
       !Number.isSafeInteger(value.amount) || value.amount < 0 ||
       typeof value.idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{16,128}$/.test(value.idempotencyKey)) {
     throw Object.assign(new Error(), { status: 400, code: 'INVALID_INPUT' });
+  }
+  // Old browsers/intents cannot enter a new receipt domain by changing a hash or
+  // silently minting a random key. Core UI requires an explicit new-intent action.
+  if (dataMode === 'core' && (value.receiptDomain !== receiptDomain ||
+      !/^core-v1-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value.idempotencyKey))) {
+    throw Object.assign(new Error(), { status: 409, code: 'NEW_DATA_INTENT_REQUIRED' });
   }
   return value;
 }
@@ -61,6 +78,7 @@ function userGrant(name) {
   return new Set(users);
 }
 const dataUsers = userGrant('CLOUD_DATA_USER_IDS');
+if (dataMode === 'core' && !dataUsers) throw new Error('APP_DATA_CONFIGURATION_INVALID');
 let controlAuthority;
 if (process.env.CLOUD_CONTROL_USER_IDS || process.env.CLOUD_CONTROL_CODE) {
   const users = userGrant('CLOUD_CONTROL_USER_IDS');
@@ -88,6 +106,23 @@ async function orderSubject(req) {
     throw Object.assign(new Error(), { status: 400, code: 'INVALID_INPUT' });
   }
   return { subject, raw };
+}
+function orderClient(req) {
+  if (dataMode === 'legacy') return createClient({ transportTimeoutMs: 15000 });
+  // Read only after runtime identity verification. The deployment must admit only
+  // the trusted App Gateway, which strips caller headers and issues this proof
+  // (tier0.app-data-subject/v1, aud=tier0-uns-data). Runtime assertion has another
+  // audience: never copy it here. Core verifies proof claims; this App never does.
+  const header = 'x-tier0-app-data-subject';
+  const count = req.rawHeaders.filter((value, index) => index % 2 === 0 && value.toLowerCase() === header).length;
+  if (count === 0) throw Object.assign(new Error(), { status: 401, code: 'APP_DATA_SUBJECT_REQUIRED' });
+  if (count !== 1 || typeof req.headers[header] !== 'string') {
+    throw Object.assign(new Error(), { status: 401, code: 'APP_DATA_SUBJECT_INVALID' });
+  }
+  try {
+    // Immutable proof snapshot, used by context/find/insert in this request only.
+    return createClient({ transportTimeoutMs: 15000, unsV2AppDataSubject: req.headers[header] });
+  } catch { throw Object.assign(new Error(), { status: 401, code: 'APP_DATA_SUBJECT_INVALID' }); }
 }
 const orderIdentity = (kind, subject, intent) => kind + ':' + createHash('sha256')
   .update(JSON.stringify([subject.appID, subject.workspaceID, subject.userID, intent])).digest('hex');
@@ -148,9 +183,12 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === 'GET' && path === '/api/orders') {
       const { subject } = await orderSubject(req);
-      const { response, grant } = await ordersContext('record:read', subject);
+      const client = orderClient(req);
+      const { response, grant } = await ordersContext(client, 'record:read', subject);
       const records = await client.unsV2.recordFind({ collectionId: grant.collectionId,
-        filter: { ownerUserId: { $eq: subject.userID } },
+        // Core must enforce row scope itself; a successful App filter is no proof
+        // of Core enforcement. Keep the result owner check as a separate guard.
+        ...(dataMode === 'legacy' ? { filter: { ownerUserId: { $eq: subject.userID } } } : {}),
         projection: { orderNo: 1, amount: 1, status: 1, ownerUserId: 1 }, limit: 20 });
       if (records.data.items.some((item) => item.data.ownerUserId !== subject.userID)) {
         throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_POLICY_UNAVAILABLE' });
@@ -158,7 +196,8 @@ const server = createServer(async (req, res) => {
       return reply(res, 200, {
         app: response.data.name, operator: subject.userID,
         policyRevision: response.data.revision,
-        canWrite: grant.permissions.includes('record:write'),
+        dataMode, receiptDomain,
+        canWrite: grant.permissions.includes('record:write') && (dataMode === 'legacy' || coreWritesEnabled),
         items: records.data.items.map((item) => ({ id: item.id, revision: item.revision, data: {
           orderNo: item.data.orderNo, amount: item.data.amount, status: item.data.status,
         } })),
@@ -166,12 +205,17 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === 'POST' && path === '/api/orders') {
       const { subject, raw } = await orderSubject(req);
+      const client = orderClient(req);
+      if (dataMode === 'core' && !coreWritesEnabled) {
+        throw Object.assign(new Error(), { status: 403, code: 'APP_DATA_READ_ONLY' });
+      }
       const input = orderInput(req, raw);
-      const { grant } = await ordersContext('record:write', subject);
+      const { grant } = await ordersContext(client, 'record:write', subject);
       const result = await client.unsV2.recordInsertOne({
         collectionId: grant.collectionId, id: orderIdentity('app-order', subject, input.orderNo),
-        idempotencyKey: orderIdentity('app-order-intent', subject, input.idempotencyKey),
-        data: { orderNo: input.orderNo, amount: input.amount, status: 'draft', ownerUserId: subject.userID },
+        idempotencyKey: orderIdentity(dataMode === 'core' ? 'app-order-intent-core-v1' : 'app-order-intent', subject, input.idempotencyKey),
+        data: { orderNo: input.orderNo, amount: input.amount,
+          ...(dataMode === 'legacy' ? { status: 'draft', ownerUserId: subject.userID } : {}) },
       });
       return reply(res, 200, { status: result.data.status, replayed: result.data.replayed });
     }

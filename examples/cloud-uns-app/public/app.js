@@ -1,5 +1,10 @@
+import { receiptDomains, intentStorageKey, orderIntent } from './order-intent.mjs';
+
 const messages = {
   zh: {
+    dataNew: '发起新保存', dataMigration: '数据权限已升级：先核对之前的保存结果，再明确发起新保存；旧保存请求不会自动重放。',
+    dataNewConfirm: '请确认已核对之前及尚未确认的保存结果。继续将发起一次新保存，旧保存请求不会自动重放。是否继续？',
+    dataIntentReady: '新保存请求已就绪；再次保存相同内容将使用同一请求标识', dataReconcile: '请先核对尚未确认的保存结果；当前不允许发起新保存',
     controlTitle: '设备采集', controlHelp: '通过应用服务端执行已授权的采集操作。重放保留同一请求标识。', controlRun: '执行或重放', controlNew: '新建操作',
     controlLoading: '正在读取控制权限…', controlReady: '已就绪，请确认后执行', controlBusy: '正在执行…', controlDone: '操作已完成', controlReplay: '已返回原操作结果',
     controlUnavailable: '控制不可用，请联系管理员检查应用配置和授权', controlUnknown: '操作结果尚未确认，请先核对设备；重放会使用原请求标识',
@@ -10,6 +15,9 @@ const messages = {
     unknown: '保存结果尚未确认。请刷新列表核对；再次点击保存会使用相同请求标识。', failed: '请求失败', draft: '草稿',
   },
   en: {
+    dataNew: 'Start new save', dataMigration: 'Data permissions have been upgraded. Check previous save results before explicitly starting a new save. Previous save requests will not replay automatically.',
+    dataNewConfirm: 'Confirm that you have checked previous and uncertain save results. Continuing starts a new save; previous save requests will not replay automatically. Continue?',
+    dataIntentReady: 'New save request ready; saving the same contents keeps the same request identity', dataReconcile: 'Check the uncertain save result before starting a new save',
     controlTitle: 'Device collection', controlHelp: 'Run an authorized collection through this App server. Replay keeps the same request identity.', controlRun: 'Execute or replay', controlNew: 'New operation',
     controlLoading: 'Loading control access…', controlReady: 'Ready. Confirm before executing.', controlBusy: 'Executing…', controlDone: 'Operation completed', controlReplay: 'Original operation result returned',
     controlUnavailable: 'Control unavailable. Ask an administrator to check App configuration and grants.', controlUnknown: 'Operation outcome is unconfirmed. Check the device first; replay preserves the original request identity.',
@@ -25,6 +33,8 @@ let language = localStorage.getItem('uns-orders-language') === 'en' ? 'en' : 'zh
 let canWrite = false;
 let dataIntentStorageKey;
 let dataOperator;
+let dataMode = 'legacy';
+let dataReceiptDomain = receiptDomains.legacy;
 let busy = false;
 let controlState = 'controlLoading';
 let controlError = '';
@@ -57,6 +67,7 @@ function errorState(error) {
   $('#employee').textContent = '';
   $('#records').replaceChildren();
   $('#save').disabled = true;
+  $('#data-new').disabled = true;
   $('#write-state').textContent = text('noAccess');
   if (error.status === 403 || error.status === 401) status('denied', true, error.code);
   else status(error.code === 'OUTCOME_UNKNOWN' ? 'unknown' : 'failed', true, error.code);
@@ -65,15 +76,23 @@ async function refresh() {
   $('#refresh').disabled = true;
   canWrite = false;
   $('#save').disabled = true;
+  $('#data-new').disabled = true;
   $('#records').replaceChildren();
   status('loading');
   try {
     const result = await request('/api/orders');
     if (typeof result.operator !== 'string' || !/^[1-9]\d{0,18}$/.test(result.operator)) throw new Error('Invalid employee context');
-    const storageKey = `uns-orders-intent:v2:${location.host}:${result.operator}`;
+    // Missing mode metadata is the old v5 server only. Never reinterpret a Core
+    // receipt as legacy or move a stored intent into another receipt domain.
+    const mode = result.dataMode ?? 'legacy';
+    const domain = result.receiptDomain ?? (result.dataMode === undefined ? receiptDomains.legacy : undefined);
+    if (!Object.hasOwn(receiptDomains, mode) || domain !== receiptDomains[mode]) throw new Error('Invalid receipt domain');
+    const storageKey = intentStorageKey(location.host, result.operator, mode);
     if (dataIntentStorageKey && dataIntentStorageKey !== storageKey) $('#order-form').reset();
     dataOperator = result.operator;
     dataIntentStorageKey = storageKey;
+    dataMode = mode;
+    dataReceiptDomain = domain;
     canWrite = result.canWrite === true;
     $('#app-name').textContent = result.app;
     $('#records').replaceChildren();
@@ -87,6 +106,9 @@ async function refresh() {
     status(result.items.length ? 'loaded' : 'empty');
     translate();
     $('#save').disabled = !canWrite || busy;
+    $('#data-new').hidden = mode !== 'core';
+    $('#data-new').disabled = !canWrite || busy;
+    if (mode === 'core') status('dataMigration');
   } catch (error) { errorState(error); }
   finally { $('#refresh').disabled = false; }
 }
@@ -98,18 +120,44 @@ $('#order-form').addEventListener('submit', async (event) => {
   const fingerprint = JSON.stringify(input);
   let intent;
   try { intent = JSON.parse(localStorage.getItem(dataIntentStorageKey)); } catch { /* Start a new intent. */ }
-  if (intent?.fingerprint !== fingerprint) {
-    intent = { fingerprint, key: crypto.randomUUID() };
+  try {
+    intent = orderIntent({ mode: dataMode, stored: intent, fingerprint, createKey: () => crypto.randomUUID() });
     localStorage.setItem(dataIntentStorageKey, JSON.stringify(intent));
+  } catch {
+    status('dataMigration', true);
+    return;
   }
   busy = true;
   $('#save').disabled = true;
+  $('#data-new').disabled = true;
   try {
-    const result = await request('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...input, idempotencyKey: intent.key }) });
+    const result = await request('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...input, idempotencyKey: intent.key,
+      ...(dataMode === 'core' ? { receiptDomain: dataReceiptDomain } : {}) }) });
+    if (dataMode === 'core' && intent.outcomeUnknown) {
+      delete intent.outcomeUnknown;
+      localStorage.setItem(dataIntentStorageKey, JSON.stringify(intent));
+    }
     await refresh();
     status(result.replayed ? 'replayed' : 'saved');
-  } catch (error) { errorState(error); }
-  finally { busy = false; $('#save').disabled = !canWrite; }
+  } catch (error) {
+    if (dataMode === 'core' && error.code === 'OUTCOME_UNKNOWN') {
+      localStorage.setItem(dataIntentStorageKey, JSON.stringify({ ...intent, outcomeUnknown: true }));
+    }
+    errorState(error);
+  }
+  finally { busy = false; $('#save').disabled = !canWrite; $('#data-new').disabled = !canWrite; }
+});
+$('#data-new').addEventListener('click', () => {
+  if (busy || !canWrite || dataMode !== 'core' || !dataIntentStorageKey) return;
+  const form = new FormData($('#order-form'));
+  const fingerprint = JSON.stringify({ orderNo: String(form.get('orderNo')), amount: Number(form.get('amount')) });
+  let stored;
+  try { stored = JSON.parse(localStorage.getItem(dataIntentStorageKey)); } catch { /* No Core intent yet. */ }
+  if (stored?.outcomeUnknown) { status('dataReconcile', true); return; }
+  if (!window.confirm(text('dataNewConfirm'))) return;
+  const intent = orderIntent({ mode: dataMode, stored, fingerprint, explicitNew: true, createKey: () => crypto.randomUUID() });
+  localStorage.setItem(dataIntentStorageKey, JSON.stringify(intent));
+  status('dataIntentReady');
 });
 $('#refresh').addEventListener('click', refresh);
 $('#language').addEventListener('change', (event) => {

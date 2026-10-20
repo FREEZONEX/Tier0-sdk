@@ -24,6 +24,7 @@
           <label><span data-i18n="orderNo">工单号</span><input name="orderNo" required maxlength="64" pattern="[A-Za-z0-9_-]+" autocomplete="off" /></label>
           <label><span data-i18n="amount">金额（分）</span><input name="amount" required type="number" min="0" max="9007199254740991" step="1" /></label>
           <button id="save" type="submit" disabled data-i18n="save">保存</button>
+          <button id="data-new" type="button" hidden disabled data-i18n="dataNew">发起新保存</button>
         </form>
         <p id="write-state" class="muted"></p>
       </section>

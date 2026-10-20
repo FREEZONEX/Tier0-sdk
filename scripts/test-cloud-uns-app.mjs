@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -27,6 +27,11 @@ const dataUsers = ['9007199254740995', '9007199254740996'];
 let dataRequests = 0;
 let leakRows = false;
 let invalidPolicy = false;
+let appDataMode = 'legacy';
+let hideOwner = false;
+const proofs = new Map(dataUsers.map((userID, index) => [userID, `fixture.employee_${index}.signature`]));
+const dataExchanges = [];
+let pendingContexts;
 function signedRequest(method, raw, overrides = {}, requestURI = '/api/device/telemetry') {
     const now = Math.floor(Date.now() / 1000);
     const payload = { ver: contract.version, iss: contract.issuer, aud: contract.audience, sub: '9007199254740995',
@@ -39,6 +44,7 @@ const gateway = createServer(async (req, res) => {
   let body = '';
   for await (const part of req) body += part;
   if (req.url.startsWith('/openapi/v1/controls/')) {
+    assert.equal(req.headers['x-tier0-app-data-subject'], undefined, 'Control never receives a data proof');
     assert.equal(req.headers['x-api-key'], 'fixture-control-key-not-production');
     if (controlMode === 'revoked') { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ errorCode: 'CONTROL_FORBIDDEN', message: 'must-not-expose-private-detail' })); }
     res.setHeader('Content-Type', 'application/json');
@@ -51,42 +57,78 @@ const gateway = createServer(async (req, res) => {
     return res.end(JSON.stringify({ code: controlCode, contractVersion: '1.0', runID: 'fixture-control-run', status: 'completed', replayed, result: { privateSourceDetail: 'must-not-expose-private-detail' } }));
   }
   dataRequests++;
+  const proof = req.headers['x-tier0-app-data-subject'];
+  const proofUser = [...proofs].find(([, value]) => value === proof)?.[0];
+  dataExchanges.push({ path: req.url, body: JSON.parse(body), proof });
+  if (appDataMode === 'core') {
+    if (!proofUser) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ code: 401, msg: 'private rejected proof', requestId: 'fixture-proof-rejected', data: null,
+        error: { code: 'APP_DATA_SUBJECT_INVALID', retryable: false, details: [],
+          retryAdvice: { recommendedAction: 'doNotRetry', canRetrySameRequest: false, keepIdempotencyKey: false } } }));
+    }
+  }
+  else assert.equal(proof, undefined, 'legacy never forwards an inbound data proof');
   assert.equal(req.headers['x-api-key'], 'fixture-key-not-production');
   const reply = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(value)); };
   if (mode === 'revoked') return reply(403, {
     code: 403, msg: 'must-not-expose-private-detail', requestId: 'fixture-revoked',
     error: { code: 'FORBIDDEN', retryable: false },
   });
-  if (req.url === '/openapi/v2/uns/app/context') return reply(200, {
+  if (req.url === '/openapi/v2/uns/app/context') {
+    if (pendingContexts) {
+      const pending = pendingContexts;
+      await new Promise((resolve) => { pending.push(resolve); if (pending.length === 2) { pendingContexts = undefined; pending.forEach((release) => release()); } });
+    }
+    return reply(200, {
     code: 200, requestId: 'fixture-context', msg: 'success', data: {
       appId: appID, name: 'SDK App fixture', revision: 1, platformPermissions: [],
       collections: [{ alias: 'orders', collectionId, permissions: mode === 'read' ? ['record:read'] : ['record:read', 'record:write'], recordSchema: invalidPolicy ? { type: 'object' } : { type: 'object', properties: { ownerUserId: { type: 'string' } }, required: ['ownerUserId'] } }],
     },
-  });
+    });
+  }
   if (req.url === `/openapi/v2/uns/collections/${collectionId}/records:find`) {
     const input = JSON.parse(body);
-    assert.deepEqual(Object.keys(input.filter), ['ownerUserId']);
-    const userID = input.filter.ownerUserId.$eq;
+    if (appDataMode === 'core') assert.equal(Object.hasOwn(input, 'filter'), false, 'Core gets no App-side owner filter');
+    else assert.deepEqual(Object.keys(input.filter), ['ownerUserId']);
+    const userID = appDataMode === 'core' ? proofUser : input.filter.ownerUserId.$eq;
     assert.ok(dataUsers.includes(userID));
     assert.deepEqual(input.projection, { orderNo: 1, amount: 1, status: 1, ownerUserId: 1 });
     return reply(200, { code: 200, requestId: 'fixture-find', msg: 'success', data: {
-      items: leakRows ? items : items.filter((item) => item.data.ownerUserId === userID), pageInfo: { hasMore: false },
+      items: (leakRows ? items : items.filter((item) => item.data.ownerUserId === userID)).map((item) => {
+        if (!hideOwner) return item;
+        const { ownerUserId, ...data } = item.data;
+        return { ...item, data };
+      }), pageInfo: { hasMore: false },
     } });
   }
   if (req.url === `/openapi/v2/uns/collections/${collectionId}/records`) {
     insertAttempts++;
     if (mode === 'unknown') return req.socket.destroy();
     const input = JSON.parse(body);
-    const replayed = intents.has(input.idempotencyKey);
+    if (appDataMode === 'core') {
+      assert.deepEqual(Object.keys(input.data).sort(), ['amount', 'orderNo']);
+      assert.ok(input.idempotencyKey.startsWith('app-order-intent-core-v1:'));
+      assert.equal(input.id, 'app-order:' + createHash('sha256')
+        .update(JSON.stringify([appID, workspaceID, proofUser, input.data.orderNo])).digest('hex'), 'order identity is unchanged across receipt domains');
+    }
+    const receipt = `${appDataMode}:${input.idempotencyKey}`;
+    const replayed = intents.has(receipt);
     if (!replayed) {
-      intents.set(input.idempotencyKey, true);
-      items.push({ id: input.id, revision: 1, data: input.data });
+      intents.set(receipt, true);
+      // Fixture models stamping only to verify App wiring. This is NOT Core acceptance.
+      items.push({ id: input.id, revision: 1, data: appDataMode === 'core' ? { ...input.data, ownerUserId: proofUser, status: 'draft' } : input.data });
     }
     return reply(200, { code: 200, msg: 'success', requestId: 'fixture-insert', data: { status: 'committed', insertedId: input.id, replayed } });
   }
   reply(404, { code: 404 });
 });
 let child;
+let childOutput = '';
+function captureChild() {
+  child.stdout.on('data', (value) => { childOutput += value; });
+  child.stderr.on('data', (value) => { childOutput += value; });
+}
 try {
   gateway.listen(0, '127.0.0.1');
   await once(gateway, 'listening');
@@ -105,9 +147,11 @@ try {
   child = spawn(process.execPath, ['.runtime/server.mjs'], {
     cwd: app, stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, PORT: String(port), TIER0_API_HOST: `http://127.0.0.1:${gateway.address().port}`, TIER0_API_KEY: 'fixture-key-not-production',
+      CLOUD_APP_DATA_MODE: undefined, CLOUD_APP_CORE_WRITE_ENABLED: undefined,
       TIER0_CONTROL_API_KEY: 'fixture-control-key-not-production', CLOUD_APP_ID: appID, CLOUD_WORKSPACE_ID: workspaceID,
       CLOUD_APP_IDENTITY_PUBLIC_KEYS: identityPublicKeys, CLOUD_DATA_USER_IDS: dataUsers.join(','), CLOUD_CONTROL_USER_IDS: '9007199254740995', CLOUD_CONTROL_CODE: controlCode },
   });
+  captureChild();
   const host = `http://127.0.0.1:${port}`;
   let ready = false;
   for (let attempt = 0; attempt < 50; attempt++) {
@@ -120,12 +164,16 @@ try {
   const html = await (await fetch(host)).text();
   assert.ok(html.includes('order-form'));
   assert.ok(!html.includes('fixture-key-not-production'));
+  const intentModule = await fetch(`${host}/order-intent.mjs`);
+  assert.equal(intentModule.status, 200);
+  assert.ok((await intentModule.text()).includes('NEW_DATA_INTENT_REQUIRED'), 'offline package serves the browser migration helper');
   const input = { orderNo: 'acceptance-001', amount: 100, idempotencyKey: 'intent-acceptance-001' };
   const dataPath = '/api/orders';
   const dataRequest = (method, value, userID = dataUsers[0], options = {}) => {
     const raw = value === undefined ? '' : JSON.stringify(value);
     const uri = options.uri || dataPath;
     const headers = { 'Content-Type': 'application/json' };
+    if (appDataMode === 'core' && options.proof !== null) headers['X-Tier0-App-Data-Subject'] = options.proof ?? proofs.get(userID);
     if (options.assertion !== null) headers[contract.header] = options.assertion || signedRequest(method, raw, { sub: userID, ...options.claims }, uri);
     return fetch(host + uri, { method, headers, ...(value === undefined ? {} : { body: raw }) });
   };
@@ -212,14 +260,139 @@ try {
   child.kill('SIGTERM'); await once(child, 'exit');
   child = spawn(process.execPath, ['.runtime/server.mjs'], { cwd: app, stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, PORT: String(port), TIER0_API_HOST: `http://127.0.0.1:${gateway.address().port}`, TIER0_API_KEY: 'fixture-key-not-production',
+      CLOUD_APP_DATA_MODE: 'legacy', CLOUD_APP_CORE_WRITE_ENABLED: 'false',
       TIER0_CONTROL_API_KEY: '', CLOUD_APP_ID: appID, CLOUD_WORKSPACE_ID: workspaceID, CLOUD_APP_IDENTITY_PUBLIC_KEYS: identityPublicKeys,
       CLOUD_CONTROL_USER_IDS: '9007199254740995', CLOUD_CONTROL_CODE: controlCode } });
+  captureChild();
   for (let attempt = 0; attempt < 50; attempt++) {
     try { if ((await fetch(`${host}/healthz`)).ok) break; } catch { /* Wait for this owned replacement child. */ }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   assert.equal((await invoke(intent)).status, 503); assert.equal(controlAttempts, beforeUnknown + 1, 'missing control Key cannot use the data Key');
   assert.equal((await listFor()).status, 503, 'missing employee policy cannot fall back to a shared anonymous data Key');
+  async function startCore(writeEnabled = false) {
+    child.kill('SIGTERM'); await once(child, 'exit');
+    appDataMode = 'core'; mode = 'write'; controlMode = 'active';
+    child = spawn(process.execPath, ['.runtime/server.mjs'], { cwd: app, stdio: ['ignore', 'pipe', 'pipe'], env: {
+      ...process.env, PORT: String(port), TIER0_API_HOST: `http://127.0.0.1:${gateway.address().port}`,
+      TIER0_API_KEY: 'fixture-key-not-production', TIER0_CONTROL_API_KEY: 'fixture-control-key-not-production',
+      CLOUD_APP_ID: appID, CLOUD_WORKSPACE_ID: workspaceID, CLOUD_APP_IDENTITY_PUBLIC_KEYS: identityPublicKeys,
+      CLOUD_DATA_USER_IDS: dataUsers.join(','), CLOUD_CONTROL_USER_IDS: dataUsers[0], CLOUD_CONTROL_CODE: controlCode,
+      CLOUD_APP_DATA_MODE: 'core', CLOUD_APP_CORE_WRITE_ENABLED: writeEnabled ? 'true' : undefined,
+    } });
+    captureChild();
+    let ready = false;
+    for (let attempt = 0; attempt < 50; attempt++) {
+      try { ready = (await fetch(`${host}/healthz`)).ok; } catch { /* Owned local process only. */ }
+      if (ready) break;
+      assert.equal(child.exitCode, null);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    assert.ok(ready);
+  }
+  await startCore();
+  const coreStart = dataRequests;
+  assert.equal((await dataRequest('GET', undefined, dataUsers[0], { proof: null })).status, 401);
+  for (const proof of ['bad', 'a.b.c,a.b.c', 'a.b.c a.b.c']) {
+    const response = await dataRequest('GET', undefined, dataUsers[0], { proof });
+    assert.equal(response.status, 401); assert.deepEqual(await response.json(), { code: 'APP_DATA_SUBJECT_INVALID' });
+  }
+  assert.equal((await dataRequest('GET', undefined, dataUsers[0], { assertion: 'forged', proof: 'bad' })).status, 401);
+  // Node's fetch joins duplicate fields; send raw duplicate header lines as well.
+  const duplicate = await new Promise((resolve, reject) => {
+    const request = httpRequest(host + dataPath, { method: 'GET', headers: [
+      'Host', new URL(host).host,
+      contract.header, signedRequest('GET', '', {}, dataPath),
+      'X-Tier0-App-Data-Subject', proofs.get(dataUsers[0]), 'x-tier0-app-data-subject', proofs.get(dataUsers[0]),
+    ] }, (response) => { response.resume(); response.on('end', () => resolve(response.statusCode)); });
+    request.on('error', reject); request.end();
+  });
+  assert.equal(duplicate, 401);
+  assert.equal(dataRequests, coreStart, 'invalid identity/proof never reaches Core, with no legacy fallback');
+  const rejectedProofStart = dataRequests;
+  const rejectedProof = await dataRequest('GET', undefined, dataUsers[0], { proof: 'fixture.rejected.signature' });
+  assert.equal(rejectedProof.status, 401);
+  assert.deepEqual(await rejectedProof.json(), { code: 'APP_DATA_SUBJECT_INVALID' });
+  assert.equal(dataRequests, rejectedProofStart + 1, 'Core proof rejection is single-shot with no fallback');
+  const readOnly = await (await listFor()).json();
+  assert.equal(readOnly.dataMode, 'core'); assert.equal(readOnly.receiptDomain, 'core-app-data/v1');
+  assert.equal(readOnly.canWrite, false);
+  const beforeCoreWrite = insertAttempts;
+  assert.equal((await post(input)).status, 403);
+  assert.equal(insertAttempts, beforeCoreWrite, 'Core defaults to read-only');
+  const concurrentStart = dataExchanges.length;
+  pendingContexts = [];
+  const concurrent = await Promise.all(dataUsers.map(async (userID) => (await listFor(userID)).json()));
+  for (let i = 0; i < dataUsers.length; i++) {
+    assert.equal(concurrent[i].operator, dataUsers[i]); assert.equal(concurrent[i].items.length, 1);
+  }
+  const exchanges = dataExchanges.slice(concurrentStart);
+  assert.equal(exchanges.length, 4);
+  for (const proof of proofs.values()) {
+    assert.equal(exchanges.filter((exchange) => exchange.proof === proof).length, 2, 'context and find share only their request proof');
+  }
+  leakRows = true;
+  assert.equal((await listFor()).status, 503, 'App checks owner if Core fixture leaks another user');
+  leakRows = false; hideOwner = true;
+  assert.equal((await listFor()).status, 503, 'owner must be readable under Core readFields');
+  hideOwner = false;
+  invalidPolicy = true;
+  assert.equal((await listFor()).status, 503, 'Core context must declare required string owner schema');
+  invalidPolicy = false;
+  const coreControl = await fetch(host + devicePath, { headers: {
+    [contract.header]: signedRequest('GET', ''), 'X-Tier0-App-Data-Subject': proofs.get(dataUsers[0]),
+  } });
+  assert.equal(coreControl.status, 200, 'Control remains independent of Core data delegation');
+  const coreControlReplay = await fetch(host + devicePath, { method: 'POST', headers: {
+    'Content-Type': 'application/json', [contract.header]: signedRequest('POST', JSON.stringify(intent)),
+    'X-Tier0-App-Data-Subject': proofs.get(dataUsers[0]),
+  }, body: JSON.stringify(intent) });
+  assert.equal(coreControlReplay.status, 200);
+  assert.deepEqual(await coreControlReplay.json(), { status: 'completed', replayed: true }, 'data-mode migration preserves the separate Control receipt');
+  await startCore(true);
+  assert.equal((await (await listFor()).json()).canWrite, true);
+  const newIntent = { orderNo: 'core-new-order', amount: 200, receiptDomain: 'core-app-data/v1', idempotencyKey: `core-v1-${randomUUID()}` };
+  const beforeIntentGate = dataRequests;
+  for (const old of [input, { ...newIntent, idempotencyKey: input.idempotencyKey }, { ...newIntent, receiptDomain: 'legacy-app-data/v5' }]) {
+    const response = await post(old); assert.equal(response.status, 409);
+    assert.deepEqual(await response.json(), { code: 'NEW_DATA_INTENT_REQUIRED' });
+  }
+  assert.equal(dataRequests, beforeIntentGate, 'old intents are rejected before context or mutation');
+  for (const field of ['ownerUserId', 'status', 'filter', 'collectionId']) {
+    assert.equal((await post({ ...newIntent, [field]: 'forged' })).status, 400);
+  }
+  const beforeNew = dataExchanges.length;
+  assert.deepEqual(await (await post(newIntent)).json(), { status: 'committed', replayed: false });
+  assert.deepEqual(await (await post(newIntent)).json(), { status: 'committed', replayed: true });
+  assert.equal(dataExchanges.length - beforeNew, 4);
+  assert.ok(dataExchanges.slice(beforeNew).every((exchange) => exchange.proof === proofs.get(dataUsers[0])));
+  const stamped = items.find((item) => item.data.orderNo === newIntent.orderNo);
+  assert.equal(stamped.data.ownerUserId, dataUsers[0]); assert.equal(stamped.data.status, 'draft');
+  const concurrentWriteStart = dataExchanges.length;
+  pendingContexts = [];
+  await Promise.all(dataUsers.map(async (userID, index) => {
+    const response = await post({ ...newIntent, orderNo: `core-concurrent-${index}`, idempotencyKey: `core-v1-${randomUUID()}` }, userID);
+    assert.equal(response.status, 200);
+  }));
+  const writes = dataExchanges.slice(concurrentWriteStart);
+  assert.equal(writes.length, 4);
+  for (const proof of proofs.values()) assert.equal(writes.filter((exchange) => exchange.proof === proof).length, 2);
+  assert.deepEqual(items.filter((item) => item.data.orderNo.startsWith('core-concurrent-')).map((item) => item.data.ownerUserId).sort(), [...dataUsers].sort());
+  mode = 'revoked';
+  const beforeRevoked = dataExchanges.length;
+  assert.equal((await listFor()).status, 403);
+  assert.equal(dataExchanges.length - beforeRevoked, 1, 'Core refusal does not trigger legacy retry');
+  mode = 'unknown';
+  const beforeCoreUnknown = insertAttempts;
+  const coreUnknown = await post({ ...newIntent, orderNo: 'core-unknown', idempotencyKey: `core-v1-${randomUUID()}` });
+  assert.equal(coreUnknown.status, 504); assert.deepEqual(await coreUnknown.json(), { code: 'OUTCOME_UNKNOWN' });
+  assert.equal(insertAttempts, beforeCoreUnknown + 1);
+  for (const proof of proofs.values()) {
+    assert.ok(!childOutput.includes(proof));
+    assert.ok(!JSON.stringify([...intents, ...items]).includes(proof), 'proofs never enter records or receipts');
+    assert.ok(!JSON.stringify(concurrent).includes(proof), 'proofs never enter browser responses');
+  }
+  console.log('PASS: Core request-scoped proof wiring, identity-first rejection, duplicate/missing proof, no owner filter, default read-only, explicit new-intent gate, service-stamp payload, isolated Control and no fallback/retry (local fixture, NOT Core acceptance)');
   console.log('PASS: verified employee data identity, exact request binding, mandatory owner filter, protected fields, per-user record/intent identities, cross-user isolation and fail-closed policy');
   console.log('PASS: App server Ed25519 validation, operator allowlist, strict control input, dedicated Key, stable business replay, revocation, redaction, unknown outcome once and no data-Key fallback');
   console.log('PASS: offline package/public SDK import, page, strict input, write/read/replay, read-only, revocation, redaction, unknown outcome without retry');
