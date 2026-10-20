@@ -1,5 +1,5 @@
 import { getClient, HttpClient, type ClientConfig } from './openapi/client.js';
-import { CloudTransport, CloudTransportError, DEFAULT_CLOUD_TRANSPORT_TIMEOUT_MS } from './cloud-transport.js';
+import { CloudTransport, CloudTransportError, DEFAULT_CLOUD_TRANSPORT_TIMEOUT_MS, type CloudTransportConfig } from './cloud-transport.js';
 import { CapabilitiesClient } from './capabilities.js';
 import { createUnsV2Client, type UnsV2Client } from './uns-v2/client.js';
 
@@ -30,13 +30,8 @@ export interface ControlDiscoverResponse {
   list: PublicControl[];
 }
 
-/** HTTP transport budget only; never sent to the Gateway or used as a Control execution timeout. */
-export interface ControlTransportConfig {
-  /** Whole request including response body; positive integer milliseconds, default 60,000. */
-  transportTimeoutMs?: number;
-  /** UNS v2 only: response limit up to the fixed 20 MiB contract/RPC ceiling. */
-  unsV2MaxResponseBytes?: number;
-}
+/** Shared HTTP settings; UNS v2 options never affect Control execution or headers. */
+export interface ControlTransportConfig extends CloudTransportConfig {}
 
 export interface CloudClientConfig extends ClientConfig, ControlTransportConfig {}
 

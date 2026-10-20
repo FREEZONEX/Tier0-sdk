@@ -2,6 +2,9 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createClient, UNS_V2_CODEC_SCHEMAS, UNS_V2_CONTRACT_PROVENANCE, UNS_V2_OPERATIONS, UnsV2Error, UnsV2OutcomeUnknownError, UnsV2RawNumber } from '../../src/index.js';
+import { CloudTransport } from '../../src/cloud-transport.js';
+import { HttpClient } from '../../src/openapi/client.js';
+import type { UnsV2Response } from '../../src/uns-v2/generated.js';
 
 const received: Array<{ method?: string; path?: string; body: string; headers: IncomingMessage['headers'] }> = [];
 let respond: (req: IncomingMessage, res: ServerResponse) => void;
@@ -31,6 +34,170 @@ const client = (timeout = 2_000, unsV2MaxResponseBytes?: number) => createClient
 });
 
 describe('UNS v2 localhost HTTP fixture', () => {
+  it('isolates concurrent per-request clients and snapshots their proof configuration', async () => {
+    const start = received.length;
+    const proofA = 'gateway.user_A.signature-A';
+    const proofB = 'gateway.user_B.signature-B';
+    const config = { apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: proofA };
+    const first = createClient(config);
+    config.unsV2AppDataSubject = proofB;
+    const second = createClient(config);
+    const pending: ServerResponse[] = [];
+    respond = (_req, res) => {
+      pending.push(res);
+      // Both requests must be in flight before either response is released.
+      if (pending.length === 2) {
+        for (const response of pending) send(response, { code: 200, msg: '', requestId: 'isolated', data: {} });
+      }
+    };
+    await Promise.all([
+      first.unsV2.recordFind({ collectionId: 'user-a' }),
+      second.unsV2.recordFind({ collectionId: 'user-b' }),
+    ]);
+    expect(received.slice(start)).toHaveLength(2);
+    for (const row of received.slice(start)) {
+      expect(row.headers['x-tier0-app-data-subject']).toBe(row.path?.includes('user-a') ? proofA : proofB);
+      expect(row.headers.authorization).toBe('Bearer workspace-bound-key');
+      expect(row.headers['x-api-key']).toBe('workspace-bound-key');
+    }
+    respond = (_req, res) => send(res, { code: 200, msg: '', requestId: 'plain', data: {} });
+    await client().unsV2.recordFind({ collectionId: 'plain' });
+    expect(received.at(-1)?.headers['x-tier0-app-data-subject']).toBeUndefined();
+  });
+
+  it('never sends a Control/capability, legacy or asset proof header, even on post to a v2 path', async () => {
+    const start = received.length;
+    const config = { apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: 'gateway.user.signature' };
+    const api = createClient(config);
+    respond = (req, res) => {
+      if (req.url === '/openapi/v1/controls/discover') send(res, { total: 0, list: [] });
+      else if (req.url === '/openapi/v1/controls/pump.start/invoke') send(res, {
+        code: 'pump.start', contractVersion: '1', result: {}, runID: 'fixture-run', status: 'succeeded', replayed: false,
+      });
+      else if (req.url === '/openapi/v1/capabilities/discover') send(res, {
+        product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1'],
+        interpreterContractVersions: ['tier0-stream/v2'], sdkContractVersions: ['control/v1'], capabilities: [], deprecations: [],
+      });
+      else send(res, {});
+    };
+    const http = new HttpClient(config);
+    const transport = new CloudTransport(() => http, config);
+    await Promise.all([
+      api.controls.discover(), api.controls.use({ code: 'pump.start' }).invoke({}), api.capabilities.discover(),
+      http.post('/openapi/v1/uns/query', {}), http.post('/openapi/v1/assets/files/url', {}),
+      transport.post('/openapi/v2/uns/test', {}),
+      ...['/openapi/v1/uns/query', '/openapi/v2/assets/test', '/openapi/v2/uns-other/test', '/openapi/v2/uns']
+        .map(path => transport.postText(path, '{}')),
+    ]);
+    expect(received.slice(start)).toHaveLength(10);
+    for (const row of received.slice(start)) expect(row.headers['x-tier0-app-data-subject']).toBeUndefined();
+  });
+
+  it.each(['controlDiscover', 'controlDescribe', 'controlInvoke', 'streamRuntimeCapabilitiesGet'] as const)
+  ('never forwards data delegation through unsV2.%s', async operation => {
+    const start = received.length;
+    const definition = {
+      code: 'pump.start', name: 'Start pump', contractVersion: '1',
+      inputSchema: {}, outputSchema: {}, sideEffect: 'write', idempotency: 'required', timeoutMs: 1000,
+    } as const;
+    const envelope = { code: 200, msg: 'ok', requestId: 'v2-control-fixture' };
+    const responses = {
+      controlDiscover: { ...envelope, data: {
+        list: [definition], total: 1, page: 1, size: 20, hasMore: false,
+        complete: true, truncated: false, snapshotScope: 'thisRequestOnly',
+      } },
+      controlDescribe: { ...envelope, data: definition },
+      controlInvoke: { ...envelope, data: {
+        code: 'pump.start', contractVersion: '1', result: { started: true },
+        runId: 'v2-control-run', status: 'succeeded', replayed: false,
+      } },
+      streamRuntimeCapabilitiesGet: { ...envelope, data: {
+        controlInvokeReady: true, scriptContractVersion: 'tier0-stream/v2', controlMetadataReady: true,
+      } },
+    } satisfies { [Name in typeof operation]: UnsV2Response<Name> };
+    const requests = {
+      controlDiscover: { page: 1, size: 20 },
+      controlDescribe: { code: 'pump.start' },
+      controlInvoke: { code: 'pump.start', input: {}, idempotencyKey: 'v2-control-intent' },
+      streamRuntimeCapabilitiesGet: {},
+    };
+    respond = (_req, res) => send(res, responses[operation]);
+    const api = createClient({
+      apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: 'gateway.user.signature',
+    });
+    const results = {
+      controlDiscover: () => api.unsV2.controlDiscover(requests.controlDiscover),
+      controlDescribe: () => api.unsV2.controlDescribe(requests.controlDescribe),
+      controlInvoke: () => api.unsV2.controlInvoke(requests.controlInvoke),
+      streamRuntimeCapabilitiesGet: () => api.unsV2.streamRuntimeCapabilitiesGet(requests.streamRuntimeCapabilitiesGet),
+    };
+    await expect(results[operation]()).resolves.toEqual(responses[operation]);
+    const paths = {
+      controlDiscover: '/openapi/v2/uns/controls/discover',
+      controlDescribe: '/openapi/v2/uns/controls/describe',
+      controlInvoke: '/openapi/v2/uns/controls/invoke',
+      streamRuntimeCapabilitiesGet: '/openapi/v2/uns/streams/runtime/capabilities/get',
+    };
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start]).toMatchObject({ method: 'POST', path: paths[operation] });
+    expect(JSON.parse(received[start].body)).toEqual(requests[operation]);
+    expect(received[start].headers['x-tier0-app-data-subject']).toBeUndefined();
+    expect(received[start].headers.authorization).toBe('Bearer workspace-bound-key');
+    expect(received[start].headers['x-api-key']).toBe('workspace-bound-key');
+  });
+
+  it('rejects invalid proof configurations synchronously without requests or value disclosure', () => {
+    const start = received.length;
+    const token = 'gateway.user.signature';
+    const invalid: unknown[] = [
+      '', null, 1, true, {}, [token], `${token},${token}`, `${token} ${token}`,
+      ` ${token}`, `${token} `, `${token}\r\n`, `${token}\n`, `${token}\t`, `${token}\u0000`,
+      'a.b', 'a.b.c.d', '.b.c', 'a..c', 'a.b.', 'a.b.c=', 'a.b.c+', 'a.b.c/',
+      'a.用户.c', 'a.b.\u007f', 'a.b.\u00a0', `a.b.${'x'.repeat(8189)}`,
+    ];
+    for (const value of invalid) {
+      let error: unknown;
+      try { createClient({ apiHost, unsV2AppDataSubject: value as string }); } catch (caught) { error = caught; }
+      expect(error).toBeInstanceOf(TypeError);
+      expect((error as Error).message).toBe('Tier0 SDK: unsV2AppDataSubject must be a compact three-segment base64url token of at most 8192 ASCII bytes.');
+    }
+    expect(received.length).toBe(start);
+  });
+
+  it('forwards exactly 8192 ASCII bytes unchanged without parsing claims', async () => {
+    const start = received.length;
+    const proof = `a.b.${'x'.repeat(8188)}`;
+    respond = (_req, res) => send(res, { code: 200, msg: '', requestId: 'max-proof', data: {} });
+    await createClient({ apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: proof })
+      .unsV2.recordFind({ collectionId: 'orders' });
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start].headers['x-tier0-app-data-subject']).toBe(proof);
+  });
+
+  it.each(['redirect', 'socket', 'malformed', 'timeout'] as const)
+  ('redacts proof-bearing %s failures without redirects or retries', async kind => {
+    const start = received.length;
+    const proof = 'gateway.private_subject.private_signature';
+    respond = (req, res) => {
+      if (kind === 'socket') { req.socket.destroy(); return; }
+      if (kind === 'redirect') { res.writeHead(307, { Location: '/redirected' }); res.end(proof); return; }
+      if (kind === 'timeout') { res.writeHead(200); res.write(proof); return; }
+      res.end(proof);
+    };
+    const error = await createClient({ apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: proof, transportTimeoutMs: 150 })
+      .unsV2.recordInsertOne({ collectionId: 'orders', data: {} }).catch(value => value);
+    expect(error).toBeInstanceOf(UnsV2OutcomeUnknownError);
+    expect(error).toMatchObject({ retryable: false, code: kind === 'socket' ? 'UNS_V2_TRANSPORT_ERROR' :
+      kind === 'timeout' ? 'UNS_V2_TRANSPORT_TIMEOUT' : 'UNS_V2_PROTOCOL_ERROR' });
+    const diagnostic = `${String(error)}\n${error.stack}\n${JSON.stringify(error)}`;
+    for (const sensitive of [proof, 'private_subject', 'private_signature', 'workspace-bound-key']) {
+      expect(diagnostic).not.toContain(sensitive);
+    }
+    await new Promise(resolve => setTimeout(resolve, 30));
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start].headers['x-tier0-app-data-subject']).toBe(proof);
+  });
+
   it('reads the current hosted App context without an App selector or retries', async () => {
     const start = received.length;
     respond = (_req, res) => send(res, { code: 200, msg: '', requestId: 'app-context', data: {

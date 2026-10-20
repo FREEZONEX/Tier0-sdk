@@ -5,6 +5,14 @@ export interface CloudTransportConfig {
   transportTimeoutMs?: number;
   /** UNS v2 response body limit; may only tighten the 20 MiB contract/RPC ceiling. */
   unsV2MaxResponseBytes?: number;
+  /**
+   * Opaque proof from the trusted App Gateway only: tier0.app-data-subject/v1,
+   * X-Tier0-App-Data-Subject, aud tier0-uns-data. Proof alone is not authentication;
+   * the SDK checks only compact syntax, never parses or trusts claims.
+   * Create a new client per incoming request; never reuse a token across users.
+   * Do not automatically forward the runtime App request assertion: its audience differs.
+   */
+  unsV2AppDataSubject?: string;
 }
 
 export const DEFAULT_CLOUD_TRANSPORT_TIMEOUT_MS = 60_000;
@@ -25,6 +33,7 @@ export class CloudTransportError extends Error {
 export class CloudTransport {
   private readonly timeoutMs: number;
   private readonly unsV2MaxResponseBytes: number;
+  readonly #unsV2AppDataSubject: string | undefined;
 
   constructor(private readonly resolveClient: () => HttpClient = getClient, config: CloudTransportConfig = {}) {
     const timeout = config.transportTimeoutMs ?? DEFAULT_CLOUD_TRANSPORT_TIMEOUT_MS;
@@ -37,6 +46,13 @@ export class CloudTransport {
       throw new TypeError('Tier0 SDK: unsV2MaxResponseBytes must be an integer between 1 and 20971520.');
     }
     this.unsV2MaxResponseBytes = maxResponseBytes;
+    const subject = config.unsV2AppDataSubject;
+    // ASCII-only syntax makes string length equal byte length. Do not trim or decode.
+    if (subject !== undefined && (typeof subject !== 'string' || subject.length > 8192 || /[^A-Za-z0-9_.-]/.test(subject) ||
+        !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(subject))) {
+      throw new TypeError('Tier0 SDK: unsV2AppDataSubject must be a compact three-segment base64url token of at most 8192 ASCII bytes.');
+    }
+    this.#unsV2AppDataSubject = subject;
   }
 
   async postText(path: string, body: string): Promise<{ text: string; status: number; ok: boolean }> {
@@ -44,6 +60,14 @@ export class CloudTransport {
     const url = `${client.getBaseURL()}${path}`;
     const key = client.getApiKey();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    // Control routes also live under UNS v2, but must never receive data delegation.
+    // Keep this per-client proof out of shared HTTP headers and Control capabilities.
+    if (path.startsWith('/openapi/v2/uns/') &&
+        !path.startsWith('/openapi/v2/uns/controls/') &&
+        path !== '/openapi/v2/uns/streams/runtime/capabilities/get' &&
+        this.#unsV2AppDataSubject !== undefined) {
+      headers['X-Tier0-App-Data-Subject'] = this.#unsV2AppDataSubject;
+    }
     if (key) {
       headers.Authorization = `Bearer ${key}`;
       headers['X-API-Key'] = key;
