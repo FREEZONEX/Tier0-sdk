@@ -37,6 +37,8 @@ let wrongContextApp = false;
 let patchAttempts = 0;
 let lastPatchRevision;
 let overReturnFields = false;
+let readablePrivateNote = false;
+let injectedReadField;
 const patchReceipts = new Map();
 const readableFields = () => ['orderNo', 'amount', 'status'].filter((field) => !hiddenDisplayFields.has(field));
 const dataExchanges = [];
@@ -96,6 +98,7 @@ const gateway = createServer(async (req, res) => {
       appId: wrongContextApp ? 'another-app' : appID, name: 'SDK App fixture', revision: 1, platformPermissions: [],
       collections: [{ alias: 'orders', collectionId, permissions: mode === 'read' ? ['record:read'] : ['record:read', 'record:write'], recordSchema: invalidPolicy ? { type: 'object' } : {
         type: 'object', properties: { ...Object.fromEntries(readableFields().map((field) => [field, field === 'amount' ? { type: 'integer' } : { type: 'string', ...(field === 'status' ? { enum: ['draft'] } : {}) }])),
+          ...(readablePrivateNote ? { privateNote: { type: 'string' } } : {}),
           ...(!hideOwner && proofUser !== supervisorID ? { ownerUserId: { type: 'string' } } : {}) },
         ...(!hideOwner && proofUser !== supervisorID ? { required: ['ownerUserId'] } : {}),
       } }],
@@ -111,12 +114,18 @@ const gateway = createServer(async (req, res) => {
     else assert.deepEqual(Object.keys(input.filter), ['ownerUserId']);
     const userID = appDataMode === 'core' ? proofUser : input.filter.ownerUserId.$eq;
     assert.ok([...dataUsers, supervisorID].includes(userID));
-    assert.deepEqual(input.projection, appDataMode === 'core' ? Object.fromEntries(readableFields().map((field) => [field, 1])) : { orderNo: 1, amount: 1, status: 1, ownerUserId: 1 });
+    if (appDataMode === 'core') assert.equal(Object.hasOwn(input, 'projection'), false, 'Core list/detail must exercise server field filtering without client projection');
+    else assert.deepEqual(input.projection, { orderNo: 1, amount: 1, status: 1, ownerUserId: 1 });
     const visible = leakRows || (appDataMode === 'core' && proofUser === supervisorID) ? items : items.filter((item) => item.data.ownerUserId === userID);
     const selected = input.filter?._id ? visible.filter((item) => item.id === input.filter._id.$eq) : visible;
     return reply(200, { code: 200, requestId: 'fixture-find', msg: 'success', data: {
-      items: selected.map((item) => ({ ...item, data: Object.fromEntries(Object.entries(item.data)
-        .filter(([field]) => (overReturnFields || input.projection[field]) && !(hideOwner && field === 'ownerUserId'))) })), pageInfo: { hasMore: false },
+      items: selected.map((item) => {
+        const coreFields = new Set([...readableFields(), ...(!hideOwner && proofUser !== supervisorID ? ['ownerUserId'] : []), ...(readablePrivateNote ? ['privateNote'] : [])]);
+        const entries = Object.entries(item.data).filter(([field]) => appDataMode === 'core'
+          ? overReturnFields || coreFields.has(field) : input.projection[field]);
+        if (injectedReadField) entries.push([injectedReadField, 'fixture-hidden-value']);
+        return { ...item, data: Object.fromEntries(entries) };
+      }), pageInfo: { hasMore: false },
     } });
   }
   if (req.url === `/openapi/v2/uns/collections/${collectionId}/records:updateOne`) {
@@ -345,6 +354,9 @@ try {
     }
     assert.ok(ready);
   }
+  // Existing stored rows carry a private field; successful unprojected reads
+  // below require the simulated Core (not the App view) to remove that field.
+  items[0].data.privateNote = 'fixture-private-note-do-not-expose';
   await startCore();
   const coreStart = dataRequests;
   assert.equal((await dataRequest('GET', undefined, dataUsers[0], { proof: null })).status, 401);
@@ -405,6 +417,15 @@ try {
   }
   const supervisorList = await (await listFor(supervisorID)).json();
   assert.equal(supervisorList.items.length, items.length, 'Core all-scope supervisor is not blocked by App owner equality or static employee list');
+  assert.ok(!JSON.stringify(supervisorList).includes('fixture-private-note-do-not-expose'));
+  const privateDetail = await (await detailFor(ownID, supervisorID)).json();
+  assert.equal(Object.hasOwn(privateDetail.item.data, 'privateNote'), false);
+  readablePrivateNote = true;
+  const allowedNonDisplay = await detailFor(ownID, supervisorID);
+  assert.equal(allowedNonDisplay.status, 200, 'a readable non-display field is allowed in the raw Core result');
+  assert.equal(Object.hasOwn((await allowedNonDisplay.json()).item.data, 'privateNote'), false, 'App view selects only its display fields after validating raw keys');
+  assert.equal((await listFor(supervisorID)).status, 200);
+  readablePrivateNote = false;
   hideOwner = true;
   assert.equal((await listFor()).status, 200, 'Core does not require a readable owner field');
   hideOwner = false;
@@ -416,17 +437,31 @@ try {
     assert.ok(hiddenList.items.every((item) => !Object.hasOwn(item.data, field)));
   }
   overReturnFields = true;
-  const extraFields = await (await detailFor(ownID, supervisorID)).json();
-  assert.equal(Object.hasOwn(extraFields.item.data, 'orderNo'), false, 'response projection also removes unexpected hidden fields');
-  assert.equal(Object.hasOwn(extraFields.item.data, 'ownerUserId'), false);
+  for (const read of [() => detailFor(ownID, supervisorID), () => listFor(supervisorID)]) {
+    const extraFields = await read();
+    assert.equal(extraFields.status, 503, 'hidden keys in raw Core data are a policy violation, not silently filtered by App display');
+    assert.deepEqual(await extraFields.json(), { code: 'APP_DATA_POLICY_UNAVAILABLE' });
+  }
   overReturnFields = false;
+  hiddenDisplayFields = new Set();
+  for (const field of ['privateNote', 'amount', 'ownerUserId', 'constructor', 'toString', '__proto__']) {
+    hiddenDisplayFields = new Set(field === 'amount' ? ['amount'] : []);
+    injectedReadField = field;
+    for (const read of [() => detailFor(ownID, supervisorID), () => listFor(supervisorID)]) {
+      const violation = await read(); assert.equal(violation.status, 503);
+      assert.deepEqual(await violation.json(), { code: 'APP_DATA_POLICY_UNAVAILABLE' }, 'Object.hasOwn rejects undeclared and inherited property names without leaking their values');
+    }
+  }
+  injectedReadField = undefined;
   hiddenDisplayFields = new Set(['orderNo', 'amount', 'status']);
   const noFieldsStart = dataRequests;
-  assert.equal((await detailFor(ownID, supervisorID)).status, 403);
-  assert.equal(dataRequests, noFieldsStart + 1, 'never send an empty projection which could mean all fields');
+  const noFields = await detailFor(ownID, supervisorID);
+  assert.equal(noFields.status, 200); assert.deepEqual((await noFields.json()).item.data, {});
+  assert.equal(dataRequests, noFieldsStart + 2, 'unprojected Core lookup may return a row with no readable business fields');
   hiddenDisplayFields = new Set();
   invalidPolicy = true;
-  assert.equal((await listFor()).status, 403, 'Core context with no readable display fields cannot issue an unrestricted query');
+  const missingSchema = await listFor(); assert.equal(missingSchema.status, 503);
+  assert.deepEqual(await missingSchema.json(), { code: 'APP_DATA_POLICY_UNAVAILABLE' }, 'a raw field absent from context schema is never accepted');
   invalidPolicy = false;
   const coreControl = await fetch(host + devicePath, { headers: {
     [contract.header]: signedRequest('GET', ''), 'X-Tier0-App-Data-Subject': proofs.get(dataUsers[0]),
@@ -570,7 +605,7 @@ try {
     assert.ok(!JSON.stringify(concurrent).includes(proof), 'proofs never enter browser responses');
   }
   console.log('PASS: Core request-scoped proof wiring, identity-first rejection, duplicate/missing proof, no owner filter, default read-only, explicit new-intent gate, service-stamp payload, isolated Control and no fallback/retry (local fixture, NOT Core acceptance)');
-  console.log('PASS: Core-only detail/PATCH, fixed identity with no Core static allowlist, context-derived projection, hidden fields, supervisor target access, bounded changes, exact revision, distinct intents, conflict/replay and no read/merge (local fixture, NOT real policy/audit acceptance)');
+  console.log('PASS: Core-only detail/PATCH, no client projection, raw-key schema validation, hidden-field violations rejected, supervisor target access, bounded changes, exact revision, distinct intents, conflict/replay and no read/merge (local fixture, NOT real policy/audit acceptance)');
   console.log('PASS: legacy verified employee data identity, exact request binding, mandatory owner filter, protected fields, per-user record/intent identities, cross-user isolation and fail-closed policy');
   console.log('PASS: App server Ed25519 validation, operator allowlist, strict control input, dedicated Key, stable business replay, revocation, redaction, unknown outcome once and no data-Key fallback');
   console.log('PASS: offline package/public SDK import, page, strict input, write/read/replay, read-only, revocation, redaction, unknown outcome without retry');

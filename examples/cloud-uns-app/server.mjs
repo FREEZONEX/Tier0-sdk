@@ -87,21 +87,23 @@ function patchInput(req, raw) {
   return value;
 }
 
-function orderView(item, projection) {
+function orderView(item) {
   // Missing fields stay absent: do not turn a hidden amount/status/owner into a
   // fabricated value, or read/merge them into a later update or binding.
   return { id: item.id, revision: typeof item.revision === 'bigint' || item.revision instanceof UnsV2RawNumber ? item.revision.toString() : item.revision,
-    data: Object.fromEntries(['orderNo', 'amount', 'status'].filter((key) => projection[key] && Object.hasOwn(item.data, key))
+    data: Object.fromEntries(['orderNo', 'amount', 'status'].filter((key) => Object.hasOwn(item.data, key))
       .map((key) => [key, item.data[key]])) };
 }
 
-function orderProjection(grant) {
-  // Core appcontext exposes the current readable schema. An empty projection can
-  // mean "all fields", so never issue that query when no display field is visible.
+function checkCoreReadFields(items, grant) {
+  // Query without client projection so App filtering cannot mask a Core policy
+  // failure. Check every raw data key, including fields this App never displays.
   const properties = grant.recordSchema?.properties ?? {};
-  const fields = ['orderNo', 'amount', 'status'].filter((key) => Object.hasOwn(properties, key));
-  if (!fields.length) throw Object.assign(new Error(), { status: 403, code: 'APP_DATA_FIELDS_UNAVAILABLE' });
-  return Object.fromEntries(fields.map((key) => [key, 1]));
+  if (typeof properties !== 'object' || Array.isArray(properties) || items.some((item) =>
+    !item || !item.data || typeof item.data !== 'object' || Array.isArray(item.data) ||
+    Object.keys(item.data).some((key) => !Object.hasOwn(properties, key)))) {
+    throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_POLICY_UNAVAILABLE' });
+  }
 }
 
 // Identity and legacy user grants are pinned by the App operator, never browser
@@ -234,15 +236,15 @@ const server = createServer(async (req, res) => {
       }
       if (req.method === 'GET') {
         const { grant } = await ordersContext(client, 'record:read', subject);
-        const projection = orderProjection(grant);
         const records = await client.unsV2.recordFind({ collectionId: grant.collectionId,
-          filter: { _id: { $eq: id } }, projection, limit: 1 });
+          filter: { _id: { $eq: id } }, limit: 1 });
+        checkCoreReadFields(records.data.items, grant);
         const item = records.data.items[0];
         if (!item) return reply(res, 404, { code: 'NOT_FOUND' });
         if (records.data.items.length !== 1 || item.id !== id) {
           throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_POLICY_UNAVAILABLE' });
         }
-        return reply(res, 200, { item: orderView(item, projection), receiptDomain: patchReceiptDomain,
+        return reply(res, 200, { item: orderView(item), receiptDomain: patchReceiptDomain,
           canWrite: coreWritesEnabled && grant.permissions.includes('record:write') });
       }
       if (!coreWritesEnabled) throw Object.assign(new Error(), { status: 403, code: 'APP_DATA_READ_ONLY' });
@@ -262,12 +264,12 @@ const server = createServer(async (req, res) => {
       const { subject } = await orderSubject(req);
       const client = orderClient(req);
       const { response, grant } = await ordersContext(client, 'record:read', subject);
-      const projection = dataMode === 'legacy' ? { orderNo: 1, amount: 1, status: 1, ownerUserId: 1 } : orderProjection(grant);
       const records = await client.unsV2.recordFind({ collectionId: grant.collectionId,
         // Core alone decides own/all scope and field visibility. Legacy retains
         // its owner filter and result guard; neither can represent supervisor rules.
         ...(dataMode === 'legacy' ? { filter: { ownerUserId: { $eq: subject.userID } } } : {}),
-        projection, limit: 20 });
+        ...(dataMode === 'legacy' ? { projection: { orderNo: 1, amount: 1, status: 1, ownerUserId: 1 } } : {}), limit: 20 });
+      if (dataMode === 'core') checkCoreReadFields(records.data.items, grant);
       if (dataMode === 'legacy' && records.data.items.some((item) => item.data.ownerUserId !== subject.userID)) {
         throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_POLICY_UNAVAILABLE' });
       }
@@ -276,7 +278,7 @@ const server = createServer(async (req, res) => {
         policyRevision: response.data.revision,
         dataMode, receiptDomain,
         canWrite: grant.permissions.includes('record:write') && (dataMode === 'legacy' || coreWritesEnabled),
-        items: records.data.items.map((item) => orderView(item, projection)),
+        items: records.data.items.map(orderView),
       });
     }
     if (req.method === 'POST' && path === '/api/orders') {
