@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -54,9 +54,13 @@ try {
   const port = reserve.address().port;
   await new Promise((resolve) => reserve.close(resolve));
   const archive = join(dir, 'app.zip');
-  execFileSync(process.execPath, [join(root, 'scripts/package-cloud-uns-app.mjs'), archive]);
+  const image = `registry.example.invalid/node@sha256:${'a'.repeat(64)}`;
+  execFileSync(process.execPath, [join(root, 'scripts/package-cloud-uns-app.mjs'), archive], {
+    env: { ...process.env, TIER0_APP_RUN_IMAGE: image },
+  });
   const app = join(dir, 'app'); mkdirSync(app);
   execFileSync('python3', ['-c', 'import sys,zipfile;zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])', archive, app]);
+  assert.ok(readFileSync(join(app, 'artifact.toml'), 'utf8').includes(`image = "${image}"`));
   execFileSync(process.execPath, ['build.mjs'], { cwd: app });
   child = spawn(process.execPath, ['.runtime/server.mjs'], {
     cwd: app, stdio: ['ignore', 'pipe', 'pipe'],

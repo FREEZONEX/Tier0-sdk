@@ -6,6 +6,10 @@ import { execFileSync } from 'node:child_process';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const output = process.argv[2];
+const runtimeImage = process.env.TIER0_APP_RUN_IMAGE;
+if (runtimeImage && (!/^[a-z0-9][a-z0-9./:_@-]*@sha256:[a-f0-9]{64}$/.test(runtimeImage) || runtimeImage.length > 1024)) {
+  throw new Error('TIER0_APP_RUN_IMAGE must be a verified, digest-pinned registry image reference.');
+}
 if (!output || !isAbsolute(output) || !output.endsWith('.zip') || existsSync(output)) {
   throw new Error('Provide a new absolute output .zip path. Run the SDK build first.');
 }
@@ -16,6 +20,13 @@ try {
     recursive: true,
     filter: (path) => !['.runtime', 'node_modules', 'vendor'].includes(basename(path)) && !basename(path).startsWith('.env'),
   });
+  if (runtimeImage) {
+    const path = join(staging, 'artifact.toml');
+    const original = readFileSync(path, 'utf8');
+    const marker = '[services.production.run]\n';
+    if (original.split(marker).length !== 2) throw new Error('Unexpected App run declaration.');
+    writeFileSync(path, original.replace(marker, `${marker}image = ${JSON.stringify(runtimeImage)}\n`));
+  }
   const sdk = join(staging, 'vendor/sdk');
   mkdirSync(sdk, { recursive: true });
   cpSync(join(root, 'dist/esm'), join(sdk, 'lib'), { recursive: true });
@@ -34,6 +45,7 @@ try {
     sdkVersion: pkg.version,
     sdkCommit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
     entryPoint: '@tier0/sdk/cloud',
+    ...(runtimeImage ? { runtimeImage } : {}),
   }, null, 2)}\n`);
   writeFileSync(join(staging, 'meta.json'), `${JSON.stringify({ name: 'UNS 工单数据', description: 'Cloud App SDK record access and revocation example' })}\n`);
   execFileSync('python3', ['-c', [
