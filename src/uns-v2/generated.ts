@@ -5639,11 +5639,11 @@ export const UNS_V2_CODEC_SCHEMAS = {"UnsV2CatalogReq":{"k":"o"},"UnsV2ManagedBy
 
 export const UNS_V2_CONTRACT_PROVENANCE = {
   "repository": "FREEZONEX/Tier0-Backend",
-  "revision": "ca6d7c0fadf2d5ae80f3b59d6a6842d6981d8431",
+  "revision": "3bcaf16e025bda579053d74db4b2aa658a173d87",
   "version": "4.0.0",
   "source": "service/unssvr/internal/domain/unsv2/contract_generated.go#ContractJSON",
-  "cloudRevision": "ca6d7c0fadf2d5ae80f3b59d6a6842d6981d8431",
-  "cloudContractRevision": "cloud-source-impact/1+data/3+app-data/1",
+  "cloudRevision": "3bcaf16e025bda579053d74db4b2aa658a173d87",
+  "cloudContractRevision": "cloud-source-impact/1+data/3+app-data/2+hosted-control/1",
   "resolvedCloudContract": true,
   "enterpriseBase": {
     "repository": "FREEZONEX/Tier0-Enterprise-New",
@@ -5652,15 +5652,15 @@ export const UNS_V2_CONTRACT_PROVENANCE = {
     "source": "backend/internal/domain/unsv2/contract_generated.go",
     "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs."
   },
-  "sourceDerivedContractSHA256": "8397fd6912de6f630e2ddc3fa2d54ebe901ce2dc847960d7adf59047ac01efab",
-  "note": "Resolved Cloud runtime contract after reviewed Cloud data overlay; matches the published manifest and registry. Enterprise import provenance retained separately; no claim of Enterprise deployment or npm publication.",
+  "sourceDerivedContractSHA256": "4c4673c3f6a173119188a94bee9b5812f7599ff5505ce53051c32f3d94eaa256",
+  "note": "Resolved Cloud runtime contract including employee data rule management; exact Backend commit and generated manifest/registry pinned. Enterprise provenance retained separately; no npm publication or employee E2E claim.",
   "hashes": {
-    "contract": "3c0b16b4996856e1ab075b90b9b1b775e625a8552b8828c077aa820ee768fe0a",
-    "cloudSupport": "0baeba8b9b5b7d616d204b40a92d421bddfb804debe57a516715592dd4fdc63b",
-    "manifest": "d5d38f8fba619a49e16ffaeb56a98a6bd60ba2e9dd36cd574c5e6a8391d15dc4",
-    "provenance": "f4a873bc4c7f2a13588c6f886a3c70d4575351505734c85ac276f59940ad49b9",
-    "registry": "18697b57e87b850f5b147d6dc917e23187cd4332b52eb649f6859a29e7a6d599"
+    "contract": "cd88e6173f5074dc20210147b34492b0d8f1ff4e71bc7be87237601bb021ff86",
+    "cloudSupport": "af25a142462a9d6d475704a136dfb82624ef075f21a8d670b1f8073c82795380",
+    "manifest": "b647ad4183f082e47d3d84e2dec748bf7ec374cbcdc75c5d34932f8c63db64a3",
+    "provenance": "1df61a4d91ea37ae1e4b506f5c1791c8582dd789f60a15c3e14a66057c0d37f1",
+    "registry": "b4792d2e3c7c7a42a3e163cdd57fe2dcef90f30a520503d20593e7cc50169c51"
   },
   "publicOperationCount": 97,
-  "manifestOperationCount": 110
+  "manifestOperationCount": 112
 } as const;

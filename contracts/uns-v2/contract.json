@@ -2770,6 +2770,50 @@
       ]
     },
     {
+      "name": "hostedAppControlPolicyGet",
+      "suffix": "/uns/hosted-app-control-policy/get",
+      "handler": "CloudHostedAppControlPolicyGet",
+      "request": "CloudHostedAppControlPolicyGetReq",
+      "response": "CloudHostedAppControlPolicyGetResponse",
+      "permission": "workspace.api.manage",
+      "resource": "app",
+      "mutation": "",
+      "coreOnly": true,
+      "appAllowed": false,
+      "resourceId": 3341,
+      "summary": "Hosted App independent Control policy: Get",
+      "description": "Internal human session governance for the same real hosted App identity. Requires workspace API management and control.manage; preserves data policy and never upgrades default data credentials.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "minPermission": 3,
+      "scope": "app:manage",
+      "tags": [
+        "元数据"
+      ]
+    },
+    {
+      "name": "hostedAppControlPolicyUpdate",
+      "suffix": "/uns/hosted-app-control-policy/update",
+      "handler": "CloudHostedAppControlPolicyUpdate",
+      "request": "CloudHostedAppControlPolicyUpdateReq",
+      "response": "CloudHostedAppControlPolicyMutationResponse",
+      "permission": "workspace.api.manage",
+      "resource": "app",
+      "mutation": "meta.replace",
+      "coreOnly": true,
+      "appAllowed": false,
+      "resourceId": 3342,
+      "summary": "Hosted App independent Control policy: Update",
+      "description": "Internal human session governance for the same real hosted App identity. Requires workspace API management and control.manage; preserves data policy and never upgrades default data credentials.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "minPermission": 3,
+      "scope": "app:manage",
+      "tags": [
+        "元数据"
+      ]
+    },
+    {
       "name": "sampleFind",
       "handler": "UnsV2SampleFind",
       "request": "UnsV2SampleFindReq",
@@ -26174,6 +26218,9 @@
               "sample:write"
             ]
           }
+        },
+        "dataRule": {
+          "$ref": "#/components/schemas/CloudAppDataRule"
         }
       },
       "required": [
@@ -26233,6 +26280,13 @@
         },
         "dryRun": {
           "type": "boolean"
+        },
+        "ruleContractVersion": {
+          "type": "string",
+          "enum": [
+            "cloud-app-data-rule/v1"
+          ],
+          "description": "Required explicitly on updates when any previous or proposed Collection grant has a dataRule, including removal and disabled revocation. Omitted for unprotected policies."
         }
       },
       "required": [
@@ -26290,6 +26344,13 @@
         "appName": {
           "type": "string",
           "maxLength": 100
+        },
+        "ruleContractVersion": {
+          "type": "string",
+          "enum": [
+            "cloud-app-data-rule/v1"
+          ],
+          "description": "Required explicitly on updates when any previous or proposed Collection grant has a dataRule, including removal and disabled revocation. Omitted for unprotected policies."
         }
       },
       "required": [
@@ -26477,6 +26538,327 @@
         "msg",
         "requestId",
         "data"
+      ]
+    },
+    "CloudHostedAppControlPolicyGetReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "appId": {
+          "type": "string",
+          "format": "uuid",
+          "minLength": 36,
+          "maxLength": 36
+        }
+      },
+      "required": [
+        "appId"
+      ]
+    },
+    "CloudHostedAppControlPolicyUpdateReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "appId": {
+          "type": "string",
+          "format": "uuid",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Shared hosted policy metadata revision. 0 attaches to a real App; either data or Control updates increment this revision."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "disabled"
+          ]
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "dryRun": {
+          "type": "boolean"
+        },
+        "platformPermissions": {
+          "type": "array",
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "control.read",
+              "control.execute",
+              "control.write"
+            ]
+          }
+        }
+      },
+      "required": [
+        "appId",
+        "expectedRevision",
+        "status",
+        "idempotencyKey",
+        "dryRun",
+        "platformPermissions"
+      ]
+    },
+    "CloudHostedAppControlPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "appId": {
+          "type": "string",
+          "format": "uuid",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "version": {
+          "type": "string",
+          "enum": [
+            "cloud-hosted-app-control/v1"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "disabled"
+          ]
+        },
+        "authorityStatus": {
+          "type": "string",
+          "enum": [
+            "available",
+            "notReady",
+            "notFound",
+            "unavailable"
+          ]
+        },
+        "appName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "platformPermissions": {
+          "type": "array",
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "control.read",
+              "control.execute",
+              "control.write"
+            ]
+          }
+        }
+      },
+      "required": [
+        "appId",
+        "revision",
+        "version",
+        "status",
+        "authorityStatus",
+        "appName",
+        "platformPermissions"
+      ]
+    },
+    "CloudHostedAppControlPolicyGetResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/components/schemas/CloudHostedAppControlPolicy"
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudHostedAppControlPolicyMutationResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/components/schemas/Outcome"
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudAppDataRuleTransition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ]
+    },
+    "CloudAppDataRulePrincipal": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "userId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,18}$"
+        },
+        "rowScope": {
+          "type": "string",
+          "enum": [
+            "own",
+            "all"
+          ]
+        },
+        "permissions": {
+          "type": "array",
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "record:read",
+              "record:write",
+              "record:delete",
+              "sample:read",
+              "sample:write"
+            ]
+          },
+          "minItems": 1
+        },
+        "readFields": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "writeFields": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "writeStates": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "transitions": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/components/schemas/CloudAppDataRuleTransition"
+          }
+        }
+      },
+      "required": [
+        "userId",
+        "rowScope",
+        "permissions"
+      ]
+    },
+    "CloudAppDataRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "enum": [
+            "cloud-app-data-rule/v1"
+          ]
+        },
+        "ownerField": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "stateField": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "initialState": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "principals": {
+          "type": "array",
+          "maxItems": 128,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/components/schemas/CloudAppDataRulePrincipal"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "version",
+        "ownerField",
+        "principals"
       ]
     },
     "UnsV2SampleFindReq": {
@@ -27504,5 +27886,5 @@
       ]
     }
   },
-  "cloudContractRevision": "cloud-source-impact/1+data/3+app-data/1"
+  "cloudContractRevision": "cloud-source-impact/1+data/3+app-data/2+hosted-control/1"
 }

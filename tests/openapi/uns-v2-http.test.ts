@@ -306,7 +306,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received.slice(start)).toHaveLength(1);
     expect(received[start].path).toBe('/openapi/v2/uns/streams/sample/test');
     const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
-    for (const name of ['graph', 'sourceCredentialCreate', 'sourceIngressGet', 'sourceIngressRotate']) {
+    for (const name of ['graph', 'sourceCredentialCreate', 'sourceIngressGet', 'sourceIngressRotate', 'appDataPolicyGet', 'appDataPolicyUpdate', 'hostedAppControlPolicyGet', 'hostedAppControlPolicyUpdate']) {
       expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
       await expect(core.call(name, {})).rejects.toThrow('unknown UNS v2 operation');
     }
@@ -314,9 +314,9 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+data/3+app-data/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+data/3+app-data/2+hosted-control/1');
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(97);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(110);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(112);
     expect(received.slice(start)).toHaveLength(1);
   });
 
