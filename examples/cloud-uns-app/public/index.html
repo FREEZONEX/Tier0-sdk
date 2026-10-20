@@ -31,6 +31,13 @@
         <p id="status" role="status" aria-live="polite"></p>
         <div class="table-wrap"><table><thead><tr><th data-i18n="orderNo">工单号</th><th data-i18n="amount">金额（分）</th><th data-i18n="state">状态</th><th data-i18n="revision">版本</th></tr></thead><tbody id="records"></tbody></table></div>
       </section>
+      <section aria-labelledby="control-heading">
+        <h2 id="control-heading" data-i18n="controlTitle">设备采集</h2>
+        <p data-i18n="controlHelp">通过应用服务端执行已授权的采集操作。重放保留同一请求标识。</p>
+        <button id="control-run" type="button" disabled data-i18n="controlRun">执行或重放</button>
+        <button id="control-new" type="button" disabled data-i18n="controlNew">新建操作</button>
+        <p id="control-status" role="status" aria-live="polite"></p>
+      </section>
     </main>
   </body>
 </html>

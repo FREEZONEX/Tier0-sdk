@@ -1,6 +1,8 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { createClient } from '@tier0/sdk/cloud';
+import { createHash } from 'node:crypto';
+import { createCloudAppRequestVerifier, APP_REQUEST_IDENTITY_HEADER } from '@tier0/sdk/cloud/server';
 
 const client = createClient({ transportTimeoutMs: 15000 });
 const staticFiles = new Map([
@@ -46,6 +48,62 @@ async function body(req) {
   return value;
 }
 
+// Control authority is pinned by the App operator, never by browser input.
+const identityFields = ['CLOUD_APP_ID', 'CLOUD_WORKSPACE_ID', 'CLOUD_APP_IDENTITY_PUBLIC_KEYS', 'CLOUD_CONTROL_USER_IDS', 'CLOUD_CONTROL_CODE'];
+let controlAuthority;
+if (identityFields.some((key) => process.env[key])) {
+  if (identityFields.some((key) => !process.env[key])) throw new Error('CONTROL_CONFIGURATION_INVALID');
+  const users = process.env.CLOUD_CONTROL_USER_IDS.split(',');
+  if (!users.length || users.some((id) => !/^[1-9]\d{0,18}$/.test(id) || BigInt(id) > 9223372036854775807n) ||
+      new Set(users).size !== users.length || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(process.env.CLOUD_CONTROL_CODE)) {
+    throw new Error('CONTROL_CONFIGURATION_INVALID');
+  }
+  controlAuthority = {
+    users: new Set(users), code: process.env.CLOUD_CONTROL_CODE,
+    verify: createCloudAppRequestVerifier({ appID: process.env.CLOUD_APP_ID,
+      workspaceID: process.env.CLOUD_WORKSPACE_ID, publicKeys: process.env.CLOUD_APP_IDENTITY_PUBLIC_KEYS }),
+  };
+}
+
+async function deviceControl(req) {
+  if (!controlAuthority || !process.env.TIER0_CONTROL_API_KEY?.trim()) {
+    throw Object.assign(new Error(), { status: 503, code: 'CONTROL_UNAVAILABLE' });
+  }
+  const parts = []; let size = 0;
+  for await (const part of req) {
+    size += part.length;
+    if (size > 65536) throw Object.assign(new Error(), { status: 413, code: 'INVALID_INPUT' });
+    parts.push(part);
+  }
+  const raw = Buffer.concat(parts);
+  let subject;
+  try {
+    subject = controlAuthority.verify({ assertion: req.headers[APP_REQUEST_IDENTITY_HEADER.toLowerCase()],
+      method: req.method, requestURI: req.url, body: raw });
+  } catch { throw Object.assign(new Error(), { status: 401, code: 'APP_IDENTITY_INVALID' }); }
+  if (!controlAuthority.users.has(subject.userID)) {
+    throw Object.assign(new Error(), { status: 403, code: 'CONTROL_FORBIDDEN' });
+  }
+  // An absent control credential must never fall back to the default data Key.
+  const control = createClient({ apiKey: process.env.TIER0_CONTROL_API_KEY, transportTimeoutMs: 15000 })
+    .controls.use({ code: controlAuthority.code });
+  if (req.method === 'GET') {
+    if (raw.length) throw Object.assign(new Error(), { status: 400, code: 'INVALID_INPUT' });
+    const definition = await control.describe();
+    return { code: definition.code, name: definition.name, operator: subject.userID, canInvoke: definition.status === 'active' };
+  }
+  let input;
+  try { input = JSON.parse(raw.toString('utf8')); } catch { /* Rejected below. */ }
+  if (req.headers['content-type']?.split(';')[0].trim() !== 'application/json' || !input ||
+      Array.isArray(input) || Object.keys(input).length !== 1 ||
+      typeof input.intentId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(input.intentId)) {
+    throw Object.assign(new Error(), { status: 400, code: 'INVALID_INPUT' });
+  }
+  const digest = createHash('sha256').update(JSON.stringify([subject.appID, subject.workspaceID, subject.userID, input.intentId])).digest('hex');
+  const result = await control.invoke({}, { idempotencyKey: `app-control:${digest}` });
+  return { status: result.status, replayed: result.replayed };
+}
+
 const server = createServer(async (req, res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Content-Security-Policy', "default-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'");
@@ -57,6 +115,9 @@ const server = createServer(async (req, res) => {
       const content = await readFile(new URL(`./public/${name}`, import.meta.url));
       res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-store' });
       return res.end(content);
+    }
+    if (['GET', 'POST'].includes(req.method) && path === '/api/device/telemetry') {
+      return reply(res, 200, await deviceControl(req));
     }
     if (req.method === 'GET' && path === '/api/orders') {
       const { response, grant } = await ordersContext('record:read');
@@ -83,7 +144,7 @@ const server = createServer(async (req, res) => {
   } catch (error) {
     const unknown = error.outcomeUnknown === true;
     const status = unknown ? 504 : [400, 401, 403, 409, 413, 422, 429, 502, 503, 504].includes(error.status) ? error.status : 503;
-    const code = unknown ? 'OUTCOME_UNKNOWN' : /^[A-Z_0-9]{1,80}$/.test(error.code ?? '') ? error.code : 'UNAVAILABLE';
+    const code = unknown ? 'OUTCOME_UNKNOWN' : /^[A-Z_0-9]{1,80}$/.test(error.errorCode ?? error.code ?? '') ? (error.errorCode ?? error.code) : 'UNAVAILABLE';
     if (!res.headersSent) reply(res, status, { code });
     else res.destroy();
   }
