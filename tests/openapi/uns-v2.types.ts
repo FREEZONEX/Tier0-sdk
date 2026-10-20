@@ -10,6 +10,8 @@ import {
 } from '../../src/index.js';
 
 const client = createClient({ apiHost: 'https://example.invalid', apiKey: 'workspace-bound' });
+const ownAppContext = client.unsV2.dataAppContext({});
+void ownAppContext;
 const list = client.unsV2.recordFind({ collectionId: 'orders', limit: 20, cursor: 'opaque' });
 const jobs = client.unsV2.jobs({ queries: [{ queryId: 'job', jobIds: ['job-1'] }] });
 const transaction = client.unsV2.recordTransactionExecute({ items: [] });

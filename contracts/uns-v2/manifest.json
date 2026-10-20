@@ -1,6 +1,6 @@
 {
   "version": "4.0.0",
-  "cloudContractRevision": "cloud-source-impact/1+data/3",
+  "cloudContractRevision": "cloud-source-impact/1+data/3+app-data/1",
   "operations": [
     {
       "name": "dataDiscover",
@@ -69,7 +69,7 @@
       "request": "UnsV2CatalogReq",
       "resourceId": 212,
       "example": {},
-      "appAllowed": false,
+      "appAllowed": true,
       "response": "UnsV2Envelope",
       "permission": "uns.read",
       "permissionAnyOf": [],
@@ -2653,7 +2653,7 @@
         "to": 1700003600000,
         "dryRun": true
       },
-      "appAllowed": true,
+      "appAllowed": false,
       "permissionAnyOf": [],
       "minPermission": 3,
       "scope": "uns:update",
@@ -3485,6 +3485,329 @@
       },
       "responseSchema": {
         "$ref": "#/components/schemas/CloudStreamSampleTestResponse"
+      }
+    },
+    {
+      "name": "controlAppCapabilities",
+      "suffix": "/uns/control-apps/capabilities",
+      "handler": "CloudControlAppCapabilities",
+      "request": "CloudControlAppCapabilitiesReq",
+      "response": "CloudControlAppCapabilitiesResponse",
+      "permission": "workspace.api.manage",
+      "resource": "app",
+      "mutation": "",
+      "coreOnly": true,
+      "appAllowed": false,
+      "resourceId": 3333,
+      "summary": "Cloud control App registration: Capabilities",
+      "description": "Internal authenticated governance; registration does not issue credentials or Control/Source grants.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "minPermission": 3,
+      "scope": "app:manage",
+      "tags": [
+        "控制"
+      ],
+      "operation": "controlAppCapabilities",
+      "path": "/uns/control-apps/capabilities",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudControlAppCapabilitiesReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudControlAppCapabilitiesResponse"
+      }
+    },
+    {
+      "name": "controlAppList",
+      "suffix": "/uns/control-apps/list",
+      "handler": "CloudControlAppList",
+      "request": "CloudControlAppListReq",
+      "response": "CloudControlAppListResponse",
+      "permission": "workspace.api.manage",
+      "resource": "app",
+      "mutation": "",
+      "coreOnly": true,
+      "appAllowed": false,
+      "resourceId": 3334,
+      "summary": "Cloud control App registration: List",
+      "description": "Internal authenticated governance; registration does not issue credentials or Control/Source grants.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "minPermission": 3,
+      "scope": "app:manage",
+      "tags": [
+        "控制"
+      ],
+      "operation": "controlAppList",
+      "path": "/uns/control-apps/list",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudControlAppListReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudControlAppListResponse"
+      }
+    },
+    {
+      "name": "controlAppGet",
+      "suffix": "/uns/control-apps/get",
+      "handler": "CloudControlAppGet",
+      "request": "CloudControlAppGetReq",
+      "response": "CloudControlAppGetResponse",
+      "permission": "workspace.api.manage",
+      "resource": "app",
+      "mutation": "",
+      "coreOnly": true,
+      "appAllowed": false,
+      "resourceId": 3335,
+      "summary": "Cloud control App registration: Get",
+      "description": "Internal authenticated governance; registration does not issue credentials or Control/Source grants.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "minPermission": 3,
+      "scope": "app:manage",
+      "tags": [
+        "控制"
+      ],
+      "operation": "controlAppGet",
+      "path": "/uns/control-apps/get",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudControlAppGetReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudControlAppGetResponse"
+      }
+    },
+    {
+      "name": "controlAppCreate",
+      "suffix": "/uns/control-apps/create",
+      "handler": "CloudControlAppCreate",
+      "request": "CloudControlAppCreateReq",
+      "response": "CloudControlAppMutationResponse",
+      "permission": "workspace.api.manage",
+      "resource": "app",
+      "mutation": "meta.create",
+      "coreOnly": true,
+      "appAllowed": false,
+      "resourceId": 3336,
+      "summary": "Cloud control App registration: Create",
+      "description": "Internal authenticated governance; registration does not issue credentials or Control/Source grants.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "minPermission": 3,
+      "scope": "app:manage",
+      "tags": [
+        "控制"
+      ],
+      "operation": "controlAppCreate",
+      "path": "/uns/control-apps/create",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudControlAppCreateReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudControlAppMutationResponse"
+      }
+    },
+    {
+      "name": "controlAppUpdate",
+      "suffix": "/uns/control-apps/update",
+      "handler": "CloudControlAppUpdate",
+      "request": "CloudControlAppUpdateReq",
+      "response": "CloudControlAppMutationResponse",
+      "permission": "workspace.api.manage",
+      "resource": "app",
+      "mutation": "meta.resourcePatch",
+      "coreOnly": true,
+      "appAllowed": false,
+      "resourceId": 3337,
+      "summary": "Cloud control App registration: Update",
+      "description": "Internal authenticated governance; registration does not issue credentials or Control/Source grants.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "minPermission": 3,
+      "scope": "app:manage",
+      "tags": [
+        "控制"
+      ],
+      "operation": "controlAppUpdate",
+      "path": "/uns/control-apps/update",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudControlAppUpdateReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudControlAppMutationResponse"
+      }
+    },
+    {
+      "name": "controlAppPermissionsUpdate",
+      "suffix": "/uns/control-apps/permissions/update",
+      "handler": "CloudControlAppPermissionsUpdate",
+      "request": "CloudControlAppPermissionsUpdateReq",
+      "response": "CloudControlAppMutationResponse",
+      "permission": "workspace.api.manage",
+      "resource": "app",
+      "mutation": "meta.resourcePatch",
+      "coreOnly": true,
+      "appAllowed": false,
+      "resourceId": 3338,
+      "summary": "Cloud control App registration: PermissionsUpdate",
+      "description": "Internal authenticated governance; registration does not issue credentials or Control/Source grants.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "minPermission": 3,
+      "scope": "app:manage",
+      "tags": [
+        "控制"
+      ],
+      "operation": "controlAppPermissionsUpdate",
+      "path": "/uns/control-apps/permissions/update",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudControlAppPermissionsUpdateReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudControlAppMutationResponse"
+      }
+    },
+    {
+      "name": "appDataPolicyGet",
+      "suffix": "/uns/app-data-policy/get",
+      "handler": "CloudAppDataPolicyGet",
+      "request": "CloudAppDataPolicyGetReq",
+      "response": "CloudAppDataPolicyGetResponse",
+      "permission": "workspace.api.manage",
+      "resource": "app",
+      "mutation": "",
+      "coreOnly": true,
+      "appAllowed": false,
+      "resourceId": 3339,
+      "summary": "Hosted App Collection policy: Get",
+      "description": "Internal session governance bound to an existing hosted App UUID. Does not create Apps, issue keys, or grant control capabilities.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "minPermission": 3,
+      "scope": "app:manage",
+      "tags": [
+        "App 与授权"
+      ],
+      "operation": "appDataPolicyGet",
+      "path": "/uns/app-data-policy/get",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudAppDataPolicyGetReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudAppDataPolicyGetResponse"
+      }
+    },
+    {
+      "name": "appDataPolicyUpdate",
+      "suffix": "/uns/app-data-policy/update",
+      "handler": "CloudAppDataPolicyUpdate",
+      "request": "CloudAppDataPolicyUpdateReq",
+      "response": "CloudAppDataPolicyMutationResponse",
+      "permission": "workspace.api.manage",
+      "resource": "app",
+      "mutation": "meta.replace",
+      "coreOnly": true,
+      "appAllowed": false,
+      "resourceId": 3340,
+      "summary": "Hosted App Collection policy: Update",
+      "description": "Internal session governance bound to an existing hosted App UUID. Does not create Apps, issue keys, or grant control capabilities.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "minPermission": 3,
+      "scope": "app:manage",
+      "tags": [
+        "App 与授权"
+      ],
+      "operation": "appDataPolicyUpdate",
+      "path": "/uns/app-data-policy/update",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudAppDataPolicyUpdateReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudAppDataPolicyMutationResponse"
+      }
+    },
+    {
+      "name": "sourceMqttAuthCreate",
+      "suffix": "/uns/sources/mqtt-auth/create",
+      "handler": "UnsV2SourceMqttAuthCreate",
+      "request": "CloudSourceMqttAuthCreateReq",
+      "response": "CloudSourceMqttAuthCreateResponse",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3,
+      "resource": "source",
+      "mutation": "runtime",
+      "runtime": true,
+      "coreOnly": true,
+      "resourceId": 3301,
+      "summary": "Create MQTT Auth for a Source",
+      "description": "Uses existing MQTT Auth generation, credential format and quota; atomically binds it to and enables the Source so the returned credentials can connect immediately.",
+      "cloudExtension": true,
+      "appAllowed": false,
+      "permissionAnyOf": [],
+      "tags": [
+        "数据源"
+      ],
+      "operation": "sourceMqttAuthCreate",
+      "path": "/uns/sources/mqtt-auth/create",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudSourceMqttAuthCreateReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudSourceMqttAuthCreateResponse"
+      }
+    },
+    {
+      "name": "dataAppContext",
+      "suffix": "/uns/app/context",
+      "handler": "UnsV2DataAppContext",
+      "request": "CloudDataAppContextReq",
+      "response": "CloudDataAppContextResponse",
+      "permission": "uns.read",
+      "scope": "uns:read",
+      "minPermission": 1,
+      "resource": "data",
+      "mutation": "",
+      "resourceId": 212,
+      "openapiOnly": true,
+      "mcp": false,
+      "summary": "读取当前 App 的已授权集合上下文",
+      "description": "Authenticated hosted App only; identity comes from the current credential. Returns current grants intersected with Key permissions and live App name, never credentials or issuer user identity.",
+      "example": {},
+      "cloudExtension": true,
+      "appAllowed": true,
+      "permissionAnyOf": [],
+      "tags": [
+        "元数据"
+      ],
+      "operation": "dataAppContext",
+      "path": "/uns/app/context",
+      "method": "POST",
+      "supported": true,
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudDataAppContextReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudDataAppContextResponse"
       }
     },
     {
@@ -14962,139 +15285,90 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "update": {},
-        "arrayFilters": {
-          "type": "array",
-          "items": {}
-        },
-        "upsert": {
-          "type": "boolean",
-          "description": "true 时 filter 必须有 _id 等值条件，或覆盖某个 ready 唯一索引全部字段的等值条件，否则返回 UPSERT_REQUIRES_UNIQUE_INDEX。未匹配则插入，唯一冲突返回 409 DUPLICATE_KEY。"
-        },
         "opId": {
           "type": "string",
           "description": "本事务内唯一操作标识，供依赖和结果引用使用。"
         },
         "action": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "meta.create",
+            "meta.replace",
+            "meta.patch",
+            "meta.resourcePatch",
+            "meta.copy",
+            "meta.archive",
+            "meta.restore"
+          ]
         },
         "kind": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "directory",
+            "topic",
+            "collection"
+          ]
         },
         "id": {
-          "allOf": [
-            {
-              "$ref": "#/components/schemas/UnsV2Identity"
-            }
-          ],
-          "description": "对象 ID（字符串），从发现或读取接口取得；不要把名称当成 ID。 Existing record actions select exactly one record using filter, an explicit id, or an id result binding. Static id and id binding cannot coexist. When id and filter are both supplied they must match the same record. record.query has no id. Creation may omit id for server allocation."
-        },
-        "collectionId": {
-          "$ref": "#/components/schemas/UnsV2Identity"
-        },
-        "recordId": {
-          "$ref": "#/components/schemas/UnsV2Identity"
-        },
-        "streamId": {
-          "$ref": "#/components/schemas/UnsV2Identity"
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "已有元数据的 ID；创建时可省略以自动分配。引用先前创建结果时，在 data 的 parentId、collectionId 等支持引用的字段中传 {ref:opId}。"
         },
         "expectedRevision": {
           "type": "integer",
-          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。 Optional concurrency guard. Omit to update the current object; a supplied revision must match."
+          "minimum": 0,
+          "description": "可选并发版本检查。创建时只能省略或传 0；已有对象省略或传 0 时，在事务内读取当前版本。"
         },
-        "data": {},
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        },
         "dependsOn": {
           "type": "array",
           "items": {
             "type": "string"
           },
           "description": "必须先完成的 opId；服务端检查依赖循环。"
-        },
-        "managedBy": {
-          "$ref": "#/components/schemas/UnsV2ManagedBy"
-        },
-        "time": {
-          "type": "integer",
-          "description": "业务采样时间，Unix 毫秒；不是服务器接收时间。"
-        },
-        "quality": {
-          "type": "string"
-        },
-        "exists": {
-          "type": "boolean"
-        },
-        "conditions": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "field": {
-                "type": "string"
-              },
-              "op": {
-                "type": "string",
-                "enum": [
-                  "eq",
-                  "ne",
-                  "gt",
-                  "gte",
-                  "lt",
-                  "lte",
-                  "in",
-                  "contains",
-                  "exists"
-                ]
-              },
-              "value": {}
-            },
-            "required": [
-              "field",
-              "op"
-            ]
-          },
-          "maxItems": 16
-        },
-        "filter": {},
-        "selection": {
-          "type": "string"
-        },
-        "sort": {
-          "type": "array",
-          "items": {}
-        },
-        "returnDocument": {
-          "type": "string"
-        },
-        "operations": {
-          "type": "array",
-          "items": {
-            "$ref": "#/components/schemas/UnsV2FieldOperation"
-          },
-          "maxItems": 32
-        },
-        "bindings": {
-          "type": "array",
-          "items": {
-            "$ref": "#/components/schemas/UnsV2ResultBinding"
-          },
-          "maxItems": 32,
-          "description": "把先前操作结果绑定到本操作的指定字段；不执行字符串模板或任意代码。"
-        },
-        "query": {
-          "$ref": "#/components/schemas/UnsV2TransactionQuery"
         }
       },
       "required": [
         "opId",
-        "action"
+        "action",
+        "kind"
       ],
       "oneOf": [
         {
           "properties": {
             "action": {
               "enum": [
-                "meta.create",
+                "meta.create"
+              ]
+            },
+            "kind": {
+              "enum": [
+                "directory"
+              ]
+            },
+            "data": {
+              "$ref": "#/components/schemas/DirectoryData"
+            },
+            "expectedRevision": {
+              "enum": [
+                0
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "properties": {
+            "action": {
+              "enum": [
                 "meta.replace"
               ]
             },
@@ -15110,6 +15384,34 @@
           "required": [
             "action",
             "kind",
+            "data",
+            "id"
+          ]
+        },
+        {
+          "properties": {
+            "action": {
+              "enum": [
+                "meta.create"
+              ]
+            },
+            "kind": {
+              "enum": [
+                "topic"
+              ]
+            },
+            "data": {
+              "$ref": "#/components/schemas/TopicData"
+            },
+            "expectedRevision": {
+              "enum": [
+                0
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "kind",
             "data"
           ]
         },
@@ -15117,7 +15419,6 @@
           "properties": {
             "action": {
               "enum": [
-                "meta.create",
                 "meta.replace"
               ]
             },
@@ -15133,6 +15434,34 @@
           "required": [
             "action",
             "kind",
+            "data",
+            "id"
+          ]
+        },
+        {
+          "properties": {
+            "action": {
+              "enum": [
+                "meta.create"
+              ]
+            },
+            "kind": {
+              "enum": [
+                "collection"
+              ]
+            },
+            "data": {
+              "$ref": "#/components/schemas/CollectionData"
+            },
+            "expectedRevision": {
+              "enum": [
+                0
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "kind",
             "data"
           ]
         },
@@ -15140,7 +15469,6 @@
           "properties": {
             "action": {
               "enum": [
-                "meta.create",
                 "meta.replace"
               ]
             },
@@ -15156,76 +15484,8 @@
           "required": [
             "action",
             "kind",
-            "data"
-          ]
-        },
-        {
-          "properties": {
-            "action": {
-              "enum": [
-                "meta.create",
-                "meta.replace"
-              ]
-            },
-            "kind": {
-              "enum": [
-                "stream"
-              ]
-            },
-            "data": {
-              "$ref": "#/components/schemas/StreamData"
-            }
-          },
-          "required": [
-            "action",
-            "kind",
-            "data"
-          ]
-        },
-        {
-          "properties": {
-            "action": {
-              "enum": [
-                "meta.create",
-                "meta.replace"
-              ]
-            },
-            "kind": {
-              "enum": [
-                "source"
-              ]
-            },
-            "data": {
-              "$ref": "#/components/schemas/SourceData"
-            }
-          },
-          "required": [
-            "action",
-            "kind",
-            "data"
-          ]
-        },
-        {
-          "properties": {
-            "action": {
-              "enum": [
-                "meta.create",
-                "meta.replace"
-              ]
-            },
-            "kind": {
-              "enum": [
-                "app"
-              ]
-            },
-            "data": {
-              "$ref": "#/components/schemas/AppData"
-            }
-          },
-          "required": [
-            "action",
-            "kind",
-            "data"
+            "data",
+            "id"
           ]
         },
         {
@@ -15235,44 +15495,16 @@
                 "meta.patch"
               ]
             },
-            "kind": {
-              "enum": [
-                "directory",
-                "topic",
-                "collection",
-                "stream",
-                "source",
-                "app"
-              ]
-            },
             "data": {
               "type": "object",
-              "description": "RFC 7396 partial configuration; readonly fields forbidden; full domain validators apply after merge"
-            },
-            "expectedRevision": {
-              "type": "integer",
-              "minimum": 1
+              "additionalProperties": true,
+              "description": "RFC 7396 部分配置；合并后按该元数据类型校验，不能修改只读字段。"
             }
           },
           "required": [
             "action",
-            "kind",
+            "id",
             "data"
-          ]
-        },
-        {
-          "properties": {
-            "action": {
-              "enum": [
-                "meta.copy",
-                "meta.archive",
-                "meta.restore",
-                "stream.publish"
-              ]
-            }
-          },
-          "required": [
-            "action"
           ]
         },
         {
@@ -15282,23 +15514,9 @@
                 "meta.resourcePatch"
               ]
             },
-            "kind": {
-              "enum": [
-                "directory",
-                "topic",
-                "collection",
-                "stream",
-                "source",
-                "app"
-              ]
-            },
             "data": {
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "operation",
-                "fields"
-              ],
               "properties": {
                 "operation": {
                   "type": "string"
@@ -15307,15 +15525,82 @@
                   "type": "object",
                   "additionalProperties": true
                 }
-              }
+              },
+              "required": [
+                "operation",
+                "fields"
+              ]
             }
           },
           "required": [
             "action",
-            "kind",
             "id",
             "data"
           ]
+        },
+        {
+          "properties": {
+            "action": {
+              "enum": [
+                "meta.copy"
+              ]
+            },
+            "kind": {
+              "enum": [
+                "directory",
+                "topic"
+              ]
+            },
+            "data": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 63
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 512,
+                  "nullable": true
+                },
+                "parentId": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/UnsV2Identity"
+                    }
+                  ],
+                  "nullable": true
+                }
+              },
+              "required": []
+            }
+          },
+          "required": [
+            "action",
+            "id",
+            "data"
+          ]
+        },
+        {
+          "properties": {
+            "action": {
+              "enum": [
+                "meta.archive",
+                "meta.restore"
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "id"
+          ],
+          "not": {
+            "required": [
+              "data"
+            ]
+          }
         }
       ]
     },
@@ -15326,7 +15611,7 @@
         "update": {
           "type": "object",
           "minProperties": 1,
-          "description": "update document, mutually exclusive with legacy operations."
+          "description": "record.update 的更新操作符文档，与 operations 互斥。"
         },
         "arrayFilters": {
           "type": "array",
@@ -15346,10 +15631,17 @@
           "description": "本事务内唯一操作标识，供依赖和结果引用使用。"
         },
         "action": {
-          "type": "string"
-        },
-        "kind": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "record.create",
+            "record.check",
+            "record.read",
+            "record.update",
+            "record.modify",
+            "record.replace",
+            "record.delete",
+            "record.query"
+          ]
         },
         "id": {
           "allOf": [
@@ -15357,38 +15649,27 @@
               "$ref": "#/components/schemas/UnsV2Identity"
             }
           ],
-          "description": "对象 ID（字符串），从发现或读取接口取得；不要把名称当成 ID。 Existing record actions select exactly one record using filter, an explicit id, or an id result binding. Static id and id binding cannot coexist. When id and filter are both supplied they must match the same record. record.query has no id. Creation may omit id for server allocation."
+          "description": "记录 ID 或先前创建操作的引用。创建可省略以自动分配；已有记录操作可通过 id、filter 或目标结果绑定选取记录。record.query 不传 id。"
         },
         "collectionId": {
           "$ref": "#/components/schemas/UnsV2Identity"
         },
-        "recordId": {
-          "$ref": "#/components/schemas/UnsV2Identity"
-        },
-        "streamId": {
-          "$ref": "#/components/schemas/UnsV2Identity"
-        },
         "expectedRevision": {
           "type": "integer",
-          "description": "期望版本号；读取当前对象后携带。冲突须重新读取并决策，不能盲目覆盖。"
+          "minimum": 0,
+          "description": "可选版本检查。创建、读取、集合查询或 exists=false 检查时只能省略或传 0。"
         },
-        "data": {},
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "record.create/replace 的业务数据。"
+        },
         "dependsOn": {
           "type": "array",
           "items": {
             "type": "string"
           },
           "description": "必须先完成的 opId；服务端检查依赖循环。"
-        },
-        "managedBy": {
-          "$ref": "#/components/schemas/UnsV2ManagedBy"
-        },
-        "time": {
-          "type": "integer",
-          "description": "业务采样时间，Unix 毫秒；不是服务器接收时间。"
-        },
-        "quality": {
-          "type": "string"
         },
         "exists": {
           "type": "boolean"
@@ -15403,7 +15684,7 @@
             "first"
           ],
           "default": "exactOne",
-          "description": "仅 record.update/modify/replace。first 按 sort 选择第一条并在事务锁内重检；默认匹配多条报错。"
+          "description": "record.read/update/modify/replace/delete 的选择方式；first 要求 filter，可配合 sort。默认 exactOne，匹配多条报错。"
         },
         "sort": {
           "allOf": [
@@ -15411,7 +15692,7 @@
               "$ref": "#/components/schemas/UnsV2PipelineSort"
             }
           ],
-          "description": "仅 selection=first。服务端追加 _id 升序确保同值顺序稳定。"
+          "description": "仅 selection=first 时使用；追加 ID 排序以稳定同值结果。"
         },
         "returnDocument": {
           "type": "string",
@@ -15419,7 +15700,7 @@
             "before",
             "after"
           ],
-          "description": "仅 record.update/modify/replace；返回 results[].document。省略则保持原回执，不返回文档。"
+          "description": "record.read/update/modify/replace/delete 的 before/after 快照选项；写入操作省略时不额外返回快照。"
         },
         "operations": {
           "type": "array",
@@ -15453,69 +15734,576 @@
           "additionalProperties": {
             "type": "string"
           }
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/UnsV2RecordFilter"
+          },
+          "maxItems": 16,
+          "description": "record.check/update/modify 的条件；不可与 filter 同时使用。"
         }
       },
       "required": [
         "opId",
-        "action"
+        "action",
+        "collectionId"
       ],
       "oneOf": [
         {
           "properties": {
             "action": {
               "enum": [
-                "record.create",
-                "record.replace",
-                "record.delete"
+                "record.create"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "expectedRevision": {
+              "enum": [
+                0
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "data"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "update"
+                ]
+              },
+              {
+                "required": [
+                  "arrayFilters"
+                ]
+              },
+              {
+                "required": [
+                  "upsert"
+                ]
+              },
+              {
+                "required": [
+                  "exists"
+                ]
+              },
+              {
+                "required": [
+                  "filter"
+                ]
+              },
+              {
+                "required": [
+                  "selection"
+                ]
+              },
+              {
+                "required": [
+                  "sort"
+                ]
+              },
+              {
+                "required": [
+                  "returnDocument"
+                ]
+              },
+              {
+                "required": [
+                  "operations"
+                ]
+              },
+              {
+                "required": [
+                  "query"
+                ]
+              },
+              {
+                "required": [
+                  "conditions"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "properties": {
+            "action": {
+              "enum": [
+                "record.check"
               ]
             }
           },
           "required": [
             "action"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "update"
+                ]
+              },
+              {
+                "required": [
+                  "arrayFilters"
+                ]
+              },
+              {
+                "required": [
+                  "upsert"
+                ]
+              },
+              {
+                "required": [
+                  "data"
+                ]
+              },
+              {
+                "required": [
+                  "selection"
+                ]
+              },
+              {
+                "required": [
+                  "sort"
+                ]
+              },
+              {
+                "required": [
+                  "returnDocument"
+                ]
+              },
+              {
+                "required": [
+                  "operations"
+                ]
+              },
+              {
+                "required": [
+                  "query"
+                ]
+              },
+              {
+                "required": [
+                  "lockToken"
+                ]
+              },
+              {
+                "required": [
+                  "release"
+                ]
+              },
+              {
+                "required": [
+                  "lockTokens"
+                ]
+              }
+            ]
+          },
+          "anyOf": [
+            {
+              "required": [
+                "id"
+              ]
+            },
+            {
+              "required": [
+                "filter"
+              ]
+            },
+            {
+              "required": [
+                "bindings"
+              ]
+            }
           ]
         },
         {
           "properties": {
             "action": {
               "enum": [
-                "record.check",
-                "record.read",
-                "record.modify",
+                "record.read"
+              ]
+            },
+            "expectedRevision": {
+              "enum": [
+                0
+              ]
+            }
+          },
+          "required": [
+            "action"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "update"
+                ]
+              },
+              {
+                "required": [
+                  "arrayFilters"
+                ]
+              },
+              {
+                "required": [
+                  "upsert"
+                ]
+              },
+              {
+                "required": [
+                  "data"
+                ]
+              },
+              {
+                "required": [
+                  "exists"
+                ]
+              },
+              {
+                "required": [
+                  "operations"
+                ]
+              },
+              {
+                "required": [
+                  "query"
+                ]
+              },
+              {
+                "required": [
+                  "lockToken"
+                ]
+              },
+              {
+                "required": [
+                  "release"
+                ]
+              },
+              {
+                "required": [
+                  "lockTokens"
+                ]
+              },
+              {
+                "required": [
+                  "conditions"
+                ]
+              }
+            ]
+          },
+          "anyOf": [
+            {
+              "required": [
+                "id"
+              ]
+            },
+            {
+              "required": [
+                "filter"
+              ]
+            },
+            {
+              "required": [
+                "bindings"
+              ]
+            }
+          ]
+        },
+        {
+          "properties": {
+            "action": {
+              "enum": [
                 "record.update"
               ]
             }
           },
           "required": [
-            "action",
-            "collectionId"
+            "action"
           ],
-          "anyOf": [
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "data"
+                ]
+              },
+              {
+                "required": [
+                  "exists"
+                ]
+              },
+              {
+                "required": [
+                  "query"
+                ]
+              }
+            ]
+          },
+          "allOf": [
             {
-              "required": [
-                "operations"
-              ],
-              "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "id"
+                  ]
+                },
+                {
+                  "required": [
+                    "filter"
+                  ]
+                },
+                {
+                  "required": [
+                    "bindings"
+                  ]
+                }
+              ]
+            },
+            {
+              "oneOf": [
+                {
+                  "required": [
+                    "operations"
+                  ],
+                  "properties": {
+                    "operations": {
+                      "minItems": 1
+                    }
+                  },
+                  "not": {
+                    "required": [
+                      "update"
+                    ]
+                  }
+                },
+                {
+                  "required": [
+                    "update"
+                  ],
+                  "not": {
+                    "required": [
+                      "operations"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "properties": {
+            "action": {
+              "enum": [
+                "record.modify"
+              ]
+            },
+            "operations": {
+              "minItems": 1
+            }
+          },
+          "required": [
+            "action",
+            "operations"
+          ],
+          "not": {
+            "anyOf": [
+              {
                 "required": [
                   "update"
                 ]
+              },
+              {
+                "required": [
+                  "arrayFilters"
+                ]
+              },
+              {
+                "required": [
+                  "upsert"
+                ]
+              },
+              {
+                "required": [
+                  "data"
+                ]
+              },
+              {
+                "required": [
+                  "exists"
+                ]
+              },
+              {
+                "required": [
+                  "query"
+                ]
               }
-            },
+            ]
+          },
+          "allOf": [
             {
-              "required": [
-                "update"
-              ],
-              "properties": {
-                "action": {
-                  "enum": [
-                    "record.update"
+              "anyOf": [
+                {
+                  "required": [
+                    "id"
+                  ]
+                },
+                {
+                  "required": [
+                    "filter"
+                  ]
+                },
+                {
+                  "required": [
+                    "bindings"
                   ]
                 }
+              ]
+            }
+          ]
+        },
+        {
+          "properties": {
+            "action": {
+              "enum": [
+                "record.replace"
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "data"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "update"
+                ]
               },
-              "not": {
+              {
+                "required": [
+                  "arrayFilters"
+                ]
+              },
+              {
+                "required": [
+                  "exists"
+                ]
+              },
+              {
                 "required": [
                   "operations"
                 ]
+              },
+              {
+                "required": [
+                  "query"
+                ]
+              },
+              {
+                "required": [
+                  "conditions"
+                ]
               }
+            ]
+          },
+          "anyOf": [
+            {
+              "required": [
+                "id"
+              ]
+            },
+            {
+              "required": [
+                "filter"
+              ]
+            },
+            {
+              "required": [
+                "bindings"
+              ]
+            }
+          ]
+        },
+        {
+          "properties": {
+            "action": {
+              "enum": [
+                "record.delete"
+              ]
+            }
+          },
+          "required": [
+            "action"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "update"
+                ]
+              },
+              {
+                "required": [
+                  "arrayFilters"
+                ]
+              },
+              {
+                "required": [
+                  "upsert"
+                ]
+              },
+              {
+                "required": [
+                  "data"
+                ]
+              },
+              {
+                "required": [
+                  "exists"
+                ]
+              },
+              {
+                "required": [
+                  "operations"
+                ]
+              },
+              {
+                "required": [
+                  "query"
+                ]
+              },
+              {
+                "required": [
+                  "conditions"
+                ]
+              }
+            ]
+          },
+          "anyOf": [
+            {
+              "required": [
+                "id"
+              ]
+            },
+            {
+              "required": [
+                "filter"
+              ]
+            },
+            {
+              "required": [
+                "bindings"
+              ]
             }
           ]
         },
@@ -15525,51 +16313,118 @@
               "enum": [
                 "record.query"
               ]
+            },
+            "expectedRevision": {
+              "enum": [
+                0
+              ]
             }
           },
           "required": [
             "action",
-            "collectionId",
             "query"
-          ]
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "update"
+                ]
+              },
+              {
+                "required": [
+                  "arrayFilters"
+                ]
+              },
+              {
+                "required": [
+                  "upsert"
+                ]
+              },
+              {
+                "required": [
+                  "id"
+                ]
+              },
+              {
+                "required": [
+                  "data"
+                ]
+              },
+              {
+                "required": [
+                  "exists"
+                ]
+              },
+              {
+                "required": [
+                  "filter"
+                ]
+              },
+              {
+                "required": [
+                  "selection"
+                ]
+              },
+              {
+                "required": [
+                  "sort"
+                ]
+              },
+              {
+                "required": [
+                  "returnDocument"
+                ]
+              },
+              {
+                "required": [
+                  "operations"
+                ]
+              },
+              {
+                "required": [
+                  "bindings"
+                ]
+              },
+              {
+                "required": [
+                  "lockToken"
+                ]
+              },
+              {
+                "required": [
+                  "release"
+                ]
+              },
+              {
+                "required": [
+                  "lockTokens"
+                ]
+              },
+              {
+                "required": [
+                  "conditions"
+                ]
+              }
+            ]
+          }
         }
       ],
       "allOf": [
         {
           "anyOf": [
             {
-              "properties": {
-                "action": {
-                  "enum": [
-                    "record.update",
-                    "record.modify",
-                    "record.replace"
-                  ]
-                }
-              },
-              "required": [
-                "action"
-              ]
+              "not": {
+                "required": [
+                  "filter"
+                ]
+              }
             },
             {
-              "not": {
-                "anyOf": [
-                  {
-                    "required": [
-                      "selection"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "sort"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "returnDocument"
-                    ]
-                  }
-                ]
+              "properties": {
+                "conditions": {
+                  "maxItems": 0
+                }
               }
             }
           ]
@@ -15578,24 +16433,41 @@
           "anyOf": [
             {
               "properties": {
+                "exists": {
+                  "enum": [
+                    true
+                  ]
+                }
+              }
+            },
+            {
+              "properties": {
+                "expectedRevision": {
+                  "enum": [
+                    0
+                  ]
+                },
+                "conditions": {
+                  "maxItems": 0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "required": [
+                "selection",
+                "filter"
+              ],
+              "properties": {
                 "selection": {
                   "enum": [
                     "first"
                   ]
-                },
-                "filter": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/UnsV2DataFilter"
-                    }
-                  ],
-                  "minProperties": 1
                 }
-              },
-              "required": [
-                "selection",
-                "filter"
-              ]
+              }
             },
             {
               "properties": {
@@ -15609,6 +16481,37 @@
                 "required": [
                   "sort"
                 ]
+              }
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "properties": {
+                "upsert": {
+                  "enum": [
+                    false
+                  ]
+                }
+              }
+            },
+            {
+              "required": [
+                "filter"
+              ],
+              "properties": {
+                "action": {
+                  "enum": [
+                    "record.update",
+                    "record.replace"
+                  ]
+                },
+                "expectedRevision": {
+                  "enum": [
+                    0
+                  ]
+                }
               }
             }
           ]
@@ -27364,8 +28267,7 @@
             "available",
             "active",
             "endpoint",
-            "topic",
-            "clientIdPrefix"
+            "topic"
           ],
           "properties": {
             "available": {
@@ -27390,9 +28292,6 @@
             "topic": {
               "type": "string"
             },
-            "clientIdPrefix": {
-              "type": "string"
-            },
             "expiresAt": {
               "type": "integer",
               "minimum": 1,
@@ -27402,6 +28301,47 @@
               "type": "integer",
               "minimum": 1,
               "description": "Unix epoch milliseconds; omitted when no event has occurred."
+            },
+            "auth": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "name",
+                "clientId",
+                "username",
+                "clientIdRandomSuffixEnabled",
+                "authStatus"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]*$"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "clientId": {
+                  "type": "string"
+                },
+                "username": {
+                  "type": "string"
+                },
+                "clientIdRandomSuffixEnabled": {
+                  "type": "integer",
+                  "enum": [
+                    1,
+                    2
+                  ]
+                },
+                "authStatus": {
+                  "type": "integer",
+                  "enum": [
+                    1,
+                    2
+                  ]
+                }
+              }
             }
           }
         }
@@ -27451,7 +28391,6 @@
             "active",
             "endpoint",
             "topic",
-            "clientIdPrefix",
             "token",
             "expiresAt"
           ],
@@ -27476,9 +28415,6 @@
               "type": "string"
             },
             "topic": {
-              "type": "string"
-            },
-            "clientIdPrefix": {
               "type": "string"
             },
             "expiresAt": {
@@ -28004,6 +28940,748 @@
             "durationMs",
             "mode"
           ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudControlAppProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "version": {
+          "type": "string",
+          "enum": [
+            "cloud-control-app/v1"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63
+        },
+        "description": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 512
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "disabled"
+          ]
+        },
+        "platformPermissions": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "openapi.base",
+              "control.read",
+              "control.execute",
+              "control.write"
+            ]
+          }
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "version",
+        "name",
+        "description",
+        "status",
+        "platformPermissions"
+      ]
+    },
+    "CloudControlAppCapabilitiesReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {},
+      "required": []
+    },
+    "CloudControlAppCapabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "enum": [
+            "cloud-control-app/v1"
+          ]
+        }
+      },
+      "required": [
+        "version"
+      ]
+    },
+    "CloudControlAppListReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "search": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 128
+        }
+      },
+      "required": []
+    },
+    "CloudControlAppGetReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "minLength": 36,
+          "maxLength": 36
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "CloudControlAppCreateReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "dryRun": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63
+        },
+        "description": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 512
+        },
+        "platformPermissions": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "openapi.base",
+              "control.read",
+              "control.execute",
+              "control.write"
+            ]
+          }
+        }
+      },
+      "required": [
+        "idempotencyKey",
+        "dryRun",
+        "name"
+      ]
+    },
+    "CloudControlAppUpdateReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "dryRun": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63
+        },
+        "description": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 512
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "disabled"
+          ]
+        }
+      },
+      "required": [
+        "idempotencyKey",
+        "dryRun",
+        "id",
+        "expectedRevision"
+      ]
+    },
+    "CloudControlAppPermissionsUpdateReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "dryRun": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "platformPermissions": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "openapi.base",
+              "control.read",
+              "control.execute",
+              "control.write"
+            ]
+          }
+        }
+      },
+      "required": [
+        "idempotencyKey",
+        "dryRun",
+        "id",
+        "expectedRevision",
+        "platformPermissions"
+      ]
+    },
+    "CloudControlAppPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "list": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/CloudControlAppProfile"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "truncated": {
+          "type": "boolean",
+          "enum": [
+            false
+          ]
+        },
+        "snapshotScope": {
+          "type": "string",
+          "enum": [
+            "thisRequestOnly"
+          ]
+        },
+        "nextPage": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "list",
+        "total",
+        "page",
+        "size",
+        "hasMore",
+        "complete",
+        "truncated",
+        "snapshotScope"
+      ]
+    },
+    "CloudControlAppCapabilitiesResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/components/schemas/CloudControlAppCapabilities"
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudControlAppGetResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/components/schemas/CloudControlAppProfile"
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudControlAppListResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/components/schemas/CloudControlAppPage"
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudControlAppMutationResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/components/schemas/Outcome"
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudAppDataGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "alias": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,62}$",
+          "minLength": 1,
+          "maxLength": 63
+        },
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "permissions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "record:read",
+              "record:write",
+              "record:delete",
+              "sample:read",
+              "sample:write"
+            ]
+          }
+        }
+      },
+      "required": [
+        "alias",
+        "collectionId",
+        "permissions"
+      ]
+    },
+    "CloudAppDataPolicyGetReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "appId": {
+          "type": "string",
+          "format": "uuid",
+          "minLength": 36,
+          "maxLength": 36
+        }
+      },
+      "required": [
+        "appId"
+      ]
+    },
+    "CloudAppDataPolicyUpdateReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "appId": {
+          "type": "string",
+          "format": "uuid",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "0 attaches a data policy to an existing hosted App; positive revisions update it with CAS."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "disabled"
+          ]
+        },
+        "collections": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/components/schemas/CloudAppDataGrant"
+          }
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "dryRun": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "appId",
+        "expectedRevision",
+        "status",
+        "collections",
+        "idempotencyKey",
+        "dryRun"
+      ]
+    },
+    "CloudAppDataPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "appId": {
+          "type": "string",
+          "format": "uuid",
+          "minLength": 36,
+          "maxLength": 36
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "version": {
+          "type": "string",
+          "enum": [
+            "cloud-hosted-app-data/v1"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "disabled"
+          ]
+        },
+        "collections": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/components/schemas/CloudAppDataGrant"
+          }
+        },
+        "authorityStatus": {
+          "type": "string",
+          "enum": [
+            "available",
+            "notReady",
+            "notFound",
+            "unavailable"
+          ]
+        },
+        "appName": {
+          "type": "string",
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "appId",
+        "revision",
+        "version",
+        "status",
+        "collections",
+        "authorityStatus",
+        "appName"
+      ]
+    },
+    "CloudAppDataPolicyGetResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/components/schemas/CloudAppDataPolicy"
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudAppDataPolicyMutationResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/components/schemas/Outcome"
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudSourceMqttAuthCreateReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "expectedRevision",
+        "confirmedImpactRevision",
+        "name",
+        "clientIdRandomSuffixEnabled"
+      ],
+      "properties": {
+        "confirmedImpactRevision": {
+          "type": "string",
+          "pattern": "^si1_[A-Za-z0-9_-]{43}$",
+          "description": "当前 Source 启用操作的影响确认；Auth、启用及修订绑定在同一事务提交。"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*$"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "clientIdRandomSuffixEnabled": {
+          "type": "integer",
+          "enum": [
+            1,
+            2
+          ]
+        }
+      }
+    },
+    "CloudSourceMqttAuthCreateResponse": {
+      "type": "object",
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "name",
+            "clientId",
+            "username",
+            "password",
+            "clientIdRandomSuffixEnabled"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "name": {
+              "type": "string"
+            },
+            "clientId": {
+              "type": "string"
+            },
+            "username": {
+              "type": "string"
+            },
+            "clientIdRandomSuffixEnabled": {
+              "type": "integer",
+              "enum": [
+                1,
+                2
+              ]
+            },
+            "password": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "CloudDataAppContextReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {}
+    },
+    "CloudDataAppContextResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/components/schemas/AppContext"
         }
       },
       "required": [

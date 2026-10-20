@@ -31,6 +31,21 @@ const client = (timeout = 2_000, unsV2MaxResponseBytes?: number) => createClient
 });
 
 describe('UNS v2 localhost HTTP fixture', () => {
+  it('reads the current hosted App context without an App selector or retries', async () => {
+    const start = received.length;
+    respond = (_req, res) => send(res, { code: 200, msg: '', requestId: 'app-context', data: {
+      appId: '14bfc189-8516-4709-a4c9-865a0f1dc345', name: 'Hosted App', revision: 1,
+      collections: [], platformPermissions: [],
+    } });
+    const out = await client().unsV2.dataAppContext({});
+    expect(out.data.appId).toBe('14bfc189-8516-4709-a4c9-865a0f1dc345');
+    expect(out.data.name).toBe('Hosted App');
+    expect(out.data.collections).toEqual([]);
+    expect(received.length - start).toBe(1);
+    expect(received.at(-1)?.path).toBe('/openapi/v2/uns/app/context');
+    expect(received.at(-1)?.body).toBe('{}');
+  });
+
   it('sends unified index declarations and reads exact business numbers through the 4.0 find route', async () => {
     const start = received.length;
     respond = (req, res) => {
@@ -132,9 +147,9 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+data/3');
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(96);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(100);
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+data/3+app-data/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(97);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(110);
     expect(received.slice(start)).toHaveLength(1);
   });
 
