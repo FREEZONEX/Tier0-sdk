@@ -1,14 +1,14 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { createClient } from '@tier0/sdk/cloud';
+import { createClient, UnsV2RawNumber } from '@tier0/sdk/cloud';
 import { createHash } from 'node:crypto';
 import { createCloudAppRequestVerifier, APP_REQUEST_IDENTITY_HEADER } from '@tier0/sdk/cloud/server';
 
 // Explicit deployment migration: legacy preserves v5 receipts and App-side filtering.
 // Core never falls back to legacy. Enable writes only after reconciling old receipts
 // and provisioning cloud-app-data-rule/v1: ownerField=ownerUserId, stateField=status,
-// initialState=draft, own rows, writeFields=[orderNo,amount], and readFields including
-// orderNo, amount, status AND ownerUserId. Schema alone does not grant field access.
+// initialState=draft. Core rules own row/field/state permissions, including supervisor
+// access; this server neither infers roles nor requires hidden owner fields to read.
 const dataMode = process.env.CLOUD_APP_DATA_MODE ?? 'legacy';
 const coreWrite = process.env.CLOUD_APP_CORE_WRITE_ENABLED ?? 'false';
 if (!['legacy', 'core'].includes(dataMode) || !['true', 'false'].includes(coreWrite) ||
@@ -31,8 +31,8 @@ async function ordersContext(client, permission, subject) {
   const response = await client.unsV2.dataAppContext({});
   const grant = response.data.collections.find((item) => item.alias === 'orders');
   if (response.data.appId !== subject.appID || !grant || !grant.permissions.includes(permission)) throw Object.assign(new Error(), { status: 403, code: 'FORBIDDEN' });
-  if (grant.recordSchema?.properties?.ownerUserId?.type !== 'string' ||
-      !grant.recordSchema.required?.includes('ownerUserId')) {
+  if (dataMode === 'legacy' && (grant.recordSchema?.properties?.ownerUserId?.type !== 'string' ||
+      !grant.recordSchema.required?.includes('ownerUserId'))) {
     throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_POLICY_UNAVAILABLE' });
   }
   return { response, grant };
@@ -62,7 +62,50 @@ function orderInput(req, raw) {
   return value;
 }
 
-// Identity and user grants are pinned by the App operator, never browser input.
+const patchReceiptDomain = 'core-order-patch/v1';
+// PATCH accepts {changes:{amount?,status?}, expectedRevision:"<positive int64>",
+// idempotencyKey:"core-patch-v1-<UUID>", receiptDomain:"core-order-patch/v1"}.
+// This is syntax validation, never a local role/field/state permission decision.
+function patchInput(req, raw) {
+  let value;
+  try { value = JSON.parse(raw.toString('utf8')); } catch { /* Rejected below. */ }
+  if (req.headers['content-type']?.split(';')[0].trim() !== 'application/json' ||
+      !value || Array.isArray(value) || typeof value !== 'object' ||
+      Object.keys(value).some((key) => !['changes', 'expectedRevision', 'idempotencyKey', 'receiptDomain'].includes(key)) ||
+      !value.changes || Array.isArray(value.changes) || typeof value.changes !== 'object' ||
+      !Object.keys(value.changes).length || Object.keys(value.changes).some((key) => !['amount', 'status'].includes(key)) ||
+      (Object.hasOwn(value.changes, 'amount') && (!Number.isSafeInteger(value.changes.amount) || value.changes.amount < 0)) ||
+      (Object.hasOwn(value.changes, 'status') && (typeof value.changes.status !== 'string' || !/^[a-z][a-z0-9_-]{0,31}$/.test(value.changes.status))) ||
+      typeof value.expectedRevision !== 'string' || !/^[1-9]\d{0,18}$/.test(value.expectedRevision) ||
+      BigInt(value.expectedRevision) > 9223372036854775807n) {
+    throw Object.assign(new Error(), { status: 400, code: 'INVALID_INPUT' });
+  }
+  if (value.receiptDomain !== patchReceiptDomain || typeof value.idempotencyKey !== 'string' ||
+      !/^core-patch-v1-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value.idempotencyKey)) {
+    throw Object.assign(new Error(), { status: 409, code: 'NEW_DATA_INTENT_REQUIRED' });
+  }
+  return value;
+}
+
+function orderView(item, projection) {
+  // Missing fields stay absent: do not turn a hidden amount/status/owner into a
+  // fabricated value, or read/merge them into a later update or binding.
+  return { id: item.id, revision: typeof item.revision === 'bigint' || item.revision instanceof UnsV2RawNumber ? item.revision.toString() : item.revision,
+    data: Object.fromEntries(['orderNo', 'amount', 'status'].filter((key) => projection[key] && Object.hasOwn(item.data, key))
+      .map((key) => [key, item.data[key]])) };
+}
+
+function orderProjection(grant) {
+  // Core appcontext exposes the current readable schema. An empty projection can
+  // mean "all fields", so never issue that query when no display field is visible.
+  const properties = grant.recordSchema?.properties ?? {};
+  const fields = ['orderNo', 'amount', 'status'].filter((key) => Object.hasOwn(properties, key));
+  if (!fields.length) throw Object.assign(new Error(), { status: 403, code: 'APP_DATA_FIELDS_UNAVAILABLE' });
+  return Object.fromEntries(fields.map((key) => [key, 1]));
+}
+
+// Identity and legacy user grants are pinned by the App operator, never browser
+// input. Core principals and business permissions are managed by Core data rules.
 const identityFields = ['CLOUD_APP_ID', 'CLOUD_WORKSPACE_ID', 'CLOUD_APP_IDENTITY_PUBLIC_KEYS'];
 let verifyIdentity;
 if (identityFields.some((key) => process.env[key])) {
@@ -77,8 +120,8 @@ function userGrant(name) {
       new Set(users).size !== users.length) throw new Error('APP_IDENTITY_CONFIGURATION_INVALID');
   return new Set(users);
 }
-const dataUsers = userGrant('CLOUD_DATA_USER_IDS');
-if (dataMode === 'core' && !dataUsers) throw new Error('APP_DATA_CONFIGURATION_INVALID');
+const dataUsers = dataMode === 'legacy' ? userGrant('CLOUD_DATA_USER_IDS') : undefined;
+if (dataMode === 'core' && !verifyIdentity) throw new Error('APP_IDENTITY_CONFIGURATION_INVALID');
 let controlAuthority;
 if (process.env.CLOUD_CONTROL_USER_IDS || process.env.CLOUD_CONTROL_CODE) {
   const users = userGrant('CLOUD_CONTROL_USER_IDS');
@@ -87,8 +130,8 @@ if (process.env.CLOUD_CONTROL_USER_IDS || process.env.CLOUD_CONTROL_CODE) {
   }
   controlAuthority = { users, code: process.env.CLOUD_CONTROL_CODE, verify: verifyIdentity };
 }
-async function orderSubject(req) {
-  if (!dataUsers) throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_UNAVAILABLE' });
+async function orderSubject(req, requestPath = '/api/orders') {
+  if (dataMode === 'legacy' && !dataUsers) throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_UNAVAILABLE' });
   const parts = []; let size = 0;
   for await (const part of req) {
     size += part.length;
@@ -101,8 +144,8 @@ async function orderSubject(req) {
     subject = verifyIdentity({ assertion: req.headers[APP_REQUEST_IDENTITY_HEADER.toLowerCase()],
       method: req.method, requestURI: req.url, body: raw });
   } catch { throw Object.assign(new Error(), { status: 401, code: 'APP_IDENTITY_INVALID' }); }
-  if (!dataUsers.has(subject.userID)) throw Object.assign(new Error(), { status: 403, code: 'APP_DATA_FORBIDDEN' });
-  if (req.url !== '/api/orders' || (req.method === 'GET' && raw.length)) {
+  if (dataMode === 'legacy' && !dataUsers.has(subject.userID)) throw Object.assign(new Error(), { status: 403, code: 'APP_DATA_FORBIDDEN' });
+  if (req.url !== requestPath || (req.method === 'GET' && raw.length)) {
     throw Object.assign(new Error(), { status: 400, code: 'INVALID_INPUT' });
   }
   return { subject, raw };
@@ -181,16 +224,51 @@ const server = createServer(async (req, res) => {
     if (['GET', 'POST'].includes(req.method) && path === '/api/device/telemetry') {
       return reply(res, 200, await deviceControl(req));
     }
+    if (dataMode === 'core' && ['GET', 'PATCH'].includes(req.method) && path.startsWith('/api/orders/')) {
+      const { subject, raw } = await orderSubject(req, path);
+      const client = orderClient(req);
+      let id;
+      try { id = decodeURIComponent(path.slice('/api/orders/'.length)); } catch { /* Rejected below. */ }
+      if (typeof id !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9:_-]{0,127}$/.test(id)) {
+        throw Object.assign(new Error(), { status: 400, code: 'INVALID_INPUT' });
+      }
+      if (req.method === 'GET') {
+        const { grant } = await ordersContext(client, 'record:read', subject);
+        const projection = orderProjection(grant);
+        const records = await client.unsV2.recordFind({ collectionId: grant.collectionId,
+          filter: { _id: { $eq: id } }, projection, limit: 1 });
+        const item = records.data.items[0];
+        if (!item) return reply(res, 404, { code: 'NOT_FOUND' });
+        if (records.data.items.length !== 1 || item.id !== id) {
+          throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_POLICY_UNAVAILABLE' });
+        }
+        return reply(res, 200, { item: orderView(item, projection), receiptDomain: patchReceiptDomain,
+          canWrite: coreWritesEnabled && grant.permissions.includes('record:write') });
+      }
+      if (!coreWritesEnabled) throw Object.assign(new Error(), { status: 403, code: 'APP_DATA_READ_ONLY' });
+      const input = patchInput(req, raw);
+      const { grant } = await ordersContext(client, 'record:write', subject);
+      // Bind the intent to actor + target, never to a fetched/merged row or the
+      // payload hash: Core must detect conflicting reuse of the same intent.
+      const result = await client.unsV2.recordUpdateOne({ collectionId: grant.collectionId,
+        filter: { _id: { $eq: id } }, expectedRevision: new UnsV2RawNumber(input.expectedRevision),
+        update: { $set: input.changes }, upsert: false, dryRun: false,
+        idempotencyKey: orderIdentity('app-order-patch-v1', subject, JSON.stringify([id, input.idempotencyKey])) });
+      if (result.data.matchedCount === 0 || result.data.matchedCount === 0n) return reply(res, 404, { code: 'NOT_FOUND' });
+      return reply(res, 200, { status: result.data.status, replayed: result.data.replayed,
+        matchedCount: String(result.data.matchedCount), modifiedCount: String(result.data.modifiedCount), requestId: result.requestId });
+    }
     if (req.method === 'GET' && path === '/api/orders') {
       const { subject } = await orderSubject(req);
       const client = orderClient(req);
       const { response, grant } = await ordersContext(client, 'record:read', subject);
+      const projection = dataMode === 'legacy' ? { orderNo: 1, amount: 1, status: 1, ownerUserId: 1 } : orderProjection(grant);
       const records = await client.unsV2.recordFind({ collectionId: grant.collectionId,
-        // Core must enforce row scope itself; a successful App filter is no proof
-        // of Core enforcement. Keep the result owner check as a separate guard.
+        // Core alone decides own/all scope and field visibility. Legacy retains
+        // its owner filter and result guard; neither can represent supervisor rules.
         ...(dataMode === 'legacy' ? { filter: { ownerUserId: { $eq: subject.userID } } } : {}),
-        projection: { orderNo: 1, amount: 1, status: 1, ownerUserId: 1 }, limit: 20 });
-      if (records.data.items.some((item) => item.data.ownerUserId !== subject.userID)) {
+        projection, limit: 20 });
+      if (dataMode === 'legacy' && records.data.items.some((item) => item.data.ownerUserId !== subject.userID)) {
         throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_POLICY_UNAVAILABLE' });
       }
       return reply(res, 200, {
@@ -198,9 +276,7 @@ const server = createServer(async (req, res) => {
         policyRevision: response.data.revision,
         dataMode, receiptDomain,
         canWrite: grant.permissions.includes('record:write') && (dataMode === 'legacy' || coreWritesEnabled),
-        items: records.data.items.map((item) => ({ id: item.id, revision: item.revision, data: {
-          orderNo: item.data.orderNo, amount: item.data.amount, status: item.data.status,
-        } })),
+        items: records.data.items.map((item) => orderView(item, projection)),
       });
     }
     if (req.method === 'POST' && path === '/api/orders') {
@@ -222,7 +298,7 @@ const server = createServer(async (req, res) => {
     reply(res, 404, { code: 'NOT_FOUND' });
   } catch (error) {
     const unknown = error.outcomeUnknown === true;
-    const status = unknown ? 504 : [400, 401, 403, 409, 413, 422, 429, 502, 503, 504].includes(error.status) ? error.status : 503;
+    const status = unknown ? 504 : [400, 401, 403, 404, 409, 413, 422, 429, 502, 503, 504].includes(error.status) ? error.status : 503;
     const code = unknown ? 'OUTCOME_UNKNOWN' : /^[A-Z_0-9]{1,80}$/.test(error.errorCode ?? error.code ?? '') ? (error.errorCode ?? error.code) : 'UNAVAILABLE';
     if (!res.headersSent) reply(res, status, { code });
     else res.destroy();

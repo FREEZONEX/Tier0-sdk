@@ -24,12 +24,21 @@ const controlCode = 'fixture.telemetry';
 let controlMode = 'active'; let controlAttempts = 0; let deviceOperations = 0;
 const controlIntents = new Map();
 const dataUsers = ['9007199254740995', '9007199254740996'];
+const supervisorID = '9007199254740997';
 let dataRequests = 0;
 let leakRows = false;
 let invalidPolicy = false;
 let appDataMode = 'legacy';
 let hideOwner = false;
 const proofs = new Map(dataUsers.map((userID, index) => [userID, `fixture.employee_${index}.signature`]));
+proofs.set(supervisorID, 'fixture.supervisor.signature');
+let hiddenDisplayFields = new Set();
+let wrongContextApp = false;
+let patchAttempts = 0;
+let lastPatchRevision;
+let overReturnFields = false;
+const patchReceipts = new Map();
+const readableFields = () => ['orderNo', 'amount', 'status'].filter((field) => !hiddenDisplayFields.has(field));
 const dataExchanges = [];
 let pendingContexts;
 function signedRequest(method, raw, overrides = {}, requestURI = '/api/device/telemetry') {
@@ -71,6 +80,8 @@ const gateway = createServer(async (req, res) => {
   else assert.equal(proof, undefined, 'legacy never forwards an inbound data proof');
   assert.equal(req.headers['x-api-key'], 'fixture-key-not-production');
   const reply = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(value)); };
+  const failure = (status, code) => reply(status, { code: status, msg: 'private fixture policy detail', requestId: 'fixture-policy', data: null,
+    error: { code, retryable: false, details: [], retryAdvice: { recommendedAction: 'doNotRetry', canRetrySameRequest: false, keepIdempotencyKey: true } } });
   if (mode === 'revoked') return reply(403, {
     code: 403, msg: 'must-not-expose-private-detail', requestId: 'fixture-revoked',
     error: { code: 'FORBIDDEN', retryable: false },
@@ -82,25 +93,64 @@ const gateway = createServer(async (req, res) => {
     }
     return reply(200, {
     code: 200, requestId: 'fixture-context', msg: 'success', data: {
-      appId: appID, name: 'SDK App fixture', revision: 1, platformPermissions: [],
-      collections: [{ alias: 'orders', collectionId, permissions: mode === 'read' ? ['record:read'] : ['record:read', 'record:write'], recordSchema: invalidPolicy ? { type: 'object' } : { type: 'object', properties: { ownerUserId: { type: 'string' } }, required: ['ownerUserId'] } }],
+      appId: wrongContextApp ? 'another-app' : appID, name: 'SDK App fixture', revision: 1, platformPermissions: [],
+      collections: [{ alias: 'orders', collectionId, permissions: mode === 'read' ? ['record:read'] : ['record:read', 'record:write'], recordSchema: invalidPolicy ? { type: 'object' } : {
+        type: 'object', properties: { ...Object.fromEntries(readableFields().map((field) => [field, field === 'amount' ? { type: 'integer' } : { type: 'string', ...(field === 'status' ? { enum: ['draft'] } : {}) }])),
+          ...(!hideOwner && proofUser !== supervisorID ? { ownerUserId: { type: 'string' } } : {}) },
+        ...(!hideOwner && proofUser !== supervisorID ? { required: ['ownerUserId'] } : {}),
+      } }],
     },
     });
   }
   if (req.url === `/openapi/v2/uns/collections/${collectionId}/records:find`) {
     const input = JSON.parse(body);
-    if (appDataMode === 'core') assert.equal(Object.hasOwn(input, 'filter'), false, 'Core gets no App-side owner filter');
+    if (appDataMode === 'core') {
+      if (input.filter) assert.deepEqual(Object.keys(input.filter), ['_id'], 'only the target ID narrows Core detail lookup');
+      else assert.equal(Object.hasOwn(input, 'filter'), false, 'Core list gets no App-side owner filter');
+    }
     else assert.deepEqual(Object.keys(input.filter), ['ownerUserId']);
     const userID = appDataMode === 'core' ? proofUser : input.filter.ownerUserId.$eq;
-    assert.ok(dataUsers.includes(userID));
-    assert.deepEqual(input.projection, { orderNo: 1, amount: 1, status: 1, ownerUserId: 1 });
+    assert.ok([...dataUsers, supervisorID].includes(userID));
+    assert.deepEqual(input.projection, appDataMode === 'core' ? Object.fromEntries(readableFields().map((field) => [field, 1])) : { orderNo: 1, amount: 1, status: 1, ownerUserId: 1 });
+    const visible = leakRows || (appDataMode === 'core' && proofUser === supervisorID) ? items : items.filter((item) => item.data.ownerUserId === userID);
+    const selected = input.filter?._id ? visible.filter((item) => item.id === input.filter._id.$eq) : visible;
     return reply(200, { code: 200, requestId: 'fixture-find', msg: 'success', data: {
-      items: (leakRows ? items : items.filter((item) => item.data.ownerUserId === userID)).map((item) => {
-        if (!hideOwner) return item;
-        const { ownerUserId, ...data } = item.data;
-        return { ...item, data };
-      }), pageInfo: { hasMore: false },
+      items: selected.map((item) => ({ ...item, data: Object.fromEntries(Object.entries(item.data)
+        .filter(([field]) => (overReturnFields || input.projection[field]) && !(hideOwner && field === 'ownerUserId'))) })), pageInfo: { hasMore: false },
     } });
+  }
+  if (req.url === `/openapi/v2/uns/collections/${collectionId}/records:updateOne`) {
+    patchAttempts++;
+    const input = JSON.parse(body);
+    assert.deepEqual(Object.keys(input).sort(), ['collectionId', 'dryRun', 'expectedRevision', 'filter', 'idempotencyKey', 'update', 'upsert'].sort());
+    assert.equal(input.upsert, false); assert.equal(input.dryRun, false);
+    assert.deepEqual(Object.keys(input.filter), ['_id']); assert.deepEqual(Object.keys(input.update), ['$set']);
+    assert.ok(input.idempotencyKey.startsWith('app-order-patch-v1:'));
+    if (mode === 'patch-unknown') return req.socket.destroy();
+    if (mode === 'patch-redirect') { res.writeHead(307, { Location: '/redirected' }); return res.end('{}'); }
+    // This models policy/receipts for local wiring tests only; it is not evidence
+    // of real Core rule enforcement or a persistent business audit.
+    const previous = patchReceipts.get(input.idempotencyKey);
+    if (previous) {
+      if (previous.body !== body) return failure(409, 'IDEMPOTENCY_CONFLICT');
+      return reply(200, { ...previous.result, data: { ...previous.result.data, replayed: true } });
+    }
+    const row = items.find((item) => item.id === input.filter._id.$eq && (proofUser === supervisorID || item.data.ownerUserId === proofUser));
+    if (!row) return reply(200, { code: 200, msg: 'ok', requestId: 'fixture-update', data: { status: 'committed', matchedCount: 0, modifiedCount: 0, replayed: false } });
+    lastPatchRevision = body.match(/"expectedRevision":(\d+)/)[1];
+    const expected = BigInt(lastPatchRevision);
+    if (expected !== BigInt(row.revision)) return failure(409, 'REVISION_CONFLICT');
+    const changes = input.update.$set;
+    if (Object.hasOwn(changes, 'amount') && (proofUser === supervisorID || row.data.status !== 'draft')) return failure(403, 'FIELD_FORBIDDEN');
+    if (Object.hasOwn(changes, 'status')) {
+      const allowed = proofUser === supervisorID ? row.data.status === 'submitted' && ['approved', 'rejected'].includes(changes.status)
+        : row.data.status === 'draft' && changes.status === 'submitted';
+      if (!allowed) return failure(403, 'TRANSITION_FORBIDDEN');
+    }
+    Object.assign(row.data, changes); row.revision++;
+    const result = { code: 200, msg: 'ok', requestId: 'fixture-update', data: { status: 'committed', matchedCount: 1, modifiedCount: 1, replayed: false } };
+    patchReceipts.set(input.idempotencyKey, { body, result });
+    return reply(200, result);
   }
   if (req.url === `/openapi/v2/uns/collections/${collectionId}/records`) {
     insertAttempts++;
@@ -179,6 +229,11 @@ try {
   };
   const post = (value, userID, options) => dataRequest('POST', value, userID, options);
   const listFor = (userID = dataUsers[0]) => dataRequest('GET', undefined, userID);
+  const detailFor = (id, userID = dataUsers[0], options = {}) => dataRequest('GET', undefined, userID, { uri: `${dataPath}/${encodeURIComponent(id)}`, ...options });
+  const patchBody = (changes, expectedRevision = '1') => ({ changes, expectedRevision, receiptDomain: 'core-order-patch/v1', idempotencyKey: `core-patch-v1-${randomUUID()}` });
+  const patchFor = (id, value, userID = dataUsers[0], options = {}) => dataRequest('PATCH', value, userID, { uri: `${dataPath}/${encodeURIComponent(id)}`, ...options });
+  assert.equal((await detailFor('legacy-id')).status, 404);
+  assert.equal((await patchFor('legacy-id', patchBody({ amount: 1 }))).status, 404);
   assert.equal((await dataRequest('GET', undefined, dataUsers[0], { assertion: null })).status, 401);
   assert.equal((await post(input, dataUsers[0], { assertion: 'forged' })).status, 401);
   assert.equal((await post(input, dataUsers[0], { claims: { workspaceID: '2' } })).status, 401);
@@ -277,7 +332,7 @@ try {
       ...process.env, PORT: String(port), TIER0_API_HOST: `http://127.0.0.1:${gateway.address().port}`,
       TIER0_API_KEY: 'fixture-key-not-production', TIER0_CONTROL_API_KEY: 'fixture-control-key-not-production',
       CLOUD_APP_ID: appID, CLOUD_WORKSPACE_ID: workspaceID, CLOUD_APP_IDENTITY_PUBLIC_KEYS: identityPublicKeys,
-      CLOUD_DATA_USER_IDS: dataUsers.join(','), CLOUD_CONTROL_USER_IDS: dataUsers[0], CLOUD_CONTROL_CODE: controlCode,
+      CLOUD_DATA_USER_IDS: 'not-a-core-policy', CLOUD_CONTROL_USER_IDS: dataUsers[0], CLOUD_CONTROL_CODE: controlCode,
       CLOUD_APP_DATA_MODE: 'core', CLOUD_APP_CORE_WRITE_ENABLED: writeEnabled ? 'true' : undefined,
     } });
     captureChild();
@@ -320,6 +375,23 @@ try {
   const beforeCoreWrite = insertAttempts;
   assert.equal((await post(input)).status, 403);
   assert.equal(insertAttempts, beforeCoreWrite, 'Core defaults to read-only');
+  const ownID = items[0].id;
+  const foreignID = items[1].id;
+  const beforeReadonlyPatch = dataRequests;
+  const readonlyPatch = await patchFor(ownID, patchBody({ amount: 101 }));
+  assert.equal(readonlyPatch.status, 403); assert.deepEqual(await readonlyPatch.json(), { code: 'APP_DATA_READ_ONLY' });
+  assert.equal(dataRequests, beforeReadonlyPatch, 'read-only PATCH never reaches Core');
+  assert.equal((await detailFor(ownID)).status, 200);
+  assert.equal((await detailFor(foreignID)).status, 404);
+  assert.deepEqual(await (await detailFor('missing-record')).json(), { code: 'NOT_FOUND' });
+  const detailAuthStart = dataRequests;
+  assert.equal((await detailFor(ownID, dataUsers[0], { proof: null })).status, 401);
+  assert.equal((await detailFor(ownID, dataUsers[0], { claims: { workspaceID: '2' } })).status, 401);
+  assert.equal((await detailFor(ownID, dataUsers[0], { claims: { appID: '19c578a2-2027-41be-8517-bd8dc999ac2c' } })).status, 401);
+  assert.equal(dataRequests, detailAuthStart);
+  wrongContextApp = true;
+  assert.equal((await detailFor(ownID)).status, 403, 'appcontext must match the verified App');
+  wrongContextApp = false;
   const concurrentStart = dataExchanges.length;
   pendingContexts = [];
   const concurrent = await Promise.all(dataUsers.map(async (userID) => (await listFor(userID)).json()));
@@ -328,16 +400,33 @@ try {
   }
   const exchanges = dataExchanges.slice(concurrentStart);
   assert.equal(exchanges.length, 4);
-  for (const proof of proofs.values()) {
+  for (const proof of dataUsers.map((userID) => proofs.get(userID))) {
     assert.equal(exchanges.filter((exchange) => exchange.proof === proof).length, 2, 'context and find share only their request proof');
   }
-  leakRows = true;
-  assert.equal((await listFor()).status, 503, 'App checks owner if Core fixture leaks another user');
-  leakRows = false; hideOwner = true;
-  assert.equal((await listFor()).status, 503, 'owner must be readable under Core readFields');
+  const supervisorList = await (await listFor(supervisorID)).json();
+  assert.equal(supervisorList.items.length, items.length, 'Core all-scope supervisor is not blocked by App owner equality or static employee list');
+  hideOwner = true;
+  assert.equal((await listFor()).status, 200, 'Core does not require a readable owner field');
   hideOwner = false;
+  for (const field of ['amount', 'status', 'orderNo']) {
+    hiddenDisplayFields = new Set([field]);
+    const hidden = await (await detailFor(ownID, supervisorID)).json();
+    assert.equal(Object.hasOwn(hidden.item.data, field), false, 'hidden field is not fabricated in the response');
+    const hiddenList = await (await listFor(supervisorID)).json();
+    assert.ok(hiddenList.items.every((item) => !Object.hasOwn(item.data, field)));
+  }
+  overReturnFields = true;
+  const extraFields = await (await detailFor(ownID, supervisorID)).json();
+  assert.equal(Object.hasOwn(extraFields.item.data, 'orderNo'), false, 'response projection also removes unexpected hidden fields');
+  assert.equal(Object.hasOwn(extraFields.item.data, 'ownerUserId'), false);
+  overReturnFields = false;
+  hiddenDisplayFields = new Set(['orderNo', 'amount', 'status']);
+  const noFieldsStart = dataRequests;
+  assert.equal((await detailFor(ownID, supervisorID)).status, 403);
+  assert.equal(dataRequests, noFieldsStart + 1, 'never send an empty projection which could mean all fields');
+  hiddenDisplayFields = new Set();
   invalidPolicy = true;
-  assert.equal((await listFor()).status, 503, 'Core context must declare required string owner schema');
+  assert.equal((await listFor()).status, 403, 'Core context with no readable display fields cannot issue an unrestricted query');
   invalidPolicy = false;
   const coreControl = await fetch(host + devicePath, { headers: {
     [contract.header]: signedRequest('GET', ''), 'X-Tier0-App-Data-Subject': proofs.get(dataUsers[0]),
@@ -376,8 +465,83 @@ try {
   }));
   const writes = dataExchanges.slice(concurrentWriteStart);
   assert.equal(writes.length, 4);
-  for (const proof of proofs.values()) assert.equal(writes.filter((exchange) => exchange.proof === proof).length, 2);
+  for (const proof of dataUsers.map((userID) => proofs.get(userID))) assert.equal(writes.filter((exchange) => exchange.proof === proof).length, 2);
   assert.deepEqual(items.filter((item) => item.data.orderNo.startsWith('core-concurrent-')).map((item) => item.data.ownerUserId).sort(), [...dataUsers].sort());
+  const invalidPatchStart = dataRequests;
+  const basePatch = patchBody({ amount: 101 });
+  for (const field of ['workspaceId', 'workspaceID', 'collectionId', 'ownerUserId', 'userID', 'filter', 'update', 'upsert', 'returnDocument', 'bindings', 'role']) {
+    assert.equal((await patchFor(ownID, { ...basePatch, [field]: 'untrusted' })).status, 400);
+  }
+  for (const changes of [{}, [], null, { ownerUserId: '2' }, { $set: { amount: 1 } }, { 'amount.x': 1 },
+    { amount: -1 }, { amount: 1.5 }, { amount: '1' }, { status: {} }, { status: 'a\n' }, JSON.parse('{"__proto__":{"amount":1}}')]) {
+    assert.equal((await patchFor(ownID, { ...basePatch, changes })).status, 400);
+  }
+  for (const expectedRevision of [undefined, 1, '0', '-1', '1.5', '01', '9223372036854775808']) {
+    assert.equal((await patchFor(ownID, { ...basePatch, expectedRevision })).status, 400);
+  }
+  for (const extra of [{ receiptDomain: 'core-app-data/v1' }, { idempotencyKey: newIntent.idempotencyKey }, { idempotencyKey: input.idempotencyKey }]) {
+    assert.equal((await patchFor(ownID, { ...basePatch, ...extra })).status, 409);
+  }
+  assert.equal((await patchFor(ownID, basePatch, dataUsers[0], { proof: null })).status, 401);
+  assert.equal((await patchFor(ownID, basePatch, dataUsers[0], { assertion: signedRequest('PATCH', '{}', {}, `${dataPath}/${encodeURIComponent(ownID)}`) })).status, 401);
+  for (const uri of [`${dataPath}/${encodeURIComponent(ownID)}?ownerUserId=2`, `${dataPath}/a%2Fb`, `${dataPath}/a/b`]) {
+    assert.equal((await patchFor(ownID, basePatch, dataUsers[0], { uri })).status, 400);
+  }
+  assert.equal(dataRequests, invalidPatchStart, 'malformed PATCH cannot reach a workspace, collection or operator selected by body');
+  const beforeForeign = JSON.stringify(items);
+  assert.equal((await patchFor(foreignID, basePatch)).status, 404);
+  assert.equal((await patchFor('missing-record', basePatch)).status, 404);
+  assert.equal(JSON.stringify(items), beforeForeign);
+  const mutationStart = dataExchanges.length;
+  const edited = await patchFor(ownID, basePatch); assert.equal(edited.status, 200);
+  assert.deepEqual(await edited.json(), { status: 'committed', replayed: false, matchedCount: '1', modifiedCount: '1', requestId: 'fixture-update' });
+  assert.equal(items[0].data.amount, 101); assert.equal(items[0].revision, 2);
+  assert.equal(dataExchanges.length - mutationStart, 2, 'PATCH does context + update only, never a read/merge');
+  assert.ok(dataExchanges.slice(mutationStart).every((exchange) => exchange.proof === proofs.get(dataUsers[0])));
+  assert.equal((await (await patchFor(ownID, basePatch)).json()).replayed, true);
+  const conflict = await patchFor(ownID, { ...basePatch, changes: { amount: 102 } });
+  assert.equal(conflict.status, 409); assert.deepEqual(await conflict.json(), { code: 'IDEMPOTENCY_CONFLICT' });
+  assert.equal(items[0].revision, 2);
+  assert.equal((await patchFor(ownID, patchBody({ amount: 102 }, '1'))).status, 409);
+  assert.equal((await patchFor(ownID, patchBody({ amount: 102 }, '9007199254740993'))).status, 409);
+  assert.equal(lastPatchRevision, '9007199254740993', 'revision is not rounded at the SDK boundary');
+  assert.equal((await patchFor(ownID, patchBody({ amount: 102 }, '9223372036854775807'))).status, 409);
+  assert.equal(lastPatchRevision, '9223372036854775807');
+  assert.equal((await patchFor(ownID, patchBody({ status: 'approved' }, '2'))).status, 403, 'employee cannot skip the Core transition rule');
+  assert.equal((await patchFor(ownID, patchBody({ status: 'submitted' }, '2'))).status, 200);
+  assert.equal(items[0].data.status, 'submitted');
+  const beforeSupervisorAmount = JSON.stringify(items[0]);
+  const forbiddenAmount = await patchFor(ownID, patchBody({ amount: 999 }, '3'), supervisorID);
+  assert.equal(forbiddenAmount.status, 403); assert.deepEqual(await forbiddenAmount.json(), { code: 'FIELD_FORBIDDEN' });
+  assert.equal(JSON.stringify(items[0]), beforeSupervisorAmount);
+  hiddenDisplayFields = new Set(['amount']);
+  const approve = patchBody({ status: 'approved' }, '3');
+  const beforeApprove = dataExchanges.length;
+  assert.equal((await patchFor(ownID, approve, supervisorID)).status, 200, 'Core authorizes supervisor approval with amount/owner hidden');
+  assert.deepEqual(dataExchanges.at(-1).body.update, { $set: { status: 'approved' } });
+  assert.equal(dataExchanges.length - beforeApprove, 2);
+  assert.equal(items[0].data.amount, 101); assert.equal(items[0].data.status, 'approved');
+  assert.equal((await (await patchFor(ownID, approve, supervisorID)).json()).replayed, true);
+  assert.equal((await patchFor(ownID, patchBody({ status: 'draft' }, '4'), supervisorID)).status, 403);
+  assert.equal((await patchFor(ownID, patchBody({ amount: 1 }, '4'))).status, 403);
+  hiddenDisplayFields = new Set();
+  const isolatedPatchStart = dataExchanges.length;
+  pendingContexts = [];
+  await Promise.all(dataUsers.map(async (userID, index) => {
+    const row = items.find((item) => item.data.orderNo === `core-concurrent-${index}`);
+    assert.equal((await patchFor(row.id, patchBody({ amount: 300 + index }), userID)).status, 200);
+  }));
+  const isolatedPatches = dataExchanges.slice(isolatedPatchStart);
+  assert.equal(isolatedPatches.length, 4);
+  for (const userID of dataUsers) assert.equal(isolatedPatches.filter((exchange) => exchange.proof === proofs.get(userID)).length, 2);
+  for (const patchMode of ['patch-unknown', 'patch-redirect']) {
+    mode = patchMode;
+    const beforeUncertainPatch = patchAttempts;
+    const uncertain = await patchFor(ownID, patchBody({ status: 'rejected' }, '4'), supervisorID);
+    assert.equal(uncertain.status, 504); assert.deepEqual(await uncertain.json(), { code: 'OUTCOME_UNKNOWN' });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    assert.equal(patchAttempts, beforeUncertainPatch + 1, 'uncertain PATCH is never retried or redirected');
+  }
   mode = 'revoked';
   const beforeRevoked = dataExchanges.length;
   assert.equal((await listFor()).status, 403);
@@ -387,13 +551,27 @@ try {
   const coreUnknown = await post({ ...newIntent, orderNo: 'core-unknown', idempotencyKey: `core-v1-${randomUUID()}` });
   assert.equal(coreUnknown.status, 504); assert.deepEqual(await coreUnknown.json(), { code: 'OUTCOME_UNKNOWN' });
   assert.equal(insertAttempts, beforeCoreUnknown + 1);
+  const beforeInvalidConfig = dataRequests;
+  const invalidIdentity = spawn(process.execPath, ['.runtime/server.mjs'], { cwd: app, stdio: ['ignore', 'pipe', 'pipe'], env: {
+    ...process.env, PORT: '0', CLOUD_APP_DATA_MODE: 'core', CLOUD_APP_CORE_WRITE_ENABLED: undefined,
+    CLOUD_APP_ID: '', CLOUD_WORKSPACE_ID: '', CLOUD_APP_IDENTITY_PUBLIC_KEYS: '', CLOUD_DATA_USER_IDS: '',
+    CLOUD_CONTROL_USER_IDS: '', CLOUD_CONTROL_CODE: '',
+  } });
+  let configOutput = '';
+  invalidIdentity.stderr.on('data', (value) => { configOutput += value; });
+  const timer = setTimeout(() => invalidIdentity.kill('SIGTERM'), 3000);
+  const [invalidExit] = await once(invalidIdentity, 'exit'); clearTimeout(timer);
+  assert.equal(invalidExit, 1, 'Core cannot start without a pinned verifier even with no employee allowlist');
+  assert.ok(configOutput.includes('APP_IDENTITY_CONFIGURATION_INVALID'));
+  assert.equal(dataRequests, beforeInvalidConfig);
   for (const proof of proofs.values()) {
     assert.ok(!childOutput.includes(proof));
-    assert.ok(!JSON.stringify([...intents, ...items]).includes(proof), 'proofs never enter records or receipts');
+    assert.ok(!JSON.stringify([...intents, ...items, ...patchReceipts]).includes(proof), 'proofs never enter records or receipts');
     assert.ok(!JSON.stringify(concurrent).includes(proof), 'proofs never enter browser responses');
   }
   console.log('PASS: Core request-scoped proof wiring, identity-first rejection, duplicate/missing proof, no owner filter, default read-only, explicit new-intent gate, service-stamp payload, isolated Control and no fallback/retry (local fixture, NOT Core acceptance)');
-  console.log('PASS: verified employee data identity, exact request binding, mandatory owner filter, protected fields, per-user record/intent identities, cross-user isolation and fail-closed policy');
+  console.log('PASS: Core-only detail/PATCH, fixed identity with no Core static allowlist, context-derived projection, hidden fields, supervisor target access, bounded changes, exact revision, distinct intents, conflict/replay and no read/merge (local fixture, NOT real policy/audit acceptance)');
+  console.log('PASS: legacy verified employee data identity, exact request binding, mandatory owner filter, protected fields, per-user record/intent identities, cross-user isolation and fail-closed policy');
   console.log('PASS: App server Ed25519 validation, operator allowlist, strict control input, dedicated Key, stable business replay, revocation, redaction, unknown outcome once and no data-Key fallback');
   console.log('PASS: offline package/public SDK import, page, strict input, write/read/replay, read-only, revocation, redaction, unknown outcome without retry');
 } finally {

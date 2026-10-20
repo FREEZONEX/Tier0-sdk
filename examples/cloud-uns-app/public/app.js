@@ -10,7 +10,7 @@ const messages = {
     controlUnavailable: '控制不可用，请联系管理员检查应用配置和授权', controlUnknown: '操作结果尚未确认，请先核对设备；重放会使用原请求标识',
     operator: '当前员工', title: '工单数据', create: '新增工单', orderNo: '工单号', amount: '金额（分）', save: '保存', records: '我的工单',
     refresh: '刷新列表', state: '状态', revision: '版本', theme: '切换主题', loading: '正在读取…', empty: '暂无工单',
-    loaded: '已读取工单', saved: '已保存', replayed: '已返回原保存结果', readonly: '当前应用只有读取权限',
+    loaded: '已读取工单', saved: '已保存', replayed: '已返回原保存结果', readonly: '当前应用只有读取权限', unavailableField: '未授权',
     writable: '可以查看与新增本人的工单', noAccess: '当前应用没有数据访问权限', denied: '访问被拒绝，请联系管理员检查应用的数据授权',
     unknown: '保存结果尚未确认。请刷新列表核对；再次点击保存会使用相同请求标识。', failed: '请求失败', draft: '草稿',
   },
@@ -23,7 +23,7 @@ const messages = {
     controlUnavailable: 'Control unavailable. Ask an administrator to check App configuration and grants.', controlUnknown: 'Operation outcome is unconfirmed. Check the device first; replay preserves the original request identity.',
     operator: 'Employee', title: 'Work orders', create: 'New work order', orderNo: 'Order number', amount: 'Amount (cents)', save: 'Save', records: 'My work orders',
     refresh: 'Refresh list', state: 'Status', revision: 'Revision', theme: 'Switch theme', loading: 'Loading…', empty: 'No work orders',
-    loaded: 'Work orders loaded', saved: 'Saved', replayed: 'Original save result returned', readonly: 'This App has read access',
+    loaded: 'Work orders loaded', saved: 'Saved', replayed: 'Original save result returned', readonly: 'This App has read access', unavailableField: 'Not authorized',
     writable: 'You can view and create your own work orders', noAccess: 'This App has no data access', denied: 'Access denied. Ask an administrator to check App data grants.',
     unknown: 'Save outcome is unconfirmed. Refresh the list to check; saving again uses the same request identity.', failed: 'Request failed', draft: 'Draft',
   },
@@ -99,7 +99,7 @@ async function refresh() {
     for (const item of result.items) {
       const row = document.createElement('tr');
       for (const value of [item.data.orderNo, item.data.amount, item.data.status === 'draft' ? text('draft') : item.data.status, item.revision]) {
-        const cell = document.createElement('td'); cell.textContent = String(value ?? ''); row.append(cell);
+        const cell = document.createElement('td'); cell.textContent = value === undefined ? text('unavailableField') : String(value ?? ''); row.append(cell);
       }
       $('#records').append(row);
     }
@@ -108,7 +108,7 @@ async function refresh() {
     $('#save').disabled = !canWrite || busy;
     $('#data-new').hidden = mode !== 'core';
     $('#data-new').disabled = !canWrite || busy;
-    if (mode === 'core') status('dataMigration');
+    if (mode === 'core') status(canWrite ? 'dataMigration' : 'readonly');
   } catch (error) { errorState(error); }
   finally { $('#refresh').disabled = false; }
 }
