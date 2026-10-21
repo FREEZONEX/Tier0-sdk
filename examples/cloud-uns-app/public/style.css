@@ -19,6 +19,8 @@ button:disabled { cursor: default; opacity: .5; }
 [data-theme='dark'] .muted, [data-theme='dark'] #app-name { color: #a2b4cc; }
 #status[data-error='true'], #history-status[data-error='true'] { color: #bb3344; }
 [data-theme='dark'] #status[data-error='true'], [data-theme='dark'] #history-status[data-error='true'] { color: #ff9aab; }
+/* Break long record identities without clipping them or the table's own scroller. */
+#history-record { overflow-wrap: anywhere; }
 .history-event { border-bottom: 1px solid #dce4ee; padding: 12px 0; overflow-wrap: anywhere; }
 [data-theme='dark'] .history-event { border-color: #30435e; }
 .history-event h3 { font-size: 16px; margin: 0; }
