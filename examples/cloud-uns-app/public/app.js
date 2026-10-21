@@ -226,7 +226,10 @@ async function loadHistory(older = false) {
     if (epoch !== historyEpoch) return;
     historyRows = []; historyCursor = ''; renderHistory();
     $('#history-status').dataset.error = 'true';
-    $('#history-status').textContent = text([401, 403].includes(error.status) ? 'historyDenied' : error.status === 400 ? 'historyExpired' : 'historyFailed');
+    // Core rejects an invalid/bound cursor with 422 INVALID_REQUEST; retain
+    // older 400 responses without treating every validation error as expiry.
+    const expired = error.status === 400 || (error.status === 422 && error.code === 'INVALID_REQUEST');
+    $('#history-status').textContent = text([401, 403].includes(error.status) ? 'historyDenied' : expired ? 'historyExpired' : 'historyFailed');
   } finally {
     if (epoch === historyEpoch) { historyBusy = false; $('#history-refresh').disabled = false; $('#history-more').disabled = !historyCursor; }
   }

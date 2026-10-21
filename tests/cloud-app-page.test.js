@@ -100,13 +100,14 @@ describe('Cloud App actual history UI', () => {
     expect(fixture.createKey).not.toHaveBeenCalled();
   });
 
-  it('allows manual continuation after an empty page and clears snapshots on an expired cursor', async () => {
+  it.each([[400, 'INVALID_ARGUMENT'], [400, 'INVALID_REQUEST'], [422, 'INVALID_REQUEST']])
+  ('allows manual continuation and clears snapshots on expired cursor %s/%s', async (status, code) => {
     let calls = 0;
     const fixture = await page({ history: async () => {
       calls++;
       if (calls === 1) return response([], 'cursor.first');
       if (calls === 2) return response([historyEvent(2, { amount: 731 }, { amount: 732 }, ['amount'])], 'cursor.second');
-      return { ok: false, status: 400, json: async () => ({ code: 'INVALID_ARGUMENT' }) };
+      return { ok: false, status, json: async () => ({ code }) };
     } });
     openHistory(fixture);
     await vi.waitFor(() => expect(fixture.get('#history-more').disabled).toBe(false));
@@ -119,6 +120,30 @@ describe('Cloud App actual history UI', () => {
     await vi.waitFor(() => expect(fixture.get('#history-status').textContent).toContain('expired'));
     expect(fixture.get('#history-events').children).toHaveLength(0);
     expect(fixture.get('#history-more').disabled).toBe(true); expect(calls).toBe(3);
+    expect(fixture.get('#history-refresh').disabled).toBe(false);
+    expect(fixture.createKey).not.toHaveBeenCalled();
+  });
+
+  it.each(['zh', 'en'])('maps Core 422 INVALID_REQUEST to explicit history refresh guidance in %s', async language => {
+    const fixture = await page({ language, history: async () => ({ ok: false, status: 422,
+      json: async () => ({ code: 'INVALID_REQUEST' }) }) });
+    openHistory(fixture);
+    await vi.waitFor(() => expect(fixture.get('#history-status').dataset.error).toBe('true'));
+    expect(fixture.get('#history-status').textContent).toContain(language === 'zh' ? '历史读取已失效，请点击刷新重新读取' : 'expired. Refresh to read it again');
+    expect(fixture.get('#history-events').children).toHaveLength(0);
+    expect(fixture.get('#history-more').disabled).toBe(true);
+    expect(fixture.fetch.mock.calls.filter(([path]) => path.includes('/history?'))).toHaveLength(1);
+    expect(fixture.createKey).not.toHaveBeenCalled();
+  });
+
+  it.each([[422, 'UNAVAILABLE'], [422, 'INVALID_INPUT'], [503, 'INVALID_REQUEST']])
+  ('keeps unrelated history failures %s/%s distinct from cursor expiry', async (status, code) => {
+    const fixture = await page({ history: async () => ({ ok: false, status, json: async () => ({ code }) }) });
+    openHistory(fixture);
+    await vi.waitFor(() => expect(fixture.get('#history-status').dataset.error).toBe('true'));
+    expect(fixture.get('#history-status').textContent).toBe('Change history is temporarily unavailable');
+    expect(fixture.get('#history-more').disabled).toBe(true);
+    expect(fixture.fetch.mock.calls.filter(([path]) => path.includes('/history?'))).toHaveLength(1);
   });
 
   it.each(['zh', 'en'])('distinguishes denied/disabled history from empty history in %s', async language => {
