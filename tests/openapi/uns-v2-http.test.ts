@@ -314,10 +314,10 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+record-audit/1+data/3+app-data/2+hosted-control/1');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('8be0ee347b1c045a2652f98ee7a5c46f3c124840');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+record-audit/1+data/3+app-data/2+hosted-control/1+source-bindings/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('39b445bcb8c007b7d6f0fc9fe67ce535020c4342');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('f3c5d3151d07d96d29858e217b33bede22d187c0b4a568d554a3d5713997c8da');
+    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('2833501055248f4944ee4c0c74cf5e0332efbd3e016f7c8270566583b1fc70df');
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
     expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(114);
     expect(received.slice(start)).toHaveLength(1);

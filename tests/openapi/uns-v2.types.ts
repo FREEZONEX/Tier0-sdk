@@ -1,6 +1,7 @@
 import {
   createClient,
   type IndexSpec,
+  type RuntimeStreamDefinition,
   UnsV2RawNumber,
   type PlatformV2UsersListReq,
   type UnsV2JSONValue,
@@ -10,6 +11,19 @@ import {
 } from '../../src/index.js';
 
 const client = createClient({ apiHost: 'https://example.invalid', apiKey: 'workspace-bound' });
+// Native runtime DTO from the pinned source; hosted Cloud documents retain their own shape.
+const nativeDefinition: RuntimeStreamDefinition = {
+  name: 'native-http', script: '', sdkVersion: 'tier0-stream/v2',
+  sourceBindings: [{ sourceId: '101', configRevision: new UnsV2RawNumber('9007199254740993'), acquisition: {} }],
+};
+const invalidBinding: NonNullable<RuntimeStreamDefinition['sourceBindings']>[number] = {
+  sourceId: '101', acquisition: {},
+  // @ts-expect-error Native binding revision must be an exact integer, not a string.
+  configRevision: '2',
+};
+// @ts-expect-error Each native binding requires protocol acquisition parameters.
+const missingAcquisition: NonNullable<RuntimeStreamDefinition['sourceBindings']>[number] = { sourceId: '101', configRevision: 2 };
+void [nativeDefinition, invalidBinding, missingAcquisition];
 const ownAppContext = client.unsV2.dataAppContext({});
 void ownAppContext;
 const list = client.unsV2.recordFind({ collectionId: 'orders', limit: 20, cursor: 'opaque' });

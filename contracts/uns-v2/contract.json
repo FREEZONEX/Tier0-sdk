@@ -8502,6 +8502,36 @@
           "maximum": 60000,
           "minimum": 1,
           "type": "integer"
+        },
+        "sourceBindings": {
+          "type": "array",
+          "maxItems": 64,
+          "description": "按 Source ID 唯一绑定当前修订和 Stream 采集参数；连接、认证和 TLS 仅从 Source 读取。HTTP acquisition 为 {}。native 写入目标由服务器冻结 selector/mapping 配置决定，不接受脚本 Capture。",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sourceId",
+              "configRevision",
+              "acquisition"
+            ],
+            "properties": {
+              "sourceId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]*$",
+                "maxLength": 19
+              },
+              "configRevision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "acquisition": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "协议专用采集参数，由 Source 协议校验；不得携带连接或凭据。"
+              }
+            }
+          }
         }
       },
       "required": [
@@ -28236,5 +28266,5 @@
       ]
     }
   },
-  "cloudContractRevision": "cloud-source-impact/1+record-audit/1+data/3+app-data/2+hosted-control/1"
+  "cloudContractRevision": "cloud-source-impact/1+record-audit/1+data/3+app-data/2+hosted-control/1+source-bindings/1"
 }

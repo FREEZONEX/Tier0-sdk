@@ -2,6 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { decodeUnsV2JSON, encodeUnsV2JSON, UnsV2RawNumber } from '../../src/uns-v2/codec.js';
 
 describe('UNS v2 lossless numeric boundary', () => {
+  it('preserves native Source binding IDs, exact revisions and protocol acquisition without inventing credentials', () => {
+    const definition = { name: 'native-http', script: '', sdkVersion: 'tier0-stream/v2',
+      sourceBindings: [{ sourceId: '9007199254740995', configRevision: new UnsV2RawNumber('9007199254740993'), acquisition: {} }] };
+    const text = encodeUnsV2JSON(definition, 'RuntimeStreamDefinition');
+    expect(text).toContain('"sourceId":"9007199254740995","configRevision":9007199254740993,"acquisition":{}');
+    expect(decodeUnsV2JSON(text, 'RuntimeStreamDefinition')).toEqual(definition);
+    expect(text).not.toMatch(/connection|credential|Capture/);
+  });
+
   it('keeps safe schema numbers as numbers on both sides', () => {
     expect(encodeUnsV2JSON({ page: 12, size: 20 }, 'PlatformV2JobListReq')).toBe('{"page":12,"size":20}');
     expect(decodeUnsV2JSON('{"page":12,"size":20}', 'PlatformV2JobListReq')).toEqual({ page: 12, size: 20 });
