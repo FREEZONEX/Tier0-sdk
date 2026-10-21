@@ -1,10 +1,10 @@
 {
   "repository": "FREEZONEX/Tier0-Backend",
-  "revision": "c90d59bd7b180112a406c05224d2496ef1d78b57",
+  "revision": "d8136fa5d011795d367dbaea57500d27f3a4f47f",
   "version": "4.0.0",
   "source": "service/unssvr/internal/domain/unsv2/contract_generated.go#ContractJSON",
-  "cloudRevision": "c90d59bd7b180112a406c05224d2496ef1d78b57",
-  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1",
+  "cloudRevision": "d8136fa5d011795d367dbaea57500d27f3a4f47f",
+  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1",
   "resolvedCloudContract": true,
   "enterpriseBase": {
     "repository": "FREEZONEX/Tier0-Enterprise-New",
@@ -13,7 +13,7 @@
     "source": "backend/internal/domain/unsv2/contract_generated.go",
     "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs."
   },
-  "sourceDerivedContractSHA256": "9f0d840b56bac55e051f9714c833da66af9614b87a09b43c993982cc31cc822c",
-  "note": "Generated Cloud record notification contract from the committed Backend source; publication and runtime acceptance are tracked separately.",
-  "baseRevision": "fb54cedf85979af93aa90a550460e97ccd8c665c"
+  "sourceDerivedContractSHA256": "f2af96b23052f2e46dd87a7ca4101ac62c58cc0a58d634172aac677f9bf62f99",
+  "note": "Generated from committed Cloud Record-delete Sample-cascade contract; environment acceptance tracked separately.",
+  "baseRevision": "35cdf81085b79c1066b45e8ec87ebe38337f7ae2"
 }

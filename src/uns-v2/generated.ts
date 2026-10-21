@@ -5689,11 +5689,11 @@ export const UNS_V2_CODEC_SCHEMAS = {"UnsV2CatalogReq":{"k":"o"},"UnsV2ManagedBy
 
 export const UNS_V2_CONTRACT_PROVENANCE = {
   "repository": "FREEZONEX/Tier0-Backend",
-  "revision": "c90d59bd7b180112a406c05224d2496ef1d78b57",
+  "revision": "d8136fa5d011795d367dbaea57500d27f3a4f47f",
   "version": "4.0.0",
   "source": "service/unssvr/internal/domain/unsv2/contract_generated.go#ContractJSON",
-  "cloudRevision": "c90d59bd7b180112a406c05224d2496ef1d78b57",
-  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1",
+  "cloudRevision": "d8136fa5d011795d367dbaea57500d27f3a4f47f",
+  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1",
   "resolvedCloudContract": true,
   "enterpriseBase": {
     "repository": "FREEZONEX/Tier0-Enterprise-New",
@@ -5702,14 +5702,14 @@ export const UNS_V2_CONTRACT_PROVENANCE = {
     "source": "backend/internal/domain/unsv2/contract_generated.go",
     "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs."
   },
-  "sourceDerivedContractSHA256": "9f0d840b56bac55e051f9714c833da66af9614b87a09b43c993982cc31cc822c",
-  "note": "Generated Cloud record notification contract from the committed Backend source; publication and runtime acceptance are tracked separately.",
-  "baseRevision": "fb54cedf85979af93aa90a550460e97ccd8c665c",
+  "sourceDerivedContractSHA256": "f2af96b23052f2e46dd87a7ca4101ac62c58cc0a58d634172aac677f9bf62f99",
+  "note": "Generated from committed Cloud Record-delete Sample-cascade contract; environment acceptance tracked separately.",
+  "baseRevision": "35cdf81085b79c1066b45e8ec87ebe38337f7ae2",
   "hashes": {
-    "contract": "511f2b96485e0b91c0f3a17d975eca47494f3e7e506a17391d2b9f71d582c57c",
+    "contract": "e7ad5e3bd59a264110c1e82576a5450dffe8d359e0f49b239932958efe47bc52",
     "cloudSupport": "af25a142462a9d6d475704a136dfb82624ef075f21a8d670b1f8073c82795380",
-    "manifest": "14b081d5db6e1b6c844e30627ea3cd483e0534b16c3778acce1b5dbeb95d2281",
-    "provenance": "f2b90963ae797b7b548d4eaf26dfd4b2e7916e760afd7c99f66db3e2913746ab",
+    "manifest": "5722bf13329da78a49af0dda962ac5cd8a745bc5c1c1ac3f138b5671b806e7bd",
+    "provenance": "c665d9f6df55bc6e6ae6f26da26a488b28d2df276154c335000994682ba351d3",
     "registry": "500bf3922a2527dfd2801f32202cb2cd4e62f51ab138ef79b18678425fafc173"
   },
   "publicOperationCount": 98,

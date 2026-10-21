@@ -331,10 +331,10 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('working-tree-pending-commit');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('d8136fa5d011795d367dbaea57500d27f3a4f47f');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('9f0d840b56bac55e051f9714c833da66af9614b87a09b43c993982cc31cc822c');
+    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('f2af96b23052f2e46dd87a7ca4101ac62c58cc0a58d634172aac677f9bf62f99');
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
     expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(113);
     expect(received.slice(start)).toHaveLength(1);

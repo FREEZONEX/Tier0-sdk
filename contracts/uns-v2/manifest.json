@@ -1,6 +1,6 @@
 {
   "version": "4.0.0",
-  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1",
+  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1",
   "operations": [
     {
       "name": "dataDiscover",
@@ -30914,7 +30914,7 @@
         "collectionId",
         "ids"
       ],
-      "description": "最多 100 个 ID，整批原子恢复。重新校验当前 Schema 和有效记录唯一索引；冲突整批回滚。恢复递增 revision，不改写历史 Sample。"
+      "description": "最多 100 个 ID，整批原子恢复。重新校验当前 Schema 和有效记录唯一索引；冲突整批回滚。恢复递增 revision；删除 Record 时关联 Sample 已物理删除，恢复不重建这些 Sample。"
     },
     "UnsV2RecordRestoreResponse": {
       "type": "object",
