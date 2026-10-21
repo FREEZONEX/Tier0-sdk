@@ -39,6 +39,10 @@ let lastPatchRevision;
 let overReturnFields = false;
 let readablePrivateNote = false;
 let injectedReadField;
+let historyMode = 'normal';
+let historyAttempts = 0;
+let cursorSequence = 0;
+const historyCursors = new Map();
 const patchReceipts = new Map();
 const readableFields = () => ['orderNo', 'amount', 'status'].filter((field) => !hiddenDisplayFields.has(field));
 const dataExchanges = [];
@@ -128,6 +132,62 @@ const gateway = createServer(async (req, res) => {
       }), pageInfo: { hasMore: false },
     } });
   }
+  const auditRoute = req.url.match(/^\/openapi\/v2\/uns\/collections\/([^/]+)\/records\/([^/]+)\/audit:list$/);
+  if (auditRoute) {
+    historyAttempts++;
+    const input = JSON.parse(body), recordId = decodeURIComponent(auditRoute[2]);
+    assert.equal(decodeURIComponent(auditRoute[1]), collectionId);
+    assert.equal(input.collectionId, collectionId); assert.equal(input.recordId, recordId);
+    assert.ok(Object.keys(input).every((key) => ['collectionId', 'recordId', 'size', 'cursor'].includes(key)));
+    if (historyMode === 'socket') return req.socket.destroy();
+    if (historyMode === 'redirect') { res.writeHead(307, { Location: '/audit:admin-list' }); return res.end('{}'); }
+    if (historyMode === 'denied') return failure(403, 'FORBIDDEN');
+    if (historyMode === 'unavailable') return failure(503, 'TEMPORARILY_UNAVAILABLE');
+    const row = recordId === 'deleted-order' ? { data: { ownerUserId: dataUsers[0] } } : items.find((item) => item.id === recordId);
+    if (!row || (proofUser !== supervisorID && row.data.ownerUserId !== proofUser)) return failure(403, 'FORBIDDEN');
+    const fields = [...readableFields(), ...(!hideOwner && proofUser !== supervisorID ? ['ownerUserId'] : []), ...(readablePrivateNote ? ['privateNote'] : [])];
+    const binding = JSON.stringify([proofUser, recordId, fields]);
+    if (input.cursor && historyCursors.get(input.cursor) !== binding) return failure(400, 'INVALID_ARGUMENT');
+    let nextCursor = '';
+    if (['paged', 'empty-page'].includes(historyMode) && !input.cursor) {
+      nextCursor = `fixture.audit_cursor_${++cursorSequence}`; historyCursors.set(nextCursor, binding);
+    }
+    const clip = (value) => Object.fromEntries(Object.entries(value).filter(([key]) => fields.includes(key)));
+    const event = { eventId: 'fixture-event', collectionId, recordId, action: 'update', revisionBefore: 1, revisionAfter: 2,
+      before: clip({ orderNo: 'history-order', amount: 731, status: 'draft', ownerUserId: dataUsers[0], privateNote: 'fixture-hidden-history' }),
+      after: clip({ orderNo: 'history-order', amount: 732, status: 'submitted', ownerUserId: dataUsers[0], privateNote: 'fixture-hidden-history' }),
+      beforeDeleted: false, afterDeleted: recordId === 'deleted-order', createdAt: 1792540800000,
+      actor: { kind: 'app_employee', userId: dataUsers[0], appId: appID, keyId: '17', keyOwnerId: dataUsers[1] },
+      transactionId: 'fixture-transaction', operationId: 'fixture-operation', changedFields: ['amount', 'status'].filter((key) => fields.includes(key)) };
+    if (historyMode === 'leak-before') event.before.privateNote = 'fixture-hidden-history';
+    if (historyMode === 'leak-after') event.after.privateNote = 'fixture-hidden-history';
+    if (historyMode === 'leak-fields') event.changedFields.push('privateNote');
+    if (historyMode === 'wrong-target') event.recordId = 'other-record';
+    if (historyMode === 'wrong-actor') event.actor.userId = 'not-an-employee';
+    if (historyMode === 'wrong-revision') event.revisionAfter = 5;
+    if (historyMode === 'create') { event.action = 'create'; event.before = null; event.revisionBefore = 0; event.revisionAfter = 1; }
+    if (historyMode === 'exact') event.after.amount = 'exact-amount-marker';
+    let visible = !event.changedFields.length || historyMode === 'empty' || (historyMode === 'empty-page' && !input.cursor) ? [] : [event];
+    if (historyMode === 'timeline') {
+      const stages = [
+        [null, { orderNo: 'history-order', amount: 731, status: 'draft' }, ['orderNo', 'amount', 'status'], dataUsers[0]],
+        [{ amount: 731 }, { amount: 732 }, ['amount'], dataUsers[0]],
+        [{ status: 'draft' }, { status: 'submitted' }, ['status'], dataUsers[0]],
+        [{ status: 'submitted' }, { status: 'approved' }, ['status'], dataUsers[1]],
+      ];
+      visible = stages.map(([before, after, changedFields, userId], index) => ({ ...event, eventId: `fixture-stage-${index}`,
+        action: index === 0 ? 'create' : 'update', before: before === null ? null : clip(before), after: clip(after),
+        revisionBefore: index, revisionAfter: index + 1, changedFields: changedFields.filter((field) => fields.includes(field)),
+        actor: { ...event.actor, userId, keyOwnerId: dataUsers[0] } })).reverse();
+    }
+    const value = { code: 200, msg: 'ok', requestId: 'fixture-history', data: { items: visible, nextCursor } };
+    if (historyMode === 'exact') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(value).replace('"exact-amount-marker"', '1.0000000000000001')
+        .replace('"revisionBefore":1', '"revisionBefore":9007199254740992').replace('"revisionAfter":2', '"revisionAfter":9007199254740993'));
+    }
+    return reply(200, value);
+  }
   if (req.url === `/openapi/v2/uns/collections/${collectionId}/records:updateOne`) {
     patchAttempts++;
     const input = JSON.parse(body);
@@ -170,6 +230,7 @@ const gateway = createServer(async (req, res) => {
       assert.ok(input.idempotencyKey.startsWith('app-order-intent-core-v1:'));
       assert.equal(input.id, 'app-order:' + createHash('sha256')
         .update(JSON.stringify([appID, workspaceID, proofUser, input.data.orderNo])).digest('hex'), 'order identity is unchanged across receipt domains');
+      if (proofUser === supervisorID) return failure(403, 'FIELD_FORBIDDEN');
     }
     const receipt = `${appDataMode}:${input.idempotencyKey}`;
     const replayed = intents.has(receipt);
@@ -239,10 +300,13 @@ try {
   const post = (value, userID, options) => dataRequest('POST', value, userID, options);
   const listFor = (userID = dataUsers[0]) => dataRequest('GET', undefined, userID);
   const detailFor = (id, userID = dataUsers[0], options = {}) => dataRequest('GET', undefined, userID, { uri: `${dataPath}/${encodeURIComponent(id)}`, ...options });
+  const historyFor = (id, userID = dataUsers[0], query = '', options = {}) => dataRequest('GET', undefined, userID,
+    { uri: `${dataPath}/${encodeURIComponent(id)}/history${query}`, ...options });
   const patchBody = (changes, expectedRevision = '1') => ({ changes, expectedRevision, receiptDomain: 'core-order-patch/v1', idempotencyKey: `core-patch-v1-${randomUUID()}` });
   const patchFor = (id, value, userID = dataUsers[0], options = {}) => dataRequest('PATCH', value, userID, { uri: `${dataPath}/${encodeURIComponent(id)}`, ...options });
   assert.equal((await detailFor('legacy-id')).status, 404);
   assert.equal((await patchFor('legacy-id', patchBody({ amount: 1 }))).status, 404);
+  assert.equal((await historyFor('legacy-id')).status, 404);
   assert.equal((await dataRequest('GET', undefined, dataUsers[0], { assertion: null })).status, 401);
   assert.equal((await post(input, dataUsers[0], { assertion: 'forged' })).status, 401);
   assert.equal((await post(input, dataUsers[0], { claims: { workspaceID: '2' } })).status, 401);
@@ -463,6 +527,74 @@ try {
   const missingSchema = await listFor(); assert.equal(missingSchema.status, 503);
   assert.deepEqual(await missingSchema.json(), { code: 'APP_DATA_POLICY_UNAVAILABLE' }, 'a raw field absent from context schema is never accepted');
   invalidPolicy = false;
+  const beforeHistoryState = JSON.stringify([...items, ...intents, ...patchReceipts]);
+  const beforeHistoryCalls = dataExchanges.length;
+  const ordinaryHistory = await historyFor(ownID); assert.equal(ordinaryHistory.status, 200);
+  const historyResult = await ordinaryHistory.json();
+  assert.equal(historyResult.operator, dataUsers[0]); assert.equal(historyResult.recordId, ownID);
+  assert.equal(historyResult.items[0].actor.userId, dataUsers[0]);
+  assert.equal(historyResult.items[0].revisionBefore, '1'); assert.equal(historyResult.items[0].revisionAfter, '2');
+  assert.deepEqual(historyResult.items[0].changedFields, ['amount', 'status']);
+  assert.ok(!JSON.stringify(historyResult).includes('fixture-hidden-history'));
+  assert.ok(!JSON.stringify(historyResult).includes('keyOwnerId')); assert.ok(!JSON.stringify(historyResult).includes('keyId'));
+  assert.equal(dataExchanges.length - beforeHistoryCalls, 2, 'history uses context + audit, with no current detail pre-read');
+  assert.ok(dataExchanges.slice(beforeHistoryCalls).every((exchange) => exchange.proof === proofs.get(dataUsers[0])));
+  assert.equal((await historyFor(foreignID)).status, 403);
+  assert.equal((await historyFor(ownID, supervisorID)).status, 200);
+  assert.equal((await historyFor('deleted-order')).status, 200, 'ordinary history can read an authorized deleted record');
+  const beforeHistoryInvalid = dataRequests;
+  for (const query of ['?workspaceId=2', '?collectionId=other', '?userId=2', '?admin=true', '?size=0', '?size=101', '?size=1.5', '?size=1&size=2', '?cursor=', '?cursor=a,b', '?cursor=a&cursor=b', `?cursor=${'a'.repeat(4097)}`]) {
+    assert.equal((await historyFor(ownID, dataUsers[0], query)).status, 400);
+  }
+  assert.equal((await historyFor(ownID, dataUsers[0], '', { proof: null })).status, 401);
+  assert.equal((await historyFor(ownID, dataUsers[0], '?size=1', { assertion: signedRequest('GET', '', {}, `${dataPath}/${encodeURIComponent(ownID)}/history`) })).status, 401);
+  assert.equal(dataRequests, beforeHistoryInvalid);
+  historyMode = 'paged';
+  const firstHistory = await (await historyFor(ownID, dataUsers[0], '?size=1')).json();
+  const historyCursor = `?size=1&cursor=${encodeURIComponent(firstHistory.nextCursor)}`;
+  assert.equal((await historyFor(ownID, dataUsers[0], historyCursor)).status, 200);
+  assert.equal((await historyFor(ownID, supervisorID, historyCursor)).status, 400, 'cursor cannot move between employees');
+  assert.equal((await historyFor(foreignID, supervisorID, historyCursor)).status, 400, 'cursor cannot move between records');
+  hiddenDisplayFields = new Set(['amount']);
+  assert.equal((await historyFor(ownID, dataUsers[0], historyCursor)).status, 400, 'cursor is invalid after field policy changes');
+  const narrowedHistory = await (await historyFor(ownID, supervisorID)).json();
+  assert.equal(Object.hasOwn(narrowedHistory.items[0].before, 'amount'), false);
+  assert.equal(Object.hasOwn(narrowedHistory.items[0].after, 'amount'), false);
+  assert.deepEqual(narrowedHistory.items[0].changedFields, ['status']);
+  hiddenDisplayFields = new Set();
+  historyMode = 'empty-page';
+  const emptyHistory = await (await historyFor(ownID)).json();
+  assert.deepEqual(emptyHistory.items, []); assert.ok(emptyHistory.nextCursor);
+  assert.equal((await (await historyFor(ownID, dataUsers[0], `?cursor=${emptyHistory.nextCursor}`)).json()).items.length, 1);
+  historyMode = 'empty'; assert.deepEqual((await (await historyFor(ownID)).json()).items, []);
+  historyMode = 'create'; assert.equal((await (await historyFor(ownID)).json()).items[0].before, null);
+  historyMode = 'timeline';
+  const timeline = await (await historyFor(ownID, supervisorID)).json();
+  const replayedTimeline = await (await historyFor(ownID, supervisorID)).json();
+  assert.equal(timeline.items.length, 4); assert.deepEqual(replayedTimeline, timeline);
+  assert.equal(timeline.items[0].actor.userId, dataUsers[1], 'approval employee is distinct from the data Key owner');
+  assert.equal(timeline.items[0].before.status, 'submitted'); assert.equal(timeline.items[0].after.status, 'approved');
+  assert.equal(timeline.items[2].before.amount, 731); assert.equal(timeline.items[2].after.amount, 732);
+  assert.ok(!JSON.stringify(timeline).includes('keyOwnerId')); assert.ok(!JSON.stringify(timeline).includes('privateNote'));
+  assert.ok(!JSON.stringify(timeline).includes('ownerUserId'));
+  historyMode = 'exact';
+  const exactHistory = await (await historyFor(ownID)).json();
+  assert.equal(exactHistory.items[0].revisionAfter, '9007199254740993');
+  assert.equal(exactHistory.items[0].after.amount, '1.0000000000000001');
+  for (const bad of ['leak-before', 'leak-after', 'leak-fields', 'wrong-target', 'wrong-actor', 'wrong-revision']) {
+    historyMode = bad;
+    const violation = await historyFor(ownID, supervisorID); assert.equal(violation.status, 503);
+    assert.deepEqual(await violation.json(), { code: 'APP_DATA_POLICY_UNAVAILABLE' });
+  }
+  for (const [bad, status] of [['denied', 403], ['unavailable', 503], ['socket', 503], ['redirect', 503]]) {
+    historyMode = bad;
+    const attempts = historyAttempts;
+    const failure = await historyFor(ownID); assert.equal(failure.status, status);
+    assert.ok(!(await failure.text()).includes('private fixture policy detail'));
+    assert.equal(historyAttempts, attempts + 1, 'history never retries or falls back to admin audit');
+  }
+  historyMode = 'normal';
+  assert.equal(JSON.stringify([...items, ...intents, ...patchReceipts]), beforeHistoryState, 'history does not create, replay or mutate business records/receipts');
   const coreControl = await fetch(host + devicePath, { headers: {
     [contract.header]: signedRequest('GET', ''), 'X-Tier0-App-Data-Subject': proofs.get(dataUsers[0]),
   } });
@@ -476,6 +608,10 @@ try {
   await startCore(true);
   assert.equal((await (await listFor()).json()).canWrite, true);
   const newIntent = { orderNo: 'core-new-order', amount: 200, receiptDomain: 'core-app-data/v1', idempotencyKey: `core-v1-${randomUUID()}` };
+  const beforeSupervisorCreate = JSON.stringify(items);
+  const deniedCreate = await post(newIntent, supervisorID);
+  assert.equal(deniedCreate.status, 403); assert.deepEqual(await deniedCreate.json(), { code: 'FIELD_FORBIDDEN' });
+  assert.equal(JSON.stringify(items), beforeSupervisorCreate, 'coarse record:write never bypasses Core create-field rules; effective create hints are still unavailable');
   const beforeIntentGate = dataRequests;
   for (const old of [input, { ...newIntent, idempotencyKey: input.idempotencyKey }, { ...newIntent, receiptDomain: 'legacy-app-data/v5' }]) {
     const response = await post(old); assert.equal(response.status, 409);
@@ -606,6 +742,7 @@ try {
   }
   console.log('PASS: Core request-scoped proof wiring, identity-first rejection, duplicate/missing proof, no owner filter, default read-only, explicit new-intent gate, service-stamp payload, isolated Control and no fallback/retry (local fixture, NOT Core acceptance)');
   console.log('PASS: Core-only detail/PATCH, no client projection, raw-key schema validation, hidden-field violations rejected, supervisor target access, bounded changes, exact revision, distinct intents, conflict/replay and no read/merge (local fixture, NOT real policy/audit acceptance)');
+  console.log('PASS: ordinary history uses exact target/current proof, field-checked snapshots and changedFields, employee/record/policy cursor binding, deleted rows, empty continuation pages, precise numbers and no admin fallback or writes (local fixture, NOT actual audit acceptance)');
   console.log('PASS: legacy verified employee data identity, exact request binding, mandatory owner filter, protected fields, per-user record/intent identities, cross-user isolation and fail-closed policy');
   console.log('PASS: App server Ed25519 validation, operator allowlist, strict control input, dedicated Key, stable business replay, revocation, redaction, unknown outcome once and no data-Key fallback');
   console.log('PASS: offline package/public SDK import, page, strict input, write/read/replay, read-only, revocation, redaction, unknown outcome without retry');

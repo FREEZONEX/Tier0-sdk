@@ -106,6 +106,48 @@ function checkCoreReadFields(items, grant) {
   }
 }
 
+const auditPolicyError = () => Object.assign(new Error(), { status: 503, code: 'APP_DATA_POLICY_UNAVAILABLE' });
+function auditInteger(value) {
+  const text = value instanceof UnsV2RawNumber || typeof value === 'bigint' ? value.toString()
+    : typeof value === 'number' && Number.isSafeInteger(value) ? String(value) : '';
+  if (!/^(0|[1-9]\d{0,18})$/.test(text) || BigInt(text) > 9223372036854775807n) throw auditPolicyError();
+  return text;
+}
+function historyPage(data, grant, recordId, size) {
+  if (!data || !Array.isArray(data.items) || data.items.length > size || typeof data.nextCursor !== 'string' ||
+      data.nextCursor.length > 4096 || !/^[A-Za-z0-9_.-]*$/.test(data.nextCursor)) throw auditPolicyError();
+  const seen = new Set();
+  const items = data.items.map((event) => {
+    if (!event || event.collectionId !== grant.collectionId || event.recordId !== recordId ||
+        typeof event.eventId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9:_-]{0,127}$/.test(event.eventId) || seen.has(event.eventId) ||
+        !['create', 'update', 'delete', 'restore'].includes(event.action) ||
+        typeof event.beforeDeleted !== 'boolean' || typeof event.afterDeleted !== 'boolean' ||
+        !Array.isArray(event.changedFields) || new Set(event.changedFields).size !== event.changedFields.length) throw auditPolicyError();
+    seen.add(event.eventId);
+    // Validate raw snapshots and field names before selecting App display fields.
+    // Never conceal a Core disclosure failure by silently stripping hidden fields.
+    checkCoreReadFields([event.before, event.after].filter((value) => value !== null).map((value) => ({ data: value })), grant);
+    const properties = grant.recordSchema?.properties ?? {};
+    if (event.changedFields.some((key) => typeof key !== 'string' || !Object.hasOwn(properties, key))) throw auditPolicyError();
+    const revisionBefore = auditInteger(event.revisionBefore), revisionAfter = auditInteger(event.revisionAfter);
+    if (BigInt(revisionAfter) !== BigInt(revisionBefore) + 1n) throw auditPolicyError();
+    const actor = event.actor;
+    if (!actor || !['user', 'app_employee', 'app', 'service', 'personal_key'].includes(actor.kind)) throw auditPolicyError();
+    const human = ['user', 'app_employee'].includes(actor.kind);
+    if (human && (typeof actor.userId !== 'string' || !/^[1-9]\d{0,18}$/.test(actor.userId) ||
+        BigInt(actor.userId) > 9223372036854775807n)) throw auditPolicyError();
+    const snapshot = (value) => value === null ? null : Object.fromEntries(Object.entries(orderView({ data: value }).data)
+      .map(([key, entry]) => [key, entry instanceof UnsV2RawNumber ? entry.toString() : entry]));
+    return { eventId: event.eventId, action: event.action, revisionBefore, revisionAfter, createdAt: auditInteger(event.createdAt),
+      before: snapshot(event.before), after: snapshot(event.after), beforeDeleted: event.beforeDeleted, afterDeleted: event.afterDeleted,
+      changedFields: event.changedFields.filter((key) => ['orderNo', 'amount', 'status'].includes(key)),
+      // Employee attribution is actor.userId, never the App Key owner. Key IDs and
+      // raw credentials are not part of the browser history view.
+      actor: { kind: actor.kind, ...(human ? { userId: actor.userId } : {}) } };
+  });
+  return { items, nextCursor: data.nextCursor };
+}
+
 // Identity and legacy user grants are pinned by the App operator, never browser
 // input. Core principals and business permissions are managed by Core data rules.
 const identityFields = ['CLOUD_APP_ID', 'CLOUD_WORKSPACE_ID', 'CLOUD_APP_IDENTITY_PUBLIC_KEYS'];
@@ -226,6 +268,29 @@ const server = createServer(async (req, res) => {
     if (['GET', 'POST'].includes(req.method) && path === '/api/device/telemetry') {
       return reply(res, 200, await deviceControl(req));
     }
+    const historyPath = path.match(/^\/api\/orders\/([^/]+)\/history$/);
+    if (dataMode === 'core' && req.method === 'GET' && historyPath) {
+      // Verify the exact signed URI including its query before parsing parameters.
+      const { subject } = await orderSubject(req, req.url);
+      const client = orderClient(req);
+      const url = new URL(req.url, 'http://app.invalid');
+      let recordId;
+      try { recordId = decodeURIComponent(historyPath[1]); } catch { /* Rejected below. */ }
+      const params = [...url.searchParams.keys()];
+      const sizeText = url.searchParams.get('size') ?? '20', cursor = url.searchParams.get('cursor');
+      if (req.url !== url.pathname + url.search || typeof recordId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9:_-]{0,127}$/.test(recordId) ||
+          params.some((key) => !['size', 'cursor'].includes(key)) || new Set(params).size !== params.length ||
+          !/^[1-9]\d{0,2}$/.test(sizeText) || Number(sizeText) > 100 ||
+          (cursor !== null && (!cursor.length || cursor.length > 4096 || !/^[A-Za-z0-9_.-]+$/.test(cursor)))) {
+        throw Object.assign(new Error(), { status: 400, code: 'INVALID_INPUT' });
+      }
+      const { grant } = await ordersContext(client, 'record:read', subject);
+      // Ordinary history only. Core checks current/historical row scope and
+      // historyRead on every page, including deleted records and policy changes.
+      const result = await client.unsV2.recordAuditList({ collectionId: grant.collectionId, recordId,
+        size: Number(sizeText), ...(cursor === null ? {} : { cursor }) });
+      return reply(res, 200, { operator: subject.userID, recordId, ...historyPage(result.data, grant, recordId, Number(sizeText)) });
+    }
     if (dataMode === 'core' && ['GET', 'PATCH'].includes(req.method) && path.startsWith('/api/orders/')) {
       const { subject, raw } = await orderSubject(req, path);
       const client = orderClient(req);
@@ -277,6 +342,9 @@ const server = createServer(async (req, res) => {
         app: response.data.name, operator: subject.userID,
         policyRevision: response.data.revision,
         dataMode, receiptDomain,
+        // The current Core contract has no create-specific effective capability.
+        // This coarse write hint is not permission to create; Core must reject
+        // state-only supervisors on POST. Operation-specific UX remains pending.
         canWrite: grant.permissions.includes('record:write') && (dataMode === 'legacy' || coreWritesEnabled),
         items: records.data.items.map(orderView),
       });

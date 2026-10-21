@@ -314,9 +314,53 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+data/3+app-data/2+hosted-control/1');
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(97);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(112);
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+record-audit/1+data/3+app-data/2+hosted-control/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('8be0ee347b1c045a2652f98ee7a5c46f3c124840');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
+    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('f3c5d3151d07d96d29858e217b33bede22d187c0b4a568d554a3d5713997c8da');
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(114);
+    expect(received.slice(start)).toHaveLength(1);
+  });
+
+  it('reads ordinary record audit through the exact committed collection/record route and excludes admin audit', async () => {
+    const start = received.length;
+    respond = (_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{"code":200,"msg":"ok","requestId":"audit-exact","data":{"items":[{"eventId":"event-1","collectionId":"orders #1","recordId":"order #1","action":"update","revisionBefore":9007199254740992,"revisionAfter":9007199254740993,"before":{"amount":1.0000000000000001},"after":{"amount":2},"beforeDeleted":false,"afterDeleted":false,"actor":{"kind":"app_employee","userId":"9007199254740995","keyId":"1","keyOwnerId":"2"},"transactionId":"transaction-1","operationId":"op-1","createdAt":1792540800000,"changedFields":["amount"]}],"nextCursor":"opaque.next"}}');
+    };
+    const api = createClient({ apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: 'gateway.employee.signature' }).unsV2;
+    const out = await api.recordAuditList({ collectionId: 'orders #1', recordId: 'order #1', size: 1, cursor: 'opaque.previous' });
+    expect(out.data.items[0].revisionAfter).toEqual(new UnsV2RawNumber('9007199254740993'));
+    expect(out.data.items[0].before?.amount).toEqual(new UnsV2RawNumber('1.0000000000000001'));
+    expect(out.data.items[0].actor.userId).toBe('9007199254740995');
+    expect(out.data.nextCursor).toBe('opaque.next');
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start]).toMatchObject({ method: 'POST', path: '/openapi/v2/uns/collections/orders%20%231/records/order%20%231/audit:list',
+      headers: { 'x-tier0-app-data-subject': 'gateway.employee.signature' } });
+    expect(JSON.parse(received[start].body)).toEqual({ collectionId: 'orders #1', recordId: 'order #1', size: 1, cursor: 'opaque.previous' });
+    expect(UNS_V2_OPERATIONS.recordAuditList).toMatchObject({ mutation: false, scope: 'uns:read' });
+    expect(Object.hasOwn(UNS_V2_OPERATIONS, 'recordAuditAdminList')).toBe(false);
+    expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, 'UnsV2RecordAuditAdminListReq')).toBe(false);
+    await expect((api as unknown as { call(name: string, request: unknown): Promise<unknown> })
+      .call('recordAuditAdminList', {})).rejects.toThrow('unknown UNS v2 operation');
+    expect(received.slice(start)).toHaveLength(1);
+  });
+
+  it.each(['denied', 'socket', 'redirect'] as const)('never retries or elevates an ordinary audit %s response', async kind => {
+    const start = received.length;
+    respond = (req, res) => {
+      if (kind === 'socket') { req.socket.destroy(); return; }
+      if (kind === 'redirect') { res.writeHead(307, { Location: '/audit:admin-list' }); res.end('{}'); return; }
+      send(res, { code: 403, msg: 'denied', requestId: 'audit-denied', data: null, error: {
+        code: 'FORBIDDEN', retryable: false, details: [],
+        retryAdvice: { recommendedAction: 'doNotRetry', canRetrySameRequest: false, keepIdempotencyKey: false },
+      } }, 403);
+    };
+    await expect(client().unsV2.recordAuditList({ collectionId: 'orders', recordId: 'order-1' })).rejects.toMatchObject({
+      name: 'UnsV2Error', retryable: false,
+      code: kind === 'socket' ? 'UNS_V2_TRANSPORT_ERROR' : kind === 'redirect' ? 'UNS_V2_PROTOCOL_ERROR' : 'FORBIDDEN',
+    });
     expect(received.slice(start)).toHaveLength(1);
   });
 
