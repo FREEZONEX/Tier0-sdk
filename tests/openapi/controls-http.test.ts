@@ -62,8 +62,9 @@ describe('Control real HTTP fixture (no external credentials)', () => {
   });
 
   it.each([
-    [401, 'INVALID_CREDENTIAL'], [403, 'CONTROL_FORBIDDEN'], [409, 'IDEMPOTENCY_CONFLICT'],
-    [429, 'CONTROL_RATE_LIMITED'], [503, 'CONTROL_UNAVAILABLE'], [504, 'CONTROL_RESULT_UNKNOWN'],
+    [400, 'CONTROL_INVALID_INPUT'], [401, 'INVALID_CREDENTIAL'], [403, 'CONTROL_FORBIDDEN'],
+    [404, 'CONTROL_NOT_FOUND'], [409, 'CONTROL_INACTIVE'], [409, 'IDEMPOTENCY_CONFLICT'], [422, 'CONTROL_OUTPUT_INVALID'],
+    [429, 'CONTROL_RATE_LIMITED'], [502, 'SOURCE_PROTOCOL_ERROR'], [503, 'CONTROL_UNAVAILABLE'], [504, 'CONTROL_RESULT_UNKNOWN'],
   ])('keeps HTTP %s / %s with one actual network request', async (status, errorCode) => {
     const start = received.length;
     respond = (_req, res) => send(res, { errorCode, message: 'public error' }, status);

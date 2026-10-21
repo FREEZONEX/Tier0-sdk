@@ -64,7 +64,7 @@ describe('Cloud Control single-attempt transport', () => {
 
   it.each([
     [400, 'CONTROL_INVALID_INPUT'], [401, 'INVALID_CREDENTIAL'], [403, 'CONTROL_FORBIDDEN'],
-    [404, 'CONTROL_NOT_FOUND'], [409, 'IDEMPOTENCY_CONFLICT'], [422, 'CONTROL_OUTPUT_INVALID'],
+    [404, 'CONTROL_NOT_FOUND'], [409, 'CONTROL_INACTIVE'], [409, 'IDEMPOTENCY_CONFLICT'], [422, 'CONTROL_OUTPUT_INVALID'],
     [429, 'CONTROL_RATE_LIMITED'], [500, 'CONTROL_INTERNAL_ERROR'], [502, 'SOURCE_PROTOCOL_ERROR'],
     [503, 'CONTROL_UNAVAILABLE'], [504, 'CONTROL_RESULT_UNKNOWN'],
   ])('preserves HTTP %s / %s and never retries', async (status, errorCode) => {
