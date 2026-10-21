@@ -1,0 +1,86 @@
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { UNS_V2_CODEC_SCHEMAS, UNS_V2_CONTRACT_PROVENANCE, UNS_V2_OPERATIONS } from '../../src/uns-v2/generated.js';
+
+type Operation = {
+  name: string;
+  appAllowed: boolean;
+  coreOnly?: boolean;
+  permission: string;
+  permissionAnyOf: string[];
+  minPermission: number;
+};
+const read = (file: string) => readFileSync(new URL(`../../contracts/uns-v2/${file}`, import.meta.url), 'utf8');
+const manifest = JSON.parse(read('manifest.json')) as {
+  operations: Operation[];
+  schemas: Record<string, { properties?: Record<string, unknown> }>;
+};
+const contract = JSON.parse(read('contract.json')) as { operations: Operation[] };
+const registry = read('registry_generated.go');
+const operation = (name: string) => manifest.operations.find(item => item.name === name)!;
+
+describe('Backend 874ea913a App UNS access contract', () => {
+  it('pins the exact upstream commit and all generator inputs', () => {
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('874ea913abbd5690fed42e698c4f6b7984b0a7ce');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
+    for (const [key, file] of Object.entries({ contract: 'contract.json', cloudSupport: 'cloud-support.json', manifest: 'manifest.json', provenance: 'provenance.json', registry: 'registry_generated.go' })) {
+      expect(UNS_V2_CONTRACT_PROVENANCE.hashes[key as keyof typeof UNS_V2_CONTRACT_PROVENANCE.hashes]).toBe(
+        createHash('sha256').update(read(file)).digest('hex')
+      );
+    }
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(114);
+  });
+
+  it.each([
+    ['catalog', ['uns.read', 'uns.write', 'uns.delete']],
+    ['jobs', ['uns.read', 'uns.write', 'uns.delete']],
+    ['dataAppContext', ['uns.read', 'uns.write', 'uns.delete']],
+    ['recordTransactionExecute', ['uns.write', 'uns.delete']],
+  ] as const)('%s preserves the upstream resource alternatives without inventing read/manage rights', (name, permissions) => {
+    const metadata = operation(name);
+    expect(metadata.permissionAnyOf).toEqual(permissions);
+    expect(metadata.appAllowed).toBe(true);
+    expect(contract.operations.find(item => item.name === name)?.permissionAnyOf).toEqual(permissions);
+    const line = registry.split('\n').find(row => row.includes(`Name: "${name}"`));
+    expect(line).toContain(`PermissionAnyOf: []string{${permissions.map(permission => `"${permission}"`).join(', ')}}`);
+    expect(line).toContain('AppAllowed: true');
+    expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(true);
+  });
+
+  it('keeps App credentials outside every management operation and preserves Core-only policy boundaries', () => {
+    const management = manifest.operations.filter(item => item.minPermission >= 3 || item.permission.includes('manage'));
+    expect(management.length).toBeGreaterThan(0);
+    for (const item of management) {
+      expect(item.appAllowed, item.name).toBe(false);
+      expect(item.permissionAnyOf.some(permission => permission.includes('manage')), item.name).toBe(false);
+    }
+    // Generic workspace SDK methods remain available; their presence grants no App authority.
+    expect(operation('collectionCreate').appAllowed).toBe(false);
+    expect(Object.hasOwn(UNS_V2_OPERATIONS, 'collectionCreate')).toBe(true);
+    for (const name of ['appDataPolicyGet', 'appDataPolicyUpdate', 'hostedAppControlPolicyGet', 'hostedAppControlPolicyUpdate']) {
+      expect(operation(name)).toMatchObject({ appAllowed: false, coreOnly: true, permission: 'workspace.api.manage', minPermission: 3 });
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
+    }
+    for (const name of ['appAccessGet', 'appAccessUpdate']) {
+      expect(manifest.operations.some(item => item.name === name)).toBe(false);
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
+    }
+  });
+
+  it('retains create capability, source acquisition and record audit schemas/codecs', () => {
+    for (const name of ['CloudAppCreateCapability', 'CloudRecordAuditConfig', 'CloudRecordAuditActor', 'CloudRecordAuditEvent', 'UnsV2RecordAuditListReq', 'UnsV2RecordAuditListResponse']) {
+      expect(Object.hasOwn(manifest.schemas, name)).toBe(true);
+      expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(true);
+    }
+    expect(manifest.schemas.CloudAppCreateCapability.properties).toHaveProperty('inputSchema');
+    expect(manifest.schemas.CloudAppCreateCapability.properties).toHaveProperty('binding');
+    expect(manifest.schemas.CloudRecordAuditEvent.properties).toHaveProperty('before');
+    expect(manifest.schemas.CloudRecordAuditEvent.properties).toHaveProperty('after');
+    expect(manifest.schemas.CloudRecordAuditEvent.properties).toHaveProperty('actor');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('app-create-capability/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('record-audit/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('source-bindings/1');
+  });
+});

@@ -332,9 +332,9 @@ describe('UNS v2 localhost HTTP fixture', () => {
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+record-audit/1+app-create-capability/1+data/3+app-data/2+hosted-control/1+source-bindings/1');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('0ba50cd76c620ba1b799499d8783d1209e9e750a');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('874ea913abbd5690fed42e698c4f6b7984b0a7ce');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('395c4da2f5132284d0d4af11ae8ee027c0d627597c67c2b211942e68863bc9b3');
+    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('91d68dfd4510310911a949df6883b0fb86f596134029c7734bb786054dabac8a');
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
     expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(114);
     expect(received.slice(start)).toHaveLength(1);

@@ -72,7 +72,11 @@
       "appAllowed": true,
       "response": "UnsV2Envelope",
       "permission": "uns.read",
-      "permissionAnyOf": [],
+      "permissionAnyOf": [
+        "uns.read",
+        "uns.write",
+        "uns.delete"
+      ],
       "minPermission": 1,
       "scope": "uns:read",
       "tags": [
@@ -290,7 +294,11 @@
       "appAllowed": true,
       "response": "UnsV2Envelope",
       "permission": "uns.read",
-      "permissionAnyOf": [],
+      "permissionAnyOf": [
+        "uns.read",
+        "uns.write",
+        "uns.delete"
+      ],
       "minPermission": 1,
       "scope": "uns:read",
       "tags": [
@@ -473,7 +481,10 @@
       "summary": "执行跨集合业务事务",
       "appAllowed": true,
       "permission": "uns.write",
-      "permissionAnyOf": [],
+      "permissionAnyOf": [
+        "uns.write",
+        "uns.delete"
+      ],
       "minPermission": 2,
       "scope": "uns:write",
       "tags": [
@@ -3795,7 +3806,11 @@
       "example": {},
       "cloudExtension": true,
       "appAllowed": true,
-      "permissionAnyOf": [],
+      "permissionAnyOf": [
+        "uns.read",
+        "uns.write",
+        "uns.delete"
+      ],
       "tags": [
         "元数据"
       ],
