@@ -11072,43 +11072,51 @@
             "list": {
               "type": "array",
               "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "kind": {
-                    "type": "string",
-                    "enum": [
-                      "source"
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "source"
+                        ]
+                      },
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "revision": {
+                        "type": "integer"
+                      },
+                      "data": {
+                        "$ref": "#/components/schemas/SourceDataView"
+                      },
+                      "createdAt": {
+                        "type": "integer"
+                      },
+                      "updatedAt": {
+                        "type": "integer"
+                      },
+                      "deletedAt": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id",
+                      "revision",
+                      "data"
                     ]
                   },
-                  "id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 128
-                  },
-                  "revision": {
-                    "type": "integer"
-                  },
-                  "data": {
-                    "$ref": "#/components/schemas/SourceDataView"
-                  },
-                  "createdAt": {
-                    "type": "integer"
-                  },
-                  "updatedAt": {
-                    "type": "integer"
-                  },
-                  "deletedAt": {
-                    "type": "integer"
+                  {
+                    "$ref": "#/components/schemas/CloudSourceNativeSummary"
                   }
-                },
-                "required": [
-                  "kind",
-                  "id",
-                  "revision",
-                  "data"
                 ]
-              }
+              },
+              "description": "原生配置不能转换时仍返回对象身份和显式诊断；管理者使用 sourceDocumentGet，浏览者使用 sourceDocumentList 的安全摘要。不会省略对象或把认证源伪装成匿名源。"
             }
           },
           "required": [
@@ -22998,7 +23006,8 @@
                 "basic",
                 "bearer",
                 "apiKey",
-                "usernamePassword"
+                "usernamePassword",
+                "oauth2ClientCredentials"
               ]
             },
             "credentialRef": {
@@ -23921,11 +23930,62 @@
         },
         "document": {
           "$ref": "#/components/schemas/CloudSourceDocument"
+        },
+        "credentials": {
+          "$ref": "#/components/schemas/CloudSourceCreateCredentials",
+          "writeOnly": true,
+          "description": "仅用于本次创建的 HTTP 凭据，endpoint 从 document.config 取得。与已有 auth/TLS 引用互斥；不写入 Source 文档。"
         }
       },
       "required": [
         "dryRun",
         "document"
+      ],
+      "oneOf": [
+        {
+          "not": {
+            "required": [
+              "credentials"
+            ]
+          }
+        },
+        {
+          "required": [
+            "credentials",
+            "idempotencyKey"
+          ],
+          "properties": {
+            "idempotencyKey": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$"
+            },
+            "document": {
+              "properties": {
+                "protocol": {
+                  "enum": [
+                    "http"
+                  ]
+                },
+                "config": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "auth"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "tls"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
       ]
     },
     "CloudSourceDocumentCreateResponse": {
@@ -28154,7 +28214,207 @@
         "fence",
         "record"
       ]
+    },
+    "CloudSourceCreateCredentials": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "type": "string",
+          "pattern": "^[A-Z]{1,32}$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "basic",
+            "bearer",
+            "oauth2ClientCredentials"
+          ]
+        },
+        "material": {
+          "type": "object",
+          "writeOnly": true
+        }
+      },
+      "required": [
+        "method",
+        "kind",
+        "material"
+      ],
+      "writeOnly": true,
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "basic"
+              ]
+            },
+            "material": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "username": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "writeOnly": true
+                },
+                "password": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "writeOnly": true
+                }
+              },
+              "required": [
+                "username",
+                "password"
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "bearer"
+              ]
+            },
+            "material": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "token": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 32768,
+                  "writeOnly": true
+                }
+              },
+              "required": [
+                "token"
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "oauth2ClientCredentials"
+              ]
+            },
+            "method": {
+              "enum": [
+                "GET"
+              ]
+            },
+            "material": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tokenUrl": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048
+                },
+                "clientId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "writeOnly": true
+                },
+                "clientSecret": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 32768,
+                  "writeOnly": true
+                },
+                "scope": {
+                  "type": "string",
+                  "maxLength": 4096
+                }
+              },
+              "required": [
+                "tokenUrl",
+                "clientId",
+                "clientSecret"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "CloudSourceNativeSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "source"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "representation": {
+          "type": "string",
+          "enum": [
+            "native"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "desiredState": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "integer"
+        },
+        "updatedAt": {
+          "type": "integer"
+        },
+        "deletedAt": {
+          "type": "integer"
+        },
+        "documentOperation": {
+          "type": "string",
+          "enum": [
+            "sourceDocumentGet"
+          ]
+        },
+        "projectionIssue": {
+          "type": "string",
+          "enum": [
+            "SOURCE_REQUIRES_NATIVE_DOCUMENT"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "representation",
+        "name",
+        "protocol",
+        "desiredState",
+        "createdAt",
+        "updatedAt",
+        "documentOperation",
+        "projectionIssue"
+      ]
     }
   },
-  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1"
+  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1"
 }
