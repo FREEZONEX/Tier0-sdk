@@ -2,6 +2,7 @@ import { receiptDomains, intentStorageKey, orderIntent } from './order-intent.mj
 
 const messages = {
   zh: {
+    notificationsLive: '当前权限下的变更通知已连接', notificationsUnavailable: '变更通知暂不可用，可手动刷新', notificationsReset: '通知窗口已变化，正在重新读取',
     dataNew: '发起新保存', dataMigration: '数据权限已升级：先核对之前的保存结果，再明确发起新保存；旧保存请求不会自动重放。',
     dataNewConfirm: '请确认已核对之前及尚未确认的保存结果。继续将发起一次新保存，旧保存请求不会自动重放。是否继续？',
     dataIntentReady: '新保存请求已就绪；再次保存相同内容将使用同一请求标识', dataReconcile: '请先核对尚未确认的保存结果；当前不允许发起新保存',
@@ -17,6 +18,7 @@ const messages = {
     unknown: '保存结果尚未确认。请刷新列表核对；再次点击保存会使用相同请求标识。', failed: '请求失败', draft: '草稿', submitted: '已提交', approved: '已审批', rejected: '已驳回',
   },
   en: {
+    notificationsLive: 'Change notifications connected with current permissions', notificationsUnavailable: 'Notifications unavailable; refresh manually', notificationsReset: 'Notification window changed; reloading',
     dataNew: 'Start new save', dataMigration: 'Data permissions have been upgraded. Check previous save results before explicitly starting a new save. Previous save requests will not replay automatically.',
     dataNewConfirm: 'Confirm that you have checked previous and uncertain save results. Continuing starts a new save; previous save requests will not replay automatically. Continue?',
     dataIntentReady: 'New save request ready; saving the same contents keeps the same request identity', dataReconcile: 'Check the uncertain save result before starting a new save',
@@ -42,6 +44,8 @@ let dataOperator;
 let dataMode = 'legacy';
 let dataReceiptDomain = receiptDomains.legacy;
 let busy = false;
+let refreshSequence = 0;
+let refreshAbort;
 let controlState = 'controlLoading';
 let controlError = '';
 let controlStorageKey;
@@ -86,7 +90,19 @@ function errorState(error) {
   if (error.status === 403 || error.status === 401) status('denied', true, error.code);
   else status(error.code === 'OUTCOME_UNKNOWN' ? 'unknown' : 'failed', true, error.code);
 }
-async function refresh() {
+function cancelRefresh() {
+  refreshSequence++;
+  refreshAbort?.abort();
+  refreshAbort = undefined;
+}
+async function refresh(epoch = notificationEpoch) {
+  if (epoch !== notificationEpoch || document.hidden) return false;
+  cancelRefresh();
+  const sequence = refreshSequence;
+  const controller = new AbortController();
+  refreshAbort = controller;
+  // Abort is best-effort: stale completions must also fail before every UI commit.
+  const current = () => epoch === notificationEpoch && sequence === refreshSequence && !controller.signal.aborted;
   $('#refresh').disabled = true;
   canCreate = false;
   syncCreateControls();
@@ -95,7 +111,8 @@ async function refresh() {
   $('#records').replaceChildren();
   status('loading');
   try {
-    const result = await request('/api/orders');
+    const result = await request('/api/orders', { signal: controller.signal });
+    if (!current()) return false;
     if (typeof result.operator !== 'string' || !/^[1-9]\d{0,18}$/.test(result.operator)) throw new Error('Invalid employee context');
     // Missing mode metadata is the old v5 server only. Never reinterpret a Core
     // receipt as legacy or move a stored intent into another receipt domain.
@@ -127,8 +144,15 @@ async function refresh() {
     $('#data-new').hidden = mode !== 'core';
     $('#data-new').disabled = !canCreate || busy;
     if (mode === 'core') status(canCreate ? 'dataMigration' : createState);
-  } catch (error) { errorState(error); }
-  finally { $('#refresh').disabled = false; }
+    return true;
+  } catch (error) {
+    if (!current()) return false;
+    if (error.status === 401 || error.status === 403) stopNotifications();
+    errorState(error);
+    return false;
+  } finally {
+    if (current()) { refreshAbort = undefined; $('#refresh').disabled = false; }
+  }
 }
 $('#order-form').addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -156,8 +180,7 @@ $('#order-form').addEventListener('submit', async (event) => {
       delete intent.outcomeUnknown;
       localStorage.setItem(dataIntentStorageKey, JSON.stringify(intent));
     }
-    await refresh();
-    status(result.replayed ? 'replayed' : 'saved');
+    if (await refresh()) status(result.replayed ? 'replayed' : 'saved');
   } catch (error) {
     if (dataMode === 'core' && error.code === 'OUTCOME_UNKNOWN') {
       localStorage.setItem(dataIntentStorageKey, JSON.stringify({ ...intent, outcomeUnknown: true }));
@@ -179,7 +202,7 @@ $('#data-new').addEventListener('click', () => {
   status('dataIntentReady');
 });
 
-$('#refresh').addEventListener('click', refresh);
+$('#refresh').addEventListener('click', () => startNotifications());
 $('#language').addEventListener('change', (event) => {
   language = event.target.value;
   localStorage.setItem('uns-orders-language', language);
@@ -193,7 +216,6 @@ $('#theme').addEventListener('click', () => {
   localStorage.setItem('uns-orders-theme', theme);
 });
 translate();
-void refresh();
 
 function controlStatus(key, code = '') {
   controlState = key; controlError = code;
@@ -227,3 +249,80 @@ $('#control-new').addEventListener('click', () => {
   catch { controlStatus('controlUnavailable'); }
 });
 void loadControl();
+
+// Each poll traverses the App Gateway again; no employee proof or cursor is persisted.
+let notificationEpoch = 0;
+let notificationTimer;
+let notificationAbort;
+let notificationCursor = '';
+let notificationOperator = '';
+const notificationSeen = new Set();
+function stopNotifications() {
+  notificationEpoch++;
+  clearTimeout(notificationTimer);
+  notificationAbort?.abort();
+  cancelRefresh();
+  $('#refresh').disabled = false;
+  notificationCursor = ''; notificationOperator = ''; notificationSeen.clear();
+}
+async function startNotifications() {
+  stopNotifications();
+  const epoch = notificationEpoch;
+  if (document.hidden) return;
+  try {
+    notificationAbort = new AbortController();
+    const baseline = await request('/api/orders/notifications/poll', { signal: notificationAbort.signal });
+    if (epoch !== notificationEpoch) return;
+    if (typeof baseline.nextCursor !== 'string' || !baseline.nextCursor || typeof baseline.operator !== 'string') throw new Error('Invalid notification baseline');
+    if (!await refresh(epoch) || epoch !== notificationEpoch) return;
+    if (baseline.operator !== dataOperator) throw Object.assign(new Error(), { status: 403, code: 'FORBIDDEN' });
+    notificationCursor = baseline.nextCursor; notificationOperator = baseline.operator;
+    $('#notifications').textContent = text('notificationsLive');
+    notificationTimer = setTimeout(() => void pollNotifications(epoch), 1000);
+  } catch (error) {
+    if (epoch !== notificationEpoch || error.name === 'AbortError') return;
+    if (error.status === 401 || error.status === 403) { stopNotifications(); errorState(error); return; }
+    $('#notifications').textContent = text('notificationsUnavailable');
+    await refresh(epoch);
+  }
+}
+async function pollNotifications(epoch) {
+  if (epoch !== notificationEpoch || document.hidden) return;
+  try {
+    notificationAbort = new AbortController();
+    const page = await request('/api/orders/notifications/poll?cursor=' + encodeURIComponent(notificationCursor), { signal: notificationAbort.signal });
+    if (epoch !== notificationEpoch) return;
+    if (page.operator !== notificationOperator || page.operator !== dataOperator) throw Object.assign(new Error(), { status: 403, code: 'FORBIDDEN' });
+    if (!Array.isArray(page.items) || typeof page.nextCursor !== 'string' || !page.nextCursor) throw new Error('Invalid notification page');
+    const unseen = page.items.filter(item => !notificationSeen.has(item.eventId));
+    if (unseen.length) {
+      const refreshed = await refresh(epoch);
+      if (epoch !== notificationEpoch) return;
+      if (!refreshed) { stopNotifications(); $('#notifications').textContent = text('notificationsUnavailable'); return; }
+    }
+    if (epoch !== notificationEpoch) return;
+    for (const item of page.items) notificationSeen.add(item.eventId);
+    if (notificationSeen.size > 1000) notificationSeen.clear();
+    notificationCursor = page.nextCursor;
+    $('#notifications').textContent = text('notificationsLive');
+    notificationTimer = setTimeout(() => void pollNotifications(epoch), 1000);
+  } catch (error) {
+    if (epoch !== notificationEpoch || error.name === 'AbortError') return;
+    if (error.status === 401 || error.status === 403) { stopNotifications(); errorState(error); return; }
+    if (error.code === 'CURSOR_EXPIRED') {
+      stopNotifications();
+      const resetEpoch = notificationEpoch;
+      $('#notifications').textContent = text('notificationsReset');
+      notificationTimer = setTimeout(() => { if (resetEpoch === notificationEpoch) void startNotifications(); }, 1000);
+      return;
+    }
+    $('#notifications').textContent = text('notificationsUnavailable');
+    notificationTimer = setTimeout(() => void pollNotifications(epoch), 5000);
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopNotifications(); else void startNotifications();
+});
+window.addEventListener('pagehide', stopNotifications);
+
+void startNotifications();

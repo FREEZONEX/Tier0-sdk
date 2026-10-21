@@ -331,12 +331,12 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('bedb71714ffb5b1dfb5393f92894a0f49f180b34');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('working-tree-pending-commit');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('2532caadd1adbcbcf121c02ce3b95e81c76bfcd4baf91645dd3450237eaceb4f');
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(97);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(112);
+    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('9f0d840b56bac55e051f9714c833da66af9614b87a09b43c993982cc31cc822c');
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(113);
     expect(received.slice(start)).toHaveLength(1);
   });
 
@@ -782,5 +782,34 @@ describe('UNS v2 localhost HTTP fixture', () => {
     await expect.poll(() => closed).toBe(true);
     await new Promise(resolve => setTimeout(resolve, 30));
     expect(received.length - start).toBe(1);
+  });
+});
+
+
+describe('Record notifications over the existing isolated HTTP transport', () => {
+  it('exposes a readonly operation and preserves cursor plus exact integer notification identity', async () => {
+    const start = received.length;
+    respond = (_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{"code":200,"msg":"ok","requestId":"changes","data":{"items":[{"eventId":"stable-event","collectionId":"orders","recordId":"9007199254740993","change":"record","occurredAt":9007199254740993}],"nextCursor":"rc1.sealed.fixture","retentionMs":3600000}}');
+    };
+    const result = await client().unsV2.recordChangesPoll({ collectionId: 'orders', cursor: 'rc1.old.fixture', limit: 20, waitMs: 0 });
+    expect(UNS_V2_OPERATIONS.recordChangesPoll.mutation).toBe(false);
+    expect(result.data.nextCursor).toBe('rc1.sealed.fixture');
+    expect(String(result.data.items[0].occurredAt)).toBe('9007199254740993');
+    expect(result.data.items[0].recordId).toBe('9007199254740993');
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received.at(-1)?.path).toBe('/openapi/v2/uns/records/changes');
+    expect(JSON.parse(received.at(-1)!.body)).toEqual({ collectionId: 'orders', cursor: 'rc1.old.fixture', limit: 20, waitMs: 0 });
+  });
+  it.each([[409, 'CURSOR_EXPIRED'], [403, 'FORBIDDEN'], [503, 'TEMPORARILY_UNAVAILABLE']])('preserves %s/%s without automatic reconnect or write replay', async (status, code) => {
+    const start = received.length;
+    respond = (_req, res) => send(res, { code: status, msg: 'safe failure', requestId: 'changes', data: null,
+      error: { code, retryable: false, details: [], retryAdvice: { recommendedAction: 'restoreAuthorizationBeforeRetry', canRetrySameRequest: false, keepIdempotencyKey: true } } }, status);
+    const error = await client().unsV2.recordChangesPoll({ collectionId: 'orders', cursor: 'rc1.old' }).catch(value => value);
+    expect(error).toBeInstanceOf(UnsV2Error);
+    expect(error).not.toBeInstanceOf(UnsV2OutcomeUnknownError);
+    expect(error).toMatchObject({ status, code, operation: 'recordChangesPoll' });
+    expect(received.slice(start)).toHaveLength(1);
   });
 });

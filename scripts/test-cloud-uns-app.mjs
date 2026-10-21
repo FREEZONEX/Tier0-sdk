@@ -90,6 +90,16 @@ const gateway = createServer(async (req, res) => {
     code: 403, msg: 'must-not-expose-private-detail', requestId: 'fixture-revoked',
     error: { code: 'FORBIDDEN', retryable: false },
   });
+  if (req.url === '/openapi/v2/uns/records/changes') {
+    const request = JSON.parse(body);
+    assert.equal(request.collectionId, collectionId);
+    assert.deepEqual(Object.keys(request).sort(), request.cursor ? ['collectionId', 'cursor', 'limit', 'waitMs'] : ['collectionId', 'limit', 'waitMs']);
+    if (request.cursor === 'expired-window') return failure(409, 'CURSOR_EXPIRED');
+    return reply(200, { code: 200, msg: 'ok', requestId: 'notifications', data: {
+      items: request.cursor ? [{ eventId: 'event-' + proofUser, collectionId: request.collectionId,
+        recordId: 'record-' + proofUser, change: 'record', occurredAt: 1792540800000, data: { secret: 'private-do-not-return' } }] : [],
+      nextCursor: 'rc1.fixture.' + proofUser, retentionMs: 3600000 } });
+  }
   if (req.url === '/openapi/v2/uns/app/context') {
     if (pendingContexts) {
       const pending = pendingContexts;
@@ -399,6 +409,30 @@ try {
   assert.equal(rejectedProof.status, 401);
   assert.deepEqual(await rejectedProof.json(), { code: 'APP_DATA_SUBJECT_INVALID' });
   assert.equal(dataRequests, rejectedProofStart + 1, 'Core proof rejection is single-shot with no fallback');
+  const notifications = (userID = dataUsers[0], options = {}, cursor = '') => dataRequest('GET', undefined, userID,
+    { uri: '/api/orders/notifications/poll' + (cursor ? '?cursor=' + encodeURIComponent(cursor) : ''), ...options });
+  const notificationAuthStart = dataRequests;
+  assert.equal((await notifications(dataUsers[0], { proof: null })).status, 401);
+  assert.equal((await notifications(dataUsers[0], { assertion: 'forged' })).status, 401);
+  assert.equal(dataRequests, notificationAuthStart, 'untrusted notification requests never reach upstream');
+  const baselines = await Promise.all(dataUsers.map(async userID => {
+    const response = await notifications(userID); assert.equal(response.status, 200); return response.json();
+  }));
+  for (const [index, baseline] of baselines.entries()) {
+    assert.equal(baseline.operator, dataUsers[index]); assert.deepEqual(baseline.items, []);
+    const response = await notifications(dataUsers[index], {}, baseline.nextCursor);
+    assert.equal(response.status, 200);
+    const page = await response.json();
+    assert.equal(page.operator, dataUsers[index]); assert.equal(page.items[0].recordId, 'record-' + dataUsers[index]);
+    assert.ok(!JSON.stringify(page).includes('private-do-not-return'));
+    assert.equal(Object.hasOwn(page.items[0], 'data'), false, 'proxy never exposes an unfiltered event body');
+  }
+  assert.equal((await notifications(dataUsers[0], {}, 'expired-window')).status, 409);
+  const invalidNotificationStart = dataRequests;
+  for (const uri of ['/api/orders/notifications/poll?cursor=a&cursor=b', '/api/orders/notifications/poll?workspaceId=2', '/api/orders/notifications/poll?cursor=']) {
+    assert.equal((await dataRequest('GET', undefined, dataUsers[0], { uri })).status, 400);
+  }
+  assert.equal(dataRequests, invalidNotificationStart);
   const readOnly = await (await listFor()).json();
   assert.equal(readOnly.dataMode, 'core'); assert.equal(readOnly.receiptDomain, 'core-app-data/v1');
   assert.equal(readOnly.canWrite, false);
@@ -675,6 +709,7 @@ try {
   }
   console.log('PASS: Core request-scoped proof wiring, identity-first rejection, duplicate/missing proof, no owner filter, default read-only, explicit new-intent gate, service-stamp payload, isolated Control and no fallback/retry (local fixture, NOT Core acceptance)');
   console.log('PASS: Core-only detail/PATCH, no client projection, raw-key schema validation, hidden-field violations rejected, supervisor target access, bounded changes, exact revision, distinct intents, conflict/replay and no read/merge (local fixture, NOT real policy/audit acceptance)');
+  console.log('PASS: request-scoped Record notification baseline/resume, two employees, hidden payload stripping, explicit expired-cursor reset, duplicate/body scope rejection and no upstream on missing proof (local fixture, NOT deployed subscription acceptance)');
   console.log('PASS: removed history route returns 404 for own/foreign/missing records, employees, supervisor and missing identity; no upstream requests or business/receipt mutations');
   console.log('PASS: legacy verified employee data identity, exact request binding, mandatory owner filter, protected fields, per-user record/intent identities, cross-user isolation and fail-closed policy');
   console.log('PASS: App server Ed25519 validation, operator allowlist, strict control input, dedicated Key, stable business replay, revocation, redaction, unknown outcome once and no data-Key fallback');

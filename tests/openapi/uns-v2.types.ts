@@ -125,3 +125,15 @@ const insertedShape = client.unsV2.recordInsertOne({ collectionId: 'orders', dat
   return id;
 });
 void [resourceShape, insertedShape];
+
+// Notifications expose identifiers only; business fields use the existing scoped query.
+const notifications = client.unsV2.recordChangesPoll({ collectionId: 'orders', limit: 20, waitMs: 1000 });
+notifications.then(result => {
+  const cursor: string = result.data.nextCursor;
+  const recordID: string | undefined = result.data.items[0]?.recordId;
+  void cursor; void recordID;
+  // @ts-expect-error notifications never export an unfiltered historical document
+  void result.data.items[0]?.data;
+});
+// @ts-expect-error the authenticated workspace cannot be overridden in the body
+void client.unsV2.recordChangesPoll({ collectionId: 'orders', workspaceId: 'other' });

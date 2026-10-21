@@ -1,10 +1,10 @@
 {
   "repository": "FREEZONEX/Tier0-Backend",
-  "revision": "bedb71714ffb5b1dfb5393f92894a0f49f180b34",
+  "revision": "c90d59bd7b180112a406c05224d2496ef1d78b57",
   "version": "4.0.0",
   "source": "service/unssvr/internal/domain/unsv2/contract_generated.go#ContractJSON",
-  "cloudRevision": "bedb71714ffb5b1dfb5393f92894a0f49f180b34",
-  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1",
+  "cloudRevision": "c90d59bd7b180112a406c05224d2496ef1d78b57",
+  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1",
   "resolvedCloudContract": true,
   "enterpriseBase": {
     "repository": "FREEZONEX/Tier0-Enterprise-New",
@@ -13,6 +13,7 @@
     "source": "backend/internal/domain/unsv2/contract_generated.go",
     "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs."
   },
-  "sourceDerivedContractSHA256": "2532caadd1adbcbcf121c02ce3b95e81c76bfcd4baf91645dd3450237eaceb4f",
-  "note": "Resolved Cloud runtime contract from exact Backend bedb71714ffb5b1dfb5393f92894a0f49f180b34. Removes generic Record audit operations and configuration; preserves Source bindings, employee create capability, ordinary data transactions and reliable event contracts. Enterprise provenance remains separate. No npm publication or App deployment is implied."
+  "sourceDerivedContractSHA256": "9f0d840b56bac55e051f9714c833da66af9614b87a09b43c993982cc31cc822c",
+  "note": "Generated Cloud record notification contract from the committed Backend source; publication and runtime acceptance are tracked separately.",
+  "baseRevision": "fb54cedf85979af93aa90a550460e97ccd8c665c"
 }

@@ -2829,6 +2829,25 @@
       ]
     },
     {
+      "name": "recordChangesPoll",
+      "suffix": "/uns/records/changes",
+      "handler": "UnsV2RecordChangesPoll",
+      "request": "CloudRecordChangesPollReq",
+      "response": "CloudRecordChangesPollResponse",
+      "resourceId": 212,
+      "appAllowed": true,
+      "permission": "uns.read",
+      "scope": "uns:read",
+      "minPermission": 1,
+      "summary": "读取当前授权的Record变更通知",
+      "description": "Bounded read-only notification polling over existing EVENTS. No cursor establishes a live baseline before a scoped snapshot read. Resume within retention using the sealed nextCursor; notifications contain no business fields. CURSOR_EXPIRED (409) requires a new baseline and current snapshot. Current App/Key/employee/Collection/owner grants are rechecked on each response. No protected Samples, leases or background delegation are enabled.",
+      "cloudExtension": true,
+      "permissionAnyOf": [],
+      "tags": [
+        "元数据"
+      ]
+    },
+    {
       "name": "sampleFind",
       "handler": "UnsV2SampleFind",
       "request": "UnsV2SampleFindReq",
@@ -26939,6 +26958,136 @@
         "principals"
       ]
     },
+    "CloudRecordChangesPollReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "recordIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "cursor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 50
+        },
+        "waitMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000,
+          "default": 0
+        }
+      },
+      "required": [
+        "collectionId"
+      ]
+    },
+    "CloudRecordChangeNotification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "change": {
+          "type": "string",
+          "enum": [
+            "record",
+            "delete"
+          ]
+        },
+        "occurredAt": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Event occurrence time in Unix milliseconds; delivery order is not commit order."
+        }
+      },
+      "required": [
+        "eventId",
+        "collectionId",
+        "recordId",
+        "change",
+        "occurredAt"
+      ]
+    },
+    "CloudRecordChangesPollResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "$ref": "#/components/schemas/CloudRecordChangeNotification"
+              }
+            },
+            "nextCursor": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8192
+            },
+            "retentionMs": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Configured bounded stream retention, not a guarantee of permanent history."
+            }
+          },
+          "required": [
+            "items",
+            "nextCursor",
+            "retentionMs"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
     "UnsV2SampleFindReq": {
       "type": "object",
       "additionalProperties": false,
@@ -28007,5 +28156,5 @@
       ]
     }
   },
-  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1"
+  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1"
 }
