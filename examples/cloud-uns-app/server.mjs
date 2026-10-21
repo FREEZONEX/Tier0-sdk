@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { createClient, UnsV2RawNumber } from '@tier0/sdk/cloud';
 import { createHash } from 'node:crypto';
 import { createCloudAppRequestVerifier, APP_REQUEST_IDENTITY_HEADER } from '@tier0/sdk/cloud/server';
+import { orderCreateHint } from './public/order-create-capability.mjs';
 
 // Explicit deployment migration: legacy preserves v5 receipts and App-side filtering.
 // Core never falls back to legacy. Enable writes only after reconciling old receipts
@@ -338,14 +339,14 @@ const server = createServer(async (req, res) => {
       if (dataMode === 'legacy' && records.data.items.some((item) => item.data.ownerUserId !== subject.userID)) {
         throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_POLICY_UNAVAILABLE' });
       }
+      const createState = dataMode === 'core' ? (coreWritesEnabled
+        ? orderCreateHint(grant.createCapability, response.data.revision) : 'readonly') : undefined;
       return reply(res, 200, {
         app: response.data.name, operator: subject.userID,
         policyRevision: response.data.revision,
         dataMode, receiptDomain,
-        // The current Core contract has no create-specific effective capability.
-        // This coarse write hint is not permission to create; Core must reject
-        // state-only supervisors on POST. Operation-specific UX remains pending.
         canWrite: grant.permissions.includes('record:write') && (dataMode === 'legacy' || coreWritesEnabled),
+        ...(dataMode === 'core' ? { canCreate: createState === 'createAllowed', createState } : {}),
         items: records.data.items.map(orderView),
       });
     }
@@ -357,6 +358,8 @@ const server = createServer(async (req, res) => {
       }
       const input = orderInput(req, raw);
       const { grant } = await ordersContext(client, 'record:write', subject);
+      // UI capabilities/bindings are not credentials. No cached hint or browser
+      // binding is accepted here: Core reauthorizes actual input and replay now.
       const result = await client.unsV2.recordInsertOne({
         collectionId: grant.collectionId, id: orderIdentity('app-order', subject, input.orderNo),
         idempotencyKey: orderIdentity(dataMode === 'core' ? 'app-order-intent-core-v1' : 'app-order-intent', subject, input.idempotencyKey),

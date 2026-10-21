@@ -213,6 +213,23 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received.at(-1)?.body).toBe('{}');
   });
 
+  it('decodes current employee create capability separately from readable fields without adding a selector or binding to the request', async () => {
+    const start = received.length;
+    respond = (_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{"code":200,"msg":"ok","requestId":"create-hint","data":{"appId":"app-1","name":"App","revision":19,"platformPermissions":[],"collections":[{"alias":"orders","collectionId":"orders","permissions":["record:read","record:write"],"recordSchema":{"type":"object","properties":{"orderNo":{"type":"string"}}},"createCapability":{"version":"cloud-app-create-capability/v1","allowed":true,"reason":"allowed","appRevision":19,"collectionRevision":9007199254740993,"binding":"' + 'a'.repeat(64) + '","inputSchema":{"type":"object","additionalProperties":false,"required":["orderNo","amount"],"properties":{"orderNo":{"type":"string"},"amount":{"type":"integer","minimum":0,"enum":[9007199254740993]}}}}}]}}');
+    };
+    const out = await client().unsV2.dataAppContext({});
+    const grant = out.data.collections[0], cap = grant.createCapability;
+    expect(grant.recordSchema.properties).not.toHaveProperty('amount');
+    expect(cap?.version).toBe('cloud-app-create-capability/v1');
+    expect(cap?.allowed).toBe(true);
+    expect(cap?.collectionRevision).toEqual(new UnsV2RawNumber('9007199254740993'));
+    expect(cap?.inputSchema?.properties?.amount.enum).toEqual([new UnsV2RawNumber('9007199254740993')]);
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start].body).toBe('{}');
+  });
+
   it('sends unified index declarations and reads exact business numbers through the 4.0 find route', async () => {
     const start = received.length;
     respond = (req, res) => {
@@ -314,10 +331,10 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+record-audit/1+data/3+app-data/2+hosted-control/1+source-bindings/1');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('39b445bcb8c007b7d6f0fc9fe67ce535020c4342');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+record-audit/1+app-create-capability/1+data/3+app-data/2+hosted-control/1+source-bindings/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('0ba50cd76c620ba1b799499d8783d1209e9e750a');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('2833501055248f4944ee4c0c74cf5e0332efbd3e016f7c8270566583b1fc70df');
+    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('395c4da2f5132284d0d4af11ae8ee027c0d627597c67c2b211942e68863bc9b3');
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
     expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(114);
     expect(received.slice(start)).toHaveLength(1);

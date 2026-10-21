@@ -39,6 +39,8 @@ let lastPatchRevision;
 let overReturnFields = false;
 let readablePrivateNote = false;
 let injectedReadField;
+let changeCreateCapability = (value) => value;
+let rejectCoreCreate = false;
 let historyMode = 'normal';
 let historyAttempts = 0;
 let cursorSequence = 0;
@@ -100,7 +102,12 @@ const gateway = createServer(async (req, res) => {
     return reply(200, {
     code: 200, requestId: 'fixture-context', msg: 'success', data: {
       appId: wrongContextApp ? 'another-app' : appID, name: 'SDK App fixture', revision: 1, platformPermissions: [],
-      collections: [{ alias: 'orders', collectionId, permissions: mode === 'read' ? ['record:read'] : ['record:read', 'record:write'], recordSchema: invalidPolicy ? { type: 'object' } : {
+      collections: [{ alias: 'orders', collectionId,
+        createCapability: changeCreateCapability({ version: 'cloud-app-create-capability/v1', allowed: mode !== 'read' && proofUser !== supervisorID,
+          reason: proofUser === supervisorID ? 'initial_state_not_writable' : 'allowed', appRevision: 1, collectionRevision: 2,
+          binding: createHash('sha256').update(String(proofUser)).digest('hex'),
+          ...(proofUser !== supervisorID ? { inputSchema: { type: 'object', additionalProperties: false, required: ['orderNo', 'amount'],
+            properties: { orderNo: { type: 'string' }, amount: { type: 'integer', minimum: 0 } } } } : {}) }), permissions: mode === 'read' ? ['record:read'] : ['record:read', 'record:write'], recordSchema: invalidPolicy ? { type: 'object' } : {
         type: 'object', properties: { ...Object.fromEntries(readableFields().map((field) => [field, field === 'amount' ? { type: 'integer' } : { type: 'string', ...(field === 'status' ? { enum: ['draft'] } : {}) }])),
           ...(readablePrivateNote ? { privateNote: { type: 'string' } } : {}),
           ...(!hideOwner && proofUser !== supervisorID ? { ownerUserId: { type: 'string' } } : {}) },
@@ -230,7 +237,7 @@ const gateway = createServer(async (req, res) => {
       assert.ok(input.idempotencyKey.startsWith('app-order-intent-core-v1:'));
       assert.equal(input.id, 'app-order:' + createHash('sha256')
         .update(JSON.stringify([appID, workspaceID, proofUser, input.data.orderNo])).digest('hex'), 'order identity is unchanged across receipt domains');
-      if (proofUser === supervisorID) return failure(403, 'FIELD_FORBIDDEN');
+      if (proofUser === supervisorID || rejectCoreCreate) return failure(403, 'FIELD_FORBIDDEN');
     }
     const receipt = `${appDataMode}:${input.idempotencyKey}`;
     const replayed = intents.has(receipt);
@@ -606,25 +613,55 @@ try {
   assert.equal(coreControlReplay.status, 200);
   assert.deepEqual(await coreControlReplay.json(), { status: 'completed', replayed: true }, 'data-mode migration preserves the separate Control receipt');
   await startCore(true);
-  assert.equal((await (await listFor()).json()).canWrite, true);
+  const creator = await (await listFor()).json();
+  assert.equal(creator.canWrite, true); assert.equal(creator.canCreate, true); assert.equal(creator.createState, 'createAllowed');
+  const approver = await (await listFor(supervisorID)).json();
+  assert.equal(approver.canWrite, true); assert.equal(approver.canCreate, false); assert.equal(approver.createState, 'createDenied');
+  assert.ok(!JSON.stringify(creator).includes('binding') && !JSON.stringify(creator).includes('inputSchema'), 'only derived form eligibility reaches the browser');
+  const beforeCapabilityChecks = insertAttempts;
+  for (const change of [() => undefined, (cap) => ({ ...cap, version: 'cloud-app-create-capability/v2' }),
+    (cap) => ({ ...cap, appRevision: 2 }), (cap) => ({ ...cap, binding: 'forged' }),
+    (cap) => ({ ...cap, allowed: false, binding: 'b'.repeat(64) }),
+    (cap) => ({ ...cap, inputSchema: { ...cap.inputSchema, required: ['orderNo', 'amount', 'writeOnlyRequired'],
+      properties: { ...cap.inputSchema.properties, writeOnlyRequired: { type: 'string' } } } })]) {
+    changeCreateCapability = change;
+    assert.equal((await (await listFor()).json()).canCreate, false, 'current capability and supported required inputs govern creation, never the read schema');
+  }
+  changeCreateCapability = (cap) => ({ ...cap, binding: 'c'.repeat(64) });
+  hiddenDisplayFields = new Set(['amount']);
+  const writeOnlyAmount = await (await listFor()).json();
+  assert.equal(writeOnlyAmount.canCreate, true, 'write-only amount remains independently available for input');
+  assert.ok(writeOnlyAmount.items.every((item) => !Object.hasOwn(item.data, 'amount')), 'write capability cannot disclose unreadable amount values');
+  changeCreateCapability = (value) => value; hiddenDisplayFields = new Set();
+  assert.equal((await (await listFor()).json()).canCreate, true, 'no cached denial/binding survives a fresh context');
+  assert.equal(insertAttempts, beforeCapabilityChecks, 'eligibility checks are read-only');
   const newIntent = { orderNo: 'core-new-order', amount: 200, receiptDomain: 'core-app-data/v1', idempotencyKey: `core-v1-${randomUUID()}` };
   const beforeSupervisorCreate = JSON.stringify(items);
   const deniedCreate = await post(newIntent, supervisorID);
   assert.equal(deniedCreate.status, 403); assert.deepEqual(await deniedCreate.json(), { code: 'FIELD_FORBIDDEN' });
-  assert.equal(JSON.stringify(items), beforeSupervisorCreate, 'coarse record:write never bypasses Core create-field rules; effective create hints are still unavailable');
+  assert.equal(JSON.stringify(items), beforeSupervisorCreate, 'UI denial does not replace actual Core authorization on direct create POST');
   const beforeIntentGate = dataRequests;
   for (const old of [input, { ...newIntent, idempotencyKey: input.idempotencyKey }, { ...newIntent, receiptDomain: 'legacy-app-data/v5' }]) {
     const response = await post(old); assert.equal(response.status, 409);
     assert.deepEqual(await response.json(), { code: 'NEW_DATA_INTENT_REQUIRED' });
   }
   assert.equal(dataRequests, beforeIntentGate, 'old intents are rejected before context or mutation');
-  for (const field of ['ownerUserId', 'status', 'filter', 'collectionId']) {
+  for (const field of ['ownerUserId', 'status', 'filter', 'collectionId', 'binding', 'createCapability']) {
     assert.equal((await post({ ...newIntent, [field]: 'forged' })).status, 400);
   }
   const beforeNew = dataExchanges.length;
+  const beforeLiveDenial = insertAttempts;
+  rejectCoreCreate = true;
+  const newlyDenied = await post(newIntent);
+  assert.equal(newlyDenied.status, 403, 'a previously allowed UI capability never overrides live Core authorization');
+  assert.equal(insertAttempts, beforeLiveDenial + 1, 'live denial is not retried');
+  assert.equal(JSON.stringify(items), beforeSupervisorCreate, 'failed create leaves records and receipts unchanged');
+  rejectCoreCreate = false;
+  const afterLiveDenial = dataExchanges.length;
   assert.deepEqual(await (await post(newIntent)).json(), { status: 'committed', replayed: false });
   assert.deepEqual(await (await post(newIntent)).json(), { status: 'committed', replayed: true });
-  assert.equal(dataExchanges.length - beforeNew, 4);
+  assert.equal(dataExchanges.length - afterLiveDenial, 4);
+  assert.ok(dataExchanges.slice(beforeNew).every((exchange) => !JSON.stringify(exchange).includes('binding')), 'bindings are neither write credentials nor replay inputs');
   assert.ok(dataExchanges.slice(beforeNew).every((exchange) => exchange.proof === proofs.get(dataUsers[0])));
   const stamped = items.find((item) => item.data.orderNo === newIntent.orderNo);
   assert.equal(stamped.data.ownerUserId, dataUsers[0]); assert.equal(stamped.data.status, 'draft');

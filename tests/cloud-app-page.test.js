@@ -7,7 +7,7 @@ import * as intents from '../examples/cloud-uns-app/public/order-intent.mjs';
 // external credentials or another package. Only its ESM import is injected.
 const source = readFileSync(new URL('../examples/cloud-uns-app/public/app.js', import.meta.url), 'utf8')
   .replace(/^import[^\n]+\n/, '');
-async function page({ language = 'en', canWrite = false, data = { orderNo: 'visible-order' }, history } = {}) {
+async function page({ language = 'en', canWrite = false, canCreate, createState = canCreate === true ? 'createAllowed' : canCreate === false ? 'createDenied' : canWrite ? 'createUnavailable' : 'readonly', dataMode = 'core', data = { orderNo: 'visible-order' }, history } = {}) {
   const element = () => ({ textContent: '', dataset: {}, children: [], listeners: {},
     append(...children) { this.children.push(...children); }, replaceChildren() { this.children = []; },
     addEventListener(name, handler) { this.listeners[name] = handler; } });
@@ -17,22 +17,72 @@ async function page({ language = 'en', canWrite = false, data = { orderNo: 'visi
     return elements.get(selector);
   };
   const createKey = vi.fn();
+  const hint = { canWrite, canCreate, createState };
   const storage = new Map([['uns-orders-language', language]]);
   const translations = ['#list-heading', '#history-heading'].map((selector, index) => {
     const node = get(selector); node.dataset.i18n = index === 0 ? 'records' : 'history'; return node;
   });
   const fetch = vi.fn(async (path) => path.includes('/history?') && history ? history(path) : ({ ok: path === '/api/orders', status: path === '/api/orders' ? 200 : 403,
-    json: async () => path === '/api/orders' ? { operator: '42', app: 'Fixture', canWrite, dataMode: 'core',
-      receiptDomain: intents.receiptDomains.core, items: [{ id: 'fixture-id', revision: 1, data }] } : { code: 'CONTROL_FORBIDDEN' } }));
+    json: async () => path === '/api/orders' ? { operator: '42', app: 'Fixture', ...hint, dataMode,
+      receiptDomain: intents.receiptDomains[dataMode], items: [{ id: 'fixture-id', revision: 1, data }] } : { code: 'CONTROL_FORBIDDEN' } }));
   runInNewContext(source, { ...intents, fetch, crypto: { randomUUID: createKey },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
     document: { querySelector: get, querySelectorAll: () => translations, documentElement: { dataset: {} }, createElement: element },
     location: { host: 'fixture.invalid' }, matchMedia: () => ({ matches: false }) });
   await vi.waitFor(() => expect(get('#records').children).toHaveLength(1));
-  return { get, createKey, storage, fetch };
+  return { get, createKey, storage, fetch, hint };
 }
 
 describe('Cloud App actual page read-only and field visibility', () => {
+  it('rechecks creation on refresh without clearing old intents or minting a new one', async () => {
+    const fixture = await page({ canWrite: true, canCreate: true });
+    fixture.storage.set('existing-save-intent', 'unchanged');
+    expect(fixture.get('#save').disabled).toBe(false);
+    Object.assign(fixture.hint, { canCreate: false, createState: 'createDenied' });
+    fixture.get('#refresh').listeners.click();
+    await vi.waitFor(() => expect(fixture.get('#status').textContent).toContain('Creation is not permitted'));
+    expect(fixture.get('#save').disabled).toBe(true);
+    expect(fixture.get('#order-form [name="amount"]').disabled).toBe(true);
+    Object.assign(fixture.hint, { canCreate: true, createState: 'createAllowed' });
+    fixture.get('#refresh').listeners.click();
+    await vi.waitFor(() => expect(fixture.get('#save').disabled).toBe(false));
+    expect(fixture.storage.get('existing-save-intent')).toBe('unchanged');
+    expect([...fixture.storage.keys()]).toEqual(['uns-orders-language', 'existing-save-intent']);
+    expect(fixture.createKey).not.toHaveBeenCalled();
+  });
+
+  it.each(['zh', 'en'])('keeps an approver with write access out of creation in %s without hiding history', async language => {
+    const fixture = await page({ language, canWrite: true, canCreate: false });
+    expect(fixture.get('#save').disabled).toBe(true);
+    expect(fixture.get('#data-new').disabled).toBe(true);
+    expect(fixture.get('#order-form [name="orderNo"]').disabled).toBe(true);
+    expect(fixture.get('#order-form [name="amount"]').disabled).toBe(true);
+    expect(fixture.get('#status').textContent).toContain(language === 'zh' ? '当前没有新增权限' : 'Creation is not permitted');
+    await fixture.get('#order-form').listeners.submit({ preventDefault() {} });
+    fixture.get('#data-new').listeners.click();
+    expect(fixture.fetch.mock.calls.every(([, options]) => !options?.body)).toBe(true);
+    expect(fixture.createKey).not.toHaveBeenCalled();
+    expect(fixture.get('#records').children[0].children[4].children[0].listeners.click).toBeTypeOf('function');
+  });
+
+  it.each([
+    { canWrite: true }, { canWrite: true, canCreate: true, createState: 'unknown-v2' },
+    { canWrite: true, canCreate: false, createState: 'createUnsupported' },
+  ])('does not fall back to generic write permission for unavailable creation %#', async hint => {
+    const fixture = await page(hint);
+    expect(fixture.get('#save').disabled).toBe(true);
+    expect(fixture.get('#data-new').disabled).toBe(true);
+    expect(fixture.get('#status').textContent).not.toContain('Data permissions have been upgraded');
+    expect(fixture.createKey).not.toHaveBeenCalled();
+  });
+
+  it('preserves legacy creation based on its original write hint', async () => {
+    const fixture = await page({ dataMode: 'legacy', canWrite: true });
+    expect(fixture.get('#save').disabled).toBe(false);
+    expect(fixture.get('#order-form [name="amount"]').disabled).toBe(false);
+    expect(fixture.get('#data-new').hidden).toBe(true);
+  });
+
   it.each([['en', 'This App has read access'], ['zh', '当前应用只有读取权限']])
   ('shows only the read-only status in %s, without a new-save action prompt', async (language, expected) => {
     const fixture = await page({ language });
@@ -52,7 +102,7 @@ describe('Cloud App actual page read-only and field visibility', () => {
   });
 
   it('preserves a visible zero amount and shows migration guidance only when writable', async () => {
-    const fixture = await page({ canWrite: true, data: { orderNo: 'visible-order', amount: 0, status: 'draft' } });
+    const fixture = await page({ canWrite: true, canCreate: true, data: { orderNo: 'visible-order', amount: 0, status: 'draft' } });
     expect(fixture.get('#records').children[0].children[1].textContent).toBe('0');
     expect(fixture.get('#status').textContent).toContain('Data permissions have been upgraded');
     expect(fixture.get('#data-new').disabled).toBe(false);

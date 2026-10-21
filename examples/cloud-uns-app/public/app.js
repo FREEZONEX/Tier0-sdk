@@ -16,6 +16,8 @@ const messages = {
     operator: '当前员工', title: '工单数据', create: '新增工单', orderNo: '工单号', amount: '金额（分）', save: '保存', records: '工单列表',
     refresh: '刷新列表', state: '状态', revision: '版本', theme: '切换主题', loading: '正在读取…', empty: '暂无工单',
     loaded: '已读取工单', saved: '已保存', replayed: '已返回原保存结果', readonly: '当前应用只有读取权限', unavailableField: '未授权',
+    createDenied: '当前没有新增权限；仍可查看工单和修改历史', createUnavailable: '暂时无法确认新增资格，请刷新后重试',
+    createUnsupported: '新增所需输入超出此表单支持，请联系管理员',
     writable: '保存请求仍需通过服务端权限检查', noAccess: '当前应用没有数据访问权限', denied: '访问被拒绝，请联系管理员检查应用的数据授权',
     unknown: '保存结果尚未确认。请刷新列表核对；再次点击保存会使用相同请求标识。', failed: '请求失败', draft: '草稿', submitted: '已提交', approved: '已审批', rejected: '已驳回',
   },
@@ -34,13 +36,17 @@ const messages = {
     operator: 'Employee', title: 'Work orders', create: 'New work order', orderNo: 'Order number', amount: 'Amount (cents)', save: 'Save', records: 'Work orders',
     refresh: 'Refresh list', state: 'Status', revision: 'Revision', theme: 'Switch theme', loading: 'Loading…', empty: 'No work orders',
     loaded: 'Work orders loaded', saved: 'Saved', replayed: 'Original save result returned', readonly: 'This App has read access', unavailableField: 'Not authorized',
+    createDenied: 'Creation is not permitted. You can still view work orders and change history.',
+    createUnavailable: 'Creation eligibility is unavailable. Refresh to check again.',
+    createUnsupported: 'The required creation input is not supported by this form. Contact an administrator.',
     writable: 'Save requests still require server permission checks', noAccess: 'This App has no data access', denied: 'Access denied. Ask an administrator to check App data grants.',
     unknown: 'Save outcome is unconfirmed. Refresh the list to check; saving again uses the same request identity.', failed: 'Request failed', draft: 'Draft', submitted: 'Submitted', approved: 'Approved', rejected: 'Rejected',
   },
 };
 const $ = (selector) => document.querySelector(selector);
 let language = localStorage.getItem('uns-orders-language') === 'en' ? 'en' : 'zh';
-let canWrite = false;
+let canCreate = false;
+let createState = 'readonly';
 let dataIntentStorageKey;
 let dataOperator;
 let dataMode = 'legacy';
@@ -57,12 +63,17 @@ function status(key, error = false, code = '') {
   $('#status').textContent = `${text(key)}${code ? ` (${code})` : ''}`;
   $('#status').dataset.error = String(error);
 }
+function syncCreateControls() {
+  for (const selector of ['#save', '#data-new', '#order-form [name="orderNo"]', '#order-form [name="amount"]']) {
+    $(selector).disabled = !canCreate || busy;
+  }
+}
 function translate() {
   document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
   document.title = text('title');
   $('#language').value = language;
   document.querySelectorAll('[data-i18n]').forEach((element) => { element.textContent = text(element.dataset.i18n); });
-  $('#write-state').textContent = text(canWrite ? 'writable' : 'readonly');
+  $('#write-state').textContent = text(canCreate ? 'writable' : createState);
   $('#employee').textContent = dataOperator ? `${text('operator')}: ${dataOperator}` : '';
   $('#control-status').textContent = `${text(controlState)}${controlError ? ` (${controlError})` : ''}`;
 }
@@ -74,7 +85,9 @@ async function request(path, options) {
 }
 function errorState(error) {
   resetHistory();
-  canWrite = false;
+  canCreate = false;
+  createState = 'noAccess';
+  syncCreateControls();
   dataIntentStorageKey = undefined;
   dataOperator = undefined;
   $('#employee').textContent = '';
@@ -88,7 +101,8 @@ function errorState(error) {
 async function refresh() {
   resetHistory();
   $('#refresh').disabled = true;
-  canWrite = false;
+  canCreate = false;
+  syncCreateControls();
   $('#save').disabled = true;
   $('#data-new').disabled = true;
   $('#records').replaceChildren();
@@ -107,7 +121,10 @@ async function refresh() {
     dataIntentStorageKey = storageKey;
     dataMode = mode;
     dataReceiptDomain = domain;
-    canWrite = result.canWrite === true;
+    canCreate = mode === 'legacy' ? result.canWrite === true
+      : result.canCreate === true && result.createState === 'createAllowed';
+    createState = mode === 'legacy' ? 'readonly' : ['readonly', 'createDenied', 'createUnsupported'].includes(result.createState)
+      ? result.createState : 'createUnavailable';
     $('#app-name').textContent = result.app;
     $('#records').replaceChildren();
     for (const item of result.items) {
@@ -126,16 +143,16 @@ async function refresh() {
     status(result.items.length ? 'loaded' : 'empty');
     translate();
     $('#history-heading-cell').hidden = mode !== 'core';
-    $('#save').disabled = !canWrite || busy;
+    syncCreateControls();
     $('#data-new').hidden = mode !== 'core';
-    $('#data-new').disabled = !canWrite || busy;
-    if (mode === 'core') status(canWrite ? 'dataMigration' : 'readonly');
+    $('#data-new').disabled = !canCreate || busy;
+    if (mode === 'core') status(canCreate ? 'dataMigration' : createState);
   } catch (error) { errorState(error); }
   finally { $('#refresh').disabled = false; }
 }
 $('#order-form').addEventListener('submit', async (event) => {
   event.preventDefault();
-  if (busy || !canWrite || !dataIntentStorageKey) return;
+  if (busy || !canCreate || !dataIntentStorageKey) return;
   const form = new FormData(event.currentTarget);
   const input = { orderNo: String(form.get('orderNo')), amount: Number(form.get('amount')) };
   const fingerprint = JSON.stringify(input);
@@ -149,6 +166,7 @@ $('#order-form').addEventListener('submit', async (event) => {
     return;
   }
   busy = true;
+  syncCreateControls();
   $('#save').disabled = true;
   $('#data-new').disabled = true;
   try {
@@ -166,10 +184,10 @@ $('#order-form').addEventListener('submit', async (event) => {
     }
     errorState(error);
   }
-  finally { busy = false; $('#save').disabled = !canWrite; $('#data-new').disabled = !canWrite; }
+  finally { busy = false; syncCreateControls(); }
 });
 $('#data-new').addEventListener('click', () => {
-  if (busy || !canWrite || dataMode !== 'core' || !dataIntentStorageKey) return;
+  if (busy || !canCreate || dataMode !== 'core' || !dataIntentStorageKey) return;
   const form = new FormData($('#order-form'));
   const fingerprint = JSON.stringify({ orderNo: String(form.get('orderNo')), amount: Number(form.get('amount')) });
   let stored;

@@ -5882,6 +5882,9 @@
         },
         "sampleSchema": {
           "$ref": "#/components/schemas/Schema"
+        },
+        "createCapability": {
+          "$ref": "#/components/schemas/CloudAppCreateCapability"
         }
       },
       "required": [
@@ -27880,6 +27883,49 @@
         "data"
       ]
     },
+    "CloudAppCreateCapability": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "enum": [
+            "cloud-app-create-capability/v1"
+          ]
+        },
+        "allowed": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "appRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "collectionRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "binding": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "inputSchema": {
+          "$ref": "#/components/schemas/Schema"
+        }
+      },
+      "required": [
+        "version",
+        "allowed",
+        "reason",
+        "appRevision",
+        "collectionRevision",
+        "binding"
+      ],
+      "description": "当前 Key/App/员工与 Collection 版本下的新增输入提示；不是授权凭证。allowed=true 表示能证明存在合规输入，不保证唯一键、实际输入或未来写入成功。inputSchema 单独取可写字段，含只写字段，不取 read schema；owner/state 由服务端注入，不向客户端暴露。没有业务默认值填充，required 仍须提供。不能证明的 schema 语义安全返回 false。写入与 replay 始终实时授权；binding 仅用于界面缓存失效。"
+    },
     "CloudDataPage": {
       "type": "object",
       "additionalProperties": false,
@@ -28266,5 +28312,5 @@
       ]
     }
   },
-  "cloudContractRevision": "cloud-source-impact/1+record-audit/1+data/3+app-data/2+hosted-control/1+source-bindings/1"
+  "cloudContractRevision": "cloud-source-impact/1+record-audit/1+app-create-capability/1+data/3+app-data/2+hosted-control/1+source-bindings/1"
 }

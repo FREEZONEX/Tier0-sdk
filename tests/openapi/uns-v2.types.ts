@@ -2,6 +2,7 @@ import {
   createClient,
   type IndexSpec,
   type RuntimeStreamDefinition,
+  type CloudAppCreateCapability,
   UnsV2RawNumber,
   type PlatformV2UsersListReq,
   type UnsV2JSONValue,
@@ -25,6 +26,18 @@ const invalidBinding: NonNullable<RuntimeStreamDefinition['sourceBindings']>[num
 const missingAcquisition: NonNullable<RuntimeStreamDefinition['sourceBindings']>[number] = { sourceId: '101', configRevision: 2 };
 void [nativeDefinition, invalidBinding, missingAcquisition];
 const ownAppContext = client.unsV2.dataAppContext({});
+const createHint: CloudAppCreateCapability = { version: 'cloud-app-create-capability/v1', allowed: true, reason: 'allowed',
+  appRevision: 19, collectionRevision: new UnsV2RawNumber('9007199254740993'), binding: 'a'.repeat(64),
+  inputSchema: { type: 'object', additionalProperties: false, required: ['amount'], properties: { amount: { type: 'integer' } } } };
+const currentCreateHint = ownAppContext.then(response => {
+  const capability: CloudAppCreateCapability | undefined = response.data.collections[0].createCapability;
+  return capability?.inputSchema;
+});
+// @ts-expect-error An unknown capability version cannot be assumed compatible.
+const unknownCreateHint: CloudAppCreateCapability = { ...createHint, version: 'cloud-app-create-capability/v2' };
+// @ts-expect-error A binding is not a create credential or a business field.
+client.unsV2.recordInsertOne({ collectionId: 'orders', data: {}, binding: createHint.binding });
+void [createHint, currentCreateHint, unknownCreateHint];
 void ownAppContext;
 const list = client.unsV2.recordFind({ collectionId: 'orders', limit: 20, cursor: 'opaque' });
 const jobs = client.unsV2.jobs({ queries: [{ queryId: 'job', jobIds: ['job-1'] }] });

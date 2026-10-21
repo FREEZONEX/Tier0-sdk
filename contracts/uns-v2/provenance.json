@@ -1,10 +1,10 @@
 {
   "repository": "FREEZONEX/Tier0-Backend",
-  "revision": "39b445bcb8c007b7d6f0fc9fe67ce535020c4342",
+  "revision": "0ba50cd76c620ba1b799499d8783d1209e9e750a",
   "version": "4.0.0",
   "source": "service/unssvr/internal/domain/unsv2/contract_generated.go#ContractJSON",
-  "cloudRevision": "39b445bcb8c007b7d6f0fc9fe67ce535020c4342",
-  "cloudContractRevision": "cloud-source-impact/1+record-audit/1+data/3+app-data/2+hosted-control/1+source-bindings/1",
+  "cloudRevision": "0ba50cd76c620ba1b799499d8783d1209e9e750a",
+  "cloudContractRevision": "cloud-source-impact/1+record-audit/1+app-create-capability/1+data/3+app-data/2+hosted-control/1+source-bindings/1",
   "resolvedCloudContract": true,
   "enterpriseBase": {
     "repository": "FREEZONEX/Tier0-Enterprise-New",
@@ -13,6 +13,6 @@
     "source": "backend/internal/domain/unsv2/contract_generated.go",
     "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs."
   },
-  "sourceDerivedContractSHA256": "2833501055248f4944ee4c0c74cf5e0332efbd3e016f7c8270566583b1fc70df",
-  "note": "Resolved Cloud runtime contract including record-audit/v1 and source-bindings/v1 from the exact committed Backend ContractJSON, manifest and registry. Enterprise provenance retained separately; no npm publication or actual App audit/native capture acceptance claim."
+  "sourceDerivedContractSHA256": "395c4da2f5132284d0d4af11ae8ee027c0d627597c67c2b211942e68863bc9b3",
+  "note": "Resolved Cloud runtime contract including record-audit/v1, source-bindings/v1 and current-employee app-create-capability/v1 from the exact committed Backend ContractJSON, manifest and registry. Enterprise provenance retained separately; no npm publication or actual App create-capability acceptance claim."
 }
