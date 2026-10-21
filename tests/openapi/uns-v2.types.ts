@@ -126,6 +126,23 @@ const insertedShape = client.unsV2.recordInsertOne({ collectionId: 'orders', dat
 });
 void [resourceShape, insertedShape];
 
+// A version row may contain the view-only summary or the frozen manage projection.
+client.unsV2.streamProgramVersionsList({ id: 'stream-1', page: 1, size: 20 }).then(response => {
+  for (const row of response.data.list) {
+    const versionID: string = row.versionId;
+    if ('script' in row.document) {
+      const code: string = row.document.script.code;
+      void code;
+    } else {
+      const configured: boolean | undefined = row.document.scriptConfigured;
+      // @ts-expect-error A summary does not expose the historical script.
+      void row.document.script;
+      void configured;
+    }
+    void versionID;
+  }
+});
+
 // Notifications expose identifiers only; business fields use the existing scoped query.
 const notifications = client.unsV2.recordChangesPoll({ collectionId: 'orders', limit: 20, waitMs: 1000 });
 notifications.then(result => {

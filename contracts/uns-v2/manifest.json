@@ -1,6 +1,6 @@
 {
   "version": "4.0.0",
-  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1",
+  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1",
   "operations": [
     {
       "name": "dataDiscover",
@@ -12517,8 +12517,93 @@
         },
         "data": {
           "type": "object",
-          "additionalProperties": true,
-          "description": "Existing Source/Stream runtime domain result. Program create/get/deploy return id, revision, activeVersion, executionState and redacted document; versions/runs return list and total; probe returns health; validation returns valid and sideEffects."
+          "additionalProperties": false,
+          "required": [
+            "list",
+            "total",
+            "page",
+            "size"
+          ],
+          "properties": {
+            "list": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "streamId",
+                  "versionId",
+                  "release",
+                  "status",
+                  "digest",
+                  "document",
+                  "createdAt"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "streamId": {
+                    "type": "string"
+                  },
+                  "versionId": {
+                    "type": "string"
+                  },
+                  "release": {
+                    "type": "integer"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "digest": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "integer"
+                  },
+                  "document": {
+                    "description": "view 权限仅有 redactedV2Program 摘要；当前 stream.manage 授权时返回同一 release 已存 DocumentJSON 的完整 CloudStreamDocument。不得用当前 draft、Restore 或 Source 当前配置替代历史。",
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/CloudStreamDocument"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "sdkVersion": {
+                            "type": "string"
+                          },
+                          "timeoutMs": {
+                            "type": "integer"
+                          },
+                          "scriptConfigured": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "total": {
+              "type": "integer"
+            },
+            "page": {
+              "type": "integer"
+            },
+            "size": {
+              "type": "integer"
+            }
+          }
         }
       },
       "required": [

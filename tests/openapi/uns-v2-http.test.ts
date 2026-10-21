@@ -331,13 +331,41 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('c27b44274be742b9c0f7107c6035412c62d5da26');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('769e3cc0fad27d8ae86a891fe9044ede0b7282e8');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('caa95fd2b814ddd39b27e5bc6b644a2a299e71dae4507d0264b650f681530c66');
+    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('b1861a0a679bbf24c530247dc7c53740d89914314a415359f426b4ef527b1c54');
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
     expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(113);
     expect(received.slice(start)).toHaveLength(1);
+  });
+
+  it('preserves summary and immutable full history projections without a restore request', async () => {
+    const start = received.length;
+    const summary = { name: 'history', sdkVersion: 'tier0-stream/v2', timeoutMs: 5000, scriptConfigured: true };
+    const document = {
+      name: 'frozen history', model: 'program',
+      script: { sdkVersion: 'tier0-stream/v2', code: '\n  module.exports = api => {};\n', timeoutMs: 5000 },
+      sources: [{ alias: 'device', sourceId: '1001', configRevision: 2 }],
+      entries: [{ id: 'request-1', kind: 'request' }],
+    };
+    respond = (_req, res) => send(res, {
+      code: 200, msg: 'ok', requestId: 'history-projections',
+      data: {
+        list: [summary, document, {}].map((item, index) => ({
+          id: String(2001 + index), versionId: String(2001 + index), streamId: '202',
+          release: index + 1, status: 'inactive', digest: `frozen-${index}`, createdAt: 1700000000000,
+          document: item,
+        })),
+        total: 3, page: 1, size: 20,
+      },
+    });
+    const response = await client().unsV2.streamProgramVersionsList({ id: '202', page: 1, size: 20 });
+    expect(response.data.list.map(row => row.document)).toEqual([summary, document, {}]);
+    expect(response.data.list[0].document).not.toHaveProperty('script');
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received.at(-1)?.path).toBe('/openapi/v2/uns/streams/program/versions/list');
+    expect(JSON.parse(received.at(-1)!.body)).toEqual({ id: '202', page: 1, size: 20 });
   });
 
   it.each(['recordAuditList', 'recordAuditAdminList'])('rejects removed %s before encoding or any network request', async name => {
