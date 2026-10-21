@@ -1,6 +1,6 @@
 {
   "version": "4.0.0",
-  "cloudContractRevision": "cloud-source-impact/1+record-audit/1+app-create-capability/1+data/3+app-data/2+hosted-control/1+source-bindings/1",
+  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1",
   "operations": [
     {
       "name": "dataDiscover",
@@ -4135,86 +4135,6 @@
       "responseSchema": {
         "$ref": "#/components/schemas/UnsV2RecordRestoreResponse"
       }
-    },
-    {
-      "name": "recordAuditList",
-      "handler": "UnsV2RecordAuditList",
-      "request": "UnsV2RecordAuditListReq",
-      "response": "UnsV2RecordAuditListResponse",
-      "resource": "record",
-      "novaAction": "audit",
-      "permission": "uns.read",
-      "coreOnly": false,
-      "appAllowed": true,
-      "resourceId": 212,
-      "mutation": "",
-      "pathParams": [
-        "collectionId",
-        "recordId"
-      ],
-      "suffix": "/uns/collections/:collectionId/records/:recordId/audit:list",
-      "summary": "读取记录修改历史",
-      "example": {
-        "collectionId": "orders",
-        "recordId": "order-1",
-        "size": 20
-      },
-      "permissionAnyOf": [],
-      "minPermission": 1,
-      "scope": "uns:read",
-      "tags": [
-        "业务数据"
-      ],
-      "operation": "recordAuditList",
-      "path": "/uns/collections/:collectionId/records/:recordId/audit:list",
-      "method": "POST",
-      "supported": true,
-      "requestSchema": {
-        "$ref": "#/components/schemas/UnsV2RecordAuditListReq"
-      },
-      "responseSchema": {
-        "$ref": "#/components/schemas/UnsV2RecordAuditListResponse"
-      }
-    },
-    {
-      "name": "recordAuditAdminList",
-      "handler": "UnsV2RecordAuditAdminList",
-      "request": "UnsV2RecordAuditAdminListReq",
-      "response": "UnsV2RecordAuditAdminListResponse",
-      "resource": "record",
-      "novaAction": "audit",
-      "permission": "uns.audit.read",
-      "coreOnly": true,
-      "appAllowed": false,
-      "resourceId": 216,
-      "mutation": "",
-      "pathParams": [
-        "collectionId",
-        "recordId"
-      ],
-      "suffix": "/uns/collections/:collectionId/records/:recordId/audit:admin-list",
-      "summary": "管理端读取记录审计",
-      "example": {
-        "collectionId": "orders",
-        "recordId": "order-1",
-        "size": 20
-      },
-      "permissionAnyOf": [],
-      "minPermission": 1,
-      "scope": "uns:read",
-      "tags": [
-        "业务数据"
-      ],
-      "operation": "recordAuditAdminList",
-      "path": "/uns/collections/:collectionId/records/:recordId/audit:admin-list",
-      "method": "POST",
-      "supported": true,
-      "requestSchema": {
-        "$ref": "#/components/schemas/UnsV2RecordAuditAdminListReq"
-      },
-      "responseSchema": {
-        "$ref": "#/components/schemas/UnsV2RecordAuditAdminListResponse"
-      }
     }
   ],
   "schemas": {
@@ -5519,7 +5439,7 @@
     },
     "CollectionData": {
       "additionalProperties": false,
-      "description": "Defines recordSchema and optional sampleSchema, not a physical table per collection; Collection 1:N Record; Record 1:N Sample by (collectionId,recordId); Business-only collections omit sampleSchema; measurements define both schemas; Schema changes must accept retained data and obey Source/Topic references; full replacement is not a schema migration; No Collection copy action; identity/name uniqueness and reference guards apply",
+      "description": "Defines recordSchema and optional sampleSchema, not a physical table per collection; Collection 1:N Record; Record 1:N Sample by (collectionId,recordId); Business-only collections omit sampleSchema; measurements define both schemas; Schema changes must accept retained data and obey Source/Topic references; full replacement is not a schema migration; No Collection copy action; identity/name uniqueness and reference guards apply; A collection is a native Namespace node with one parent directory. Records topics are explicit references and do not own the collection lifecycle.",
       "properties": {
         "description": {
           "maxLength": 512,
@@ -5555,8 +5475,14 @@
         "semantics": {
           "$ref": "#/components/schemas/CollectionSemantics"
         },
-        "audit": {
-          "$ref": "#/components/schemas/CloudRecordAuditConfig"
+        "parentId": {
+          "allOf": [
+            {
+              "$ref": "#/components/schemas/UnsV2Identity"
+            }
+          ],
+          "nullable": true,
+          "description": "Containing directory ID. Omitted on create or null means root; omitted on update preserves placement. Moving does not change collection identity or data."
         }
       },
       "required": [
@@ -8902,8 +8828,12 @@
               "semantics": {
                 "$ref": "#/components/schemas/CollectionSemantics"
               },
-              "audit": {
-                "$ref": "#/components/schemas/CloudRecordAuditConfig"
+              "parentId": {
+                "type": "string",
+                "nullable": true,
+                "minLength": 1,
+                "maxLength": 128,
+                "description": "Containing directory ID. Omitted on create or null means root; omitted on update preserves placement. Moving does not change collection identity or data."
               }
             },
             "required": [
@@ -8996,8 +8926,12 @@
                 "maxLength": 512,
                 "type": "string"
               },
-              "audit": {
-                "$ref": "#/components/schemas/CloudRecordAuditConfig"
+              "parentId": {
+                "type": "string",
+                "nullable": true,
+                "minLength": 1,
+                "maxLength": 128,
+                "description": "Containing directory ID. Omitted on create or null means root; omitted on update preserves placement. Moving does not change collection identity or data."
               }
             },
             "required": [
@@ -15254,8 +15188,12 @@
         "semantics": {
           "$ref": "#/components/schemas/CollectionSemantics"
         },
-        "audit": {
-          "$ref": "#/components/schemas/CloudRecordAuditConfig"
+        "parentId": {
+          "type": "string",
+          "nullable": true,
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Containing directory ID. Omitted on create or null means root; omitted on update preserves placement. Moving does not change collection identity or data."
         }
       },
       "required": [
@@ -30862,284 +30800,6 @@
             "restoredIds",
             "status",
             "replayed"
-          ]
-        }
-      },
-      "required": [
-        "code",
-        "msg",
-        "requestId",
-        "data"
-      ]
-    },
-    "CloudRecordAuditConfig": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": {
-          "type": "boolean"
-        },
-        "historyRead": {
-          "type": "boolean",
-          "default": false
-        }
-      },
-      "required": [
-        "enabled"
-      ],
-      "description": "Cloud record-audit/v1：显式管理会话配置。省略保留，旧集合默认关闭；enabled 控制采集，historyRead 独立控制普通历史读取，停采集可保留读取；任一开关启用前须准备本租户扩展。仅审计 Record，不自动审计 Sample。"
-    },
-    "CloudRecordAuditActor": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "kind": {
-          "type": "string",
-          "enum": [
-            "user",
-            "app_employee",
-            "app",
-            "service",
-            "personal_key"
-          ]
-        },
-        "userId": {
-          "type": "string"
-        },
-        "appId": {
-          "type": "string"
-        },
-        "keyId": {
-          "type": "string"
-        },
-        "keyOwnerId": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "kind",
-        "userId",
-        "keyId",
-        "keyOwnerId"
-      ]
-    },
-    "CloudRecordAuditEvent": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "eventId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "collectionId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "recordId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "action": {
-          "type": "string",
-          "enum": [
-            "create",
-            "update",
-            "delete",
-            "restore"
-          ]
-        },
-        "revisionBefore": {
-          "type": "integer"
-        },
-        "revisionAfter": {
-          "type": "integer"
-        },
-        "before": {
-          "type": "object",
-          "additionalProperties": true,
-          "nullable": true
-        },
-        "after": {
-          "type": "object",
-          "additionalProperties": true,
-          "nullable": true
-        },
-        "beforeDeleted": {
-          "type": "boolean"
-        },
-        "afterDeleted": {
-          "type": "boolean"
-        },
-        "actor": {
-          "$ref": "#/components/schemas/CloudRecordAuditActor"
-        },
-        "transactionId": {
-          "type": "string"
-        },
-        "operationId": {
-          "type": "string"
-        },
-        "createdAt": {
-          "type": "integer"
-        },
-        "changedFields": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "eventId",
-        "collectionId",
-        "recordId",
-        "action",
-        "revisionBefore",
-        "revisionAfter",
-        "before",
-        "after",
-        "beforeDeleted",
-        "afterDeleted",
-        "actor",
-        "transactionId",
-        "operationId",
-        "createdAt",
-        "changedFields"
-      ]
-    },
-    "UnsV2RecordAuditListReq": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "collectionId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "recordId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "size": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100,
-          "default": 20
-        },
-        "cursor": {
-          "type": "string",
-          "maxLength": 4096
-        }
-      },
-      "required": [
-        "collectionId",
-        "recordId"
-      ]
-    },
-    "UnsV2RecordAuditListResponse": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "code": {
-          "type": "integer"
-        },
-        "msg": {
-          "type": "string"
-        },
-        "requestId": {
-          "type": "string"
-        },
-        "data": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CloudRecordAuditEvent"
-              }
-            },
-            "nextCursor": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "items",
-            "nextCursor"
-          ]
-        }
-      },
-      "required": [
-        "code",
-        "msg",
-        "requestId",
-        "data"
-      ]
-    },
-    "UnsV2RecordAuditAdminListReq": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "collectionId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "recordId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "size": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100,
-          "default": 20
-        },
-        "cursor": {
-          "type": "string",
-          "maxLength": 4096
-        }
-      },
-      "required": [
-        "collectionId",
-        "recordId"
-      ]
-    },
-    "UnsV2RecordAuditAdminListResponse": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "code": {
-          "type": "integer"
-        },
-        "msg": {
-          "type": "string"
-        },
-        "requestId": {
-          "type": "string"
-        },
-        "data": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/CloudRecordAuditEvent"
-              }
-            },
-            "nextCursor": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "items",
-            "nextCursor"
           ]
         }
       },

@@ -331,54 +331,28 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+record-audit/1+app-create-capability/1+data/3+app-data/2+hosted-control/1+source-bindings/1');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('874ea913abbd5690fed42e698c4f6b7984b0a7ce');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('bedb71714ffb5b1dfb5393f92894a0f49f180b34');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('91d68dfd4510310911a949df6883b0fb86f596134029c7734bb786054dabac8a');
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(114);
+    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('2532caadd1adbcbcf121c02ce3b95e81c76bfcd4baf91645dd3450237eaceb4f');
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(97);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(112);
     expect(received.slice(start)).toHaveLength(1);
   });
 
-  it('reads ordinary record audit through the exact committed collection/record route and excludes admin audit', async () => {
+  it.each(['recordAuditList', 'recordAuditAdminList'])('rejects removed %s before encoding or any network request', async name => {
     const start = received.length;
-    respond = (_req, res) => {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end('{"code":200,"msg":"ok","requestId":"audit-exact","data":{"items":[{"eventId":"event-1","collectionId":"orders #1","recordId":"order #1","action":"update","revisionBefore":9007199254740992,"revisionAfter":9007199254740993,"before":{"amount":1.0000000000000001},"after":{"amount":2},"beforeDeleted":false,"afterDeleted":false,"actor":{"kind":"app_employee","userId":"9007199254740995","keyId":"1","keyOwnerId":"2"},"transactionId":"transaction-1","operationId":"op-1","createdAt":1792540800000,"changedFields":["amount"]}],"nextCursor":"opaque.next"}}');
-    };
     const api = createClient({ apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: 'gateway.employee.signature' }).unsV2;
-    const out = await api.recordAuditList({ collectionId: 'orders #1', recordId: 'order #1', size: 1, cursor: 'opaque.previous' });
-    expect(out.data.items[0].revisionAfter).toEqual(new UnsV2RawNumber('9007199254740993'));
-    expect(out.data.items[0].before?.amount).toEqual(new UnsV2RawNumber('1.0000000000000001'));
-    expect(out.data.items[0].actor.userId).toBe('9007199254740995');
-    expect(out.data.nextCursor).toBe('opaque.next');
-    expect(received.slice(start)).toHaveLength(1);
-    expect(received[start]).toMatchObject({ method: 'POST', path: '/openapi/v2/uns/collections/orders%20%231/records/order%20%231/audit:list',
-      headers: { 'x-tier0-app-data-subject': 'gateway.employee.signature' } });
-    expect(JSON.parse(received[start].body)).toEqual({ collectionId: 'orders #1', recordId: 'order #1', size: 1, cursor: 'opaque.previous' });
-    expect(UNS_V2_OPERATIONS.recordAuditList).toMatchObject({ mutation: false, scope: 'uns:read' });
-    expect(Object.hasOwn(UNS_V2_OPERATIONS, 'recordAuditAdminList')).toBe(false);
-    expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, 'UnsV2RecordAuditAdminListReq')).toBe(false);
-    await expect((api as unknown as { call(name: string, request: unknown): Promise<unknown> })
-      .call('recordAuditAdminList', {})).rejects.toThrow('unknown UNS v2 operation');
-    expect(received.slice(start)).toHaveLength(1);
-  });
-
-  it.each(['denied', 'socket', 'redirect'] as const)('never retries or elevates an ordinary audit %s response', async kind => {
-    const start = received.length;
-    respond = (req, res) => {
-      if (kind === 'socket') { req.socket.destroy(); return; }
-      if (kind === 'redirect') { res.writeHead(307, { Location: '/audit:admin-list' }); res.end('{}'); return; }
-      send(res, { code: 403, msg: 'denied', requestId: 'audit-denied', data: null, error: {
-        code: 'FORBIDDEN', retryable: false, details: [],
-        retryAdvice: { recommendedAction: 'doNotRetry', canRetrySameRequest: false, keepIdempotencyKey: false },
-      } }, 403);
-    };
-    await expect(client().unsV2.recordAuditList({ collectionId: 'orders', recordId: 'order-1' })).rejects.toMatchObject({
-      name: 'UnsV2Error', retryable: false,
-      code: kind === 'socket' ? 'UNS_V2_TRANSPORT_ERROR' : kind === 'redirect' ? 'UNS_V2_PROTOCOL_ERROR' : 'FORBIDDEN',
-    });
-    expect(received.slice(start)).toHaveLength(1);
+    expect(Object.hasOwn(api, name)).toBe(false);
+    expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
+    const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
+    // Circular input proves rejection happens before request encoding as well as fetch.
+    const circular: Record<string, unknown> = { collectionId: 'orders', recordId: 'order-1' };
+    circular.self = circular;
+    for (const request of [{ collectionId: 'orders', recordId: 'order-1' }, circular]) {
+      await expect(core.call(name, request)).rejects.toThrow('unknown UNS v2 operation');
+    }
+    expect(received.slice(start)).toHaveLength(0);
   });
 
   it('preserves explicit Source impact review and history without automatic confirmation or mutation retries', async () => {

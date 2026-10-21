@@ -1,10 +1,10 @@
 {
   "repository": "FREEZONEX/Tier0-Backend",
-  "revision": "874ea913abbd5690fed42e698c4f6b7984b0a7ce",
+  "revision": "bedb71714ffb5b1dfb5393f92894a0f49f180b34",
   "version": "4.0.0",
   "source": "service/unssvr/internal/domain/unsv2/contract_generated.go#ContractJSON",
-  "cloudRevision": "874ea913abbd5690fed42e698c4f6b7984b0a7ce",
-  "cloudContractRevision": "cloud-source-impact/1+record-audit/1+app-create-capability/1+data/3+app-data/2+hosted-control/1+source-bindings/1",
+  "cloudRevision": "bedb71714ffb5b1dfb5393f92894a0f49f180b34",
+  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+app-data/2+hosted-control/1+source-bindings/1",
   "resolvedCloudContract": true,
   "enterpriseBase": {
     "repository": "FREEZONEX/Tier0-Enterprise-New",
@@ -13,6 +13,6 @@
     "source": "backend/internal/domain/unsv2/contract_generated.go",
     "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs."
   },
-  "sourceDerivedContractSHA256": "91d68dfd4510310911a949df6883b0fb86f596134029c7734bb786054dabac8a",
-  "note": "Resolved Cloud runtime contract from exact Backend 874ea913abbd5690fed42e698c4f6b7984b0a7ce ContractJSON, manifest and registry (PR #938 App UNS access). Preserves record-audit/v1, source-bindings/v1 and current-employee app-create-capability/v1. Permission alternatives follow upstream; AppAllowed/Core-only management boundaries remain unchanged. Enterprise provenance retained separately; no npm publication or actual App release."
+  "sourceDerivedContractSHA256": "2532caadd1adbcbcf121c02ce3b95e81c76bfcd4baf91645dd3450237eaceb4f",
+  "note": "Resolved Cloud runtime contract from exact Backend bedb71714ffb5b1dfb5393f92894a0f49f180b34. Removes generic Record audit operations and configuration; preserves Source bindings, employee create capability, ordinary data transactions and reliable event contracts. Enterprise provenance remains separate. No npm publication or App deployment is implied."
 }

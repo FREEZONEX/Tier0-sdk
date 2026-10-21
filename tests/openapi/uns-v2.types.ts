@@ -93,16 +93,19 @@ const lease = client.unsV2.recordLock({ collectionId: 'orders', ids: ['order-1']
 const unlock = client.unsV2.recordUnlock({ collectionId: 'orders', locks: [{ id: 'order-1', token: 'lease' }] });
 const restore = client.unsV2.recordRestore({ collectionId: 'orders', ids: ['order-1'], idempotencyKey: 'restore-1' });
 void [lease, unlock, restore];
-const audit = client.unsV2.recordAuditList({ collectionId: 'orders', recordId: 'order-1', size: 20, cursor: 'opaque.cursor' });
-const auditCollection: UnsV2Request<'collectionUpdate'> = { dryRun: true,
-  items: [{ id: 'orders', expectedRevision: 1, audit: { enabled: true, historyRead: true } }] };
-void [audit, auditCollection];
-// @ts-expect-error Admin audit is not a public App SDK operation.
+// @ts-expect-error Generic record audit is removed from the public SDK.
+client.unsV2.recordAuditList({ collectionId: 'orders', recordId: 'order-1' });
+// @ts-expect-error Generic admin record audit is removed from the public SDK.
 client.unsV2.recordAuditAdminList({ collectionId: 'orders', recordId: 'order-1' });
-// @ts-expect-error Audit history requires a fixed record target.
-client.unsV2.recordAuditList({ collectionId: 'orders' });
-// @ts-expect-error Caller cannot select audit actor or workspace.
-client.unsV2.recordAuditList({ collectionId: 'orders', recordId: 'order-1', workspaceId: '2' });
+// @ts-expect-error Removed audit operations cannot be selected through the generic contract.
+const removedAuditOperation: UnsV2OperationName = 'recordAuditList';
+// @ts-expect-error Removed admin audit operations have no request DTO.
+type RemovedAdminAuditRequest = UnsV2Request<'recordAuditAdminList'>;
+const auditCollection: UnsV2Request<'collectionUpdate'> = { dryRun: true,
+  items: [{ id: 'orders', expectedRevision: 1,
+    // @ts-expect-error Collection audit configuration has been removed.
+    audit: { enabled: true, historyRead: true } }] };
+void [removedAuditOperation, auditCollection, null as RemovedAdminAuditRequest | null];
 // @ts-expect-error Retired Cloud batch-query route must not silently map to another contract.
 client.unsV2.records({ queries: [] });
 // @ts-expect-error Retired recordCreate is replaced by explicit recordInsertOne/Many operations.

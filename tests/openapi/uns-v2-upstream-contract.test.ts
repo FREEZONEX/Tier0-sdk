@@ -20,17 +20,17 @@ const contract = JSON.parse(read('contract.json')) as { operations: Operation[] 
 const registry = read('registry_generated.go');
 const operation = (name: string) => manifest.operations.find(item => item.name === name)!;
 
-describe('Backend 874ea913a App UNS access contract', () => {
+describe('Backend App UNS access contract without generic record audit', () => {
   it('pins the exact upstream commit and all generator inputs', () => {
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('874ea913abbd5690fed42e698c4f6b7984b0a7ce');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('bedb71714ffb5b1dfb5393f92894a0f49f180b34');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
     for (const [key, file] of Object.entries({ contract: 'contract.json', cloudSupport: 'cloud-support.json', manifest: 'manifest.json', provenance: 'provenance.json', registry: 'registry_generated.go' })) {
       expect(UNS_V2_CONTRACT_PROVENANCE.hashes[key as keyof typeof UNS_V2_CONTRACT_PROVENANCE.hashes]).toBe(
         createHash('sha256').update(read(file)).digest('hex')
       );
     }
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(114);
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(97);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(112);
   });
 
   it.each([
@@ -69,18 +69,29 @@ describe('Backend 874ea913a App UNS access contract', () => {
     }
   });
 
-  it('retains create capability, source acquisition and record audit schemas/codecs', () => {
-    for (const name of ['CloudAppCreateCapability', 'CloudRecordAuditConfig', 'CloudRecordAuditActor', 'CloudRecordAuditEvent', 'UnsV2RecordAuditListReq', 'UnsV2RecordAuditListResponse']) {
+  it('retains create capability and source acquisition without generic record audit', () => {
+    for (const name of ['CloudAppCreateCapability']) {
       expect(Object.hasOwn(manifest.schemas, name)).toBe(true);
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(true);
     }
     expect(manifest.schemas.CloudAppCreateCapability.properties).toHaveProperty('inputSchema');
     expect(manifest.schemas.CloudAppCreateCapability.properties).toHaveProperty('binding');
-    expect(manifest.schemas.CloudRecordAuditEvent.properties).toHaveProperty('before');
-    expect(manifest.schemas.CloudRecordAuditEvent.properties).toHaveProperty('after');
-    expect(manifest.schemas.CloudRecordAuditEvent.properties).toHaveProperty('actor');
+    for (const name of ['CloudRecordAuditConfig', 'CloudRecordAuditActor', 'CloudRecordAuditEvent',
+      'UnsV2RecordAuditListReq', 'UnsV2RecordAuditListResponse', 'UnsV2RecordAuditAdminListReq', 'UnsV2RecordAuditAdminListResponse']) {
+      expect(Object.hasOwn(manifest.schemas, name), name).toBe(false);
+      expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name), name).toBe(false);
+    }
+    for (const name of ['recordAuditList', 'recordAuditAdminList']) {
+      expect(manifest.operations.some(item => item.name === name), name).toBe(false);
+      expect(contract.operations.some(item => item.name === name), name).toBe(false);
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, name), name).toBe(false);
+      expect(registry).not.toContain(`Name: "${name}"`);
+    }
+    for (const [name, schema] of Object.entries(manifest.schemas)) {
+      if (/collection/i.test(name)) expect(schema.properties ?? {}, name).not.toHaveProperty('audit');
+    }
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('app-create-capability/1');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('record-audit/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).not.toContain('record-audit/1');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('source-bindings/1');
   });
 });
