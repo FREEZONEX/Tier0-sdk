@@ -50,8 +50,8 @@
     {"name":"controlAppCreate","permission":"workspace.api.manage","scope":"app:manage","minPermission":3},
     {"name":"controlAppUpdate","permission":"workspace.api.manage","scope":"app:manage","minPermission":3},
     {"name":"controlAppPermissionsUpdate","permission":"workspace.api.manage","scope":"app:manage","minPermission":3},
-    {"name":"appDataPolicyGet","permission":"workspace.api.manage","scope":"app:manage","minPermission":3},
-    {"name":"appDataPolicyUpdate","permission":"workspace.api.manage","scope":"app:manage","minPermission":3},
+    {"name":"appDataPolicyGet","permission":"uns.write","scope":"uns:update","minPermission":3},
+    {"name":"appDataPolicyUpdate","permission":"uns.write","scope":"uns:update","minPermission":3},
     {"name":"hostedAppControlPolicyGet","permission":"workspace.api.manage","scope":"app:manage","minPermission":3},
     {"name":"hostedAppControlPolicyUpdate","permission":"workspace.api.manage","scope":"app:manage","minPermission":3}
   ]

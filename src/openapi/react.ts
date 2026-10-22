@@ -3,7 +3,7 @@
 
 // React hooks require @tanstack/react-query to be installed
 import { useMutation } from '@tanstack/react-query';
-import { systemApi, flowApi, launchpadApi, notificationsApi, platformApi, unsApi } from './api.js';
+import { systemApi, flowApi, notificationsApi, platformApi, unsApi, appsApi } from './api.js';
 import type { components } from './types.js';
 
 export function useGwreload() {
@@ -69,12 +69,6 @@ export function useOpenapiv1flownodes() {
 export function useOpenapiv1flowupdate() {
   return useMutation<any, Error, components["schemas"]["FlowUpdateReq"]>({
     mutationFn: flowApi.openapiv1flowupdate,
-  });
-}
-
-export function useOpenapiv1launchpadgetmembers() {
-  return useMutation<{ code: number; msg?: string; data?: components["schemas"]["LaunchpadMembersResp"] }, Error, { "projectName": string; body: components["schemas"]["LaunchpadGetMembersReq"] }>({
-    mutationFn: launchpadApi.openapiv1launchpadgetmembers,
   });
 }
 
@@ -147,6 +141,12 @@ export function useOpenapiv1unsupdate() {
 export function useOpenapiv1unswrite() {
   return useMutation<any, Error, components["schemas"]["WriteReq"]>({
     mutationFn: unsApi.openapiv1unswrite,
+  });
+}
+
+export function useOpenapiv1appslistaccessmembers() {
+  return useMutation<components["schemas"]["AppAccessMembersListResp"], Error, components["schemas"]["AppAccessMembersListReq"]>({
+    mutationFn: appsApi.openapiV1Appslistaccessmembers,
   });
 }
 

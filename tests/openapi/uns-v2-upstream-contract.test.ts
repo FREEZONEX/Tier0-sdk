@@ -22,15 +22,29 @@ const operation = (name: string) => manifest.operations.find(item => item.name =
 
 describe('Backend App UNS access contract without generic record audit', () => {
   it('pins the exact upstream commit and all generator inputs', () => {
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('769e3cc0fad27d8ae86a891fe9044ede0b7282e8');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('6c111671a2172eb14c38f2f6d9ec329f4ee08a3d');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
     for (const [key, file] of Object.entries({ contract: 'contract.json', cloudSupport: 'cloud-support.json', manifest: 'manifest.json', provenance: 'provenance.json', registry: 'registry_generated.go' })) {
       expect(UNS_V2_CONTRACT_PROVENANCE.hashes[key as keyof typeof UNS_V2_CONTRACT_PROVENANCE.hashes]).toBe(
         createHash('sha256').update(read(file)).digest('hex')
       );
     }
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(113);
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(101);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(114);
+  });
+
+  it('does not export retired Project member schemas or Project capabilities', () => {
+    for (const name of ['PlatformV2ProjectMembersListReq', 'PlatformV2ProjectMembersListResponse']) {
+      expect(Object.hasOwn(manifest.schemas, name)).toBe(false);
+      expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
+    }
+    const visit = (value: unknown): void => {
+      if (!value || typeof value !== 'object') return;
+      const node = value as Record<string, unknown>;
+      if (Array.isArray(node.enum)) expect(node.enum).not.toContain('project');
+      for (const nested of Object.values(node)) visit(nested);
+    };
+    visit(manifest.schemas);
   });
 
   it.each([
@@ -59,9 +73,13 @@ describe('Backend App UNS access contract without generic record audit', () => {
     // Generic workspace SDK methods remain available; their presence grants no App authority.
     expect(operation('collectionCreate').appAllowed).toBe(false);
     expect(Object.hasOwn(UNS_V2_OPERATIONS, 'collectionCreate')).toBe(true);
-    for (const name of ['appDataPolicyGet', 'appDataPolicyUpdate', 'hostedAppControlPolicyGet', 'hostedAppControlPolicyUpdate']) {
+    for (const name of ['hostedAppControlPolicyGet', 'hostedAppControlPolicyUpdate']) {
       expect(operation(name)).toMatchObject({ appAllowed: false, coreOnly: true, permission: 'workspace.api.manage', minPermission: 3 });
       expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
+    }
+    for (const name of ['appDataPolicyGet', 'appDataPolicyUpdate']) {
+      expect(operation(name)).toMatchObject({ appAllowed: false, coreOnly: false, permission: 'uns.write', minPermission: 3, scope: 'uns:update' });
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(true);
     }
     for (const name of ['appAccessGet', 'appAccessUpdate']) {
       expect(manifest.operations.some(item => item.name === name)).toBe(false);

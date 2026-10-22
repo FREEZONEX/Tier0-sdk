@@ -323,7 +323,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received.slice(start)).toHaveLength(1);
     expect(received[start].path).toBe('/openapi/v2/uns/streams/sample/test');
     const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
-    for (const name of ['graph', 'sourceCredentialCreate', 'sourceIngressGet', 'sourceIngressRotate', 'appDataPolicyGet', 'appDataPolicyUpdate', 'hostedAppControlPolicyGet', 'hostedAppControlPolicyUpdate']) {
+    for (const name of ['graph', 'sourceCredentialCreate', 'sourceIngressGet', 'sourceIngressRotate', 'hostedAppControlPolicyGet', 'hostedAppControlPolicyUpdate']) {
       expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
       await expect(core.call(name, {})).rejects.toThrow('unknown UNS v2 operation');
     }
@@ -331,13 +331,31 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('769e3cc0fad27d8ae86a891fe9044ede0b7282e8');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-collection/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('6c111671a2172eb14c38f2f6d9ec329f4ee08a3d');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('b1861a0a679bbf24c530247dc7c53740d89914314a415359f426b4ef527b1c54');
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(113);
+    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('0e82f1a9f4363bcdc1b8cc916f494aab5fb5f368a8d232850a299b5dbc165aa5');
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(101);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(114);
     expect(received.slice(start)).toHaveLength(1);
+  });
+
+  it.each(['appDataPolicyGet', 'appDataPolicyUpdate', 'collectionCreate'] as const)('preserves server App-management rejection for public %s without retry', async name => {
+    const start = received.length;
+    const app = createClient({ apiHost, apiKey: 'runtime-app-key' }).unsV2;
+    respond = (_req, res) => send(res, {
+      code: 403, msg: 'App credentials cannot manage grants', requestId: 'app-management-denied', data: null,
+      error: { code: 'FORBIDDEN', retryable: false, details: [],
+        retryAdvice: { recommendedAction: 'doNotRetry', canRetrySameRequest: false, keepIdempotencyKey: false } },
+    }, 403);
+    const pending = name === 'appDataPolicyGet'
+      ? app.appDataPolicyGet({ appId: 'owned-app' })
+      : name === 'appDataPolicyUpdate'
+        ? app.appDataPolicyUpdate({ appId: 'owned-app', expectedRevision: 1, status: 'disabled', collections: [], idempotencyKey: 'deny-grant', dryRun: false })
+        : app.collectionCreate({ items: [{ id: 'denied-collection', name: 'Denied', recordSchema: { type: 'object', properties: {} } }], dryRun: false, idempotencyKey: 'deny-create' });
+    await expect(pending).rejects.toMatchObject({ name: 'UnsV2Error', status: 403, code: 'FORBIDDEN', retryable: false });
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start].headers.authorization).toBe('Bearer runtime-app-key');
   });
 
   it('preserves summary and immutable full history projections without a restore request', async () => {

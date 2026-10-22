@@ -180,22 +180,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/openapi/v1/launchpad/{projectName}/getMembers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1Launchpad:projectNameGetMembers"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/openapi/v1/notifications/get": {
         parameters: {
             query?: never;
@@ -396,6 +380,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/openapi/v1/apps/access-members/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** listAccessMembers */
+        post: operations["openapi/V1/AppsListAccessMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -578,7 +579,6 @@ export interface components {
         /** HistoryReq */
         HistoryReq: {
             aggregation?: components["schemas"]["HistoryAggregation"];
-            countMode?: "exact" | "none";
             end_time: string;
             /** Format: int64 */
             page?: number;
@@ -586,6 +586,7 @@ export interface components {
             size?: number;
             start_time: string;
             topics: string[];
+            countMode?: string;
         };
         /** HistoryResp */
         HistoryResp: {
@@ -603,51 +604,6 @@ export interface components {
         };
         /** InfoReq */
         InfoReq: Record<string, never>;
-        /** LaunchpadGetMembersReq */
-        LaunchpadGetMembersReq: {
-            /** Format: int64 */
-            page?: number;
-            roleKey?: string;
-            roles?: string[];
-            /** Format: int64 */
-            size?: number;
-            updatedAtEnd?: string;
-            updatedAtStart?: string;
-        };
-        /** LaunchpadMemberResp */
-        LaunchpadMemberResp: {
-            email?: string;
-            memberId: string;
-            roles: components["schemas"]["LaunchpadMemberRoleResp"][];
-            updatedAt?: string;
-            userId: string;
-            userName?: string;
-        };
-        /** LaunchpadMemberRoleAppResp */
-        LaunchpadMemberRoleAppResp: {
-            appId: string;
-            appName: string;
-        };
-        /** LaunchpadMemberRoleResp */
-        LaunchpadMemberRoleResp: {
-            apps?: components["schemas"]["LaunchpadMemberRoleAppResp"][];
-            description?: string;
-            /** Format: int64 */
-            memberCount: number;
-            roleId: string;
-            roleKey: string;
-            roleName?: string;
-        };
-        /** LaunchpadMembersResp */
-        LaunchpadMembersResp: {
-            list: components["schemas"]["LaunchpadMemberResp"][];
-            /** Format: int64 */
-            page: number;
-            /** Format: int64 */
-            size: number;
-            /** Format: int64 */
-            total: number;
-        };
         /** NamespaceNode */
         NamespaceNode: {
             alias?: string;
@@ -918,7 +874,7 @@ export interface components {
             /** @description 已废弃：过渡期作 sender.name 别名（sender.name 优先） */
             source?: string;
             /**
-             * @description test/live，缺省 live
+             * @description test/live，缺省 live；test 模式由响应/MessageInfo.mode 字段标识，标题不加前缀
              * @default live
              * @enum {string}
              */
@@ -959,6 +915,59 @@ export interface components {
             results: components["schemas"]["OpenapiWriteResult"][];
             /** Format: boolean */
             success: boolean;
+        };
+        AppAccessMembersListReq: {
+            appId: string;
+            /** @description 毫秒，闭区间，精度为秒 */
+            grantedAtEnd?: number;
+            /** @description 毫秒，闭区间，精度为秒 */
+            grantedAtStart?: number;
+            page?: number;
+            /** @description 任一命中即可，大小写不敏感 */
+            roleKeys?: string[];
+            size?: number;
+        };
+        AppAccessMembersListResp: {
+            /** @description 1:所有 active 成员都可访问 2:按角色授权 */
+            allActiveMembers: number;
+            appId: string;
+            list: components["schemas"]["AppAccessMemberResp"][];
+            page: number;
+            productionVersionId?: string;
+            /** @description 1:已发布 2:未发布 */
+            published: number;
+            roles: components["schemas"]["AppAccessRoleResp"][];
+            size: number;
+            total: number;
+        };
+        AppAccessMemberResp: {
+            email?: string;
+            /** @description 毫秒 */
+            grantedAt: number;
+            roles: components["schemas"]["AppAccessMemberRoleResp"][];
+            userId: string;
+            userName?: string;
+        };
+        AppAccessRoleResp: {
+            description?: string;
+            memberCount: number;
+            roleId: string;
+            roleKey: string;
+            roleName: string;
+            /** @description active / retired */
+            status: string;
+        };
+        AppAccessMemberRoleResp: {
+            roleId: string;
+            roleKey: string;
+            roleName: string;
+            sources: components["schemas"]["AppAccessRoleSourceResp"][];
+        };
+        AppAccessRoleSourceResp: {
+            groupId?: string;
+            groupName?: string;
+            /** @description direct / group */
+            type: string;
         };
     };
     responses: never;
@@ -1316,41 +1325,6 @@ export interface operations {
                          * @default 200
                          */
                         code?: number;
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    "postOpenapiV1Launchpad:projectNameGetMembers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                projectName: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LaunchpadGetMembersReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["LaunchpadMembersResp"];
                         /** 返回的消息 */
                         msg?: string;
                     };
@@ -1840,6 +1814,29 @@ export interface operations {
                         /** 返回的消息 */
                         msg?: string;
                     };
+                };
+            };
+        };
+    };
+    "openapi/V1/AppsListAccessMembers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppAccessMembersListReq"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppAccessMembersListResp"];
                 };
             };
         };

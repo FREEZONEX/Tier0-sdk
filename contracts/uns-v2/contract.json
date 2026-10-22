@@ -2695,18 +2695,18 @@
       "handler": "CloudAppDataPolicyGet",
       "request": "CloudAppDataPolicyGetReq",
       "response": "CloudAppDataPolicyGetResponse",
-      "permission": "workspace.api.manage",
+      "permission": "uns.write",
       "resource": "app",
       "mutation": "",
-      "coreOnly": true,
+      "coreOnly": false,
       "appAllowed": false,
       "resourceId": 3339,
       "summary": "Hosted App Collection policy: Get",
-      "description": "Internal session governance bound to an existing hosted App UUID. Does not create Apps, issue keys, or grant control capabilities.",
+      "description": "Manage Collection access for an existing hosted App. Requires a current Builder session or full_access personal/Agent key. Shared data is granted to the recipient App collections; runtime App credentials cannot manage grants. Existing session governance may revoke grants.",
       "cloudExtension": true,
       "permissionAnyOf": [],
       "minPermission": 3,
-      "scope": "app:manage",
+      "scope": "uns:update",
       "tags": [
         "App 与授权"
       ]
@@ -2717,18 +2717,18 @@
       "handler": "CloudAppDataPolicyUpdate",
       "request": "CloudAppDataPolicyUpdateReq",
       "response": "CloudAppDataPolicyMutationResponse",
-      "permission": "workspace.api.manage",
+      "permission": "uns.write",
       "resource": "app",
       "mutation": "meta.replace",
-      "coreOnly": true,
+      "coreOnly": false,
       "appAllowed": false,
       "resourceId": 3340,
       "summary": "Hosted App Collection policy: Update",
-      "description": "Internal session governance bound to an existing hosted App UUID. Does not create Apps, issue keys, or grant control capabilities.",
+      "description": "Manage Collection access for an existing hosted App. Requires a current Builder session or full_access personal/Agent key. Shared data is granted to the recipient App collections; runtime App credentials cannot manage grants. Existing session governance may revoke grants.",
       "cloudExtension": true,
       "permissionAnyOf": [],
       "minPermission": 3,
-      "scope": "app:manage",
+      "scope": "uns:update",
       "tags": [
         "App 与授权"
       ]
@@ -3032,6 +3032,47 @@
       "scope": "uns:write",
       "tags": [
         "业务数据"
+      ]
+    },
+    {
+      "name": "collectionCreateForApp",
+      "handler": "UnsV2CollectionCreateForApp",
+      "suffix": "/uns/collections/create-for-app",
+      "request": "CloudAppCollectionCreateReq",
+      "response": "CloudAppCollectionCreateResponse",
+      "resource": "collection",
+      "mutation": "meta.create",
+      "permission": "uns.write",
+      "appAllowed": false,
+      "mcp": false,
+      "cloudExtension": true,
+      "summary": "为 App 创建专用集合并绑定数据权限",
+      "description": "兼容入口；新调用使用 /uns/collections/create 并提供 appId、alias 和单个 items。需要当前 Builder 的 full_access 人员凭证及 uns.read、uns.write、uns.delete。两条路径共用创建、App 授权和幂等回执事务。",
+      "example": {
+        "appId": "14bfc189-8516-4709-a4c9-865a0f1dc345",
+        "alias": "orders",
+        "collection": {
+          "name": "Orders",
+          "recordSchema": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "title"
+            ]
+          }
+        },
+        "idempotencyKey": "create-orders-v1",
+        "dryRun": false
+      },
+      "permissionAnyOf": [],
+      "minPermission": 3,
+      "scope": "uns:update",
+      "tags": [
+        "集合管理"
       ]
     }
   ],
@@ -5890,7 +5931,6 @@
             "enum": [
               "openapi.base",
               "platform.users.read",
-              "platform.projects.members.read",
               "notifications.send",
               "notifications.read",
               "asset.file.upload",
@@ -5970,7 +6010,6 @@
             "enum": [
               "openapi.base",
               "platform.users.read",
-              "platform.projects.members.read",
               "notifications.send",
               "notifications.read",
               "asset.file.upload",
@@ -10689,6 +10728,16 @@
               "recordSchema"
             ]
           }
+        },
+        "appId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "可选目标 App；指定时仅允许一个集合，且必须同时提供 alias 和 idempotencyKey，创建和授权原子提交，不支持 mode=async。"
+        },
+        "alias": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,62}$",
+          "description": "目标 App 内的集合别名，仅与 appId 一起使用。"
         }
       },
       "required": [
@@ -12192,7 +12241,6 @@
                   "enum": [
                     "openapi.base",
                     "platform.users.read",
-                    "platform.projects.members.read",
                     "notifications.send",
                     "notifications.read",
                     "asset.file.upload",
@@ -12449,7 +12497,6 @@
                   "enum": [
                     "openapi.base",
                     "platform.users.read",
-                    "platform.projects.members.read",
                     "notifications.send",
                     "notifications.read",
                     "asset.file.upload",
@@ -19293,7 +19340,6 @@
             "enum": [
               "openapi.base",
               "platform.users.read",
-              "platform.projects.members.read",
               "notifications.send",
               "notifications.read",
               "asset.file.upload",
@@ -28499,7 +28545,108 @@
         "documentOperation",
         "projectionIssue"
       ]
+    },
+    "CloudAppCollectionCreateReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "appId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "alias": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,62}$"
+        },
+        "collection": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": {
+              "maxLength": 512,
+              "type": "string"
+            },
+            "indexes": {
+              "items": {
+                "$ref": "#/components/schemas/IndexSpec"
+              },
+              "maxItems": 16,
+              "type": "array"
+            },
+            "name": {
+              "description": "Unique display name; no surrounding whitespace",
+              "maxLength": 63,
+              "minLength": 1,
+              "type": "string"
+            },
+            "recordSchema": {
+              "$ref": "#/components/schemas/Schema"
+            },
+            "sampleSchema": {
+              "$ref": "#/components/schemas/Schema"
+            },
+            "semantics": {
+              "$ref": "#/components/schemas/CollectionSemantics"
+            },
+            "parentId": {
+              "type": "string",
+              "nullable": true,
+              "minLength": 1,
+              "maxLength": 128,
+              "description": "Containing directory ID. Omitted on create or null means root; omitted on update preserves placement. Moving does not change collection identity or data."
+            }
+          },
+          "required": [
+            "name",
+            "recordSchema"
+          ]
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "dryRun": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "appId",
+        "alias",
+        "collection",
+        "idempotencyKey",
+        "dryRun"
+      ]
+    },
+    "CloudAppCollectionCreateResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/components/schemas/Outcome"
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
     }
   },
-  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1"
+  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-collection/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1"
 }

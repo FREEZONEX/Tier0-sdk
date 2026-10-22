@@ -14,9 +14,11 @@ cd "$SDK_DIR"
 npm install --prefer-offline 2>/dev/null || npm install
 
 echo "[2/4] Generating client, api, react, vue modules (writes filtered swagger)..."
+APP_MEMBERS_SWAGGER_PATH="${APP_MEMBERS_SWAGGER_PATH:-$SDK_DIR/contracts/openapi/app-members.swagger.json}"
 npx tsx "$SCRIPT_DIR/generate-openapi.ts" \
   --swagger "$SWAGGER_PATH" \
-  --output "$OUTPUT_DIR"
+  --output "$OUTPUT_DIR" \
+  --app-members-swagger "$APP_MEMBERS_SWAGGER_PATH"
 
 echo "[3/4] Generating TypeScript types from filtered swagger..."
 # 必须消费 tsx 步骤产出的 swagger.filtered.json（白名单端点+引用闭包 schema），

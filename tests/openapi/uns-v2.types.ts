@@ -154,3 +154,21 @@ notifications.then(result => {
 });
 // @ts-expect-error the authenticated workspace cannot be overridden in the body
 void client.unsV2.recordChangesPoll({ collectionId: 'orders', workspaceId: 'other' });
+
+// Retired Cloud Project DTOs must not remain public type exports.
+// @ts-expect-error Project membership was removed from the Cloud contract.
+import type { PlatformV2ProjectMembersListReq } from '../../src/index.js';
+// @ts-expect-error Project membership was removed from the Cloud contract.
+import type { PlatformV2ProjectMembersListResponse } from '../../src/index.js';
+
+import { appsApi } from '../../src/openapi/api.js';
+const appMembersBody: Parameters<typeof appsApi.openapiV1Appslistaccessmembers>[0] = {
+  appId: 'owned-app', roleKeys: ['operator'], grantedAtStart: 1782864000000, page: 1, size: 20,
+};
+const invalidAppMembersBody: Parameters<typeof appsApi.openapiV1Appslistaccessmembers>[0] = {
+  appId: 'owned-app',
+  // @ts-expect-error App access members has no Project path/body selector.
+  projectName: 'legacy-project',
+};
+void appMembersBody;
+void invalidAppMembersBody;

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { systemApi, flowApi, launchpadApi, notificationsApi, platformApi, unsApi } from '../../src/openapi/api.js';
+import { systemApi, flowApi, appsApi, notificationsApi, platformApi, unsApi } from '../../src/openapi/api.js';
+import * as publicApi from '../../src/openapi/api.js';
 import { ApiError, configureClient } from '../../src/openapi/client.js';
 
 describe('API modules', () => {
@@ -112,29 +113,32 @@ describe('API modules', () => {
     });
   });
 
-  describe('launchpadApi', () => {
-    it('getMembers should encode the project path and send filters in the body', async () => {
+  describe('appsApi', () => {
+    it('does not export or invoke the retired launchpad members endpoint', () => {
+      globalThis.fetch = vi.fn();
+      expect(Object.hasOwn(publicApi, 'launchpadApi')).toBe(false);
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+    it('lists App access members by App ID with the current body filters', async () => {
       const response = {
-        code: 200,
-        data: { list: [], total: 0, page: 1, size: 20 },
+        appId: 'app-owned-7', published: 1, allActiveMembers: 2, roles: [], list: [], total: 0, page: 1, size: 20,
       };
       mockResponse(response);
       const body = {
-        roles: ['builder'],
-        updatedAtStart: '2026-07-01T00:00:00Z',
-        updatedAtEnd: '2026-07-20T23:59:59Z',
+        appId: 'app-owned-7',
+        roleKeys: ['builder'],
+        grantedAtStart: 1782864000000,
+        grantedAtEnd: 1784591999000,
         page: 1,
         size: 20,
       };
 
-      const result = await launchpadApi.openapiv1launchpadgetmembers({
-        projectName: 'Factory / Operations',
-        body,
-      });
+      const result = await appsApi.openapiV1Appslistaccessmembers(body);
 
+      expect(result.appId).toBe(body.appId);
       expect(result).toEqual(response);
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        'http://api.example.com/openapi/v1/launchpad/Factory%20%2F%20Operations/getMembers',
+        'http://api.example.com/openapi/v1/apps/access-members/list',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify(body),
