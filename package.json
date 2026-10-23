@@ -96,7 +96,9 @@
     "typecheck": "tsc --noEmit && tsc --noEmit --strict --skipLibCheck --module nodenext --target es2020 tests/openapi/notifications.types.ts tests/streams.types.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:streams:nats": "node scripts/test-stream-messages-nats.mjs",
+    "fixture:streams:nats": "node scripts/test-stream-messages-nats.mjs --serve"
   },
   "optionalDependencies": {
     "@tanstack/react-query": "^5.0.0",
