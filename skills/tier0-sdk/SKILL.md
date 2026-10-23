@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk
 version: 0.3.9
-description: "Tier0 SDK 单根聚合路由及 TypeScript/JavaScript 共享配置。用于 Tier0 配置、UNS 当前数据、历史数据/history、趋势图/trend、时间范围查询、MQTT 实时订阅、Flow/Node-RED HTTP 接口、成员、通知和系统能力；当应用需要文件上传/upload、附件/attachment、头像/avatar、文件导入/import、生成或导出文件/报表、持久化文件、访问链接、下载或删除时也必须触发，即使用户未提到 Tier0、SDK、S3 或对象存储。业务运行时文件必须路由到 tier0-sdk-files 并使用 @tier0/sdk/files，不能持久化到 Sandbox/本地目录、public/ 或数据库 Blob。源码、随版本发布的静态资源、构建产物和可丢弃的临时处理文件除外。"
+description: "Tier0 SDK 单根聚合路由及 TypeScript/JavaScript 共享配置。用于 App/Stream requests 调用与 messages 发布订阅、Tier0 配置、UNS 当前数据、历史数据/history、趋势图/trend、时间范围查询、MQTT 实时订阅、Flow/Node-RED HTTP 接口、成员、通知和系统能力；当应用需要文件上传/upload、附件/attachment、头像/avatar、文件导入/import、生成或导出文件/报表、持久化文件、访问链接、下载或删除时也必须触发，即使用户未提到 Tier0、SDK、S3 或对象存储。业务运行时文件必须路由到 tier0-sdk-files 并使用 @tier0/sdk/files，不能持久化到 Sandbox/本地目录、public/ 或数据库 Blob。源码、随版本发布的静态资源、构建产物和可丢弃的临时处理文件除外。"
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -13,7 +13,7 @@ This is the bundle root Skill. Read it before using any `tier0-sdk-*` domain Ski
 
 ## Shared Workflow
 
-1. Check the published version with `npm view @tier0/sdk version` and use the latest release. In a managed MonoApp, update `package.json` and let the platform install dependencies.
+1. Use the reviewed commit and SHA-256 pinned artifact/source pack when supplied for an App/Stream deployment; do not replace it with an npm release that lacks that unit. Otherwise check the published version with `npm view @tier0/sdk version` and use the latest release. In a managed MonoApp, update `package.json` and let the platform install dependencies.
 2. Before making any actual `@tier0/sdk` call, read [`references/configuration.md`](references/configuration.md). This requirement applies even when a client already exists; verify host, credentials, runtime boundary, and project context instead of assuming them.
 3. Route the task to the matching domain Skill below and read that Skill before writing code.
 4. Import an official SDK entry point. Do not hand-write replacement REST, MQTT, object-storage, or environment-resolution clients.
@@ -68,7 +68,8 @@ This rule does not apply to source files, static assets intentionally shipped wi
 |---|---|
 | UNS modeling, browse/search, read/write/history, topic lifecycle, app data integration | [`tier0-sdk-uns/SKILL.md`](tier0-sdk-uns/SKILL.md) |
 | App history, trend chart, bounded time-range data, aggregate history, or MQTT reconnect backfill | [`tier0-sdk-uns/references/history.md`](tier0-sdk-uns/references/history.md); for MonoApp also read [`references/scaffold-monoapp.md`](references/scaffold-monoapp.md) |
-| Continuous/realtime receive, MQTT subscribe/publish, connection lifecycle | [`tier0-sdk-mq/SKILL.md`](tier0-sdk-mq/SKILL.md) |
+| App/Stream request describe/invoke/discover, logical-topic messages publish/subscribe, trusted App runtime | [`tier0-sdk-streams/SKILL.md`](tier0-sdk-streams/SKILL.md) |
+| UNS telemetry realtime receive, MQTT subscribe/publish, connection lifecycle | [`tier0-sdk-mq/SKILL.md`](tier0-sdk-mq/SKILL.md) |
 | Flow/Node-RED create, inspect, edit, deploy, delete, or expose/invoke an `http in` endpoint or webhook | [`tier0-sdk-flow/SKILL.md`](tier0-sdk-flow/SKILL.md) |
 | File upload, attachment, avatar, import, generated/exported file or report, persistent storage, access URL, download, or deletion—even without an explicit SDK request | [`tier0-sdk-files/SKILL.md`](tier0-sdk-files/SKILL.md) |
 | Cloud App access members or platform/workspace members and roles | [`tier0-sdk-members/SKILL.md`](tier0-sdk-members/SKILL.md) |
@@ -81,6 +82,7 @@ This rule does not apply to source files, static assets intentionally shipped wi
 | Need | Import |
 |---|---|
 | Runtime context plus combined exports | `@tier0/sdk` |
+| Cloud data and App/Stream clients | `@tier0/sdk/cloud` |
 | OpenAPI clients and types | `@tier0/sdk/openapi` |
 | Managed file operations | `@tier0/sdk/files` |
 | MQTT/MQ over WebSocket | `@tier0/sdk/mq` |
@@ -103,7 +105,7 @@ This rule does not apply to source files, static assets intentionally shipped wi
 - When API-key authentication or MQTT connection fails, follow the compatibility decision tree in [`references/configuration.md`](references/configuration.md) before changing credentials or overriding MQTT identity. A workspace-encoded non-service key with `@tier0/sdk < 0.5.2` requires an SDK upgrade.
 - In generated project-scoped apps, call `getCurrentProjectId()` from server/runtime code. Imported apps receive a new local project context.
 - Where an app id is needed, call `getCurrentAppId()` — it validates that the injected `APP_ID` is the agent-platform App UUID rather than the scaffold default or a session id. Never read `process.env.APP_ID` directly; see [`references/configuration.md`](references/configuration.md).
-- Browser bundles do not automatically read Node environment variables or `VITE_*`; pass browser runtime values explicitly.
+- Browser bundles do not automatically read Node environment variables or `VITE_*`. App/Stream calls automatically detect the trusted host runtime symbol; business Apps do not install a provider or configure broker URLs, subjects, keys or credentials. Other browser clients require explicit runtime values.
 - Do not use these Skills for a non-Tier0 API, another named SDK, a generic external MQTT broker, or direct PLC/OPC UA/Modbus/device-protocol access outside Tier0 APIs.
 - Do not navigate to or `window.open()` a private presigned URL for an attachment download. In MonoApp, proxy `downloadFile` through an authenticated same-origin route and let the UI save a Blob with `<a download>`.
 

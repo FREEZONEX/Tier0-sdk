@@ -17,9 +17,9 @@ Use it when setting up API hosts, API keys, MQTT hosts, browser builds, client i
 - Browser/Vite and dynamic configuration
 - MQTT configuration
 
-## Version — Always Use The Latest
+## Version and pinned App artifacts
 
-Check and update the SDK to the latest published version every time before you use it. The SDK's API surface, endpoints, and types evolve; a stale version leads to wrong signatures and missing endpoints.
+For App/Stream deployments with a reviewed artifact/source pack, retain its commit and SHA-256 pin; the npm version alone may identify an older API surface. Otherwise check and update the SDK to the latest published version before use. The SDK's API surface, endpoints, and types evolve; a stale version leads to wrong signatures and missing endpoints.
 
 ```bash
 npm view @tier0/sdk version        # latest published version
@@ -28,6 +28,12 @@ npm install @tier0/sdk@latest      # update to latest
 ```
 
 MonoApp/scaffold caveat: do not run `npm install` manually inside the scaffold — its install is managed (running it manually can corrupt `node_modules` on the shared volume). Instead, set `@tier0/sdk` to the latest version in `package.json` and let the managed install / preview restart apply it.
+
+## Trusted App/Stream runtime
+
+For `createClient()` from `@tier0/sdk/cloud`, the SWE App host installs `globalThis[Symbol.for('tier0.sdk.app-runtime.v1')]` before App execution. The SDK detects this trusted provider automatically. Business App code must not call a manual installer or supply broker URLs, raw subjects, JWTs, nkey seeds, API keys, or identity headers. The internal provider returns a `Response` for each authorized request. Standalone Node services use the existing server HTTP/App context.
+
+Read [`../tier0-sdk-streams/SKILL.md`](../tier0-sdk-streams/SKILL.md) for request idempotency, disposable subscriptions, asynchronous errors and teardown. Messages have no offline buffer or replay; disconnected publish fails. SDK renewals generate fresh in-memory keys and restore subscriptions only. This runtime does not replace UNS data, file or notification configuration.
 
 ## API Key Compatibility Diagnostics
 
@@ -125,7 +131,7 @@ configureClient({
 
 ## Browser and Vite
 
-The SDK does not automatically read `VITE_*` variables at runtime. In Vite/browser code, pass values explicitly from `import.meta.env`.
+App/Stream clients use the trusted App runtime described above. For other clients, the SDK does not automatically read `VITE_*` variables at runtime. In Vite/browser code, pass values explicitly from `import.meta.env`.
 
 ```typescript
 import { configureClient } from '@tier0/sdk/openapi';

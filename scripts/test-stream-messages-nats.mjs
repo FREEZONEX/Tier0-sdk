@@ -98,6 +98,7 @@ try {
     await new Promise(resolve => fixture.once('exit', resolve));
   } else {
     await run(process.execPath, [join(root, 'node_modules/vitest/vitest.mjs'), 'run', 'tests/stream-messages.integration.test.ts'], { env });
+    if (process.argv.includes('--artifact')) await run(process.execPath, [join(root, 'scripts/test-stream-artifact.mjs')], { env });
   }
 } catch (error) {
   console.error(error.message);
