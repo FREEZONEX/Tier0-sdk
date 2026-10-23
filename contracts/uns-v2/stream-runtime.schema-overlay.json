@@ -1,10 +1,10 @@
 {
   "version": "stream-runtime-schema-overlay/v1",
   "repository": "FREEZONEX/Tier0-Backend",
-  "revision": "c044bbea98acc3b9d2bcfb6ea597853c47b4f173",
+  "revision": "d71a38869b075d18df28540e30fbf955bdfb22c6",
   "source": "share/unscontract/manifest.json",
-  "sourceManifestSHA256": "cddaf477a85eb51bea5a566b349b6b9a09ff97e7aeb85a7c8cd94ef5f77084fa",
-  "scope": "Current Stream runtime/write DTOs, compiled message metadata and readiness only; unrelated UNS data remains on its separately reviewed baseline.",
+  "sourceManifestSHA256": "afc891d80f13d856b63343c371eac10849d11268b5c26bf6ea2368fa84ce7481",
+  "scope": "Current Stream runtime/write DTOs, compiled message metadata, read-only history and readiness only; unrelated UNS data remains on its separately reviewed baseline.",
   "operationMetadata": {
     "streamRuntimeCapabilitiesGet": {
       "permission": "stream.requests.read",
@@ -243,12 +243,109 @@
         },
         "request": {
           "$ref": "#/components/schemas/CloudControlDefinition"
+        },
+        "topic": {
+          "type": "string",
+          "readOnly": true,
+          "description": "Logical subscription topic derived from the compiled business-message entry; not a physical broker subject."
         }
       },
       "required": [
         "id",
         "kind"
       ]
+    },
+    "UnsV2StreamProgramVersionsListResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "list",
+            "total",
+            "page",
+            "size"
+          ],
+          "properties": {
+            "list": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "streamId",
+                  "versionId",
+                  "release",
+                  "status",
+                  "digest",
+                  "document",
+                  "createdAt"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "streamId": {
+                    "type": "string"
+                  },
+                  "versionId": {
+                    "type": "string"
+                  },
+                  "release": {
+                    "type": "integer"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "digest": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "integer"
+                  },
+                  "document": {
+                    "$ref": "#/components/schemas/CloudHistoricalStreamDocument",
+                    "description": "只读历史 JSON：当前 stream.manage 可读取同一 release 的原始 DocumentJSON（包含旧 SDK/字段）；view 仅返回脱敏摘要。不得直接用于创建、验证、部署或恢复，也不代表运行时支持旧 SDK。"
+                  }
+                }
+              }
+            },
+            "total": {
+              "type": "integer"
+            },
+            "page": {
+              "type": "integer"
+            },
+            "size": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudHistoricalStreamDocument": {
+      "type": "object",
+      "readOnly": true,
+      "additionalProperties": true,
+      "description": "Opaque immutable historical document or permission-redacted summary. Old SDK versions and retired metadata remain readable only here; this is never an active Stream write/runtime contract."
     }
   }
 }

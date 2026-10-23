@@ -132,20 +132,23 @@ const insertedShape = client.unsV2.recordInsertOne({ collectionId: 'orders', dat
 });
 void [resourceShape, insertedShape];
 
-// A version row may contain the view-only summary or the frozen manage projection.
+// History is opaque JSON; callers narrow legacy fields before displaying them.
 client.unsV2.streamProgramVersionsList({ id: 'stream-1', page: 1, size: 20 }).then(response => {
   for (const row of response.data.list) {
     const versionID: string = row.versionId;
-    if ('script' in row.document) {
-      const code: string = row.document.script.code;
+    const script = row.document.script;
+    if (script && typeof script === 'object' && !Array.isArray(script) && 'code' in script && typeof script.code === 'string') {
+      const code: string = script.code;
       void code;
-    } else {
-      const configured: boolean | undefined = row.document.scriptConfigured;
-      // @ts-expect-error A summary does not expose the historical script.
-      void row.document.script;
-      void configured;
     }
-    void versionID;
+    const configured = row.document.scriptConfigured;
+    if (typeof configured === 'boolean') {
+      const flag: boolean = configured;
+      void flag;
+    }
+    // @ts-expect-error Historical JSON cannot promise a current script DTO.
+    const currentScript: import('../../src/uns-v2/generated.js').CloudStreamScript = row.document.script;
+    void [versionID, currentScript];
   }
 });
 
@@ -184,3 +187,30 @@ type RetiredControlInvoke = import('../../src/uns-v2/generated.js').CloudControl
 const messageDeclarations: import('../../src/uns-v2/generated.js').CloudStreamDocument['messages'] = [{ topic: 'orders/accepted', access: 'publish' }];
 const requestMetadata: import('../../src/uns-v2/generated.js').CloudStreamEntry['request'] = undefined;
 void [messageDeclarations, requestMetadata];
+
+// Historical documents preserve retired metadata without becoming current writes.
+const oldHistory: import('../../src/uns-v2/generated.js').CloudHistoricalStreamDocument = {
+  script: { sdkVersion: 'tier0-stream/v2', code: 'original source', timeoutMs: 1000 },
+  entries: [{ id: 'old', kind: 'request', control: { code: 'legacy.read' } }],
+};
+const historyRows: import('../../src/uns-v2/generated.js').UnsV2StreamProgramVersionsListResponse['data']['list'] = [
+  { id: '1', streamId: '101', versionId: '1', release: 1, status: 'inactive', digest: 'old', createdAt: 1, document: oldHistory },
+  { id: '2', streamId: '101', versionId: '2', release: 2, status: 'active', digest: 'new', createdAt: 2,
+    document: { name: 'new', model: 'program', script: { sdkVersion: 'tier0-stream/v3', code: 'new source', timeoutMs: 1000 } } },
+];
+void historyRows;
+// @ts-expect-error Opaque history is not a current validated write document.
+client.unsV2.streamDocumentValidate({ document: oldHistory });
+const oldCloudWrite: import('../../src/uns-v2/generated.js').CloudStreamScript = {
+  // @ts-expect-error Current Cloud writes also require v3; history did not widen them.
+  sdkVersion: 'tier0-stream/v2', code: 'old source', timeoutMs: 1000,
+};
+void oldCloudWrite;
+
+const compiledConsumer: import('../../src/uns-v2/generated.js').CloudStreamEntry = {
+  id: 'consumer', kind: 'business-message', topic: 'orders/created',
+};
+const compiledTopic: string | undefined = compiledConsumer.topic;
+void compiledTopic;
+// @ts-expect-error Canonical compiled consumer metadata uses singular topic.
+compiledConsumer.topics;

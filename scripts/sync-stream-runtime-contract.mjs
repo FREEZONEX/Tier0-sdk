@@ -13,7 +13,8 @@ const raw = execFileSync('git', ['show', `${revision}:${source}`], { cwd: backen
 const manifest = JSON.parse(raw);
 const names = ['RuntimeStreamDefinition', 'CloudStreamScript',
   'CloudStreamRuntimeCapabilitiesGetReq', 'CloudStreamRuntimeCapabilitiesGetResponse',
-  'CloudStreamDocument', 'CloudStreamEntry'];
+  'CloudStreamDocument', 'CloudStreamEntry',
+  'UnsV2StreamProgramVersionsListResponse', 'CloudHistoricalStreamDocument'];
 const schemas = Object.fromEntries(names.map(name => {
   assert.ok(manifest.schemas[name], `Missing Stream schema ${name}`);
   return [name, manifest.schemas[name]];
@@ -25,7 +26,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 writeFileSync(resolve(root, 'contracts/uns-v2/stream-runtime.schema-overlay.json'), JSON.stringify({
   version: 'stream-runtime-schema-overlay/v1', repository: 'FREEZONEX/Tier0-Backend', revision, source,
   sourceManifestSHA256: createHash('sha256').update(raw).digest('hex'),
-  scope: 'Current Stream runtime/write DTOs, compiled message metadata and readiness only; unrelated UNS data remains on its separately reviewed baseline.',
+  scope: 'Current Stream runtime/write DTOs, compiled message metadata, read-only history and readiness only; unrelated UNS data remains on its separately reviewed baseline.',
   operationMetadata: Object.fromEntries(['streamRuntimeCapabilitiesGet'].map(name => {
     const operation = manifest.operations.find(operation => operation.name === name);
     assert.ok(operation && !operation.coreOnly, `Missing public operation ${name}`);

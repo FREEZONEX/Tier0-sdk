@@ -33,12 +33,13 @@ if (streamRuntime.version !== 'stream-runtime-schema-overlay/v1' || !/^[0-9a-f]{
 }
 const streamSchemaNames = ['RuntimeStreamDefinition', 'CloudStreamScript',
   'CloudStreamRuntimeCapabilitiesGetReq', 'CloudStreamRuntimeCapabilitiesGetResponse',
-  'CloudStreamDocument', 'CloudStreamEntry'];
+  'CloudStreamDocument', 'CloudStreamEntry',
+  'UnsV2StreamProgramVersionsListResponse', 'CloudHistoricalStreamDocument'];
 if (JSON.stringify(Object.keys(streamRuntime.schemas)) !== JSON.stringify(streamSchemaNames)) {
   fail('Stream runtime overlay must not replace unrelated data schemas');
 }
 for (const name of streamSchemaNames) {
-  if (!manifest.schemas[name]) fail(`missing baseline Stream schema ${name}`);
+  if (!manifest.schemas[name] && name !== 'CloudHistoricalStreamDocument') fail(`missing baseline Stream schema ${name}`);
   manifest.schemas[name] = streamRuntime.schemas[name];
 }
 

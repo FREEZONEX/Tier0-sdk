@@ -11,6 +11,35 @@ describe('UNS v2 lossless numeric boundary', () => {
     expect(text).not.toMatch(/connection|credential|Capture/);
   });
 
+  it('round-trips mixed v2/v3 immutable history arrays through the read-only document codec', () => {
+    const legacy = {
+      name: 'legacy release', script: { sdkVersion: 'tier0-stream/v2', code: ' old source\\n', timeoutMs: 1000 },
+      entries: [{ id: 'legacy', kind: 'request', control: { code: 'legacy.read' }, config: { values: [null, true, { numeric: 'business' }] } }],
+      manifest: { sdkVersion: 'tier0-stream/v2', entries: [{ control: { code: 'legacy.read' } }] },
+    };
+    const current = {
+      name: 'current release', script: { sdkVersion: 'tier0-stream/v3', code: 'new source', timeoutMs: 1000 },
+      entries: [{ id: 'consumer', kind: 'business-message', topic: 'orders/created', config: { topic: 'orders/created' } }],
+      messages: [{ topic: 'orders/accepted', access: 'publish' }],
+    };
+    const documents = [legacy, current, { sdkVersion: 'tier0-stream/v2', scriptConfigured: true }, {}];
+    const response = { code: 200, msg: 'ok', requestId: 'history-array', data: {
+      list: documents.map((document, index) => ({ id: String(index + 1), streamId: '101', versionId: String(index + 1),
+        release: index + 1, status: 'inactive', digest: `digest-${index}`, document, createdAt: 1700000000000 })),
+      total: documents.length, page: 1, size: 20,
+    } };
+    const raw = JSON.stringify(response);
+    const decoded = decodeUnsV2JSON(raw, 'UnsV2StreamProgramVersionsListResponse') as typeof response;
+    expect(decoded).toEqual(response);
+    expect(encodeUnsV2JSON(decoded, 'UnsV2StreamProgramVersionsListResponse')).toBe(raw);
+    // Historical unknown fields stay opaque, including values outside current
+    // write DTO integer rules; no validation or migration occurs while reading.
+    const opaqueRaw = '{"script":{"sdkVersion":"tier0-stream/v2","timeoutMs":1.5},"legacyValues":[9007199254740993,1.0000000000000001]}';
+    const opaque = decodeUnsV2JSON(opaqueRaw, 'CloudHistoricalStreamDocument') as { legacyValues: unknown[] };
+    expect(opaque.legacyValues).toEqual([new UnsV2RawNumber('9007199254740993'), new UnsV2RawNumber('1.0000000000000001')]);
+    expect(encodeUnsV2JSON(opaque, 'CloudHistoricalStreamDocument')).toBe(opaqueRaw);
+  });
+
   it('keeps safe schema numbers as numbers on both sides', () => {
     expect(encodeUnsV2JSON({ page: 12, size: 20 }, 'PlatformV2JobListReq')).toBe('{"page":12,"size":20}');
     expect(decodeUnsV2JSON('{"page":12,"size":20}', 'PlatformV2JobListReq')).toEqual({ page: 12, size: 20 });

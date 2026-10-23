@@ -36,15 +36,20 @@ describe('Backend App UNS access contract without generic record audit', () => {
 
   it('pins current Stream write schemas independently of the retained data baseline', () => {
     expect(UNS_V2_CONTRACT_PROVENANCE.streamRuntimeSchemaRevision).toBe(streamRuntime.revision);
-    expect(streamRuntime.revision).toBe('c044bbea98acc3b9d2bcfb6ea597853c47b4f173');
+    expect(streamRuntime.revision).toBe('d71a38869b075d18df28540e30fbf955bdfb22c6');
     expect(streamRuntime.sourceManifestSHA256).toMatch(/^[0-9a-f]{64}$/);
     expect(Object.keys(streamRuntime.schemas)).toEqual([
       'RuntimeStreamDefinition', 'CloudStreamScript',
       'CloudStreamRuntimeCapabilitiesGetReq', 'CloudStreamRuntimeCapabilitiesGetResponse',
       'CloudStreamDocument', 'CloudStreamEntry',
+      'UnsV2StreamProgramVersionsListResponse', 'CloudHistoricalStreamDocument',
     ]);
+    expect(streamRuntime.schemas.CloudHistoricalStreamDocument).toMatchObject({ type: 'object', readOnly: true, additionalProperties: true });
+    expect(streamRuntime.schemas.UnsV2StreamProgramVersionsListResponse.properties.data.properties.list.items.properties.document.$ref).toBe('#/components/schemas/CloudHistoricalStreamDocument');
     expect(streamRuntime.schemas.CloudStreamDocument.properties.messages.readOnly).toBe(true);
     expect(streamRuntime.schemas.CloudStreamEntry.properties.request).toBeDefined();
+    expect(streamRuntime.schemas.CloudStreamEntry.properties.topic).toMatchObject({ type: 'string', readOnly: true });
+    expect(streamRuntime.schemas.CloudStreamEntry.properties.topics).toBeUndefined();
     expect(streamRuntime.schemas.CloudStreamEntry.properties.control).toBeUndefined();
     expect(UNS_V2_OPERATIONS.streamRuntimeCapabilitiesGet.scope).toBe('stream_request:read');
     for (const name of ['RuntimeStreamDefinition', 'CloudStreamScript']) {
