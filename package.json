@@ -36,6 +36,16 @@
       "types": "./dist/esm/mq/index.d.ts",
       "import": "./dist/esm/mq/index.js",
       "require": "./dist/cjs/mq/index.js"
+    },
+    "./runtime": {
+      "types": "./dist/esm/runtime.d.ts",
+      "import": "./dist/esm/runtime.js",
+      "require": "./dist/cjs/runtime.js"
+    },
+    "./streams": {
+      "types": "./dist/esm/streams/index.d.ts",
+      "import": "./dist/esm/streams/index.js",
+      "require": "./dist/cjs/streams/index.js"
     }
   },
   "files": [
@@ -83,7 +93,7 @@
     "build:esm": "tsc -p tsconfig.esm.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "generate": "bash scripts/generate-openapi.sh",
-    "typecheck": "tsc --noEmit && tsc --noEmit --strict --skipLibCheck --module nodenext --target es2020 tests/openapi/notifications.types.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit --strict --skipLibCheck --module nodenext --target es2020 tests/openapi/notifications.types.ts tests/streams.types.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
@@ -93,6 +103,8 @@
     "vue": "^3.4.0"
   },
   "dependencies": {
+    "@nats-io/nats-core": "^3.4.0",
+    "@nats-io/nkeys": "^2.0.3",
     "mqtt": "^5.3.0"
   },
   "devDependencies": {
