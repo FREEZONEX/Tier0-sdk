@@ -18,19 +18,49 @@ const manifest = JSON.parse(read('manifest.json')) as {
 };
 const contract = JSON.parse(read('contract.json')) as { operations: Operation[] };
 const registry = read('registry_generated.go');
+const streamRuntime = JSON.parse(read('stream-runtime.schema-overlay.json'));
 const operation = (name: string) => manifest.operations.find(item => item.name === name)!;
 
 describe('Backend App UNS access contract without generic record audit', () => {
   it('pins the exact upstream commit and all generator inputs', () => {
     expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('6c111671a2172eb14c38f2f6d9ec329f4ee08a3d');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    for (const [key, file] of Object.entries({ contract: 'contract.json', cloudSupport: 'cloud-support.json', manifest: 'manifest.json', provenance: 'provenance.json', registry: 'registry_generated.go' })) {
+    for (const [key, file] of Object.entries({ contract: 'contract.json', cloudSupport: 'cloud-support.json', manifest: 'manifest.json', provenance: 'provenance.json', registry: 'registry_generated.go', streamRuntime: 'stream-runtime.schema-overlay.json' })) {
       expect(UNS_V2_CONTRACT_PROVENANCE.hashes[key as keyof typeof UNS_V2_CONTRACT_PROVENANCE.hashes]).toBe(
         createHash('sha256').update(read(file)).digest('hex')
       );
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
     expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(114);
+  });
+
+  it('pins current Stream write schemas independently of the retained data baseline', () => {
+    expect(UNS_V2_CONTRACT_PROVENANCE.streamRuntimeSchemaRevision).toBe(streamRuntime.revision);
+    expect(streamRuntime.revision).toBe('c044bbea98acc3b9d2bcfb6ea597853c47b4f173');
+    expect(streamRuntime.sourceManifestSHA256).toMatch(/^[0-9a-f]{64}$/);
+    expect(Object.keys(streamRuntime.schemas)).toEqual([
+      'RuntimeStreamDefinition', 'CloudStreamScript',
+      'CloudStreamRuntimeCapabilitiesGetReq', 'CloudStreamRuntimeCapabilitiesGetResponse',
+      'CloudStreamDocument', 'CloudStreamEntry',
+    ]);
+    expect(streamRuntime.schemas.CloudStreamDocument.properties.messages.readOnly).toBe(true);
+    expect(streamRuntime.schemas.CloudStreamEntry.properties.request).toBeDefined();
+    expect(streamRuntime.schemas.CloudStreamEntry.properties.control).toBeUndefined();
+    expect(UNS_V2_OPERATIONS.streamRuntimeCapabilitiesGet.scope).toBe('stream_request:read');
+    for (const name of ['RuntimeStreamDefinition', 'CloudStreamScript']) {
+      expect(streamRuntime.schemas[name].properties.sdkVersion.enum).toEqual(['tier0-stream/v3']);
+    }
+  });
+
+  it('does not expose retired App policy or request execution management contracts', () => {
+    const generated = readFileSync(new URL('../../src/uns-v2/generated.ts', import.meta.url), 'utf8');
+    for (const retired of ['hostedControl', 'controlProfileVersion', 'cloud-control-app/', 'cloud-hosted-app-control/',
+      'CloudControlDiscoverReq', 'CloudControlDescribeReq', 'CloudControlInvokeReq']) {
+      expect(generated).not.toContain(retired);
+    }
+    for (const retired of ['controlDiscover', 'controlDescribe', 'controlInvoke', 'controlAppCreate', 'hostedAppControlPolicyUpdate']) {
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, retired)).toBe(false);
+    }
   });
 
   it('does not export retired Project member schemas or Project capabilities', () => {

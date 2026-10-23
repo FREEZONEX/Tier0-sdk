@@ -8,7 +8,7 @@ const definition = {
   inputSchema: { type: 'object' }, outputSchema: {}, sideEffect: 'write',
   idempotency: 'required', timeoutMs: 15000, status: 'active',
 };
-const result = { code: 'pump.start', contractVersion: '1', result: { started: true }, runID: 'http-run', status: 'succeeded', replayed: false };
+const result = { code: 'pump.start', contractVersion: '1', result: { started: true }, runID: 'http-run', status: 'completed', replayed: false };
 type RequestRecord = { path?: string; method?: string; headers: IncomingMessage['headers']; body: unknown };
 const received: RequestRecord[] = [];
 let respond: (req: IncomingMessage, res: ServerResponse) => void;
@@ -72,6 +72,19 @@ describe('StreamRequest real HTTP fixture (no external credentials)', () => {
     expect(error).toMatchObject({ status, errorCode, retryable: false });
     expect(error instanceof StreamRequestResultUnknownError).toBe(errorCode === 'STREAM_REQUEST_RESULT_UNKNOWN');
     expect(received.length - start).toBe(1);
+  });
+
+  it.each(['unknown', 'failed', 'succeeded', 'running'])
+  ('rejects actual HTTP 200 with non-success status %s, retaining receipts and one POST', async status => {
+    const start = received.length;
+    respond = (_req, res) => send(res, { ...result, status, replayed: true });
+    const error = await control().invoke({}, { idempotencyKey: 'stable-status-intent' }).catch(e => e);
+    expect(error).toBeInstanceOf(StreamRequestResultUnknownError);
+    expect(error).toMatchObject({ status: 200, runStatus: status, runID: result.runID,
+      contractVersion: result.contractVersion, replayed: true, outcomeUnknown: true, retryable: false });
+    await new Promise(resolve => setTimeout(resolve, 20));
+    expect(received.length - start).toBe(1);
+    expect(received[start].body).toEqual({ input: {}, idempotencyKey: 'stable-status-intent' });
   });
 
   it('requires an explicit call with the same key to replay', async () => {

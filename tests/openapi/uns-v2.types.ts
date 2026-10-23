@@ -14,9 +14,15 @@ import {
 const client = createClient({ apiHost: 'https://example.invalid', apiKey: 'workspace-bound' });
 // Native runtime DTO from the pinned source; hosted Cloud documents retain their own shape.
 const nativeDefinition: RuntimeStreamDefinition = {
-  name: 'native-http', script: '', sdkVersion: 'tier0-stream/v2',
+  name: 'native-http', script: '', sdkVersion: 'tier0-stream/v3',
   sourceBindings: [{ sourceId: '101', configRevision: new UnsV2RawNumber('9007199254740993'), acquisition: {} }],
 };
+const retiredNativeVersion: RuntimeStreamDefinition = {
+  ...nativeDefinition,
+  // @ts-expect-error Current Stream writes require v3; v2 exists only in frozen history.
+  sdkVersion: 'tier0-stream/v2',
+};
+void retiredNativeVersion;
 const invalidBinding: NonNullable<RuntimeStreamDefinition['sourceBindings']>[number] = {
   sourceId: '101', acquisition: {},
   // @ts-expect-error Native binding revision must be an exact integer, not a string.
@@ -58,7 +64,7 @@ const streamObservation = client.unsV2.streamObservationGet({ id: '202' });
 const runs = client.unsV2.streamRunsList({ id: '202', size: 20, cursor: 'opaque' });
 const documentValidation = client.unsV2.streamDocumentValidate({ document: {
   name: 'collector', model: 'collection',
-  script: { sdkVersion: 'tier0-stream/v2', code: 'module.exports = api => api;', timeoutMs: 1_000 },
+  script: { sdkVersion: 'tier0-stream/v3', code: 'module.exports = api => api;', timeoutMs: 1_000 },
   sources: [{ alias: 'plant', sourceId: 'source-1', configRevision: 2, resources: ['line/1'] }],
 } });
 const operation: UnsV2OperationName = 'recordInsertOne';
@@ -172,3 +178,9 @@ const invalidAppMembersBody: Parameters<typeof appsApi.openapiV1Appslistaccessme
 };
 void appMembersBody;
 void invalidAppMembersBody;
+
+// @ts-expect-error Retired execution DTOs are not management contracts.
+type RetiredControlInvoke = import('../../src/uns-v2/generated.js').CloudControlInvokeReq;
+const messageDeclarations: import('../../src/uns-v2/generated.js').CloudStreamDocument['messages'] = [{ topic: 'orders/accepted', access: 'publish' }];
+const requestMetadata: import('../../src/uns-v2/generated.js').CloudStreamEntry['request'] = undefined;
+void [messageDeclarations, requestMetadata];

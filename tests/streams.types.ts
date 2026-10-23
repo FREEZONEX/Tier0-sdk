@@ -3,6 +3,8 @@ import { installAppRuntime } from '../src/runtime.js';
 
 const request = client.streams.requests.use<{ value: number }, { accepted: boolean }>({ code: 'pump.start' });
 void request.invoke({ value: 1 }, { idempotencyKey: 'one-intent' }).then(result => {
+  const status: 'completed' = result.status;
+  void status;
   const accepted: boolean = result.result.accepted;
   return accepted;
 });

@@ -1,0 +1,254 @@
+{
+  "version": "stream-runtime-schema-overlay/v1",
+  "repository": "FREEZONEX/Tier0-Backend",
+  "revision": "c044bbea98acc3b9d2bcfb6ea597853c47b4f173",
+  "source": "share/unscontract/manifest.json",
+  "sourceManifestSHA256": "cddaf477a85eb51bea5a566b349b6b9a09ff97e7aeb85a7c8cd94ef5f77084fa",
+  "scope": "Current Stream runtime/write DTOs, compiled message metadata and readiness only; unrelated UNS data remains on its separately reviewed baseline.",
+  "operationMetadata": {
+    "streamRuntimeCapabilitiesGet": {
+      "permission": "stream.requests.read",
+      "scope": "stream_request:read",
+      "minPermission": 1
+    }
+  },
+  "schemas": {
+    "RuntimeStreamDefinition": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "maxLength": 512,
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "name": {
+          "maxLength": 63,
+          "minLength": 1,
+          "type": "string"
+        },
+        "script": {
+          "description": "Complete module.exports=api=>{...} program; uses api.source.use/api.uns.use/api.stream registration, not a transform function body",
+          "maxLength": 131072,
+          "minLength": 1,
+          "type": "string",
+          "writeOnly": true
+        },
+        "sdkVersion": {
+          "enum": [
+            "tier0-stream/v3"
+          ],
+          "type": "string"
+        },
+        "timeoutMs": {
+          "default": 1000,
+          "maximum": 60000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "sourceBindings": {
+          "type": "array",
+          "maxItems": 64,
+          "description": "按 Source ID 唯一绑定当前修订和 Stream 采集参数；连接、认证和 TLS 仅从 Source 读取。HTTP acquisition 为 {}。native 写入目标由服务器冻结 selector/mapping 配置决定，不接受脚本 Capture。",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sourceId",
+              "configRevision",
+              "acquisition"
+            ],
+            "properties": {
+              "sourceId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]*$",
+                "maxLength": 19
+              },
+              "configRevision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "acquisition": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "协议专用采集参数，由 Source 协议校验；不得携带连接或凭据。"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "sdkVersion",
+        "name",
+        "script"
+      ],
+      "type": "object"
+    },
+    "CloudStreamScript": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sdkVersion": {
+          "type": "string",
+          "enum": [
+            "tier0-stream/v3"
+          ]
+        },
+        "code": {
+          "type": "string"
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30000
+        }
+      },
+      "required": [
+        "sdkVersion",
+        "code",
+        "timeoutMs"
+      ]
+    },
+    "CloudStreamRuntimeCapabilitiesGetReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {},
+      "required": []
+    },
+    "CloudStreamRuntimeCapabilitiesGetResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "controlInvokeReady": {
+              "type": "boolean"
+            },
+            "scriptContractVersion": {
+              "type": "string"
+            },
+            "controlMetadataReady": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "controlInvokeReady",
+            "scriptContractVersion",
+            "controlMetadataReady"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ]
+    },
+    "CloudStreamDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "script": {
+          "$ref": "#/components/schemas/CloudStreamScript"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/CloudSourceBinding"
+          }
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/CloudStreamEntry"
+          }
+        },
+        "messages": {
+          "type": "array",
+          "readOnly": true,
+          "maxItems": 32,
+          "description": "Declarations derived from the compiled release manifest; not current runtime readiness or authorization. Never contains physical broker subjects.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "topic",
+              "access"
+            ],
+            "properties": {
+              "topic": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,127}$"
+              },
+              "access": {
+                "type": "string",
+                "enum": [
+                  "publish"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "name",
+        "model",
+        "script"
+      ],
+      "description": "Existing cloud deployment document, including script, frozen Source aliases and entries. Manage permission is required for full editor access. This is not an Enterprise shared transform."
+    },
+    "CloudStreamEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "request": {
+          "$ref": "#/components/schemas/CloudControlDefinition"
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ]
+    }
+  }
+}

@@ -72,7 +72,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     respond = (req, res) => {
       if (req.url === '/openapi/v1/stream-requests/discover') send(res, { total: 0, list: [] });
       else if (req.url === '/openapi/v1/stream-requests/pump.start/invoke') send(res, {
-        code: 'pump.start', contractVersion: '1', result: {}, runID: 'fixture-run', status: 'succeeded', replayed: false,
+        code: 'pump.start', contractVersion: '1', result: {}, runID: 'fixture-run', status: 'completed', replayed: false,
       });
       else if (req.url === '/openapi/v1/capabilities/discover') send(res, {
         product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1'],
@@ -96,7 +96,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
   it('keeps the existing runtime capability query outside App data delegation', async () => {
     const start = received.length;
     const response = { code: 200, msg: '', requestId: 'runtime-capability', data: {
-      controlInvokeReady: true, scriptContractVersion: 'tier0-stream/v2', controlMetadataReady: true,
+      controlInvokeReady: true, scriptContractVersion: 'tier0-stream/v3', controlMetadataReady: true,
     } };
     respond = (_req, res) => send(res, response);
     const api = createClient({ apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: 'gateway.user.signature' });
@@ -289,7 +289,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     const start = received.length;
     respond = (_req, res) => send(res, { code: 503, msg: 'sample runtime unavailable', requestId: 'sample-unavailable' }, 503);
     const api = client().unsV2;
-    await expect(api.streamSampleTest({ document: { name: 'sample', model: 'script', script: { sdkVersion: 'tier0-stream/v2', code: '', timeoutMs: 1000 } }, entryId: 'sample', input: { value: 1 } })).rejects.toBeInstanceOf(UnsV2Error);
+    await expect(api.streamSampleTest({ document: { name: 'sample', model: 'script', script: { sdkVersion: 'tier0-stream/v3', code: '', timeoutMs: 1000 } }, entryId: 'sample', input: { value: 1 } })).rejects.toBeInstanceOf(UnsV2Error);
     expect(received.slice(start)).toHaveLength(1);
     expect(received[start].path).toBe('/openapi/v2/uns/streams/sample/test');
     const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
@@ -330,6 +330,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
 
   it('preserves summary and immutable full history projections without a restore request', async () => {
     const start = received.length;
+    // Explicit historical v2 snapshots must remain unchanged after the v3 upgrade.
     const summary = { name: 'history', sdkVersion: 'tier0-stream/v2', timeoutMs: 5000, scriptConfigured: true };
     const document = {
       name: 'frozen history', model: 'program',
@@ -604,7 +605,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     });
     await client().unsV2.streamDocumentValidate({ document: {
       name: 'collector', model: 'collection',
-      script: { sdkVersion: 'tier0-stream/v2', code: 'module.exports = api => api;', timeoutMs: 1_000 },
+      script: { sdkVersion: 'tier0-stream/v3', code: 'module.exports = api => api;', timeoutMs: 1_000 },
       sources: [{ alias: 'plant', sourceId: 'source-1', configRevision: 2, resources: ['line/1', 'line/2'] }],
     } });
     expect(JSON.parse(received[start].body)).toMatchObject({

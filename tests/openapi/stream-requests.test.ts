@@ -7,7 +7,7 @@ const contract = {
   inputSchema: { type: 'object' }, outputSchema: {}, sideEffect: 'write',
   idempotency: 'required', timeoutMs: 12000, status: 'active',
 };
-const result = { code: 'pump.start', contractVersion: 'v1', result: null, runID: 'run-1', status: 'succeeded', replayed: false };
+const result = { code: 'pump.start', contractVersion: 'v1', result: null, runID: 'run-1', status: 'completed', replayed: false };
 const client = () => createClient({ apiHost: 'https://cloud.example', apiKey: 'fixture-key' });
 const handle = () => client().streams.requests.use({ code: 'pump.start' });
 const reply = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status });
@@ -101,6 +101,39 @@ describe('Cloud StreamRequest single-attempt transport', () => {
     expect(error).toMatchObject({ status: 200, errorCode: 'STREAM_REQUEST_PROTOCOL_ERROR' });
     if (value && 'runID' in value) expect(error.runID).toBe(value.runID);
     expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['unknown', 'failed', 'succeeded', 'accepted', 'queued', 'pending', 'running', 'cancelled', 'future-terminal', ''])
+  ('rejects HTTP 200 status %s without claiming completion or retrying', async status => {
+    const fetch = vi.fn().mockResolvedValue(reply({ ...result, status, replayed: true }));
+    vi.stubGlobal('fetch', fetch);
+    const error = await handle().invoke({}, { idempotencyKey: 'same-intent' }).catch(e => e);
+    expect(error).toBeInstanceOf(StreamRequestResultUnknownError);
+    expect(error).toMatchObject({ status: 200, errorCode: 'STREAM_REQUEST_PROTOCOL_ERROR',
+      runID: result.runID, contractVersion: result.contractVersion, runStatus: status, replayed: true, retryable: false });
+    expect(fetch).toHaveBeenCalledOnce();
+  });
+
+  it.each(['<html>opaque SWE failure secret</html>', '{"error":"opaque SWE failure secret"}'])
+  ('fails closed on an opaque trusted SWE Response without exposing its body', async body => {
+    const symbol = Symbol.for('tier0.sdk.app-runtime.v1');
+    const previous = Reflect.get(globalThis, symbol);
+    const request = vi.fn().mockResolvedValue(new Response(body, { status: 200 }));
+    Reflect.set(globalThis, symbol, { appId: 'trusted-app', request });
+    try {
+      const sdk = createClient();
+      try {
+        const error = await sdk.streams.requests.use({ code: 'pump.start' }).invoke({}, { idempotencyKey: 'same-intent' }).catch(e => e);
+        expect(error).toBeInstanceOf(StreamRequestResultUnknownError);
+        expect(error).toMatchObject({ status: 200, outcomeUnknown: true, retryable: false });
+        expect(String(error)).not.toContain('secret');
+        expect(JSON.stringify(error)).not.toContain('secret');
+        expect(request).toHaveBeenCalledOnce();
+      } finally { await sdk.dispose(); }
+    } finally {
+      if (previous === undefined) Reflect.deleteProperty(globalThis, symbol);
+      else Reflect.set(globalThis, symbol, previous);
+    }
   });
 
   it('preserves run metadata on unknown gateway errors', async () => {

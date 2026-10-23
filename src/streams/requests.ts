@@ -38,12 +38,13 @@ export interface StreamRequestInvokeOptions {
   idempotencyKey?: string;
 }
 
-export interface StreamRequestInvokeResponse<Result = StreamJSON> extends Omit<components['schemas']['StreamRequestInvokeResp'], 'result'> {
+export interface StreamRequestInvokeResponse<Result = StreamJSON> extends Omit<components['schemas']['StreamRequestInvokeResp'], 'result' | 'status'> {
   code: string;
   contractVersion: string;
   result: Result;
   runID: string;
-  status: string;
+  /** Persisted request ledger success; all other states reject conservatively. */
+  status: 'completed';
   /** True only when the server explicitly reports an idempotent replay. */
   replayed: boolean;
 }
@@ -221,7 +222,7 @@ export class StreamRequestsClient {
         }, true);
         if (!record(value) || value.code !== code || typeof value.contractVersion !== 'string' || !value.contractVersion ||
             !Object.prototype.hasOwnProperty.call(value, 'result') || typeof value.runID !== 'string' || !value.runID ||
-            typeof value.status !== 'string' || !value.status || ['accepted', 'queued', 'pending', 'running'].includes(value.status) ||
+            value.status !== 'completed' ||
             typeof value.replayed !== 'boolean') {
           throw new StreamRequestResultUnknownError({ ...runInfo(value), status, errorCode: 'STREAM_REQUEST_PROTOCOL_ERROR' });
         }

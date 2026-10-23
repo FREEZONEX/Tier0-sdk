@@ -9,7 +9,7 @@ const provenance = JSON.parse(read('streams-provenance.json'));
 
 describe('committed public Stream contract projection', () => {
   it('pins the public contract and independently reviewed trust commit', () => {
-    expect(provenance.revision).toBe('dd2a057741f5ab80c8725e301c713e9d3db785ed');
+    expect(provenance.revision).toBe('c044bbea98acc3b9d2bcfb6ea597853c47b4f173');
     expect(provenance.trustRevision).toMatch(/^5eecd2188[0-9a-f]+$/);
     expect(provenance.snapshotSHA256).toBe(createHash('sha256').update(raw).digest('hex'));
     expect(provenance.sourceSHA256).toMatch(/^[0-9a-f]{64}$/);
