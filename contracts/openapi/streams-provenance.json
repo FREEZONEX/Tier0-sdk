@@ -1,0 +1,9 @@
+{
+  "repository": "FREEZONEX/Tier0-Backend",
+  "revision": "dd2a057741f5ab80c8725e301c713e9d3db785ed",
+  "source": "service/gwsvr/internal/handler/swaggerui/swagger.json",
+  "sourceSHA256": "9993b3c9bcccf4e1f35048db1edc95d3de6f387172906fecbcca3160db51069c",
+  "snapshotSHA256": "dc6185851f70211af235d0141fd762cb2d9320db65b57dc45f13b9a2dedea9fc",
+  "trustRevision": "5eecd2188772a73c5103f721e2ff63ce0fb3f227",
+  "scope": "Public Stream requests, message connection and capability discovery only. UNS data remains on the separately pinned Cloud SDK baseline; no UNS v5 migration or SYS/GW/browser acceptance is asserted."
+}

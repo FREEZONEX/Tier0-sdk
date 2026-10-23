@@ -113,7 +113,10 @@
     "test:cloud-app": "node scripts/test-cloud-uns-app.mjs",
     "generate:uns-v2": "node scripts/generate-uns-v2.mjs",
     "check:uns-v2-contract": "node scripts/generate-uns-v2.mjs --check",
-    "sync:app-identity": "node scripts/sync-app-identity-contract.mjs"
+    "sync:app-identity": "node scripts/sync-app-identity-contract.mjs",
+    "sync:stream-contract": "node scripts/sync-stream-contract.mjs",
+    "generate:stream-contract": "openapi-typescript contracts/openapi/streams.swagger.json -o src/streams/contract.generated.ts --default-non-nullable=false",
+    "check:stream-contract": "node scripts/sync-stream-contract.mjs --check && openapi-typescript contracts/openapi/streams.swagger.json -o src/streams/contract.generated.ts --default-non-nullable=false --check"
   },
   "optionalDependencies": {
     "@tanstack/react-query": "^5.0.0",

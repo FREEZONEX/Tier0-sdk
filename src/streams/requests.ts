@@ -1,8 +1,9 @@
 import { StreamTransport, StreamTransportError, DEFAULT_STREAM_TRANSPORT_TIMEOUT_MS, type StreamTransportConfig } from './transport.js';
+import type { components } from './contract.generated.js';
 /** Public request contracts do not expose runtime bindings. */
 export type StreamJSON = null | boolean | number | string | StreamJSON[] | { [key: string]: StreamJSON };
 
-export interface PublicStreamRequest {
+export interface PublicStreamRequest extends Omit<components['schemas']['PublicStreamRequest'], 'inputSchema' | 'outputSchema' | 'sideEffect' | 'idempotency'> {
   code: string;
   name: string;
   description: string;
@@ -15,7 +16,8 @@ export interface PublicStreamRequest {
   status: string;
 }
 
-export interface StreamRequestDiscoverOptions {
+type WireDiscovery = components['schemas']['StreamRequestDiscoverReq'];
+export interface StreamRequestDiscoverOptions extends WireDiscovery {
   page?: number;
   size?: number;
   search?: string;
@@ -36,7 +38,7 @@ export interface StreamRequestInvokeOptions {
   idempotencyKey?: string;
 }
 
-export interface StreamRequestInvokeResponse<Result = StreamJSON> {
+export interface StreamRequestInvokeResponse<Result = StreamJSON> extends Omit<components['schemas']['StreamRequestInvokeResp'], 'result'> {
   code: string;
   contractVersion: string;
   result: Result;
@@ -228,4 +230,3 @@ export class StreamRequestsClient {
     };
   }
 }
-

@@ -4,6 +4,7 @@ import { getCurrentAppId } from '../runtime-context.js';
 import { onAppRuntimeDispose } from '../runtime.js';
 import type { StreamJSON } from './requests.js';
 import { StreamTransport } from './transport.js';
+import type { components } from './contract.generated.js';
 
 export interface StreamMessage<Payload = StreamJSON> {
   version: 'stream-messages/v1';
@@ -35,8 +36,11 @@ export class StreamMessageError extends Error {
   }
 }
 
-interface Permission { topic: string; publishSubject?: string; subscribeSubject?: string }
-interface Ticket {
+// SYS omits the ungranted direction; Swagger currently marks both fields required.
+interface Permission extends Partial<Omit<components['schemas']['StreamMessageGrantedTopic'], 'topic'>> {
+  topic: string;
+}
+interface Ticket extends Omit<components['schemas']['StreamMessagesConnectResp'], 'contractVersion' | 'permissions'> {
   contractVersion: 'stream-messages/v1';
   url: string;
   userJwt: string;
@@ -74,13 +78,13 @@ function envelope(value: unknown, maxPayload: number): value is StreamMessage {
   return encoder.encode(JSON.stringify(value.payload)).length <= maxPayload;
 }
 
-/** One permission-scoped connection. Reconnection always obtains a fresh JWT. */
+/** One permission-scoped session. Every connection gets a fresh key and JWT. */
 class MessageSession implements StreamMessageSubscription {
   disposed = false;
   private connection?: NatsConnection;
   private subscription?: Subscription;
   private connecting?: Promise<void>;
-  private key?: KeyPair;
+  private watching?: Promise<void>;
   private abort = new AbortController();
   private reconnectTimer?: ReturnType<typeof setTimeout>;
   private expiryTimer?: ReturnType<typeof setTimeout>;
@@ -126,18 +130,22 @@ class MessageSession implements StreamMessageSubscription {
 
   private async open(): Promise<void> {
     let nc: NatsConnection | undefined;
+    let key: KeyPair | undefined;
+    let watched = false;
     try {
       // HTTP-only Cloud Apps must not load broker libraries or require their dependencies.
       const [{ jwtAuthenticator, wsconnect }, { createUser }] = await Promise.all([
         import('@nats-io/nats-core'), import('@nats-io/nkeys'),
       ]);
       if (this.disposed) return;
-      this.key ??= createUser();
+      const connectionKey = createUser();
+      key = connectionKey;
       const appId = this.transport.runtime()?.appId ?? getCurrentAppId();
-      const { value, ok } = await this.transport.post('/openapi/v1/stream-messages/connect', {
+      const request: components['schemas']['StreamMessagesConnectReq'] = {
         appId, topics: [{ topic: this.topic, publish: this.mode === 'publish', subscribe: this.mode === 'subscribe' }],
-        clientPublicKey: this.key.getPublicKey(),
-      }, this.abort.signal);
+        clientPublicKey: connectionKey.getPublicKey(),
+      };
+      const { value, ok } = await this.transport.post('/openapi/v1/stream-messages/connect', request, this.abort.signal);
       const ticket = this.ticket(value, ok);
       if (this.disposed) return;
       const permission = ticket.permissions[0];
@@ -147,12 +155,13 @@ class MessageSession implements StreamMessageSubscription {
       nc = await wsconnect({
         servers: [ticket.url], reconnect: false, waitOnFirstConnect: false,
         ignoreClusterUpdates: true, timeout: 10_000,
-        authenticator: jwtAuthenticator(ticket.userJwt, () => this.key!.getSeed()),
+        authenticator: jwtAuthenticator(ticket.userJwt, () => connectionKey.getSeed()),
       });
       if (this.disposed) { await nc.close(); return; }
       this.connection = nc;
       this.brokerError = undefined;
-      void this.watch(nc);
+      watched = true;
+      this.watching = this.watch(nc, connectionKey);
       if (this.mode === 'subscribe') {
         this.subscription = nc.subscribe(this.subject, { callback: (error, msg) => {
           if (this.disposed || this.connection !== nc) return;
@@ -190,6 +199,13 @@ class MessageSession implements StreamMessageSubscription {
       if (nc) await nc.close();
       if (this.disposed) return;
       throw error instanceof StreamMessageError ? error : fail('CONNECT_FAILED', 'Stream messages connection failed.');
+    } finally {
+      // Before a successful handoff, this attempt owns its key, including when
+      // the issuer or dial fails. A live connection's watcher owns later wiping.
+      if (!watched) {
+        await nc?.close();
+        key?.clear();
+      }
     }
   }
 
@@ -227,7 +243,7 @@ class MessageSession implements StreamMessageSubscription {
     return value as unknown as Ticket;
   }
 
-  private async watch(nc: NatsConnection): Promise<void> {
+  private async watch(nc: NatsConnection, key: KeyPair): Promise<void> {
     try {
       for await (const status of nc.status()) {
         if (this.disposed || this.connection !== nc) break;
@@ -242,6 +258,10 @@ class MessageSession implements StreamMessageSubscription {
     } catch {
       if (!this.disposed) this.report(fail('CONNECTION_LOST', 'Stream messages connection lost.'));
     } finally {
+      // Close even if the status iterator failed. A replacement must never be
+      // issued while the prior, potentially wider, authenticated socket is live.
+      await nc.close();
+      key.clear();
       if (this.connection === nc) {
         this.connection = undefined;
         this.connected = false;
@@ -295,8 +315,8 @@ class MessageSession implements StreamMessageSubscription {
     this.disposing = (async () => {
       await this.connection?.close();
       await this.connecting?.catch(() => undefined);
+      await this.watching;
       this.connection = undefined;
-      this.key?.clear();
       this.remove();
     })();
     return this.disposing;

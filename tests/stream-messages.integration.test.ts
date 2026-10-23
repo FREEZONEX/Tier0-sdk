@@ -130,15 +130,16 @@ describe.skipIf(!fixture).sequential('Stream messages production Go issuer + nat
     const originals = tickets.slice();
     // Fixture TTL is the production issuer's minimum 10s, never a fake clock.
     const originalExpiry = Math.max(...originals.map(ticket => Date.parse(ticket.expiresAt)));
-    await until(async () => tickets, values => originals.every(original => values.some(ticket =>
-      ticket.clientPublicKey === original.clientPublicKey && Date.parse(ticket.expiresAt) > Date.parse(original.expiresAt))), 15_000);
+    await until(async () => tickets, values => values.length >= 4 &&
+      values.slice(2).every(ticket => Date.parse(ticket.expiresAt) > originalExpiry), 15_000);
     await until(() => fixtureControl('/__fixture/stats'), stats => stats.connections === 2 && stats.subscriptions === 1);
     await delay(Math.max(0, originalExpiry - Date.now()) + 150);
     const second = await out.publish({ stage: 'after original JWT expired' });
     await until(async () => received, values => values.length === 2);
     expect(received).toEqual([first, second]);
-    expect(new Set(tickets.map(ticket => ticket.clientPublicKey)).size).toBe(2);
+    expect(new Set(tickets.map(ticket => ticket.clientPublicKey)).size).toBe(tickets.length);
     expect(tickets.length).toBeGreaterThanOrEqual(4);
+    expect(new Set(tickets.map(ticket => ticket.clientPublicKey)).size).toBe(tickets.length);
     expect(errors).toEqual([]);
   }, 25_000);
 
@@ -162,6 +163,7 @@ describe.skipIf(!fixture).sequential('Stream messages production Go issuer + nat
     await delay(200);
     expect(received).toEqual([first, after]);
     expect(tickets.length).toBeGreaterThanOrEqual(4);
+    expect(new Set(tickets.map(ticket => ticket.clientPublicKey)).size).toBe(tickets.length);
     await Promise.all([publisher.dispose(), subscriber.dispose()]);
     await until(() => fixtureControl('/__fixture/stats'), stats => stats.connections === 0 && stats.subscriptions === 0);
     const disposedStats = await fixtureControl('/__fixture/stats');

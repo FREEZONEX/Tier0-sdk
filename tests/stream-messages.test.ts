@@ -121,14 +121,20 @@ describe('Stream messages trusted runtime and NATS Core lifecycle', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('refreshes JWT on reconnect, preserves the key, restores subscriptions and never replays messages', async () => {
+  it('rotates the key and JWT after closure, wipes the prior key, and restores subscriptions without replay', async () => {
     const { client, handle, request, connections } = setup();
     const handler = vi.fn(); const errors = vi.fn(); client.streams.messages.onError(errors);
     await handle.subscribe(handler);
+    const oldAuthenticator = vi.mocked(wsconnect).mock.calls[0][0]!.authenticator as ReturnType<typeof jwtAuthenticator>;
+    expect(() => oldAuthenticator('nonce')).not.toThrow();
     await connections[0].nc.close(); await tick();
+    expect(() => oldAuthenticator('nonce')).toThrow();
     await vi.advanceTimersByTimeAsync(500);
     expect(request).toHaveBeenCalledTimes(2);
-    expect((request.mock.calls[0][1] as { clientPublicKey: string }).clientPublicKey).toBe((request.mock.calls[1][1] as { clientPublicKey: string }).clientPublicKey);
+    expect((request.mock.calls[0][1] as { clientPublicKey: string }).clientPublicKey).not.toBe((request.mock.calls[1][1] as { clientPublicKey: string }).clientPublicKey);
+    expect(connections[0].nc.isClosed()).toBe(true);
+    const currentAuthenticator = vi.mocked(wsconnect).mock.calls[1][0]!.authenticator as ReturnType<typeof jwtAuthenticator>;
+    expect(() => currentAuthenticator('nonce')).not.toThrow();
     expect(connections[1].nc.subscribe).toHaveBeenCalledOnce();
     connections[1].deliver(incoming);
     expect(handler).toHaveBeenCalledOnce();
@@ -235,6 +241,7 @@ describe('Stream messages trusted runtime and NATS Core lifecycle', () => {
     expect(errors).toHaveBeenCalledWith(expect.objectContaining({ errorCode: 'STREAM_MESSAGE_CONNECT_FAILED' }));
     await vi.advanceTimersByTimeAsync(1_000);
     expect(request).toHaveBeenCalledTimes(3);
+    expect(new Set(request.mock.calls.map(([, body]) => (body as { clientPublicKey: string }).clientPublicKey)).size).toBe(3);
     expect(connections[1].nc.subscribe).toHaveBeenCalledOnce();
     await client.dispose();
     expect(vi.getTimerCount()).toBe(0);
