@@ -6,7 +6,9 @@ import { createClient } from '../src/client.js';
 import type { AppRuntime } from '../src/runtime.js';
 import type { StreamMessage } from '../src/streams/messages.js';
 
-// Parent fixture: POST /openapi/v1/stream-messages/connect uses the real SYS issuer.
+// Fixture HTTP adapter: POST /openapi/v1/stream-messages/connect uses the production Go issuer.
+// Fixed fixture Authority; this does not exercise SYS Connect RPC, SQL roles/App policy,
+// Gateway authentication, production topic-policy checks, or browser end-to-end flows.
 // Request: {appId, topics:[{topic,publish,subscribe}],clientPublicKey}; response:
 // unwrapped stream-messages/v1 ticket with a trusted WSS URL, RFC3339 expiry,
 // scoped permissions and maxPayloadBytes. No client seed is supplied to the server.
@@ -58,7 +60,7 @@ async function until<T>(read: () => Promise<T>, accept: (value: T) => boolean, t
   throw new Error('Native NATS acceptance deadline exceeded.');
 }
 
-describe.skipIf(!fixture).sequential('Stream messages real SYS/NATS Core contract', () => {
+describe.skipIf(!fixture).sequential('Stream messages production Go issuer + native NATS Core contract', () => {
   let publisher: ReturnType<typeof createClient>;
   let subscriber: ReturnType<typeof createClient>;
   let previousRuntime: AppRuntime | undefined;

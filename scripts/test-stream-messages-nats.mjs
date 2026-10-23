@@ -87,7 +87,7 @@ try {
       TIER0_STREAM_MESSAGES_FIXTURE_APP_ID: ready.appId,
       TIER0_STREAM_MESSAGES_FIXTURE_TOPIC: ready.topic,
     };
-    console.log(`Native TLS NATS ready; real SYS issuer TTL ${ready.ttlMs} ms; fixture ${ready.url}`);
+    console.log(`Native TLS NATS ready; production Go issuer TTL ${ready.ttlMs} ms; fixture ${ready.url}`);
   }
   if (serve) {
     for (const key of ['TIER0_STREAM_MESSAGES_FIXTURE_URL', 'TIER0_STREAM_MESSAGES_FIXTURE_CONTROL_URL',

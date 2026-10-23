@@ -1,0 +1,224 @@
+{
+  "openapi": "3.0.3",
+  "paths": {
+    "/openapi/v1/apps/access-members/list": {
+      "post": {
+        "operationId": "openapi/V1/AppsListAccessMembers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppAccessMembersListReq"
+              }
+            }
+          },
+          "required": true,
+          "x-originalParamName": "body"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppAccessMembersListResp"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "listAccessMembers"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AppAccessMemberResp": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "grantedAt": {
+            "description": "毫秒",
+            "type": "integer"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/AppAccessMemberRoleResp"
+            },
+            "type": "array"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "grantedAt",
+          "roles"
+        ],
+        "type": "object"
+      },
+      "AppAccessMemberRoleResp": {
+        "properties": {
+          "roleId": {
+            "type": "string"
+          },
+          "roleKey": {
+            "type": "string"
+          },
+          "roleName": {
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/AppAccessRoleSourceResp"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "roleId",
+          "roleKey",
+          "roleName",
+          "sources"
+        ],
+        "type": "object"
+      },
+      "AppAccessMembersListReq": {
+        "properties": {
+          "appId": {
+            "type": "string"
+          },
+          "grantedAtEnd": {
+            "description": "毫秒，闭区间，精度为秒",
+            "type": "integer"
+          },
+          "grantedAtStart": {
+            "description": "毫秒，闭区间，精度为秒",
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "roleKeys": {
+            "description": "任一命中即可，大小写不敏感",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "size": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "appId"
+        ],
+        "type": "object"
+      },
+      "AppAccessMembersListResp": {
+        "properties": {
+          "allActiveMembers": {
+            "description": "1:所有 active 成员都可访问 2:按角色授权",
+            "type": "integer"
+          },
+          "appId": {
+            "type": "string"
+          },
+          "list": {
+            "items": {
+              "$ref": "#/components/schemas/AppAccessMemberResp"
+            },
+            "type": "array"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "productionVersionId": {
+            "type": "string"
+          },
+          "published": {
+            "description": "1:已发布 2:未发布",
+            "type": "integer"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/AppAccessRoleResp"
+            },
+            "type": "array"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "appId",
+          "published",
+          "allActiveMembers",
+          "roles",
+          "list",
+          "total",
+          "page",
+          "size"
+        ],
+        "type": "object"
+      },
+      "AppAccessRoleResp": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "memberCount": {
+            "type": "integer"
+          },
+          "roleId": {
+            "type": "string"
+          },
+          "roleKey": {
+            "type": "string"
+          },
+          "roleName": {
+            "type": "string"
+          },
+          "status": {
+            "description": "active / retired",
+            "type": "string"
+          }
+        },
+        "required": [
+          "roleId",
+          "roleKey",
+          "roleName",
+          "status",
+          "memberCount"
+        ],
+        "type": "object"
+      },
+      "AppAccessRoleSourceResp": {
+        "properties": {
+          "groupId": {
+            "type": "string"
+          },
+          "groupName": {
+            "type": "string"
+          },
+          "type": {
+            "description": "direct / group",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

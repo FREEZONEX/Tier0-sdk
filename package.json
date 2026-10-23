@@ -46,6 +46,16 @@
       "types": "./dist/esm/streams/index.d.ts",
       "import": "./dist/esm/streams/index.js",
       "require": "./dist/cjs/streams/index.js"
+    },
+    "./cloud": {
+      "types": "./dist/esm/cloud.d.ts",
+      "import": "./dist/esm/cloud.js",
+      "require": "./dist/cjs/cloud.js"
+    },
+    "./cloud/server": {
+      "types": "./dist/esm/cloud-server.d.ts",
+      "import": "./dist/esm/cloud-server.js",
+      "require": "./dist/cjs/cloud-server.js"
     }
   },
   "files": [
@@ -93,12 +103,17 @@
     "build:esm": "tsc -p tsconfig.esm.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "generate": "bash scripts/generate-openapi.sh",
-    "typecheck": "tsc --noEmit && tsc --noEmit --strict --skipLibCheck --module nodenext --target es2020 tests/openapi/notifications.types.ts tests/streams.types.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit --strict --skipLibCheck --module nodenext --target es2020 tests/openapi/notifications.types.ts tests/streams.types.ts tests/openapi/capabilities.types.ts tests/openapi/uns-v2.types.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:streams:nats": "node scripts/test-stream-messages-nats.mjs",
-    "fixture:streams:nats": "node scripts/test-stream-messages-nats.mjs --serve"
+    "fixture:streams:nats": "node scripts/test-stream-messages-nats.mjs --serve",
+    "package:cloud-app": "node scripts/package-cloud-uns-app.mjs",
+    "test:cloud-app": "node scripts/test-cloud-uns-app.mjs",
+    "generate:uns-v2": "node scripts/generate-uns-v2.mjs",
+    "check:uns-v2-contract": "node scripts/generate-uns-v2.mjs --check",
+    "sync:app-identity": "node scripts/sync-app-identity-contract.mjs"
   },
   "optionalDependencies": {
     "@tanstack/react-query": "^5.0.0",

@@ -43,7 +43,7 @@ describe('App runtime injection', () => {
 
   it('does not expose retired control exports or runtime aliases', () => {
     expect(Object.keys(sdk).filter(key => /control/i.test(key))).toEqual([]);
-    expect(Object.keys(client)).toEqual(['streams', 'dispose']);
+    expect(Object.keys(client)).toEqual(['streams', 'capabilities', 'unsV2', 'dispose']);
     expect(getAppRuntime()).toBeUndefined();
   });
 

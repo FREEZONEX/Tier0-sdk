@@ -1,5 +1,5 @@
-import { jwtAuthenticator, wsconnect, type NatsConnection, type Subscription } from '@nats-io/nats-core';
-import { createUser, type KeyPair } from '@nats-io/nkeys';
+import type { NatsConnection, Subscription } from '@nats-io/nats-core';
+import type { KeyPair } from '@nats-io/nkeys';
 import { getCurrentAppId } from '../runtime-context.js';
 import { onAppRuntimeDispose } from '../runtime.js';
 import type { StreamJSON } from './requests.js';
@@ -80,7 +80,7 @@ class MessageSession implements StreamMessageSubscription {
   private connection?: NatsConnection;
   private subscription?: Subscription;
   private connecting?: Promise<void>;
-  private key: KeyPair = createUser();
+  private key?: KeyPair;
   private abort = new AbortController();
   private reconnectTimer?: ReturnType<typeof setTimeout>;
   private expiryTimer?: ReturnType<typeof setTimeout>;
@@ -127,6 +127,12 @@ class MessageSession implements StreamMessageSubscription {
   private async open(): Promise<void> {
     let nc: NatsConnection | undefined;
     try {
+      // HTTP-only Cloud Apps must not load broker libraries or require their dependencies.
+      const [{ jwtAuthenticator, wsconnect }, { createUser }] = await Promise.all([
+        import('@nats-io/nats-core'), import('@nats-io/nkeys'),
+      ]);
+      if (this.disposed) return;
+      this.key ??= createUser();
       const appId = this.transport.runtime()?.appId ?? getCurrentAppId();
       const { value, ok } = await this.transport.post('/openapi/v1/stream-messages/connect', {
         appId, topics: [{ topic: this.topic, publish: this.mode === 'publish', subscribe: this.mode === 'subscribe' }],
@@ -141,7 +147,7 @@ class MessageSession implements StreamMessageSubscription {
       nc = await wsconnect({
         servers: [ticket.url], reconnect: false, waitOnFirstConnect: false,
         ignoreClusterUpdates: true, timeout: 10_000,
-        authenticator: jwtAuthenticator(ticket.userJwt, () => this.key.getSeed()),
+        authenticator: jwtAuthenticator(ticket.userJwt, () => this.key!.getSeed()),
       });
       if (this.disposed) { await nc.close(); return; }
       this.connection = nc;
@@ -290,7 +296,7 @@ class MessageSession implements StreamMessageSubscription {
       await this.connection?.close();
       await this.connecting?.catch(() => undefined);
       this.connection = undefined;
-      this.key.clear();
+      this.key?.clear();
       this.remove();
     })();
     return this.disposing;

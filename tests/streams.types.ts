@@ -24,3 +24,8 @@ request.invoke({ value: 1 }, { deploymentVersion: '2' });
 request.invoke({ value: 1 }, { retry: true });
 // @ts-expect-error Generic payload shape is preserved.
 topic.publish({ other: true });
+
+// @ts-expect-error Retired v2 request aliases are absent; use streams.requests.
+client.unsV2.controlInvoke({ code: 'pump.start', input: {} });
+// @ts-expect-error Retired root control types must not be exported.
+type RetiredControl = import('../src/index.js').ControlHandle;

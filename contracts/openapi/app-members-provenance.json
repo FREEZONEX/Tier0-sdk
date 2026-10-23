@@ -1,0 +1,11 @@
+{
+  "repository": "FREEZONEX/Tier0-Backend",
+  "revision": "6c111671a2172eb14c38f2f6d9ec329f4ee08a3d",
+  "source": "service/gwsvr/internal/handler/swaggerui/swagger.json",
+  "sourceSHA256": "59e09129666b52a71abec7ee38ed0d224c128f51026efbbcee45d3051460f4b9",
+  "route": "/openapi/v1/apps/access-members/list",
+  "retainedLegacySourceRevision": "a958ac8a49dc5ba5e6b63265e983accb3b6645f3",
+  "retainedLegacySwaggerSHA256": "03cd67431be01b6f70a6e684b6fb5ded85116f42537dc12514124a6dcbc83f86",
+  "note": "Only the App-members route and referenced schema closure use the new Cloud source. Unrelated existing SDK v1 APIs remain on their reviewed legacy source; their availability on Cloud is not asserted.",
+  "appMembersSwaggerSHA256": "d32300b662c4a8458163ca748c47953c530f904b4696ce8a5f824ddb0473e419"
+}

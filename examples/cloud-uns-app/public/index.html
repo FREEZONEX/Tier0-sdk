@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UNS Orders</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" type="module"></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div><p class="eyebrow">TIER0 CLOUD · UNS</p><h1 data-i18n="title">工单数据</h1></div>
+        <div class="tools">
+          <select id="language" aria-label="Language"><option value="zh">中文</option><option value="en">English</option></select>
+          <button id="theme" type="button" data-i18n="theme">切换主题</button>
+        </div>
+      </header>
+      <p id="app-name"></p>
+      <p id="employee" class="muted"></p>
+      <section aria-labelledby="create-heading">
+        <h2 id="create-heading" data-i18n="create">新增工单</h2>
+        <form id="order-form">
+          <label><span data-i18n="orderNo">工单号</span><input name="orderNo" disabled required maxlength="64" pattern="[A-Za-z0-9_-]+" autocomplete="off" /></label>
+          <label><span data-i18n="amount">金额（分）</span><input name="amount" disabled required type="number" min="0" max="9007199254740991" step="1" /></label>
+          <button id="save" type="submit" disabled data-i18n="save">保存</button>
+          <button id="data-new" type="button" hidden disabled data-i18n="dataNew">发起新保存</button>
+        </form>
+        <p id="write-state" class="muted"></p>
+      </section>
+      <section aria-labelledby="list-heading">
+        <div class="list-heading"><h2 id="list-heading" data-i18n="records">工单列表</h2><button id="refresh" type="button" data-i18n="refresh">刷新列表</button></div>
+        <p id="status" role="status" aria-live="polite"></p>
+        <p id="notifications" class="muted" role="status" aria-live="polite"></p>
+        <div class="table-wrap"><table><thead><tr><th data-i18n="orderNo">工单号</th><th data-i18n="amount">金额（分）</th><th data-i18n="state">状态</th><th data-i18n="revision">版本</th></tr></thead><tbody id="records"></tbody></table></div>
+      </section>
+      <section aria-labelledby="control-heading">
+        <h2 id="control-heading" data-i18n="controlTitle">设备采集</h2>
+        <p data-i18n="controlHelp">通过应用服务端执行已授权的采集操作。重放保留同一请求标识。</p>
+        <button id="control-run" type="button" disabled data-i18n="controlRun">执行或重放</button>
+        <button id="control-new" type="button" disabled data-i18n="controlNew">新建操作</button>
+        <p id="control-status" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+  </body>
+</html>

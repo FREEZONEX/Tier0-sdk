@@ -4,3 +4,5 @@ export * from './files.js';
 export * from './runtime-context.js';
 export * from './client.js';
 export * from './streams/index.js';
+export * from './capabilities.js';
+export * from './uns-v2/index.js';

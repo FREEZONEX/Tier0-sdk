@@ -57,7 +57,7 @@ This rule does not apply to source files, static assets intentionally shipped wi
 | uns | `unsApi.openapiv1unsupdate` | `POST /openapi/v1/uns/update` |
 | uns | `unsApi.openapiv1unsdelete` | `POST /openapi/v1/uns/delete` |
 | uns | `unsApi.openapiv1unsrestore` | `POST /openapi/v1/uns/restore` |
-| launchpad | `launchpadApi.openapiv1launchpadgetmembers` | `POST /openapi/v1/launchpad/{projectName}/getMembers` |
+| apps | `appsApi.openapiV1Appslistaccessmembers` | `POST /openapi/v1/apps/access-members/list` |
 | platform | `platformApi.openapiv1platformgetmembers` | `POST /openapi/v1/platform/getMembers` |
 | notifications | `notificationsApi.openapiv1notificationssend` | `POST /openapi/v1/notifications/send` |
 | notifications | `notificationsApi.openapiv1notificationsget` | `POST /openapi/v1/notifications/get` |
@@ -71,7 +71,7 @@ This rule does not apply to source files, static assets intentionally shipped wi
 | Continuous/realtime receive, MQTT subscribe/publish, connection lifecycle | [`tier0-sdk-mq/SKILL.md`](tier0-sdk-mq/SKILL.md) |
 | Flow/Node-RED create, inspect, edit, deploy, delete, or expose/invoke an `http in` endpoint or webhook | [`tier0-sdk-flow/SKILL.md`](tier0-sdk-flow/SKILL.md) |
 | File upload, attachment, avatar, import, generated/exported file or report, persistent storage, access URL, download, or deletion—even without an explicit SDK request | [`tier0-sdk-files/SKILL.md`](tier0-sdk-files/SKILL.md) |
-| Launchpad project members or platform/workspace members and roles | [`tier0-sdk-members/SKILL.md`](tier0-sdk-members/SKILL.md) |
+| Cloud App access members or platform/workspace members and roles | [`tier0-sdk-members/SKILL.md`](tier0-sdk-members/SKILL.md) |
 | Select a recipient by human identity, send an in-app notification (inbox + optional web/mobile push), or query delivery status. Never ask an end user for a user ID | [`tier0-sdk-notifications/SKILL.md`](tier0-sdk-notifications/SKILL.md) |
 | API-key credential diagnostics (not an App end-user identity), service info/capabilities, gateway reload | [`tier0-sdk-system/SKILL.md`](tier0-sdk-system/SKILL.md) |
 | Client configuration, generic OpenAPI, React/Vue, MonoApp | This Skill and its `references/` |

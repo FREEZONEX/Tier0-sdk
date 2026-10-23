@@ -1,0 +1,30 @@
+[deployment]
+deploymentTarget = "autoscale"
+
+[[services]]
+name = "web"
+paths = ["/"]
+localPort = 3000
+
+[services.production.build]
+args = ["node", "build.mjs"]
+outputDir = ".runtime"
+
+[services.production.run]
+args = ["node", "server.mjs"]
+
+[services.production.health.startup]
+path = "/healthz"
+timeout = 180
+
+[services.preview]
+install = ["node", "build.mjs"]
+args = ["node", ".runtime/server.mjs"]
+port = 5173
+
+[services.preview.env]
+PORT = "5173"
+
+[services.preview.health]
+path = "/healthz"
+timeout = 60
