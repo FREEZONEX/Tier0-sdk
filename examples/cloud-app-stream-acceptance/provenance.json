@@ -1,0 +1,90 @@
+{
+  "format": "tier0-cloud-app-stream-acceptance-overlay/v1",
+  "base": {
+    "sourceCommit": "57d6ee405ce0856ca98fdb686840ca6224d910fa",
+    "archiveName": "Tier0-App-Scaffold-v11-57d6ee4-source.zip",
+    "sha256": "0aead594b1693a4b75a3b4cb53f29b1c22c78b81ed9cbd20f87a8a16fcbbfe22",
+    "sourceFiles": 259,
+    "preservedScaffoldMarker": {
+      "version": 11,
+      "ref": "15ce099"
+    }
+  },
+  "sdkArtifact": {
+    "commit": "7f0a82ef6a719dd6843c29c1046f87ad3c2970a7",
+    "member": "vendor/tier0-sdk-0.5.4-7f0a82e.tgz",
+    "sha256": "63ca9a348124acaab14c2fa9319b1aed10ff22bc3419ef81daa2b95f1e77afb5",
+    "dataDependency": "github:FREEZONEX/Tier0-sdk-v2#b9aa196e6b81a8f1c9947dc4141ea4b3a3835401",
+    "rule": "Frozen base artifact only; never rebuild or repack from example-only HEAD."
+  },
+  "overlay": {
+    "modified": [
+      "src/lib/app-chrome.ts",
+      "src/lib/template-state.test.mjs",
+      "src/routes/_app.index.tsx"
+    ],
+    "added": [
+      "acceptance-fixture.json",
+      "icon.png",
+      "public/app-icon.png",
+      "src/lib/sdk-acceptance.ts",
+      "tests/sdk-acceptance-fixture.test.ts"
+    ],
+    "sha256": {
+      "acceptance-fixture.json": "9270e6b1bcaae80d5be22e853b9297243d47a3cce9ba264dd9d3b329d5318f1b",
+      "icon.png": "16db9977c73670a83d103d8544f9624be2a47873fef39b99c5cd334ffe9f9f77",
+      "public/app-icon.png": "16db9977c73670a83d103d8544f9624be2a47873fef39b99c5cd334ffe9f9f77",
+      "src/lib/app-chrome.ts": "388c245218ef7ef53aff168a52ad6a2ac9f589a49ad57bc843854749bbbbdfa0",
+      "src/lib/sdk-acceptance.ts": "e7f006edbe4c77754633c09f4ef94103ddd46fc19ec4afe9e29962640928e5c7",
+      "src/lib/template-state.test.mjs": "ef55178f0944474017155c123a722d1969f2cee6b5fa6b858f75181e50e61ee3",
+      "src/routes/_app.index.tsx": "ee67e2f9bcdbaa9bf71a23988b91f3c8939b6824601f379c38868ff405bdcd1f",
+      "tests/sdk-acceptance-fixture.test.ts": "d17bb20d415063b7e5b97b6eba517617eb5e060c2096c97cdf5e488cc36cb015"
+    },
+    "files": {
+      "acceptance-fixture.json": "acceptance-fixture.json",
+      "icon.png": "icon.png",
+      "public/app-icon.png": "public/app-icon.png",
+      "src/lib/app-chrome.ts": "src/lib/app-chrome.ts",
+      "src/lib/sdk-acceptance.ts": "src/lib/sdk-acceptance.ts",
+      "src/lib/template-state.test.mjs": "src/lib/template-state.test.mjs.fixture",
+      "src/routes/_app.index.tsx": "src/routes/_app.index.tsx",
+      "tests/sdk-acceptance-fixture.test.ts": "tests/sdk-acceptance-fixture.test.ts.fixture"
+    }
+  },
+  "source": {
+    "sourceFiles": 264,
+    "sha256": "27a1d6e4d864da7cc7049a5137e0e570b098a1eb51a977ae547bcebffdc12def",
+    "bytes": 1027948,
+    "memberManifestSHA256": "7e36a1f5337dd89fca601c538060c1b91e63a3065e3e755dedec769849978fcf",
+    "zipDateTime": [
+      2026,
+      10,
+      24,
+      0,
+      0,
+      0
+    ]
+  },
+  "historicalPrivateSource": {
+    "sha256": "82f0ae89f08a4dce7b84547008065e066044722fefc3125b346e33eee945355f",
+    "bytes": 1027988,
+    "privateMetadataMember": "acceptance-fixture.json",
+    "privateMetadataSHA256": "77511eb5da1d7d23ac483d6931ae481788ece368b2db3e4b43b42b77f03a6081",
+    "privateMemberManifestFileSHA256": "bffdcea729e57f8873bb75723de4f4ba068236a04091f48c522d062ceb60a4ef",
+    "rule": "External hash-locked private metadata is optional and never copied into this repository."
+  },
+  "validation": {
+    "origin": "Previously built fixture; code and locked gates unchanged by this overlay. Metadata redaction only. Not a fresh build claim.",
+    "fullBuildTestsPassed": 169,
+    "fixtureTestsPassed": 5,
+    "lockedGatesVerified": 32,
+    "evidenceSHA256": {
+      "build-verified.log": "f6f5417661760fcb849eecf74ff087badb2873b8722835517017163d175017df",
+      "fixture-tests-final.log": "7dbc40fdd4ac5b6910a381335baff45a2e44ee2dfbaa71376e4a7eaa8c22c86d",
+      "runtime-check.json": "35c92959807e1cdd4cb99cd13acf4ffa8c7476dd36f2d2178f21728ac6ff21fb"
+    },
+    "browser": "NOT_RUN",
+    "ACK": "UNVERIFIED",
+    "deployed": false
+  }
+}
