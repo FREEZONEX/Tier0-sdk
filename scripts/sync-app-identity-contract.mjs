@@ -1,0 +1,20 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+import assert from 'node:assert/strict';
+
+const args = process.argv.slice(2);
+const check = args.includes('--check');
+const input = args.find((arg) => arg !== '--check');
+assert.ok(input, 'Usage: sync-app-identity-contract.mjs [--check] <SWE gatewayheader/app-request-identity.v1.json>');
+const raw = readFileSync(resolve(input), 'utf8');
+const contract = JSON.parse(raw);
+assert.equal(contract.version, 'tier0.app-request-identity/v1');
+assert.equal(contract.algorithm, 'EdDSA');
+assert.ok(Array.isArray(contract.requiredClaims) && Array.isArray(contract.requiredHeaderFields));
+const target = resolve(dirname(fileURLToPath(import.meta.url)), '../src/app-identity-contract.generated.ts');
+const result = `// Generated from SWE gatewayheader/app-request-identity.v1.json; do not edit.\n// Source SHA-256: ${createHash('sha256').update(raw).digest('hex')}\nexport const APP_REQUEST_IDENTITY_CONTRACT = ${JSON.stringify(contract, null, 2)} as const;\n`;
+if (check) assert.equal(readFileSync(target, 'utf8'), result, 'App identity contract drift');
+else writeFileSync(target, result);
+console.log(check ? 'App identity contract matches canonical source' : 'App identity contract generated');

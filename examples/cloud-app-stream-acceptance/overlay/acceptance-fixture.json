@@ -1,0 +1,38 @@
+{
+  "purpose": "Private owned authorized CloudApp ↔ Stream SDK acceptance fixture; not a product feature",
+  "baseSourceCommit": "57d6ee405ce0856ca98fdb686840ca6224d910fa",
+  "baseSourceZIP_SHA256": "0aead594b1693a4b75a3b4cb53f29b1c22c78b81ed9cbd20f87a8a16fcbbfe22",
+  "preservedScaffoldMarker": {
+    "version": 11,
+    "ref": "15ce099"
+  },
+  "sdkRootCommit": "7f0a82ef6a719dd6843c29c1046f87ad3c2970a7",
+  "sdkTarballSHA256": "63ca9a348124acaab14c2fa9319b1aed10ff22bc3419ef81daa2b95f1e77afb5",
+  "sdkDataDependency": "github:FREEZONEX/Tier0-sdk-v2#b9aa196e6b81a8f1c9947dc4141ea4b3a3835401",
+  "inventoryRequestCodes": [
+    "ack.echo",
+    "ack.identity",
+    "ack.http.telemetry"
+  ],
+  "defaultRequestCode": "ack.echo",
+  "defaultBusinessTopic": null,
+  "topicFinding": "Snapshot has no confirmed v3 logical business message topic. MQTT acquisition filters are physical source resources and are not used as business topic defaults.",
+  "runtimeScope": {
+    "authentication": "unchanged Gateway, no bypass",
+    "browserSDK": "actual frozen root client only",
+    "dataSDK": "unchanged server-only",
+    "configuration": "business request code and business topic only; business JSON and intent controls, no connection/auth settings",
+    "runtimeBootstrap": "platform-owned; no fixture provider or injected credentials"
+  },
+  "lockedGatesVerified": 32,
+  "fullBuildTestsPassed": 169,
+  "fixtureTestsPassed": 5,
+  "browserAcceptance": "NOT_RUN",
+  "ACKAcceptance": "UNVERIFIED",
+  "mobileViewportAcceptance": "NOT_RUN",
+  "deployment": "NOT_PERFORMED",
+  "appMetadataRegistration": "NOT_PERFORMED",
+  "liveAppWrites": false,
+  "kubernetesAccess": false,
+  "jenkinsCriticalPathOwner": "parent task"
+}

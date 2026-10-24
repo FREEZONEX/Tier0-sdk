@@ -100,7 +100,7 @@ const INCLUDED_PATHS = new Set([
   '/openapi/v1/uns/search',
   '/openapi/v1/uns/update',
   '/openapi/v1/uns/write',
-  '/openapi/v1/launchpad/{projectName}/getMembers',
+  '/openapi/v1/apps/access-members/list',
   '/openapi/v1/platform/getMembers',
   '/openapi/v1/notifications/send',
   '/openapi/v1/notifications/get',
@@ -140,7 +140,7 @@ function filterSwagger(swagger: SwaggerDoc): SwaggerDoc {
 function getModuleName(pathStr: string): string {
   if (pathStr.includes('/flow/')) return 'flow';
   if (pathStr.includes('/uns/')) return 'uns';
-  if (pathStr.includes('/launchpad/')) return 'launchpad';
+  if (pathStr.includes('/apps/')) return 'apps';
   if (pathStr.includes('/platform/')) return 'platform';
   if (pathStr.includes('/notifications/')) return 'notifications';
   if (pathStr.includes('/auth/')) return 'system';
@@ -549,10 +549,12 @@ function main() {
   const args = process.argv.slice(2);
   let swaggerPath = '';
   let outputDir = '';
+  let appMembersSwaggerPath = '';
 
   for (let i = 0; i < args.length; i += 2) {
     if (args[i] === '--swagger') swaggerPath = args[i + 1];
     if (args[i] === '--output') outputDir = args[i + 1];
+    if (args[i] === '--app-members-swagger') appMembersSwaggerPath = args[i + 1];
   }
 
   if (!swaggerPath || !outputDir) {
@@ -560,7 +562,31 @@ function main() {
     process.exit(1);
   }
 
-  const swagger = filterSwagger(loadSwagger(swaggerPath));
+  const input = loadSwagger(swaggerPath);
+  if (appMembersSwaggerPath) {
+    // Keep unrelated legacy/Enterprise SDK routes on their reviewed source.
+    // Import only the committed Cloud App-members operation and its schema closure.
+    const appSource = loadSwagger(appMembersSwaggerPath);
+    const route = '/openapi/v1/apps/access-members/list';
+    if (!appSource.paths[route]?.post) throw new Error('App access-members source route missing');
+    delete input.paths['/openapi/v1/launchpad/{projectName}/getMembers'];
+    input.paths[route] = appSource.paths[route];
+    input.components ??= {};
+    input.components.schemas ??= {};
+    const pending = new Set<string>();
+    collectRefs(input.paths[route], pending);
+    for (const name of pending) {
+      const schema = appSource.components?.schemas?.[name];
+      if (!schema) throw new Error(`App access-members source schema missing: ${name}`);
+      const existing = input.components.schemas[name];
+      if (existing && JSON.stringify(existing) !== JSON.stringify(schema)) {
+        throw new Error(`App access-members schema conflicts with retained SDK: ${name}`);
+      }
+      input.components.schemas[name] = schema;
+      collectRefs(schema, pending);
+    }
+  }
+  const swagger = filterSwagger(input);
   // SDK defaults differ from the raw backend API. Keep generated types aligned.
   const channels = swagger.components?.schemas?.SendNotificationReq?.properties?.channels;
   if (channels) {

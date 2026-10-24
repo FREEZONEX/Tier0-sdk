@@ -7,4 +7,6 @@ dist/
 .DS_Store
 .vscode/
 coverage/
+/examples/cloud-uns-app/.runtime/
+/examples/cloud-uns-app/vendor/
 scripts/swagger.filtered.json
