@@ -17,7 +17,7 @@
   "note": "Generated from committed Cloud Project retirement contract; environment acceptance tracked separately.",
   "baseRevision": "c27b44274be742b9c0f7107c6035412c62d5da26",
   "streamCapabilityRetirement": {
-    "revision": "83b4936f0e9248f7db28075d34ec751e6f482dea",
+    "revision": "f51ed95a0dfd793513186f304c7eea5cf3e42702",
     "source": "share/unscontract/manifest.json",
     "sha256": "30ffc9875cab8f9db7b651116492abffd498b56c7b99fea5c29eb6b49cca1320",
     "matchesCommit": true

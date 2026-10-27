@@ -5831,7 +5831,7 @@ export const UNS_V2_CONTRACT_PROVENANCE = {
   "note": "Generated from committed Cloud Project retirement contract; environment acceptance tracked separately.",
   "baseRevision": "c27b44274be742b9c0f7107c6035412c62d5da26",
   "streamCapabilityRetirement": {
-    "revision": "83b4936f0e9248f7db28075d34ec751e6f482dea",
+    "revision": "f51ed95a0dfd793513186f304c7eea5cf3e42702",
     "source": "share/unscontract/manifest.json",
     "sha256": "30ffc9875cab8f9db7b651116492abffd498b56c7b99fea5c29eb6b49cca1320",
     "matchesCommit": true
@@ -5840,7 +5840,7 @@ export const UNS_V2_CONTRACT_PROVENANCE = {
     "contract": "db73dee7ab34d489439cb1c54aab7548f3410b22e738eac3ba1be0820fa767b0",
     "cloudSupport": "9917f2400edda38f5b8ba97c23eb2b98997ffb3f82d8b1cb34a930d66e43753f",
     "manifest": "7b2a001f73846a93b3002b2d1c5701286f767e58ab009e23b23242215feabb03",
-    "provenance": "1342e024b5029f4c68ef16ada4ec725a57a2f1d13ee5e4bde989d9804e2d762f",
+    "provenance": "8ed2bfdcdd73b9cbe1eacd8d2297b1ea18abb224a8ee8b9005c5efa50fdd8476",
     "registry": "28e01c9cbeb03d341267a2c96c8ce001f9a83af62ebd63e48ead6b1c70d10a89"
   },
   "publicOperationCount": 100,

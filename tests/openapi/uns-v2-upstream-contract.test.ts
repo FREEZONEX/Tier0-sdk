@@ -29,7 +29,7 @@ describe('Backend App UNS access contract without generic record audit', () => {
       sha256: '30ffc9875cab8f9db7b651116492abffd498b56c7b99fea5c29eb6b49cca1320',
       matchesCommit: true,
     });
-    expect(UNS_V2_CONTRACT_PROVENANCE.streamCapabilityRetirement.revision).toBe('83b4936f0e9248f7db28075d34ec751e6f482dea');
+    expect(UNS_V2_CONTRACT_PROVENANCE.streamCapabilityRetirement.revision).toBe('f51ed95a0dfd793513186f304c7eea5cf3e42702');
     for (const [key, file] of Object.entries({ contract: 'contract.json', cloudSupport: 'cloud-support.json', manifest: 'manifest.json', provenance: 'provenance.json', registry: 'registry_generated.go' })) {
       expect(UNS_V2_CONTRACT_PROVENANCE.hashes[key as keyof typeof UNS_V2_CONTRACT_PROVENANCE.hashes]).toBe(
         createHash('sha256').update(read(file)).digest('hex')
