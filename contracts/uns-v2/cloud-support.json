@@ -12,7 +12,6 @@
     {"name":"sourceDelete","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
     {"name":"streamProgramList","permission":"uns.stream.view","scope":"stream:read","minPermission":1},
     {"name":"streamProgramDelete","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
-    {"name":"streamRuntimeCapabilitiesGet","permission":"stream.requests.read","scope":"stream.requests:read","minPermission":1},
     {"name":"controlDiscover","permission":"stream.requests.read","scope":"stream.requests:read","minPermission":1},
     {"name":"controlDescribe","permission":"stream.requests.read","scope":"stream.requests:read","minPermission":1},
     {"name":"controlInvoke","permission":"stream.requests.invoke","scope":"stream.requests:invoke","minPermission":1},
