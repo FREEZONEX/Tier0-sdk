@@ -12,16 +12,30 @@ describe('UNS v2 lossless numeric boundary', () => {
   });
 
   it('keeps safe schema numbers as numbers on both sides', () => {
-    expect(encodeUnsV2JSON({ page: 12, size: 20 }, 'PlatformV2JobListReq')).toBe('{"page":12,"size":20}');
-    expect(decodeUnsV2JSON('{"page":12,"size":20}', 'PlatformV2JobListReq')).toEqual({ page: 12, size: 20 });
+    expect(encodeUnsV2JSON({ page: 12, size: 20 }, 'CloudSourceDocumentListReq')).toBe('{"page":12,"size":20}');
+    expect(decodeUnsV2JSON('{"page":12,"size":20}', 'CloudSourceDocumentListReq')).toEqual({ page: 12, size: 20 });
   });
 
-  it('preserves the complete signed int64 range as number or bigint', () => {
-    expect(decodeUnsV2JSON('{"page":9007199254740993}', 'PlatformV2UsersListReq')).toEqual({ page: 9007199254740993n });
-    expect(decodeUnsV2JSON('{"page":9223372036854775807}', 'PlatformV2UsersListReq')).toEqual({ page: 9223372036854775807n });
-    expect(decodeUnsV2JSON('{"page":-9223372036854775808}', 'PlatformV2UsersListReq')).toEqual({ page: -9223372036854775808n });
-    expect(encodeUnsV2JSON({ page: 9223372036854775807n }, 'PlatformV2UsersListReq')).toBe('{"page":9223372036854775807}');
-    expect(() => decodeUnsV2JSON('{"page":9223372036854775808}', 'PlatformV2UsersListReq')).toThrow('signed 64-bit');
+  it('preserves signed int64 observation times in the live v5 response schema', () => {
+    const wrap = (value: string) => `{"data":{"items":[{"lastDataAt":${value}}]}}`;
+    for (const value of ['9007199254740993', '9223372036854775807', '-9223372036854775808']) {
+      const decoded = decodeUnsV2JSON(wrap(value), 'CloudSourceObservationsGetResponse');
+      expect(decoded).toEqual({ data: { items: [{ lastDataAt: BigInt(value) }] } });
+      expect(encodeUnsV2JSON(decoded, 'CloudSourceObservationsGetResponse')).toBe(wrap(value));
+    }
+    expect(() => decodeUnsV2JSON(wrap('9223372036854775808'), 'CloudSourceObservationsGetResponse')).toThrow('signed 64-bit');
+  });
+
+  it('retains numeric codecs beside allOf/oneOf validation constraints', () => {
+    for (const schema of ['UnsV2RecordFindReq', 'UnsV2RecordInsertOneReq', 'UnsV2MetadataUpdateOneReq', 'CloudSourceDocumentUpdateReq']) {
+      const key = schema === 'UnsV2RecordFindReq' ? 'limit' : 'expectedRevision';
+      expect(() => encodeUnsV2JSON({ [key]: 1.5 }, schema)).toThrow('integer');
+      expect(() => decodeUnsV2JSON(`{"${key}":1.5}`, schema)).toThrow('integer');
+      const exact = { [key]: new UnsV2RawNumber('9007199254740993') };
+      const wire = encodeUnsV2JSON(exact, schema);
+      expect(wire).toBe(`{"${key}":9007199254740993}`);
+      expect(decodeUnsV2JSON(wire, schema)).toEqual(exact);
+    }
   });
 
   it('preserves unsafe integers, long decimals and exponents as exact raw numbers', () => {

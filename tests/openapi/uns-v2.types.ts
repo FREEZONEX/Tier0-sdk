@@ -4,7 +4,7 @@ import {
   type RuntimeStreamDefinition,
   type CloudAppCreateCapability,
   UnsV2RawNumber,
-  type PlatformV2UsersListReq,
+  type UnsV2Int64,
   type UnsV2JSONValue,
   type UnsV2OperationName,
   type UnsV2Request,
@@ -42,7 +42,7 @@ void ownAppContext;
 const list = client.unsV2.recordFind({ collectionId: 'orders', limit: 20, cursor: 'opaque' });
 const jobs = client.unsV2.jobs({ queries: [{ queryId: 'job', jobIds: ['job-1'] }] });
 const transaction = client.unsV2.recordTransactionExecute({ items: [] });
-const sources = client.unsV2.sourceList({ page: 1, size: 20, archived: false });
+const sources = client.unsV2.sourceDocumentList({ page: 1, size: 20 });
 const deployment = client.unsV2.streamProgramDeploy({
   id: 'stream-1', dryRun: false, expectedRevision: 3, expectedSourceRevision: 7, idempotencyKey: 'deploy-1',
 });
@@ -69,9 +69,9 @@ const missingIndexPath: IndexSpec = { unique: true };
 // @ts-expect-error Single and composite declarations are mutually exclusive.
 const ambiguousIndexPath: IndexSpec = { path: 'serial', paths: ['serial'] };
 void [singleIndex, compositeIndex, missingIndexPath, ambiguousIndexPath];
-const request: UnsV2Request<'directoryGet'> = { id: 'directory-1' };
-type DirectoryGetResponse = UnsV2Response<'directoryGet'>;
-const exactInt64: PlatformV2UsersListReq = { page: 9_223_372_036_854_775_807n };
+const request: UnsV2Request<'metadataFind'> = { kind: 'directory', filter: { _id: 'directory-1' } };
+type DirectoryGetResponse = UnsV2Response<'metadataFind'>;
+const exactInt64: UnsV2Int64 = 9_223_372_036_854_775_807n;
 const exactBusinessNumber: UnsV2JSONValue = new UnsV2RawNumber('1.0000000000000001');
 void [list, jobs, transaction, sources, deployment, scopedSamples, sourceState, sourceDelete, sourceImpact, sourceHistory, documentValidation,
   observations, streamObservation, runs, operation, request, exactInt64, exactBusinessNumber, null as DirectoryGetResponse | null];
@@ -86,7 +86,7 @@ client.unsV2.sourceIngressGet({ id: '101' });
 client.unsV2.sourceIngressRotate({ id: '101' });
 // @ts-expect-error identity and workspace binding cannot be supplied through list request DTOs.
 client.unsV2.directoryList({ workspaceId: 'other-workspace' });
-// @ts-expect-error Source mutations must carry an explicitly reviewed confirmation.
+// v5 only requires impact confirmation when the server reports an impact.
 client.unsV2.sourceDelete({ dryRun: false, items: [{ id: '101', expectedRevision: 2 }] });
 
 const lease = client.unsV2.recordLock({ collectionId: 'orders', ids: ['order-1'], ttlMs: 30000 });
@@ -101,11 +101,8 @@ client.unsV2.recordAuditAdminList({ collectionId: 'orders', recordId: 'order-1' 
 const removedAuditOperation: UnsV2OperationName = 'recordAuditList';
 // @ts-expect-error Removed admin audit operations have no request DTO.
 type RemovedAdminAuditRequest = UnsV2Request<'recordAuditAdminList'>;
-const auditCollection: UnsV2Request<'collectionUpdate'> = { dryRun: true,
-  items: [{ id: 'orders', expectedRevision: 1,
-    // @ts-expect-error Collection audit configuration has been removed.
-    audit: { enabled: true, historyRead: true } }] };
-void [removedAuditOperation, auditCollection, null as RemovedAdminAuditRequest | null];
+const metadataInput: UnsV2Request<'metadataInsertOne'> = { kind: 'collection', data: { name: 'orders', recordSchema: { type: 'object' } } };
+void [removedAuditOperation, metadataInput, null as RemovedAdminAuditRequest | null];
 // @ts-expect-error Retired Cloud batch-query route must not silently map to another contract.
 client.unsV2.records({ queries: [] });
 // @ts-expect-error Retired recordCreate is replaced by explicit recordInsertOne/Many operations.
@@ -144,16 +141,29 @@ client.unsV2.streamProgramVersionsList({ id: 'stream-1', page: 1, size: 20 }).th
 });
 
 // Notifications expose identifiers only; business fields use the existing scoped query.
-const notifications = client.unsV2.recordChangesPoll({ collectionId: 'orders', limit: 20, waitMs: 1000 });
-notifications.then(result => {
-  const cursor: string = result.data.nextCursor;
-  const recordID: string | undefined = result.data.items[0]?.recordId;
-  void cursor; void recordID;
-  // @ts-expect-error notifications never export an unfiltered historical document
-  void result.data.items[0]?.data;
-});
-// @ts-expect-error the authenticated workspace cannot be overridden in the body
-void client.unsV2.recordChangesPoll({ collectionId: 'orders', workspaceId: 'other' });
+async function subscribe() {
+  for await (const frame of client.unsV2.recordSubscribe({ collectionIds: ['orders'], cursor: 'opaque' })) {
+    if (frame.event === 'change') {
+      const id: string = frame.data.recordId;
+      // @ts-expect-error Notifications never contain business documents.
+      void frame.data.data;
+      void id;
+    }
+  }
+}
+void subscribe;
+// @ts-expect-error Internal poll knobs are not public SSE query fields.
+client.unsV2.recordSubscribe({ limit: 20 });
+// @ts-expect-error SSE does not use the generic JSON POST dispatch.
+client.unsV2.call('recordSubscribe', {});
+// @ts-expect-error Retired long polling is not a v5 operation.
+client.unsV2.recordChangesPoll({ collectionId: 'orders' });
+// @ts-expect-error Native source documents replace the old Source create route.
+client.unsV2.sourceCreate({});
+// @ts-expect-error Native source documents replace the old Source get route.
+client.unsV2.sourceGet({ id: '101' });
+// @ts-expect-error Native stream documents replace the old program create route.
+client.unsV2.streamProgramCreate({});
 
 // Retired Cloud Project DTOs must not remain public type exports.
 // @ts-expect-error Project membership was removed from the Cloud contract.
@@ -172,3 +182,12 @@ const invalidAppMembersBody: Parameters<typeof appsApi.openapiV1Appslistaccessme
 };
 void appMembersBody;
 void invalidAppMembersBody;
+
+// @ts-expect-error v5 Source creation needs either document or items.
+client.unsV2.sourceDocumentCreate({ dryRun: true });
+// @ts-expect-error v5 Stream creation needs either document or program.
+client.unsV2.streamDocumentCreate({ dryRun: true });
+const nativeSource: UnsV2Request<'sourceDocumentCreate'> = { dryRun: true, document: { name: 'HTTP', protocol: 'http', config: { configVersion: 2, endpoint: 'https://example.invalid', options: {} } } };
+// @ts-expect-error Single document and batch items are mutually exclusive.
+client.unsV2.sourceDocumentCreate({ ...nativeSource, items: [{ document: nativeSource.document }] });
+void nativeSource;

@@ -238,8 +238,7 @@ const server = createServer(async (req, res) => {
       }
       if (req.method === 'GET') {
         const { grant } = await ordersContext(client, 'record:read', subject);
-        const records = await client.unsV2.recordFind({ collectionId: grant.collectionId,
-          filter: { _id: { $eq: id } }, limit: 1 });
+        const records = await client.unsV2.recordGet({ collectionId: grant.collectionId, ids: [id] });
         checkCoreReadFields(records.data.items, grant);
         const item = records.data.items[0];
         if (!item) return reply(res, 404, { code: 'NOT_FOUND' });
@@ -273,18 +272,28 @@ const server = createServer(async (req, res) => {
       const { subject } = await orderSubject(req, req.url);
       const client = orderClient(req);
       const { grant } = await ordersContext(client, 'record:read', subject);
-      const result = await client.unsV2.recordChangesPoll({ collectionId: grant.collectionId,
-        ...(cursor ? { cursor } : {}), limit: 50, waitMs: cursor ? 1000 : 0 });
-      const { items, nextCursor, retentionMs } = result.data;
-      if (!Array.isArray(items) || items.length > 100 || typeof nextCursor !== 'string' || !nextCursor || nextCursor.length > 8192 ||
-          !Number.isSafeInteger(retentionMs) || retentionMs <= 0) throw new Error('Invalid notification response');
-      const notifications = items.map(item => {
-        if (typeof item.eventId !== 'string' || !item.eventId || item.eventId.length > 256 || item.collectionId !== grant.collectionId ||
-            typeof item.recordId !== 'string' || !item.recordId || item.recordId.length > 128 || !['record', 'delete'].includes(item.change) ||
-            !Number.isSafeInteger(item.occurredAt) || item.occurredAt <= 0) throw new Error('Invalid notification item');
-        return { eventId: item.eventId, collectionId: item.collectionId, recordId: item.recordId, change: item.change, occurredAt: item.occurredAt };
-      });
-      return reply(res, 200, { operator: subject.userID, items: notifications, nextCursor, retentionMs });
+      // Adapt one native SSE frame to the example's browser poll contract.
+      // Restricted events invalidate the collection without revealing record IDs.
+      const cancel = new AbortController();
+      const disconnected = () => cancel.abort();
+      res.once('close', disconnected);
+      try {
+        for await (const frame of client.unsV2.recordSubscribe({ collectionIds: [grant.collectionId],
+          ...(cursor ? { cursor } : {}) }, { signal: cancel.signal })) {
+          if (frame.event === 'reset') throw Object.assign(new Error(), { status: 409, code: frame.data.reason });
+          if (frame.event === 'heartbeat') return reply(res, 200, { operator: subject.userID, items: [], nextCursor: frame.id });
+          const item = frame.data;
+          if (item.collectionId !== grant.collectionId) throw new Error('Invalid notification scope');
+          const notification = { eventId: item.eventId, collectionId: item.collectionId,
+            ...(!item.restricted ? { recordId: item.recordId, revision: String(item.revision) } : {}),
+            change: item.change, occurredAt: String(item.occurredAt) };
+          return reply(res, 200, { operator: subject.userID, items: [notification], nextCursor: frame.id });
+        }
+        throw new Error('Subscription ended without a frame');
+      } finally {
+        res.removeListener('close', disconnected);
+        cancel.abort();
+      }
     }
     if (req.method === 'GET' && path === '/api/orders') {
       const { subject } = await orderSubject(req);
