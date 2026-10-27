@@ -13,7 +13,7 @@ const read = path => execFileSync('git', ['-C', backend, 'show', `${revision}:${
 const hash = value => createHash('sha256').update(value).digest('hex');
 const sourcePath = 'service/unssvr/internal/domain/unsv2/contract_generated.go';
 const source = read(sourcePath);
-const literal = source.match(/^const ContractJSON = (".*")$/m)?.[1];
+const literal = source.match(/^const ContractJSON\s*=\s*("(?:[^"\\]|\\.)*")[\t ]*$/m)?.[1];
 if (!literal) throw new Error('Missing resolved Backend ContractJSON');
 const contractText = JSON.parse(literal);
 const contract = JSON.parse(contractText);

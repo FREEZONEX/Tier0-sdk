@@ -22,14 +22,10 @@ const operation = (name: string) => manifest.operations.find(item => item.name =
 
 describe('Backend App UNS access contract without generic record audit', () => {
   it('pins the exact upstream commit and all generator inputs', () => {
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('d9edd24d2eb8470e194b797a2fdbfe2c48864784');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('7c76e3567e97bbcb5b61a15a933127b0e41f25b1');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    expect(UNS_V2_CONTRACT_PROVENANCE.streamCapabilityRetirement).toMatchObject({
-      source: 'share/unscontract/manifest.json',
-      sha256: '30ffc9875cab8f9db7b651116492abffd498b56c7b99fea5c29eb6b49cca1320',
-      matchesCommit: true,
-    });
-    expect(UNS_V2_CONTRACT_PROVENANCE.streamCapabilityRetirement.revision).toBe('f51ed95a0dfd793513186f304c7eea5cf3e42702');
+    expect(UNS_V2_CONTRACT_PROVENANCE.resolvedCloudContract).toBe(true);
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('+source-vendor/2');
     for (const [key, file] of Object.entries({ contract: 'contract.json', cloudSupport: 'cloud-support.json', manifest: 'manifest.json', provenance: 'provenance.json', registry: 'registry_generated.go' })) {
       expect(UNS_V2_CONTRACT_PROVENANCE.hashes[key as keyof typeof UNS_V2_CONTRACT_PROVENANCE.hashes]).toBe(
         createHash('sha256').update(read(file)).digest('hex')

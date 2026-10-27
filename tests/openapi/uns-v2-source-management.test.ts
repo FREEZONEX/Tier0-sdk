@@ -4,8 +4,8 @@ import { createClient, UNS_V2_OPERATIONS, UnsV2Error, UnsV2OutcomeUnknownError, 
 import { decodeUnsV2JSON, encodeUnsV2JSON } from '../../src/uns-v2/codec.js';
 
 const manifest = JSON.parse(readFileSync(new URL('../../contracts/uns-v2/manifest.json', import.meta.url), 'utf8'));
-const sapSchema = manifest.schemas.CloudSourceConfig.oneOf.find((schema: { properties: { configVersion: { const: number } } }) =>
-  schema.properties.configVersion.const === 3);
+const sapSchema = manifest.schemas.CloudSourceConfig.oneOf.find((schema: { properties: { sourceType?: { const: string } } }) =>
+  schema.properties.sourceType?.const === 'sap-odata');
 const api = () => createClient({ apiHost: 'https://gateway.example.test', apiKey: 'fixture-management-key' }).unsV2;
 const sap = {
   configVersion: 3 as const, sourceType: 'sap-odata' as const, endpoint: 'https://sap.example.test/service/',
@@ -32,9 +32,34 @@ describe('frozen v5 Source management contract', () => {
       additionalProperties: false, required: ['id', 'expectedRevision'],
     });
     expect(sapSchema).toMatchObject({ additionalProperties: false, required: ['configVersion', 'sourceType', 'endpoint', 'options', 'auth'] });
-    expect(sapSchema.properties.auth.properties.kind.const).toBe('vendorBasic');
+    expect(sapSchema.properties.auth.properties.kind.enum).toEqual(['vendorNative', 'vendorBasic']);
     expect(sapSchema.properties).not.toHaveProperty('tls');
     expect(sapSchema.properties.options.additionalProperties).toBe(false);
+  });
+
+  it('retains all native vendor contracts without exposing credential material in Source configuration', () => {
+    const vendors = manifest.schemas.CloudSourceConfig.oneOf.filter((schema: { properties: { configVersion: { const: number } } }) =>
+      schema.properties.configVersion.const === 3);
+    expect(vendors).toHaveLength(11);
+    expect(new Set(vendors.map((schema: { properties: { sourceType: { const: string } } }) => schema.properties.sourceType.const))).toEqual(
+      new Set(['sap-odata', 'pi-web-api', 'plex-mes', 'wms-rest', 'yonyou-yonbip', 'kingdee-jdy', 'ngp', 'kingdee-k3cloud', 'salesforce', 'teamcenter', 'hikvision-isapi'])
+    );
+    for (const schema of vendors) {
+      expect(schema.additionalProperties).toBe(false);
+      expect(schema.properties.auth.properties.kind.enum).toContain('vendorNative');
+      expect(schema.properties.auth.properties).not.toHaveProperty('fields');
+      expect(schema.properties.auth.properties).not.toHaveProperty('password');
+      const endpoint = new RegExp(schema.properties.endpoint.pattern);
+      expect(endpoint.test('http://vendor.example.test/service/')).toBe(schema.properties.sourceType.const === 'wms-rest');
+      expect(endpoint.test('https://vendor.example.test/service/')).toBe(true);
+    }
+  });
+
+  it('keeps write-only credential creation inside the Core management boundary', () => {
+    const credential = manifest.operations.find((operation: { name: string }) => operation.name === 'sourceCredentialCreate');
+    expect(credential).toMatchObject({ coreOnly: true, appAllowed: false });
+    expect(Object.hasOwn(UNS_V2_OPERATIONS, 'sourceCredentialCreate')).toBe(false);
+    expect(manifest.schemas.CloudSourceCredentialCreateReq.properties.kind.enum).toContain('vendorNative');
   });
 
   it('maps discovery to its native route and preserves resources without widening their authority', async () => {

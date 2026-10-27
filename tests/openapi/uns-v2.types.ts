@@ -62,16 +62,26 @@ const invalidSAP: CloudSourceConfig = {
 };
 const unsupportedVendor: CloudSourceConfig = {
   configVersion: 3, endpoint: 'https://vendor.example.invalid/', options: {}, auth: { kind: 'vendorBasic', credentialRef: 'opaque-ref' },
-  // @ts-expect-error Only SAP is published in the frozen v3 Source schema.
-  sourceType: 'teamcenter',
+  // @ts-expect-error Unregistered vendor profiles cannot select a native host.
+  sourceType: 'unsupported-vendor',
 };
+const teamcenterConfig: CloudSourceConfig = {
+  configVersion: 3, sourceType: 'teamcenter', endpoint: 'https://plm.example.invalid/', options: {},
+  auth: { kind: 'vendorNative', credentialRef: 'opaque-teamcenter-ref' },
+};
+const salesforceConfig: CloudSourceConfig = {
+  configVersion: 3, sourceType: 'salesforce', endpoint: 'https://crm.example.invalid/',
+  options: { parameters: { clientId: 'fixture-client', apiVersion: 'v67.0' } },
+  auth: { kind: 'vendorNative', credentialRef: 'opaque-salesforce-ref' },
+};
+client.unsV2.sourceDocumentCreate({ dryRun: true, document: { name: 'Teamcenter', protocol: 'http', config: teamcenterConfig } });
 client.unsV2.sourceDiscover({ id: '101', expectedRevision: 2 });
 // @ts-expect-error Discovery requires an explicit current revision.
 client.unsV2.sourceDiscover({ id: '101' });
 // @ts-expect-error Discovery has no caller-selected target URL.
 client.unsV2.sourceDiscover({ id: '101', expectedRevision: 2, endpoint: 'https://other.example.invalid/' });
 client.unsV2.sourceDocumentCreate({ dryRun: true, document: { name: 'SAP', protocol: 'http', config: sapConfig } });
-void [sapConfig, genericConfig, anonymousSAP, invalidSAP, unsupportedVendor];
+void [sapConfig, genericConfig, anonymousSAP, invalidSAP, unsupportedVendor, teamcenterConfig, salesforceConfig];
 // Native runtime DTO from the pinned source; hosted Cloud documents retain their own shape.
 const nativeDefinition: RuntimeStreamDefinition = {
   name: 'native-http', script: '', sdkVersion: 'tier0-stream/v2',
