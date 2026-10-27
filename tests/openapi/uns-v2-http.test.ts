@@ -93,18 +93,12 @@ describe('UNS v2 localhost HTTP fixture', () => {
     for (const row of received.slice(start)) expect(row.headers['x-tier0-app-data-subject']).toBeUndefined();
   });
 
-  it('keeps the existing runtime capability query outside App data delegation', async () => {
+  it('rejects the retired runtime probe before any HTTP request', async () => {
     const start = received.length;
-    const response = { code: 200, msg: '', requestId: 'runtime-capability', data: {
-      controlInvokeReady: true, scriptContractVersion: 'tier0-stream/v3', controlMetadataReady: true,
-    } };
-    respond = (_req, res) => send(res, response);
     const api = createClient({ apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: 'gateway.user.signature' });
-    await expect(api.unsV2.streamRuntimeCapabilitiesGet({})).resolves.toEqual(response);
-    expect(received.slice(start)).toHaveLength(1);
-    expect(received[start]).toMatchObject({ method: 'POST', path: '/openapi/v2/uns/streams/runtime/capabilities/get' });
-    expect(received[start].headers['x-tier0-app-data-subject']).toBeUndefined();
-    expect(received[start].headers.authorization).toBe('Bearer workspace-bound-key');
+    expect(api.unsV2).not.toHaveProperty('streamRuntimeCapabilitiesGet');
+    await expect(api.unsV2.call('streamRuntimeCapabilitiesGet' as never, {} as never)).rejects.toThrow('unknown UNS v2 operation');
+    expect(received).toHaveLength(start);
   });
 
   it('does not expose retired v2 request execution aliases at runtime or through generic dispatch', async () => {
@@ -301,12 +295,12 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-collection/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-collection/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1+stream-control-probe-retirement/1');
     expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('6c111671a2172eb14c38f2f6d9ec329f4ee08a3d');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
     expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('0e82f1a9f4363bcdc1b8cc916f494aab5fb5f368a8d232850a299b5dbc165aa5');
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(114);
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(97);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(113);
     expect(received.slice(start)).toHaveLength(1);
   });
 

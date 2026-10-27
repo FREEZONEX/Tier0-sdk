@@ -22,7 +22,6 @@
     {"name":"sourceDelete","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
     {"name":"streamProgramList","permission":"uns.stream.view","scope":"stream:read","minPermission":1},
     {"name":"streamProgramDelete","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
-    {"name":"streamRuntimeCapabilitiesGet","permission":"control.read","scope":"control:read","minPermission":1},
     {"name":"controlDiscover","permission":"control.read","scope":"control:read","minPermission":1},
     {"name":"controlDescribe","permission":"control.read","scope":"control:read","minPermission":1},
     {"name":"controlInvoke","permission":"control.execute","scope":"control:execute","minPermission":1},

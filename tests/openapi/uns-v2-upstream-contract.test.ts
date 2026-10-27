@@ -25,13 +25,19 @@ describe('Backend App UNS access contract without generic record audit', () => {
   it('pins the exact upstream commit and all generator inputs', () => {
     expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('6c111671a2172eb14c38f2f6d9ec329f4ee08a3d');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
+    expect(UNS_V2_CONTRACT_PROVENANCE.streamCapabilityRetirement).toEqual({
+      revision: '273d58f7dcf0c5fee4a593b405b7102e7049adfe',
+      source: 'share/unscontract/manifest.json',
+      sha256: '30ffc9875cab8f9db7b651116492abffd498b56c7b99fea5c29eb6b49cca1320',
+      matchesCommit: true,
+    });
     for (const [key, file] of Object.entries({ contract: 'contract.json', cloudSupport: 'cloud-support.json', manifest: 'manifest.json', provenance: 'provenance.json', registry: 'registry_generated.go', streamRuntime: 'stream-runtime.schema-overlay.json' })) {
       expect(UNS_V2_CONTRACT_PROVENANCE.hashes[key as keyof typeof UNS_V2_CONTRACT_PROVENANCE.hashes]).toBe(
         createHash('sha256').update(read(file)).digest('hex')
       );
     }
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(98);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(114);
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(97);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(113);
   });
 
   it('pins current Stream write schemas independently of the retained data baseline', () => {
@@ -40,7 +46,6 @@ describe('Backend App UNS access contract without generic record audit', () => {
     expect(streamRuntime.sourceManifestSHA256).toMatch(/^[0-9a-f]{64}$/);
     expect(Object.keys(streamRuntime.schemas)).toEqual([
       'RuntimeStreamDefinition', 'CloudStreamScript',
-      'CloudStreamRuntimeCapabilitiesGetReq', 'CloudStreamRuntimeCapabilitiesGetResponse',
       'CloudStreamDocument', 'CloudStreamEntry',
       'UnsV2StreamProgramVersionsListResponse', 'CloudHistoricalStreamDocument',
     ]);
@@ -51,7 +56,8 @@ describe('Backend App UNS access contract without generic record audit', () => {
     expect(streamRuntime.schemas.CloudStreamEntry.properties.topic).toMatchObject({ type: 'string', readOnly: true });
     expect(streamRuntime.schemas.CloudStreamEntry.properties.topics).toBeUndefined();
     expect(streamRuntime.schemas.CloudStreamEntry.properties.control).toBeUndefined();
-    expect(UNS_V2_OPERATIONS.streamRuntimeCapabilitiesGet.scope).toBe('stream_request:read');
+    expect(streamRuntime.operationMetadata).toEqual({});
+    expect(Object.hasOwn(UNS_V2_OPERATIONS, 'streamRuntimeCapabilitiesGet')).toBe(false);
     for (const name of ['RuntimeStreamDefinition', 'CloudStreamScript']) {
       expect(streamRuntime.schemas[name].properties.sdkVersion.enum).toEqual(['tier0-stream/v3']);
     }

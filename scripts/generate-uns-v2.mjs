@@ -28,11 +28,18 @@ const cloudSupport = JSON.parse(cloudSupportText);
 const manifest = JSON.parse(manifestText);
 const provenance = JSON.parse(provenanceText);
 const streamRuntime = parse(inputs.streamRuntime);
+for (const input of [contract, manifest, cloudSupport]) {
+  if (input.operations.some(operation => operation.name === 'streamRuntimeCapabilitiesGet' ||
+      operation.path === '/uns/streams/runtime/capabilities/get' || operation.suffix === '/uns/streams/runtime/capabilities/get') ||
+      ['CloudStreamRuntimeCapabilitiesGetReq', 'CloudStreamRuntimeCapabilitiesGetResponse']
+        .some(name => Object.hasOwn(input.schemas || {}, name))) {
+    fail('retired Stream readiness probe must not be restored');
+  }
+}
 if (streamRuntime.version !== 'stream-runtime-schema-overlay/v1' || !/^[0-9a-f]{40}$/.test(streamRuntime.revision)) {
   fail('invalid pinned Stream runtime schema overlay');
 }
 const streamSchemaNames = ['RuntimeStreamDefinition', 'CloudStreamScript',
-  'CloudStreamRuntimeCapabilitiesGetReq', 'CloudStreamRuntimeCapabilitiesGetResponse',
   'CloudStreamDocument', 'CloudStreamEntry',
   'UnsV2StreamProgramVersionsListResponse', 'CloudHistoricalStreamDocument'];
 if (JSON.stringify(Object.keys(streamRuntime.schemas)) !== JSON.stringify(streamSchemaNames)) {
@@ -95,15 +102,8 @@ if (registryNames.length !== manifest.operations.length || registryNames.some((n
   fail('registry_generated.go operation order differs from manifest.json');
 }
 
-// Overlay operation authority metadata only after checking the frozen data inputs.
-if (JSON.stringify(Object.keys(streamRuntime.operationMetadata)) !== JSON.stringify(['streamRuntimeCapabilitiesGet'])) {
-  fail('Stream operation overlay must not replace unrelated data operations');
-}
-for (const [name, metadata] of Object.entries(streamRuntime.operationMetadata)) {
-  if (JSON.stringify(Object.keys(metadata)) !== JSON.stringify(['permission', 'scope', 'minPermission'])) {
-    fail('unexpected Stream operation metadata');
-  }
-  Object.assign(manifest.operations.find(operation => operation.name === name), metadata);
+if (JSON.stringify(streamRuntime.operationMetadata) !== '{}') {
+  fail('Stream schema overlay must not restore operation authority metadata');
 }
 
 // Execution is exposed only through streams.requests; retain the frozen upstream inputs.
