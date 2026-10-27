@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const rootSkillUrl = new URL('../skills/tier0-sdk/SKILL.md', import.meta.url);
@@ -21,6 +21,34 @@ function rootDescription(): string {
 }
 
 describe('single-root Skill routing', () => {
+  it('documents probe retirement without reintroducing a readiness call in README or Skill examples', () => {
+    const reference = readFileSync(new URL('../skills/tier0-sdk/references/openapi.md', import.meta.url), 'utf8');
+    expect(reference).toContain('unsV2.streamRuntimeCapabilitiesGet');
+    expect(reference).toContain('is retired');
+    expect(reference).toContain('../tier0-sdk-system/references/info.md');
+    const visit = (directory: URL): void => {
+      for (const entry of readdirSync(directory, { withFileTypes: true })) {
+        const file = new URL(entry.name + (entry.isDirectory() ? '/' : ''), directory);
+        if (entry.isDirectory()) {
+          if (!['node_modules', 'dist', '.git'].includes(entry.name)) visit(file);
+        } else if (/\.(md|mdx|markdown)$/i.test(entry.name)) {
+          for (const block of readFileSync(file, 'utf8').matchAll(/```[^\n]*\n([\s\S]*?)```/g)) {
+            expect(block[1], file.pathname).not.toMatch(/streamRuntimeCapabilitiesGet\s*\(|stream\.runtime\.capabilities\s*\(/);
+          }
+        }
+      }
+    };
+    visit(new URL('../skills/', import.meta.url));
+    visit(new URL('../examples/', import.meta.url));
+    for (const entry of readdirSync(new URL('../', import.meta.url))) {
+      if (!/^readme(?:[.-].*)?$/i.test(entry)) continue;
+      const file = new URL('../' + entry, import.meta.url);
+      for (const block of readFileSync(file, 'utf8').matchAll(/```[^\n]*\n([\s\S]*?)```/g)) {
+        expect(block[1], entry).not.toMatch(/streamRuntimeCapabilitiesGet\s*\(|stream\.runtime\.capabilities\s*\(/);
+      }
+    }
+  });
+
   it('exposes common file intents before the root Skill is loaded', () => {
     const description = rootDescription();
 

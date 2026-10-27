@@ -17,7 +17,7 @@
   "upstreamSourceSHA256": "0fb8902a80c8268bfe383277528e5573b044ca5457bd86d34d9281261ba4e495",
   "note": "Resolved Cloud contract from the pinned commit; local fixtures do not establish deployment acceptance or device ACK.",
   "streamCapabilityRetirement": {
-    "revision": "83b4936f0e9248f7db28075d34ec751e6f482dea",
+    "revision": "f51ed95a0dfd793513186f304c7eea5cf3e42702",
     "source": "share/unscontract/manifest.json",
     "sha256": "30ffc9875cab8f9db7b651116492abffd498b56c7b99fea5c29eb6b49cca1320",
     "matchesCommit": true

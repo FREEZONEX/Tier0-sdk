@@ -15,6 +15,12 @@ description: "OpenAPI module quickstart: configuration, configureClient, basic A
 - Generated types
 - Error handling
 
+## Retired Stream readiness query
+
+The former Control readiness probe `unsV2.streamRuntimeCapabilitiesGet` is retired. Do not call it or recreate `stream.runtime.capabilities()` as an alias. Stream creation, publishing, execution, rollback and history use their documented operations and actual operation errors; do not gate them on this preflight query.
+
+General service capabilities and broker information remain supported by the [System Skill](../tier0-sdk-system/references/info.md).
+
 ## Configuration
 
 In Node.js, the SDK can read `TIER0_*` environment variables.

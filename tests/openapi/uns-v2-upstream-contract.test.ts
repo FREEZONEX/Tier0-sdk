@@ -24,6 +24,12 @@ describe('Backend App UNS access contract without generic record audit', () => {
   it('pins the exact upstream commit and all generator inputs', () => {
     expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('d9edd24d2eb8470e194b797a2fdbfe2c48864784');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
+    expect(UNS_V2_CONTRACT_PROVENANCE.streamCapabilityRetirement).toMatchObject({
+      source: 'share/unscontract/manifest.json',
+      sha256: '30ffc9875cab8f9db7b651116492abffd498b56c7b99fea5c29eb6b49cca1320',
+      matchesCommit: true,
+    });
+    expect(UNS_V2_CONTRACT_PROVENANCE.streamCapabilityRetirement.revision).toBe('f51ed95a0dfd793513186f304c7eea5cf3e42702');
     for (const [key, file] of Object.entries({ contract: 'contract.json', cloudSupport: 'cloud-support.json', manifest: 'manifest.json', provenance: 'provenance.json', registry: 'registry_generated.go' })) {
       expect(UNS_V2_CONTRACT_PROVENANCE.hashes[key as keyof typeof UNS_V2_CONTRACT_PROVENANCE.hashes]).toBe(
         createHash('sha256').update(read(file)).digest('hex')
@@ -42,6 +48,23 @@ describe('Backend App UNS access contract without generic record audit', () => {
     }
     for (const name of ['sourceDocumentCreate', 'sourceDocumentGet', 'streamDocumentCreate', 'metadataInsertOne', 'recordGet',
       'recordQueryBatch', 'recordUpdateOne', 'recordBulkWrite', 'sampleAppend', 'sampleFind', 'sampleLatestValues', 'recordSubscribe']) {
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, name), name).toBe(true);
+    }
+  });
+
+  it('retires only the public readiness probe and retains real Stream operations', () => {
+    const retired = 'streamRuntimeCapabilitiesGet';
+    expect(Object.hasOwn(UNS_V2_OPERATIONS, retired)).toBe(false);
+    expect(manifest.operations.some(item => item.name === retired)).toBe(false);
+    expect(contract.operations.some(item => item.name === retired)).toBe(false);
+    expect(registry).not.toContain(`Name: "${retired}"`);
+    for (const schema of ['CloudStreamRuntimeCapabilitiesGetReq', 'CloudStreamRuntimeCapabilitiesGetResponse']) {
+      expect(Object.hasOwn(manifest.schemas, schema)).toBe(false);
+      expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, schema)).toBe(false);
+    }
+    for (const name of ['streamDocumentCreate', 'streamDocumentUpdate', 'streamDocumentValidate',
+      'streamProgramDeploy', 'streamProgramRollback', 'streamProgramVersionsList', 'streamRunsList',
+      'streamObservationGet', 'streamSampleTest']) {
       expect(Object.hasOwn(UNS_V2_OPERATIONS, name), name).toBe(true);
     }
   });

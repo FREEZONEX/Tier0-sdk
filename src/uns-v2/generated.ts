@@ -3719,7 +3719,7 @@ export const UNS_V2_CONTRACT_PROVENANCE = {
   "upstreamSourceSHA256": "0fb8902a80c8268bfe383277528e5573b044ca5457bd86d34d9281261ba4e495",
   "note": "Resolved Cloud contract from the pinned commit; local fixtures do not establish deployment acceptance or device ACK.",
   "streamCapabilityRetirement": {
-    "revision": "83b4936f0e9248f7db28075d34ec751e6f482dea",
+    "revision": "f51ed95a0dfd793513186f304c7eea5cf3e42702",
     "source": "share/unscontract/manifest.json",
     "sha256": "30ffc9875cab8f9db7b651116492abffd498b56c7b99fea5c29eb6b49cca1320",
     "matchesCommit": true
@@ -3728,7 +3728,7 @@ export const UNS_V2_CONTRACT_PROVENANCE = {
     "contract": "0d1ba3eae539d7f5705785736d28f5dc4b501b3a80b51da10a48af788f19dc74",
     "cloudSupport": "23e5680ec2c4f645067789e366d783961817bbb7438a3aa98099fd5314e6a35f",
     "manifest": "06b0f034ab4b25ed534501970df7599824dc5bf5828678f80f75bdaf8e47ddbd",
-    "provenance": "847efe366e232c67d09df3bbc0dded46f574e92582088abf9dd71387ff2bdb80",
+    "provenance": "e4d460531ac3111d20686f2ee255ebfb3aeec70a61483d6c1d2788768e1debe1",
     "registry": "62dd03cf1240dddf40dfb663c1f4e742d25d8b1d78f349927a2120656c7ed24d"
   },
   "publicOperationCount": 86,

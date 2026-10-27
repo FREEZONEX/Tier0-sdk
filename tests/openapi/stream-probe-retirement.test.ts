@@ -56,12 +56,21 @@ describe('Stream Control readiness probe retirement', () => {
     expect(capabilities.discover).toBeTypeOf('function');
   });
 
-  it('keeps shipped source, Skills and README guidance free of this specific probe', () => {
+  it('keeps executable source and documentation examples free of this specific probe', () => {
     const paths = [...files('src'), ...files('skills'),
       ...readdirSync(root).filter(name => /^readme(?:\.|$)/i.test(name))];
     const probe = /streamRuntimeCapabilitiesGet|CloudStreamRuntimeCapabilitiesGet(?:Req|Response)|\/uns\/streams\/runtime\/capabilities\/get|stream\.runtime\.capabilities/;
     for (const path of paths) {
-      if (existsSync(new URL(path, root))) expect(read(path), path).not.toMatch(probe);
+      if (!existsSync(new URL(path, root))) continue;
+      const content = read(path);
+      if (path.startsWith('src/')) expect(content, path).not.toMatch(probe);
+      else {
+        // Retirement prose may name the old API; runnable examples must not use it.
+        expect(content, path).not.toMatch(/CloudStreamRuntimeCapabilitiesGet(?:Req|Response)|\/uns\/streams\/runtime\/capabilities\/get/);
+        for (const block of content.matchAll(/```[^\n]*\n([\s\S]*?)```/g)) {
+          expect(block[1], path).not.toMatch(probe);
+        }
+      }
     }
     // General service capabilities and Broker information remain valid guidance.
     expect(read('skills/tier0-sdk/tier0-sdk-system/references/info.md')).toContain('capabilities');

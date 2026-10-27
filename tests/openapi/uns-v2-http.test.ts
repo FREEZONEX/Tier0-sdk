@@ -93,6 +93,15 @@ describe('UNS v2 localhost HTTP fixture', () => {
     for (const row of received.slice(start)) expect(row.headers['x-tier0-app-data-subject']).toBeUndefined();
   });
 
+  it('does not expose or dispatch the retired Stream runtime probe', async () => {
+    const start = received.length;
+    const api = client().unsV2;
+    expect(api).not.toHaveProperty('streamRuntimeCapabilitiesGet');
+    const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
+    await expect(core.call('streamRuntimeCapabilitiesGet', {})).rejects.toThrow('unknown UNS v2 operation');
+    expect(received).toHaveLength(start);
+  });
+
   it.each(['controlDiscover', 'controlDescribe', 'controlInvoke'] as const)
   ('never forwards data delegation through unsV2.%s', async operation => {
     const start = received.length;
