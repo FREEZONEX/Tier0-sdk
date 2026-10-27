@@ -1,0 +1,49 @@
+{
+  "recordGet": {
+    "path": "/openapi/v2/uns/collections/measurements/records:get",
+    "body": {
+      "collectionId": "measurements",
+      "ids": [
+        "meter-1",
+        "meter-missing"
+      ]
+    },
+    "response": "{\"code\":200,\"msg\":\"ok\",\"requestId\":\"v5-fixture\",\"data\":{\"items\":[{\"id\":\"meter-1\",\"collectionId\":\"measurements\",\"data\":{\"counter\":9007199254740993,\"pressure\":1.0000000000000001},\"revision\":9007199254740993,\"createdAt\":1,\"updatedAt\":2,\"sourceId\":null,\"sourceTime\":null}],\"missing\":[\"meter-missing\"]}}"
+  },
+  "sampleFind": {
+    "path": "/openapi/v2/uns/collections/measurements/samples:find",
+    "body": {
+      "collectionId": "measurements",
+      "recordIds": [
+        "meter-1",
+        "meter-missing"
+      ],
+      "from": 1792540800000,
+      "to": 1792540860000,
+      "limit": 20,
+      "cursor": "opaque.history"
+    },
+    "response": "{\"code\":200,\"msg\":\"ok\",\"requestId\":\"v5-fixture\",\"data\":{\"items\":[{\"id\":\"sample-1\",\"collectionId\":\"measurements\",\"recordId\":\"meter-1\",\"time\":1792540800000,\"receivedAt\":1792540800001,\"quality\":\"good\",\"data\":{\"pressure\":1.0000000000000001},\"sourceId\":null}],\"pageInfo\":{\"hasMore\":true,\"nextCursor\":\"opaque.next\"}}}"
+  },
+  "sampleLatestValues": {
+    "path": "/openapi/v2/uns/collections/measurements/samples:latest",
+    "body": {
+      "collectionId": "measurements",
+      "recordIds": [
+        "meter-1",
+        "meter-missing"
+      ]
+    },
+    "response": "{\"code\":200,\"msg\":\"ok\",\"requestId\":\"v5-fixture\",\"data\":{\"series\":[{\"recordId\":\"meter-1\",\"sample\":{\"id\":\"sample-1\",\"collectionId\":\"measurements\",\"recordId\":\"meter-1\",\"time\":1792540800000,\"receivedAt\":1792540800001,\"quality\":\"good\",\"data\":{\"pressure\":1.0000000000000001},\"sourceId\":null}},{\"recordId\":\"meter-missing\",\"sample\":null}]}}"
+  },
+  "sampleAppend": {
+    "path": "/openapi/v2/uns/collections/measurements/records/meter-1/samples",
+    "body": "{\"collectionId\":\"measurements\",\"recordId\":\"meter-1\",\"dryRun\":false,\"idempotencyKey\":\"sample-intent-1\",\"items\":[{\"time\":1792540800000,\"data\":{\"pressure\":1.0000000000000001}}]}",
+    "response": "{\"code\":200,\"msg\":\"ok\",\"requestId\":\"v5-fixture\",\"data\":{\"status\":\"accepted\",\"jobId\":\"sample-job-1\",\"replayed\":false}}"
+  },
+  "recordUpdateOne": {
+    "path": "/openapi/v2/uns/collections/measurements/records:updateOne",
+    "body": "{\"collectionId\":\"measurements\",\"filter\":{\"_id\":\"meter-1\"},\"expectedRevision\":9007199254740993,\"update\":{\"$set\":{\"counter\":9007199254740993}},\"upsert\":false,\"returnDocument\":\"after\",\"idempotencyKey\":\"record-intent-1\"}",
+    "response": "{\"code\":200,\"msg\":\"ok\",\"requestId\":\"v5-fixture\",\"data\":{\"matchedCount\":1,\"modifiedCount\":1,\"status\":\"committed\",\"replayed\":false,\"value\":{\"id\":\"meter-1\",\"collectionId\":\"measurements\",\"data\":{\"counter\":9007199254740993,\"pressure\":1.0000000000000001},\"revision\":9007199254740993,\"createdAt\":1,\"updatedAt\":2,\"sourceId\":null,\"sourceTime\":null}}}"
+  }
+}

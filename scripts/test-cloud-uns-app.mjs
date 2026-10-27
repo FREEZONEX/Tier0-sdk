@@ -72,33 +72,35 @@ const gateway = createServer(async (req, res) => {
   dataRequests++;
   const proof = req.headers['x-tier0-app-data-subject'];
   const proofUser = [...proofs].find(([, value]) => value === proof)?.[0];
-  dataExchanges.push({ path: req.url, body: JSON.parse(body), proof });
+  dataExchanges.push({ path: req.url, body: body ? JSON.parse(body) : null, proof });
   if (appDataMode === 'core') {
     if (!proofUser) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ code: 401, msg: 'private rejected proof', requestId: 'fixture-proof-rejected', data: null,
-        error: { code: 'APP_DATA_SUBJECT_INVALID', retryable: false, details: [],
-          retryAdvice: { recommendedAction: 'doNotRetry', canRetrySameRequest: false, keepIdempotencyKey: false } } }));
+        error: { code: 'APP_DATA_SUBJECT_INVALID', reason: 'rejected proof', details: [], execution: 'notStarted', retry: { safe: false } } }));
     }
   }
   else assert.equal(proof, undefined, 'legacy never forwards an inbound data proof');
   assert.equal(req.headers['x-api-key'], 'fixture-key-not-production');
   const reply = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(value)); };
   const failure = (status, code) => reply(status, { code: status, msg: 'private fixture policy detail', requestId: 'fixture-policy', data: null,
-    error: { code, retryable: false, details: [], retryAdvice: { recommendedAction: 'doNotRetry', canRetrySameRequest: false, keepIdempotencyKey: true } } });
+    error: { code, reason: 'fixture policy failure', details: [], execution: 'notStarted', retry: { safe: false } } });
   if (mode === 'revoked') return reply(403, {
     code: 403, msg: 'must-not-expose-private-detail', requestId: 'fixture-revoked',
     error: { code: 'FORBIDDEN', retryable: false },
   });
-  if (req.url === '/openapi/v2/uns/records/changes') {
-    const request = JSON.parse(body);
-    assert.equal(request.collectionId, collectionId);
-    assert.deepEqual(Object.keys(request).sort(), request.cursor ? ['collectionId', 'cursor', 'limit', 'waitMs'] : ['collectionId', 'limit', 'waitMs']);
-    if (request.cursor === 'expired-window') return failure(409, 'CURSOR_EXPIRED');
-    return reply(200, { code: 200, msg: 'ok', requestId: 'notifications', data: {
-      items: request.cursor ? [{ eventId: 'event-' + proofUser, collectionId: request.collectionId,
-        recordId: 'record-' + proofUser, change: 'record', occurredAt: 1792540800000, data: { secret: 'private-do-not-return' } }] : [],
-      nextCursor: 'rc1.fixture.' + proofUser, retentionMs: 3600000 } });
+  if (req.url.startsWith('/openapi/v2/uns/records:subscribe')) {
+    assert.equal(req.method, 'GET'); assert.equal(body, '');
+    assert.equal(req.headers.accept, 'text/event-stream');
+    assert.deepEqual(new URL(req.url, 'http://fixture').searchParams.getAll('collectionIds'), [collectionId]);
+    const cursor = req.headers['last-event-id'];
+    res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+    if (cursor === 'expired-window') return res.end('event: reset\ndata: {"reason":"CURSOR_EXPIRED"}\n\n');
+    const next = 'rc1.fixture.' + proofUser;
+    if (!cursor) return res.end(`event: heartbeat\nid: ${next}\ndata: {"at":1792540800000}\n\n`);
+    return res.end(`event: change\nid: ${next}\ndata: ${JSON.stringify({ eventId: next, collectionId,
+      recordId: 'record-' + proofUser, revision: 2, change: 'record', occurredAt: 1792540800000,
+      restricted: true, data: { secret: 'private-do-not-return' } })}\n\n`);
   }
   if (req.url === '/openapi/v2/uns/app/context') {
     if (pendingContexts) {
@@ -108,7 +110,14 @@ const gateway = createServer(async (req, res) => {
     return reply(200, {
     code: 200, requestId: 'fixture-context', msg: 'success', data: {
       appId: wrongContextApp ? 'another-app' : appID, name: 'SDK App fixture', revision: 1, platformPermissions: [],
-      collections: [{ alias: 'orders', collectionId,
+      limits: {
+        count: { defaultMax: 100000, max: 100000 }, total: { defaultMax: 10000, max: 100000 },
+        queryBatch: { maxQueries: 20, maxRows: 2000, maxBytes: 8388608 }, get: { maxIds: 100 },
+        subscribe: { maxCollections: 64, maxRecordIds: 100, heartbeatMs: 15000, retentionMs: 86400000 },
+        ttl: { minSeconds: 60, maxSeconds: 31536000, maxPerCollection: 1 },
+        concurrency: { reads: 8, writes: 4, queueMs: 1000 }, idempotencyWindowMs: 604800000,
+      },
+      collections: [{ alias: 'orders', collectionId, revision: 2, indexStatus: [], ttl: null,
         createCapability: changeCreateCapability({ version: 'cloud-app-create-capability/v1', allowed: mode !== 'read' && proofUser !== supervisorID,
           reason: proofUser === supervisorID ? 'initial_state_not_writable' : 'allowed', appRevision: 1, collectionRevision: 2,
           binding: createHash('sha256').update(String(proofUser)).digest('hex'),
@@ -122,10 +131,10 @@ const gateway = createServer(async (req, res) => {
     },
     });
   }
-  if (req.url === `/openapi/v2/uns/collections/${collectionId}/records:find`) {
+  if ([ `/openapi/v2/uns/collections/${collectionId}/records:find`, `/openapi/v2/uns/collections/${collectionId}/records:get` ].includes(req.url)) {
     const input = JSON.parse(body);
     if (appDataMode === 'core') {
-      if (input.filter) assert.deepEqual(Object.keys(input.filter), ['_id'], 'only the target ID narrows Core detail lookup');
+      if (input.ids) { assert.equal(req.url.endsWith('/records:get'), true); assert.equal(input.ids.length, 1); }
       else assert.equal(Object.hasOwn(input, 'filter'), false, 'Core list gets no App-side owner filter');
     }
     else assert.deepEqual(Object.keys(input.filter), ['ownerUserId']);
@@ -134,7 +143,7 @@ const gateway = createServer(async (req, res) => {
     if (appDataMode === 'core') assert.equal(Object.hasOwn(input, 'projection'), false, 'Core list/detail must exercise server field filtering without client projection');
     else assert.deepEqual(input.projection, { orderNo: 1, amount: 1, status: 1, ownerUserId: 1 });
     const visible = leakRows || (appDataMode === 'core' && proofUser === supervisorID) ? items : items.filter((item) => item.data.ownerUserId === userID);
-    const selected = input.filter?._id ? visible.filter((item) => item.id === input.filter._id.$eq) : visible;
+    const selected = input.ids ? visible.filter(item => input.ids.includes(item.id)) : visible;
     return reply(200, { code: 200, requestId: 'fixture-find', msg: 'success', data: {
       items: selected.map((item) => {
         const coreFields = new Set([...readableFields(), ...(!hideOwner && proofUser !== supervisorID ? ['ownerUserId'] : []), ...(readablePrivateNote ? ['privateNote'] : [])]);
@@ -142,7 +151,7 @@ const gateway = createServer(async (req, res) => {
           ? overReturnFields || coreFields.has(field) : input.projection[field]);
         if (injectedReadField) entries.push([injectedReadField, 'fixture-hidden-value']);
         return { ...item, data: Object.fromEntries(entries) };
-      }), pageInfo: { hasMore: false },
+      }), ...(input.ids ? { missing: input.ids.filter(id => !selected.some(item => item.id === id)) } : { pageInfo: { hasMore: false } }),
     } });
   }
   if (req.url === `/openapi/v2/uns/collections/${collectionId}/records:updateOne`) {
@@ -423,7 +432,7 @@ try {
     const response = await notifications(dataUsers[index], {}, baseline.nextCursor);
     assert.equal(response.status, 200);
     const page = await response.json();
-    assert.equal(page.operator, dataUsers[index]); assert.equal(page.items[0].recordId, 'record-' + dataUsers[index]);
+    assert.equal(page.operator, dataUsers[index]); assert.equal(Object.hasOwn(page.items[0], 'recordId'), false, 'restricted notifications only invalidate the collection');
     assert.ok(!JSON.stringify(page).includes('private-do-not-return'));
     assert.equal(Object.hasOwn(page.items[0], 'data'), false, 'proxy never exposes an unfiltered event body');
   }

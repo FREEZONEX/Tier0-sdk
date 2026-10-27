@@ -126,12 +126,10 @@ function kind(codec: Codec | undefined, expected: string): Codec | undefined {
 }
 
 function property(codec: Codec | undefined, name: string): Codec | undefined {
-  for (const candidate of variants(codec)) {
-    if (candidate.k !== 'o') continue;
-    if (candidate.p && Object.prototype.hasOwnProperty.call(candidate.p, name)) return candidate.p[name];
-    if (candidate.x) return candidate.x;
-  }
-  return undefined;
+  const objects = variants(codec).filter(candidate => candidate.k === 'o');
+  const explicit = objects.flatMap(candidate => candidate.p && Object.prototype.hasOwnProperty.call(candidate.p, name) ? [candidate.p[name]] : []);
+  const matches = explicit.length ? explicit : objects.flatMap(candidate => candidate.x ? [candidate.x] : []);
+  return matches.length > 1 ? { k: 'u', a: matches } : matches[0];
 }
 
 function decimalIdentity(token: string): string {

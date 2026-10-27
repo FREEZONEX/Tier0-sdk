@@ -23,10 +23,12 @@ type Failure = 'TRANSPORT_ERROR' | 'PROTOCOL_ERROR' | 'TRANSPORT_TIMEOUT';
 
 /** Internal redacted failure, translated by each public contract client. */
 export class CloudTransportError extends Error {
-  constructor(readonly kind: Failure, readonly status?: number) {
+  constructor(readonly kind: Failure, readonly status?: number, readonly responseText?: string) {
     super(kind);
     this.name = 'CloudTransportError';
   }
+
+
 }
 
 /** Single fetch, no redirects/retries; one deadline covers both headers and body. */
@@ -53,6 +55,72 @@ export class CloudTransport {
       throw new TypeError('Tier0 SDK: unsV2AppDataSubject must be a compact three-segment base64url token of at most 8192 ASCII bytes.');
     }
     this.#unsV2AppDataSubject = subject;
+  }
+
+  /** One bounded SSE connection; the caller explicitly decides whether to resume. */
+  async *recordEvents(query: string, cursor?: string, signal?: AbortSignal): AsyncGenerator<{ text: string; checkActive: () => void }> {
+    const client = this.resolveClient();
+    const headers: Record<string, string> = { Accept: 'text/event-stream' };
+    const key = client.getApiKey();
+    if (key) { headers.Authorization = `Bearer ${key}`; headers['X-API-Key'] = key; }
+    if (this.#unsV2AppDataSubject) headers['X-Tier0-App-Data-Subject'] = this.#unsV2AppDataSubject;
+    if (cursor) headers['Last-Event-ID'] = cursor;
+    const controller = new AbortController();
+    let timedOut = false;
+    let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    let response: Response | undefined;
+    let rejectInterrupted: (reason: unknown) => void = () => undefined;
+    const interrupted = new Promise<never>((_resolve, reject) => { rejectInterrupted = reject; });
+    // Handle cancellation while a consumer is paused between frames as well.
+    void interrupted.catch(() => undefined);
+    const abort = () => {
+      controller.abort();
+      void reader?.cancel().catch(() => undefined);
+      rejectInterrupted(new CloudTransportError(timedOut ? 'TRANSPORT_TIMEOUT' : 'TRANSPORT_ERROR', response?.status));
+    };
+    const deadline = Date.now() + this.timeoutMs;
+    // A parser may yield several frames from one chunk, pausing between each.
+    const checkActive = () => {
+      if (!controller.signal.aborted && Date.now() >= deadline) { timedOut = true; abort(); }
+      if (controller.signal.aborted) throw new CloudTransportError(timedOut ? 'TRANSPORT_TIMEOUT' : 'TRANSPORT_ERROR', response?.status);
+    };
+    const timer = setTimeout(() => { timedOut = true; abort(); }, this.timeoutMs);
+    signal?.addEventListener('abort', abort, { once: true });
+    if (signal?.aborted) abort();
+    try {
+      response = await Promise.race([fetch(`${client.getBaseURL()}/openapi/v2/uns/records:subscribe${query}`, {
+        method: 'GET', headers, redirect: 'manual', signal: controller.signal,
+      }), interrupted]);
+      if (!response.body) throw new CloudTransportError('PROTOCOL_ERROR', response.status);
+      reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8', { fatal: true });
+      let bytes = 0;
+      let failure = '';
+      const valid = response.status === 200 && response.headers.get('content-type')?.split(';')[0].trim() === 'text/event-stream';
+      while (true) {
+        checkActive();
+        const { done, value } = await Promise.race([reader.read(), interrupted]);
+        checkActive();
+        if (done) break;
+        bytes += value.byteLength;
+        if (bytes > this.unsV2MaxResponseBytes) throw new CloudTransportError('PROTOCOL_ERROR', response.status);
+        const text = decoder.decode(value, { stream: true });
+        if (valid) yield { text, checkActive };
+        else failure += text;
+      }
+      const tail = decoder.decode();
+      if (!valid) throw new CloudTransportError('PROTOCOL_ERROR', response.status, failure + tail);
+      if (tail) { checkActive(); yield { text: tail, checkActive }; }
+    } catch (error) {
+      if (error instanceof CloudTransportError) throw error;
+      throw new CloudTransportError(timedOut ? 'TRANSPORT_TIMEOUT' : 'TRANSPORT_ERROR', response?.status);
+    } finally {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', abort);
+      controller.abort();
+      await reader?.cancel().catch(() => undefined);
+      reader?.releaseLock();
+    }
   }
 
   async postText(path: string, body: string): Promise<{ text: string; status: number; ok: boolean }> {
