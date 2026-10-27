@@ -29,8 +29,8 @@ describe('Backend App UNS access contract without generic record audit', () => {
         createHash('sha256').update(read(file)).digest('hex')
       );
     }
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(87);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(98);
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(86);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(97);
   });
 
   it('exports exactly public v5 routes and rejects retired operations at the generation boundary', () => {
@@ -101,7 +101,6 @@ describe('Backend App UNS access contract without generic record audit', () => {
   });
 
   it.each([
-    ['streamRuntimeCapabilitiesGet', 'read', ['stream.requests.read', 'stream.requests.invoke', 'stream.requests.write']],
     ['controlDiscover', 'read', ['stream.requests.read', 'stream.requests.manage']],
     ['controlDescribe', 'read', ['stream.requests.read', 'stream.requests.manage']],
     ['controlInvoke', 'invoke', []],

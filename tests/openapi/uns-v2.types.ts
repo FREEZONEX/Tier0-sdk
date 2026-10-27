@@ -16,6 +16,23 @@ import {
 } from '../../src/index.js';
 
 const client = createClient({ apiHost: 'https://example.invalid', apiKey: 'workspace-bound' });
+// @ts-expect-error The Control-only readiness probe has no public Stream method.
+client.unsV2.streamRuntimeCapabilitiesGet({});
+// @ts-expect-error Generic dispatch cannot restore the retired probe.
+client.unsV2.call('streamRuntimeCapabilitiesGet', {});
+// @ts-expect-error The retired probe is not an operation name.
+const retiredStreamProbe: UnsV2OperationName = 'streamRuntimeCapabilitiesGet';
+// @ts-expect-error The retired probe has no public request mapping.
+type RetiredStreamProbeRequest = UnsV2Request<'streamRuntimeCapabilitiesGet'>;
+// @ts-expect-error The retired probe has no public response mapping.
+type RetiredStreamProbeResponse = UnsV2Response<'streamRuntimeCapabilitiesGet'>;
+// @ts-expect-error The retired probe request DTO is not exported.
+import type { CloudStreamRuntimeCapabilitiesGetReq } from '../../src/index.js';
+// @ts-expect-error The retired probe response DTO is not exported.
+import type { CloudStreamRuntimeCapabilitiesGetResponse } from '../../src/index.js';
+// @ts-expect-error The HTTP-only Cloud entry cannot export the retired DTO either.
+import type { CloudStreamRuntimeCapabilitiesGetResponse as RetiredCloudProbeResponse } from '../../src/cloud.js';
+void [retiredStreamProbe, null as RetiredStreamProbeRequest | RetiredStreamProbeResponse | null];
 client.unsV2.controlGrantGet({ code: 'fixture.telemetry', principalKind: 'user', principalID: '101' });
 client.unsV2.controlGrantSet({ code: 'fixture.telemetry', principalKind: 'app', principalID: 'fixture-app', active: 1,
   expectedCodeRevision: 1, actions: ['stream.requests.read', 'stream.requests.invoke', 'stream.requests.write'] });
