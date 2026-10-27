@@ -12,6 +12,23 @@ import {
 } from '../../src/index.js';
 
 const client = createClient({ apiHost: 'https://example.invalid', apiKey: 'workspace-bound' });
+// @ts-expect-error The retired readiness probe has no public method.
+client.unsV2.streamRuntimeCapabilitiesGet({});
+// @ts-expect-error Generic dispatch cannot restore the retired probe.
+client.unsV2.call('streamRuntimeCapabilitiesGet', {});
+// @ts-expect-error The retired probe is not a public operation.
+const retiredStreamProbe: UnsV2OperationName = 'streamRuntimeCapabilitiesGet';
+// @ts-expect-error The retired probe has no request mapping.
+type RetiredStreamProbeRequest = UnsV2Request<'streamRuntimeCapabilitiesGet'>;
+// @ts-expect-error The retired probe has no response mapping.
+type RetiredStreamProbeResponse = UnsV2Response<'streamRuntimeCapabilitiesGet'>;
+// @ts-expect-error The retired request DTO is not exported.
+import type { CloudStreamRuntimeCapabilitiesGetReq } from '../../src/index.js';
+// @ts-expect-error The retired response DTO is not exported.
+import type { CloudStreamRuntimeCapabilitiesGetResponse } from '../../src/index.js';
+// @ts-expect-error The Cloud entry cannot export the retired DTO either.
+import type { CloudStreamRuntimeCapabilitiesGetResponse as RetiredCloudProbe } from '../../src/cloud.js';
+void [retiredStreamProbe, null as RetiredStreamProbeRequest | RetiredStreamProbeResponse | null];
 // Native runtime DTO from the pinned source; hosted Cloud documents retain their own shape.
 const nativeDefinition: RuntimeStreamDefinition = {
   name: 'native-http', script: '', sdkVersion: 'tier0-stream/v3',

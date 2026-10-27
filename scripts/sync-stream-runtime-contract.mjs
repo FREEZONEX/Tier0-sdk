@@ -12,7 +12,6 @@ const source = 'share/unscontract/manifest.json';
 const raw = execFileSync('git', ['show', `${revision}:${source}`], { cwd: backend, encoding: 'utf8', maxBuffer: 20 << 20 });
 const manifest = JSON.parse(raw);
 const names = ['RuntimeStreamDefinition', 'CloudStreamScript',
-  'CloudStreamRuntimeCapabilitiesGetReq', 'CloudStreamRuntimeCapabilitiesGetResponse',
   'CloudStreamDocument', 'CloudStreamEntry',
   'UnsV2StreamProgramVersionsListResponse', 'CloudHistoricalStreamDocument'];
 const schemas = Object.fromEntries(names.map(name => {
@@ -26,12 +25,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 writeFileSync(resolve(root, 'contracts/uns-v2/stream-runtime.schema-overlay.json'), JSON.stringify({
   version: 'stream-runtime-schema-overlay/v1', repository: 'FREEZONEX/Tier0-Backend', revision, source,
   sourceManifestSHA256: createHash('sha256').update(raw).digest('hex'),
-  scope: 'Current Stream runtime/write DTOs, compiled message metadata, read-only history and readiness only; unrelated UNS data remains on its separately reviewed baseline.',
-  operationMetadata: Object.fromEntries(['streamRuntimeCapabilitiesGet'].map(name => {
-    const operation = manifest.operations.find(operation => operation.name === name);
-    assert.ok(operation && !operation.coreOnly, `Missing public operation ${name}`);
-    return [name, Object.fromEntries(['permission', 'scope', 'minPermission'].map(key => [key, operation[key]]))];
-  })),
+  scope: 'Current Stream runtime/write DTOs, compiled message metadata and read-only history only; unrelated UNS data remains on its separately reviewed baseline.',
+  operationMetadata: {},
   schemas,
 }, null, 2) + '\n');
 console.log(`Pinned ${names.length} Stream runtime schemas from ${revision}`);

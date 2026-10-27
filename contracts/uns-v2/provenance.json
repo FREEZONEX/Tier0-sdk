@@ -4,7 +4,7 @@
   "version": "4.0.0",
   "source": "service/unssvr/internal/domain/unsv2/contract_generated.go#ContractJSON",
   "cloudRevision": "6c111671a2172eb14c38f2f6d9ec329f4ee08a3d",
-  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-collection/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1",
+  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-collection/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1+stream-control-probe-retirement/1",
   "resolvedCloudContract": true,
   "enterpriseBase": {
     "repository": "FREEZONEX/Tier0-Enterprise-New",
@@ -15,5 +15,11 @@
   },
   "sourceDerivedContractSHA256": "0e82f1a9f4363bcdc1b8cc916f494aab5fb5f368a8d232850a299b5dbc165aa5",
   "note": "Generated from committed Cloud Project retirement contract; environment acceptance tracked separately.",
-  "baseRevision": "c27b44274be742b9c0f7107c6035412c62d5da26"
+  "baseRevision": "c27b44274be742b9c0f7107c6035412c62d5da26",
+  "streamCapabilityRetirement": {
+    "revision": "273d58f7dcf0c5fee4a593b405b7102e7049adfe",
+    "source": "share/unscontract/manifest.json",
+    "sha256": "30ffc9875cab8f9db7b651116492abffd498b56c7b99fea5c29eb6b49cca1320",
+    "matchesCommit": true
+  }
 }

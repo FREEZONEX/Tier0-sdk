@@ -65,7 +65,6 @@ export class CloudTransport {
     // Keep this per-client proof out of shared HTTP headers and Control capabilities.
     if (path.startsWith('/openapi/v2/uns/') &&
         !path.startsWith('/openapi/v2/uns/controls/') &&
-        path !== '/openapi/v2/uns/streams/runtime/capabilities/get' &&
         this.#unsV2AppDataSubject !== undefined) {
       headers['X-Tier0-App-Data-Subject'] = this.#unsV2AppDataSubject;
     }

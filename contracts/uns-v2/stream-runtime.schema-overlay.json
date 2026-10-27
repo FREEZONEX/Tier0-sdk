@@ -4,14 +4,8 @@
   "revision": "d71a38869b075d18df28540e30fbf955bdfb22c6",
   "source": "share/unscontract/manifest.json",
   "sourceManifestSHA256": "afc891d80f13d856b63343c371eac10849d11268b5c26bf6ea2368fa84ce7481",
-  "scope": "Current Stream runtime/write DTOs, compiled message metadata, read-only history and readiness only; unrelated UNS data remains on its separately reviewed baseline.",
-  "operationMetadata": {
-    "streamRuntimeCapabilitiesGet": {
-      "permission": "stream.requests.read",
-      "scope": "stream_request:read",
-      "minPermission": 1
-    }
-  },
+  "scope": "Current Stream runtime/write DTOs, compiled message metadata and read-only history only; unrelated UNS data remains on its separately reviewed baseline.",
+  "operationMetadata": {},
   "schemas": {
     "RuntimeStreamDefinition": {
       "additionalProperties": false,
@@ -109,53 +103,6 @@
         "sdkVersion",
         "code",
         "timeoutMs"
-      ]
-    },
-    "CloudStreamRuntimeCapabilitiesGetReq": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {},
-      "required": []
-    },
-    "CloudStreamRuntimeCapabilitiesGetResponse": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "code": {
-          "type": "integer"
-        },
-        "msg": {
-          "type": "string"
-        },
-        "requestId": {
-          "type": "string"
-        },
-        "data": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "controlInvokeReady": {
-              "type": "boolean"
-            },
-            "scriptContractVersion": {
-              "type": "string"
-            },
-            "controlMetadataReady": {
-              "type": "boolean"
-            }
-          },
-          "required": [
-            "controlInvokeReady",
-            "scriptContractVersion",
-            "controlMetadataReady"
-          ]
-        }
-      },
-      "required": [
-        "code",
-        "msg",
-        "requestId",
-        "data"
       ]
     },
     "CloudStreamDocument": {
