@@ -93,7 +93,16 @@ describe('UNS v2 localhost HTTP fixture', () => {
     for (const row of received.slice(start)) expect(row.headers['x-tier0-app-data-subject']).toBeUndefined();
   });
 
-  it.each(['controlDiscover', 'controlDescribe', 'controlInvoke', 'streamRuntimeCapabilitiesGet'] as const)
+  it('does not expose or dispatch the retired Stream runtime probe', async () => {
+    const start = received.length;
+    const api = client().unsV2;
+    expect(api).not.toHaveProperty('streamRuntimeCapabilitiesGet');
+    const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
+    await expect(core.call('streamRuntimeCapabilitiesGet', {})).rejects.toThrow('unknown UNS v2 operation');
+    expect(received).toHaveLength(start);
+  });
+
+  it.each(['controlDiscover', 'controlDescribe', 'controlInvoke'] as const)
   ('never forwards data delegation through unsV2.%s', async operation => {
     const start = received.length;
     const definition = {
@@ -111,15 +120,11 @@ describe('UNS v2 localhost HTTP fixture', () => {
         code: 'pump.start', contractVersion: '1', result: { started: true },
         runId: 'v2-control-run', status: 'succeeded', replayed: false,
       } },
-      streamRuntimeCapabilitiesGet: { ...envelope, data: {
-        controlInvokeReady: true, scriptContractVersion: 'tier0-stream/v2', controlMetadataReady: true,
-      } },
     } satisfies { [Name in typeof operation]: UnsV2Response<Name> };
     const requests = {
       controlDiscover: { page: 1, size: 20 },
       controlDescribe: { code: 'pump.start' },
       controlInvoke: { code: 'pump.start', input: {}, idempotencyKey: 'v2-control-intent' },
-      streamRuntimeCapabilitiesGet: {},
     };
     respond = (_req, res) => send(res, responses[operation]);
     const api = createClient({
@@ -129,14 +134,12 @@ describe('UNS v2 localhost HTTP fixture', () => {
       controlDiscover: () => api.unsV2.controlDiscover(requests.controlDiscover),
       controlDescribe: () => api.unsV2.controlDescribe(requests.controlDescribe),
       controlInvoke: () => api.unsV2.controlInvoke(requests.controlInvoke),
-      streamRuntimeCapabilitiesGet: () => api.unsV2.streamRuntimeCapabilitiesGet(requests.streamRuntimeCapabilitiesGet),
     };
     await expect(results[operation]()).resolves.toEqual(responses[operation]);
     const paths = {
       controlDiscover: '/openapi/v2/uns/controls/discover',
       controlDescribe: '/openapi/v2/uns/controls/describe',
       controlInvoke: '/openapi/v2/uns/controls/invoke',
-      streamRuntimeCapabilitiesGet: '/openapi/v2/uns/streams/runtime/capabilities/get',
     };
     expect(received.slice(start)).toHaveLength(1);
     expect(received[start]).toMatchObject({ method: 'POST', path: paths[operation] });
@@ -331,12 +334,12 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-collection/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-collection/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1+stream-control-probe-retirement/1');
     expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('6c111671a2172eb14c38f2f6d9ec329f4ee08a3d');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
     expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('0e82f1a9f4363bcdc1b8cc916f494aab5fb5f368a8d232850a299b5dbc165aa5');
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(101);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(114);
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(100);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(113);
     expect(received.slice(start)).toHaveLength(1);
   });
 

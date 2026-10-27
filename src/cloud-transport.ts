@@ -61,10 +61,9 @@ export class CloudTransport {
     const key = client.getApiKey();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     // Control routes also live under UNS v2, but must never receive data delegation.
-    // Keep this per-client proof out of shared HTTP headers and Control capabilities.
+    // Keep this per-client proof out of shared HTTP headers and request-execution routes.
     if (path.startsWith('/openapi/v2/uns/') &&
         !path.startsWith('/openapi/v2/uns/controls/') &&
-        path !== '/openapi/v2/uns/streams/runtime/capabilities/get' &&
         this.#unsV2AppDataSubject !== undefined) {
       headers['X-Tier0-App-Data-Subject'] = this.#unsV2AppDataSubject;
     }
