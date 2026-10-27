@@ -58,7 +58,7 @@ export class CloudTransport {
   }
 
   /** One bounded SSE connection; the caller explicitly decides whether to resume. */
-  async *recordEvents(query: string, cursor?: string, signal?: AbortSignal): AsyncGenerator<string> {
+  async *recordEvents(query: string, cursor?: string, signal?: AbortSignal): AsyncGenerator<{ text: string; checkActive: () => void }> {
     const client = this.resolveClient();
     const headers: Record<string, string> = { Accept: 'text/event-stream' };
     const key = client.getApiKey();
@@ -78,6 +78,12 @@ export class CloudTransport {
       void reader?.cancel().catch(() => undefined);
       rejectInterrupted(new CloudTransportError(timedOut ? 'TRANSPORT_TIMEOUT' : 'TRANSPORT_ERROR', response?.status));
     };
+    const deadline = Date.now() + this.timeoutMs;
+    // A parser may yield several frames from one chunk, pausing between each.
+    const checkActive = () => {
+      if (!controller.signal.aborted && Date.now() >= deadline) { timedOut = true; abort(); }
+      if (controller.signal.aborted) throw new CloudTransportError(timedOut ? 'TRANSPORT_TIMEOUT' : 'TRANSPORT_ERROR', response?.status);
+    };
     const timer = setTimeout(() => { timedOut = true; abort(); }, this.timeoutMs);
     signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) abort();
@@ -92,17 +98,19 @@ export class CloudTransport {
       let failure = '';
       const valid = response.status === 200 && response.headers.get('content-type')?.split(';')[0].trim() === 'text/event-stream';
       while (true) {
+        checkActive();
         const { done, value } = await Promise.race([reader.read(), interrupted]);
+        checkActive();
         if (done) break;
         bytes += value.byteLength;
         if (bytes > this.unsV2MaxResponseBytes) throw new CloudTransportError('PROTOCOL_ERROR', response.status);
         const text = decoder.decode(value, { stream: true });
-        if (valid) yield text;
+        if (valid) yield { text, checkActive };
         else failure += text;
       }
       const tail = decoder.decode();
       if (!valid) throw new CloudTransportError('PROTOCOL_ERROR', response.status, failure + tail);
-      if (tail) yield tail;
+      if (tail) { checkActive(); yield { text: tail, checkActive }; }
     } catch (error) {
       if (error instanceof CloudTransportError) throw error;
       throw new CloudTransportError(timedOut ? 'TRANSPORT_TIMEOUT' : 'TRANSPORT_ERROR', response?.status);

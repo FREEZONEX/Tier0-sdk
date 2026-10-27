@@ -35,8 +35,8 @@ export async function* recordSubscription(transport: CloudTransport, request: Re
   let id = '';
   let lines: string[] = [];
   const search = query.toString();
-  for await (const chunk of transport.recordEvents(search ? `?${search}` : '', request.cursor, signal)) {
-    pending += chunk;
+  for await (const { text, checkActive } of transport.recordEvents(search ? `?${search}` : '', request.cursor, signal)) {
+    pending += text;
     while (true) {
       const newline = pending.match(/\r\n|[\r\n]/);
       if (!newline || (newline[0] === '\r' && newline.index === pending.length - 1)) break;
@@ -53,12 +53,15 @@ export async function* recordSubscription(transport: CloudTransport, request: Re
             if (!id || value.eventId !== id || typeof value.collectionId !== 'string' || typeof value.recordId !== 'string' ||
                 !['record', 'delete'].includes(String(value.change)) || typeof value.restricted !== 'boolean' ||
                 value.revision === undefined || value.occurredAt === undefined) throw invalid();
+            checkActive();
             yield { event, id, data: data as CloudRecordChangeEvent };
           } else if (event === 'heartbeat') {
             if (!id || value.at === undefined) throw invalid();
+            checkActive();
             yield { event, id, data: { at: value.at } };
           } else if (event === 'reset') {
             if (!['CURSOR_EXPIRED', 'SCOPE_CHANGED'].includes(String(value.reason))) throw invalid();
+            checkActive();
             yield { event, data: data as CloudRecordSubscribeReset };
             return;
           }
