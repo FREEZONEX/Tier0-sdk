@@ -135,7 +135,7 @@ export type AppContext = {
   "appId": string;
   "collections": Array<AppCollectionContext>;
   "name": string;
-  "platformPermissions": Array<"openapi.base" | "platform.users.read" | "notifications.send" | "notifications.read" | "asset.file.upload" | "asset.file.download" | "asset.file.delete" | "control.read" | "control.execute" | "control.write">;
+  "platformPermissions": Array<"openapi.base" | "platform.users.read" | "notifications.send" | "notifications.read" | "asset.file.upload" | "asset.file.download" | "asset.file.delete" | "stream.requests.read" | "stream.requests.invoke" | "stream.requests.write">;
   "revision": UnsV2Integer;
   "limits": CloudAppDataLimits;
 };
@@ -2104,7 +2104,7 @@ export type CloudHostedAppControlPolicyUpdateReq = {
   "status": "active" | "disabled";
   "idempotencyKey": string;
   "dryRun": boolean;
-  "platformPermissions": Array<"control.read" | "control.execute" | "control.write">;
+  "platformPermissions": Array<"stream.requests.read" | "stream.requests.invoke" | "stream.requests.write">;
 };
 
 export type CloudHostedAppControlPolicy = {
@@ -2114,7 +2114,7 @@ export type CloudHostedAppControlPolicy = {
   "status": "active" | "disabled";
   "authorityStatus": "available" | "notReady" | "notFound" | "unavailable";
   "appName": string;
-  "platformPermissions": Array<"control.read" | "control.execute" | "control.write">;
+  "platformPermissions": Array<"stream.requests.read" | "stream.requests.invoke" | "stream.requests.write">;
 };
 
 export type CloudHostedAppControlPolicyGetResponse = {
@@ -2314,7 +2314,7 @@ export type CloudRecordSubscribeResponse = {
 
 export type CloudControlGrantGetReq = {
   "code": string;
-  "principalKind": "app" | "user" | "api_key";
+  "principalKind": "app" | "user";
   "principalID": string;
 };
 
@@ -2325,22 +2325,22 @@ export type CloudControlGrantTargetRevision = {
 
 export type CloudControlGrantSetReq = (({
   "code": string;
-  "principalKind": "app" | "user" | "api_key";
+  "principalKind": "app" | "user";
   "principalID": string;
   "active": 1 | 2;
   "expectedBindingDigest"?: string;
   "expectedCodeRevision"?: UnsV2Integer;
-  "actions"?: Array<"control.read" | "control.execute" | "control.write">;
+  "actions"?: Array<"stream.requests.read" | "stream.requests.invoke" | "stream.requests.write">;
   "targetRevisions"?: Array<CloudControlGrantTargetRevision>;
   "expectedSnapshotToken": string;
 } & { "expectedBindingDigest"?: never; "expectedCodeRevision"?: never; "targetRevisions"?: never }) | ({
   "code": string;
-  "principalKind": "app" | "user" | "api_key";
+  "principalKind": "app" | "user";
   "principalID": string;
   "active": 1 | 2;
   "expectedBindingDigest"?: string;
   "expectedCodeRevision": UnsV2Integer;
-  "actions"?: Array<"control.read" | "control.execute" | "control.write">;
+  "actions"?: Array<"stream.requests.read" | "stream.requests.invoke" | "stream.requests.write">;
   "targetRevisions"?: Array<CloudControlGrantTargetRevision>;
   "expectedSnapshotToken"?: string;
 } & { "expectedSnapshotToken"?: never }));
@@ -2357,16 +2357,16 @@ export type CloudControlGrantTargetInfo = {
 
 export type CloudControlGrantInfo = {
   "code": string;
-  "principalKind": "app" | "user" | "api_key";
+  "principalKind": "app" | "user";
   "principalID": string;
   "status": string;
   "bindingDigest": string;
   "recipientEligible": 1 | 2;
-  "recipientActions": Array<"control.read" | "control.execute" | "control.write">;
+  "recipientActions": Array<"stream.requests.read" | "stream.requests.invoke" | "stream.requests.write">;
   "registered": 1 | 2;
   "active": 1 | 2;
   "revision": UnsV2Integer;
-  "actions": Array<"control.read" | "control.execute" | "control.write">;
+  "actions": Array<"stream.requests.read" | "stream.requests.invoke" | "stream.requests.write">;
   "targets": Array<CloudControlGrantTargetInfo>;
   "createdPrincipal": string;
   "updatedPrincipal": string;
@@ -2378,7 +2378,7 @@ export type CloudControlGrantInfo = {
 
 export type CloudControlGrantMutation = {
   "code": string;
-  "principalKind": "app" | "user" | "api_key";
+  "principalKind": "app" | "user";
   "principalID": string;
   "revision": UnsV2Integer;
   "active": 1 | 2;
@@ -2426,7 +2426,7 @@ export type CloudAppStreamAccessItem = {
   "streamName": string;
   "entryId": string;
   "entryName": string;
-  "actions": Array<"control.read" | "control.execute" | "control.write">;
+  "actions": Array<"stream.requests.read" | "stream.requests.invoke" | "stream.requests.write">;
   "configuredActive": 1 | 2;
   "state": "available" | "blocked";
   "blockedReasons": Array<"grant_revoked" | "grant_invalid" | "recipient_unavailable" | "stream_inactive" | "binding_unavailable" | "deployer_unavailable" | "state_changed" | "grant_insufficient" | "app_control_ceiling" | "target_not_granted" | "collection_not_granted">;
@@ -3475,10 +3475,10 @@ export const UNS_V2_OPERATIONS = {
   "sourceDelete": { path: "/openapi/v2/uns/sources/delete", pathParams: [], request: "CloudSourceDeleteReq", response: "CloudSourceDeleteResponse", method: "POST", transport: "json", mutation: true, scope: "source:manage" },
   "streamProgramList": { path: "/openapi/v2/uns/streams/program/list", pathParams: [], request: "CloudStreamProgramListReq", response: "CloudStreamProgramListResponse", method: "POST", transport: "json", mutation: false, scope: "stream:read" },
   "streamProgramDelete": { path: "/openapi/v2/uns/streams/program/delete", pathParams: [], request: "CloudStreamProgramDeleteReq", response: "CloudStreamProgramDeleteResponse", method: "POST", transport: "json", mutation: true, scope: "stream:manage" },
-  "streamRuntimeCapabilitiesGet": { path: "/openapi/v2/uns/streams/runtime/capabilities/get", pathParams: [], request: "CloudStreamRuntimeCapabilitiesGetReq", response: "CloudStreamRuntimeCapabilitiesGetResponse", method: "POST", transport: "json", mutation: false, scope: "control:read" },
-  "controlDiscover": { path: "/openapi/v2/uns/controls/discover", pathParams: [], request: "CloudControlDiscoverReq", response: "CloudControlDiscoverResponse", method: "POST", transport: "json", mutation: false, scope: "control:read" },
-  "controlDescribe": { path: "/openapi/v2/uns/controls/describe", pathParams: [], request: "CloudControlDescribeReq", response: "CloudControlDescribeResponse", method: "POST", transport: "json", mutation: false, scope: "control:read" },
-  "controlInvoke": { path: "/openapi/v2/uns/controls/invoke", pathParams: [], request: "CloudControlInvokeReq", response: "CloudControlInvokeResponse", method: "POST", transport: "json", mutation: true, scope: "control:execute" },
+  "streamRuntimeCapabilitiesGet": { path: "/openapi/v2/uns/streams/runtime/capabilities/get", pathParams: [], request: "CloudStreamRuntimeCapabilitiesGetReq", response: "CloudStreamRuntimeCapabilitiesGetResponse", method: "POST", transport: "json", mutation: false, scope: "stream.requests:read" },
+  "controlDiscover": { path: "/openapi/v2/uns/controls/discover", pathParams: [], request: "CloudControlDiscoverReq", response: "CloudControlDiscoverResponse", method: "POST", transport: "json", mutation: false, scope: "stream.requests:read" },
+  "controlDescribe": { path: "/openapi/v2/uns/controls/describe", pathParams: [], request: "CloudControlDescribeReq", response: "CloudControlDescribeResponse", method: "POST", transport: "json", mutation: false, scope: "stream.requests:read" },
+  "controlInvoke": { path: "/openapi/v2/uns/controls/invoke", pathParams: [], request: "CloudControlInvokeReq", response: "CloudControlInvokeResponse", method: "POST", transport: "json", mutation: true, scope: "stream.requests:invoke" },
   "sourceDocumentGet": { path: "/openapi/v2/uns/sources/documents/get", pathParams: [], request: "CloudSourceDocumentGetReq", response: "CloudSourceDocumentGetResponse", method: "POST", transport: "json", mutation: false, scope: "source:read" },
   "sourceDocumentCreate": { path: "/openapi/v2/uns/sources/documents/create", pathParams: [], request: "CloudSourceDocumentCreateReq", response: "CloudSourceDocumentCreateResponse", method: "POST", transport: "json", mutation: true, scope: "source:manage" },
   "sourceDocumentUpdate": { path: "/openapi/v2/uns/sources/documents/update", pathParams: [], request: "CloudSourceDocumentUpdateReq", response: "CloudSourceDocumentUpdateResponse", method: "POST", transport: "json", mutation: true, scope: "source:manage" },
@@ -3497,17 +3497,17 @@ export const UNS_V2_OPERATIONS = {
   "appDataPolicyGet": { path: "/openapi/v2/uns/app-data-policy/get", pathParams: [], request: "CloudAppDataPolicyGetReq", response: "CloudAppDataPolicyGetResponse", method: "POST", transport: "json", mutation: false, scope: "uns:update" },
   "appDataPolicyUpdate": { path: "/openapi/v2/uns/app-data-policy/update", pathParams: [], request: "CloudAppDataPolicyUpdateReq", response: "CloudAppDataPolicyMutationResponse", method: "POST", transport: "json", mutation: true, scope: "uns:update" },
   "dataAppContext": { path: "/openapi/v2/uns/app/context", pathParams: [], request: "CloudDataAppContextReq", response: "CloudDataAppContextResponse", method: "POST", transport: "json", mutation: false, scope: "uns:read" },
-  "hostedAppControlPolicyGet": { path: "/openapi/v2/uns/hosted-app-control-policy/get", pathParams: [], request: "CloudHostedAppControlPolicyGetReq", response: "CloudHostedAppControlPolicyGetResponse", method: "POST", transport: "json", mutation: false, scope: "control:manage" },
-  "hostedAppControlPolicyUpdate": { path: "/openapi/v2/uns/hosted-app-control-policy/update", pathParams: [], request: "CloudHostedAppControlPolicyUpdateReq", response: "CloudHostedAppControlPolicyMutationResponse", method: "POST", transport: "json", mutation: true, scope: "control:manage" },
+  "hostedAppControlPolicyGet": { path: "/openapi/v2/uns/hosted-app-control-policy/get", pathParams: [], request: "CloudHostedAppControlPolicyGetReq", response: "CloudHostedAppControlPolicyGetResponse", method: "POST", transport: "json", mutation: false, scope: "stream.requests:manage" },
+  "hostedAppControlPolicyUpdate": { path: "/openapi/v2/uns/hosted-app-control-policy/update", pathParams: [], request: "CloudHostedAppControlPolicyUpdateReq", response: "CloudHostedAppControlPolicyMutationResponse", method: "POST", transport: "json", mutation: true, scope: "stream.requests:manage" },
   "recordSubscribe": { path: "/openapi/v2/uns/records:subscribe", pathParams: [], request: "CloudRecordSubscribeReq", response: "CloudRecordSubscribeResponse", method: "GET", transport: "sse", mutation: false, scope: "uns:read" },
   "appCollectionsEnsure": { path: "/openapi/v2/uns/app/collections/ensure", pathParams: [], request: "CloudAppCollectionsEnsureReq", response: "CloudAppCollectionsEnsureResponse", method: "POST", transport: "json", mutation: true, scope: "uns:update" },
   "appCollectionsSchemaReplace": { path: "/openapi/v2/uns/app/collections/schema:replace", pathParams: [], request: "CloudAppCollectionsSchemaReplaceReq", response: "CloudAppCollectionsSchemaReplaceResponse", method: "POST", transport: "json", mutation: true, scope: "uns:update" },
   "appCollectionsArchive": { path: "/openapi/v2/uns/app/collections/archive", pathParams: [], request: "CloudAppCollectionAliasReq", response: "CloudAppCollectionStateResponse", method: "POST", transport: "json", mutation: true, scope: "uns:update" },
   "appCollectionsRestore": { path: "/openapi/v2/uns/app/collections/restore", pathParams: [], request: "CloudAppCollectionAliasReq", response: "CloudAppCollectionStateResponse", method: "POST", transport: "json", mutation: true, scope: "uns:update" },
   "appCollectionsList": { path: "/openapi/v2/uns/app/collections/list", pathParams: [], request: "CloudAppCollectionsListReq", response: "CloudAppCollectionsListResponse", method: "POST", transport: "json", mutation: false, scope: "uns:read" },
-  "controlGrantGet": { path: "/openapi/v2/uns/controls/grants/get", pathParams: [], request: "CloudControlGrantGetReq", response: "CloudControlGrantGetResponse", method: "POST", transport: "json", mutation: false, scope: "control:manage" },
-  "controlGrantSet": { path: "/openapi/v2/uns/controls/grants/set", pathParams: [], request: "CloudControlGrantSetReq", response: "CloudControlGrantSetResponse", method: "POST", transport: "json", mutation: true, scope: "control:manage" },
-  "appStreamAccessList": { path: "/openapi/v2/uns/app-stream-access/list", pathParams: [], request: "CloudAppStreamAccessListReq", response: "CloudAppStreamAccessListResponse", method: "POST", transport: "json", mutation: false, scope: "control:manage" },
+  "controlGrantGet": { path: "/openapi/v2/uns/controls/grants/get", pathParams: [], request: "CloudControlGrantGetReq", response: "CloudControlGrantGetResponse", method: "POST", transport: "json", mutation: false, scope: "stream.requests:manage" },
+  "controlGrantSet": { path: "/openapi/v2/uns/controls/grants/set", pathParams: [], request: "CloudControlGrantSetReq", response: "CloudControlGrantSetResponse", method: "POST", transport: "json", mutation: true, scope: "stream.requests:manage" },
+  "appStreamAccessList": { path: "/openapi/v2/uns/app-stream-access/list", pathParams: [], request: "CloudAppStreamAccessListReq", response: "CloudAppStreamAccessListResponse", method: "POST", transport: "json", mutation: false, scope: "stream.requests:manage" },
   "sampleFind": { path: "/openapi/v2/uns/collections/:collectionId/samples:find", pathParams: ["collectionId"], request: "UnsV2SampleFindReq", response: "UnsV2SampleFindResponse", method: "POST", transport: "json", mutation: false, scope: "uns:read" },
   "sampleAggregate": { path: "/openapi/v2/uns/collections/:collectionId/samples:aggregate", pathParams: ["collectionId"], request: "UnsV2SampleAggregateReq", response: "UnsV2SampleAggregateResponse", method: "POST", transport: "json", mutation: false, scope: "uns:read" },
   "recordLock": { path: "/openapi/v2/uns/collections/:collectionId/records:lock", pathParams: ["collectionId"], request: "UnsV2RecordLockReq", response: "UnsV2RecordLockResponse", method: "POST", transport: "json", mutation: true, scope: "uns:write" },
@@ -3718,10 +3718,10 @@ export const UNS_V2_CODEC_SCHEMAS = {"UnsV2CatalogReq":{"k":"o"},"UnsV2Transacti
 
 export const UNS_V2_CONTRACT_PROVENANCE = {
   "repository": "FREEZONEX/Tier0-Backend",
-  "revision": "737002beb09467360a90607e6e2f6c7d0ed3ea62",
+  "revision": "d9edd24d2eb8470e194b797a2fdbfe2c48864784",
   "version": "5.0.0",
   "source": "service/unssvr/internal/domain/unsv2/contract_generated.go#ContractJSON",
-  "cloudRevision": "737002beb09467360a90607e6e2f6c7d0ed3ea62",
+  "cloudRevision": "d9edd24d2eb8470e194b797a2fdbfe2c48864784",
   "cloudContractRevision": "cloud-source-impact/2+source-vendor/1+app-create-capability/1+data/3+record-reads/1+stream-receipt/1+collection-namespace/1+http-acquisition/2+app-collection/2+collection-ownership/1+metadata/1+app-context/2+collection-ttl/1+error-model/1+crud-consolidation/1+record-insert-return/1+lifecycle-consolidation/1+api-surface/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1+app-collections/1+http-in/1+app-resource-access/2",
   "resolvedCloudContract": true,
   "enterpriseBase": {
@@ -3731,15 +3731,15 @@ export const UNS_V2_CONTRACT_PROVENANCE = {
     "source": "backend/internal/domain/unsv2/contract_generated.go",
     "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs."
   },
-  "sourceDerivedContractSHA256": "8513a48384021833a8e87c51c7da44e3cb889bcf08b2e2d6b8094229328968e5",
-  "upstreamSourceSHA256": "4fe90c7ad84993c90a57a76ada1e6342fb080d3ad807369e7041d93af2281a6d",
+  "sourceDerivedContractSHA256": "1008b23d4b4a102fa091393bb7a33c96c73760cd0e74fed718cdd51f3d1a78ac",
+  "upstreamSourceSHA256": "0fb8902a80c8268bfe383277528e5573b044ca5457bd86d34d9281261ba4e495",
   "note": "Resolved Cloud contract from the pinned commit; local fixtures do not establish deployment acceptance or device ACK.",
   "hashes": {
-    "contract": "f067e3c4969c57a00826441a23e3c786559c5f42dd06e56fa7380d4d3f3b9abd",
-    "cloudSupport": "786085309b4f6f4053a51ee30346a91bb3d80faffa04f671997a1e7def5866ed",
-    "manifest": "46f4dcedec7a2e0e8be321a05fbb11f33ebfb8a4a0bde5a8e589cf616201d26d",
-    "provenance": "b25b6aeee0f439069fc04de3360c62eeb2f373777b8f38ebd952c0708317b3a0",
-    "registry": "2e70bab51115187147aff677102533f8dc462c32612ec3b24cbdaf531f81ffcf"
+    "contract": "c02487d485698579caaeade1fe85aa0d198de3b5d9dac7fd1a65d6d307093a91",
+    "cloudSupport": "563e1a22d80cf7e7f0b87b3e7882495ee7f1a786eacf2ddc00f91c5be60be90e",
+    "manifest": "ae3652086b4f9ca762c740587a66de92c58e27dfe88b46741802927ef013126c",
+    "provenance": "201cb5a9436fe587cf743d6833dc818508e1500ad547ebdd4e13afcd94965445",
+    "registry": "9fec7704993db079702732414ea1b06615d4bd9e3c5f549701708962fdf42d24"
   },
   "publicOperationCount": 87,
   "manifestOperationCount": 98

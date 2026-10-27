@@ -331,7 +331,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('5.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('737002beb09467360a90607e6e2f6c7d0ed3ea62');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('d9edd24d2eb8470e194b797a2fdbfe2c48864784');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(87);
     expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(98);

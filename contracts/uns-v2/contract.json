@@ -1146,8 +1146,8 @@
       "handler": "UnsV2StreamRuntimeCapabilitiesGet",
       "request": "CloudStreamRuntimeCapabilitiesGetReq",
       "response": "CloudStreamRuntimeCapabilitiesGetResponse",
-      "permission": "control.read",
-      "scope": "control:read",
+      "permission": "stream.requests.read",
+      "scope": "stream.requests:read",
       "minPermission": 1,
       "resource": "control",
       "mutation": "",
@@ -1156,9 +1156,9 @@
       "summary": "读取运行能力",
       "description": "Cloud extension reusing existing SourceStream logic and storage; internal and external requests share this schema. No shared transform or acquisition runtime is implied.",
       "permissionAnyOf": [
-        "control.read",
-        "control.execute",
-        "control.write"
+        "stream.requests.read",
+        "stream.requests.invoke",
+        "stream.requests.write"
       ],
       "cloudExtension": true,
       "appAllowed": false,
@@ -1176,8 +1176,8 @@
       "handler": "UnsV2ControlDiscover",
       "request": "CloudControlDiscoverReq",
       "response": "CloudControlDiscoverResponse",
-      "permission": "control.read",
-      "scope": "control:read",
+      "permission": "stream.requests.read",
+      "scope": "stream.requests:read",
       "minPermission": 1,
       "resource": "control",
       "mutation": "",
@@ -1191,8 +1191,8 @@
       "starter": false,
       "method": "POST",
       "permissionAnyOf": [
-        "control.read",
-        "control.manage"
+        "stream.requests.read",
+        "stream.requests.manage"
       ],
       "readOnly": true,
       "tags": [
@@ -1205,8 +1205,8 @@
       "handler": "UnsV2ControlDescribe",
       "request": "CloudControlDescribeReq",
       "response": "CloudControlDescribeResponse",
-      "permission": "control.read",
-      "scope": "control:read",
+      "permission": "stream.requests.read",
+      "scope": "stream.requests:read",
       "minPermission": 1,
       "resource": "control",
       "mutation": "",
@@ -1220,8 +1220,8 @@
       "starter": false,
       "method": "POST",
       "permissionAnyOf": [
-        "control.read",
-        "control.manage"
+        "stream.requests.read",
+        "stream.requests.manage"
       ],
       "readOnly": true,
       "tags": [
@@ -1234,8 +1234,8 @@
       "handler": "UnsV2ControlInvoke",
       "request": "CloudControlInvokeReq",
       "response": "CloudControlInvokeResponse",
-      "permission": "control.execute",
-      "scope": "control:execute",
+      "permission": "stream.requests.invoke",
+      "scope": "stream.requests:invoke",
       "minPermission": 1,
       "resource": "control",
       "mutation": "runtime",
@@ -2001,13 +2001,13 @@
       "handler": "CloudHostedAppControlPolicyGet",
       "request": "CloudHostedAppControlPolicyGetReq",
       "response": "CloudHostedAppControlPolicyGetResponse",
-      "permission": "control.manage",
+      "permission": "stream.requests.manage",
       "resource": "app",
       "mutation": "",
       "appAllowed": false,
       "resourceId": 3341,
       "summary": "Hosted App independent Control policy: Get",
-      "description": "Current manager session or full_access personal/Agent key with uns.write and control.manage. Updates the existing hosted App platform ceiling while preserving Collection grants. Does not grant a Stream entry or upgrade App credentials.",
+      "description": "Current manager session or full_access personal/Agent key with uns.write and stream.requests.manage. Updates the existing hosted App platform ceiling while preserving Collection grants. Does not grant a Stream entry or upgrade App credentials.",
       "mcp": false,
       "cloudExtension": true,
       "audience": "governance",
@@ -2015,7 +2015,7 @@
       "method": "POST",
       "permissionAnyOf": [],
       "minPermission": 3,
-      "scope": "control:manage",
+      "scope": "stream.requests:manage",
       "readOnly": true,
       "tags": [
         "元数据"
@@ -2027,13 +2027,13 @@
       "handler": "CloudHostedAppControlPolicyUpdate",
       "request": "CloudHostedAppControlPolicyUpdateReq",
       "response": "CloudHostedAppControlPolicyMutationResponse",
-      "permission": "control.manage",
+      "permission": "stream.requests.manage",
       "resource": "app",
       "mutation": "meta.replace",
       "appAllowed": false,
       "resourceId": 3342,
       "summary": "Hosted App independent Control policy: Update",
-      "description": "Current manager session or full_access personal/Agent key with uns.write and control.manage. Updates the existing hosted App platform ceiling while preserving Collection grants. Does not grant a Stream entry or upgrade App credentials.",
+      "description": "Current manager session or full_access personal/Agent key with uns.write and stream.requests.manage. Updates the existing hosted App platform ceiling while preserving Collection grants. Does not grant a Stream entry or upgrade App credentials.",
       "mcp": false,
       "cloudExtension": true,
       "audience": "governance",
@@ -2041,7 +2041,7 @@
       "method": "POST",
       "permissionAnyOf": [],
       "minPermission": 3,
-      "scope": "control:manage",
+      "scope": "stream.requests:manage",
       "readOnly": false,
       "tags": [
         "元数据"
@@ -2270,8 +2270,8 @@
       "handler": "UnsV2ControlGrantGet",
       "request": "CloudControlGrantGetReq",
       "response": "CloudControlGrantGetResponse",
-      "permission": "control.manage",
-      "scope": "control:manage",
+      "permission": "stream.requests.manage",
+      "scope": "stream.requests:manage",
       "minPermission": 3,
       "resource": "control",
       "mutation": "",
@@ -2302,8 +2302,8 @@
       "handler": "UnsV2ControlGrantSet",
       "request": "CloudControlGrantSetReq",
       "response": "CloudControlGrantSetResponse",
-      "permission": "control.manage",
-      "scope": "control:manage",
+      "permission": "stream.requests.manage",
+      "scope": "stream.requests:manage",
       "minPermission": 3,
       "resource": "control",
       "mutation": "runtime",
@@ -2336,8 +2336,8 @@
       "handler": "CloudAppStreamAccessList",
       "request": "CloudAppStreamAccessListReq",
       "response": "CloudAppStreamAccessListResponse",
-      "permission": "control.manage",
-      "scope": "control:manage",
+      "permission": "stream.requests.manage",
+      "scope": "stream.requests:manage",
       "minPermission": 3,
       "resource": "control",
       "mutation": "",
@@ -3735,9 +3735,9 @@
               "asset.file.upload",
               "asset.file.download",
               "asset.file.delete",
-              "control.read",
-              "control.execute",
-              "control.write"
+              "stream.requests.read",
+              "stream.requests.invoke",
+              "stream.requests.write"
             ],
             "type": "string"
           },
@@ -4662,14 +4662,12 @@
         "id": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 128,
-          "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+          "maxLength": 128
         },
         "collectionId": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 128,
-          "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+          "maxLength": 128
         },
         "data": {
           "type": "object",
@@ -5887,8 +5885,7 @@
             "insertedId": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 128,
-              "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+              "maxLength": 128
             },
             "status": {
               "type": "string",
@@ -5945,8 +5942,7 @@
             "upsertedId": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 128,
-              "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+              "maxLength": 128
             },
             "status": {
               "type": "string",
@@ -6004,8 +6000,7 @@
             "upsertedId": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 128,
-              "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+              "maxLength": 128
             },
             "status": {
               "type": "string",
@@ -6282,8 +6277,7 @@
               "additionalProperties": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 128,
-                "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+                "maxLength": 128
               },
               "description": "键为原始输入中从 0 开始的操作索引，值为对应成功记录 ID；部分失败时不重新编号。"
             },
@@ -6292,8 +6286,7 @@
               "additionalProperties": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 128,
-                "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+                "maxLength": 128
               },
               "description": "键为原始输入中从 0 开始的操作索引，值为对应成功记录 ID；部分失败时不重新编号。"
             },
@@ -6399,8 +6392,7 @@
                   "recordId": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 128,
-                    "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+                    "maxLength": 128
                   },
                   "sample": {
                     "$ref": "#/components/schemas/CloudNullableSampleDocument"
@@ -14955,9 +14947,9 @@
             "type": "string",
             "enum": [
               "openapi.base",
-              "control.read",
-              "control.execute",
-              "control.write"
+              "stream.requests.read",
+              "stream.requests.invoke",
+              "stream.requests.write"
             ]
           }
         }
@@ -15060,9 +15052,9 @@
             "type": "string",
             "enum": [
               "openapi.base",
-              "control.read",
-              "control.execute",
-              "control.write"
+              "stream.requests.read",
+              "stream.requests.invoke",
+              "stream.requests.write"
             ]
           }
         }
@@ -15150,9 +15142,9 @@
             "type": "string",
             "enum": [
               "openapi.base",
-              "control.read",
-              "control.execute",
-              "control.write"
+              "stream.requests.read",
+              "stream.requests.invoke",
+              "stream.requests.write"
             ]
           }
         }
@@ -15752,9 +15744,9 @@
           "items": {
             "type": "string",
             "enum": [
-              "control.read",
-              "control.execute",
-              "control.write"
+              "stream.requests.read",
+              "stream.requests.invoke",
+              "stream.requests.write"
             ]
           }
         }
@@ -15815,9 +15807,9 @@
           "items": {
             "type": "string",
             "enum": [
-              "control.read",
-              "control.execute",
-              "control.write"
+              "stream.requests.read",
+              "stream.requests.invoke",
+              "stream.requests.write"
             ]
           }
         }
@@ -16789,8 +16781,7 @@
           "type": "string",
           "enum": [
             "app",
-            "user",
-            "api_key"
+            "user"
           ]
         },
         "principalID": {
@@ -16836,8 +16827,7 @@
           "type": "string",
           "enum": [
             "app",
-            "user",
-            "api_key"
+            "user"
           ]
         },
         "principalID": {
@@ -16866,9 +16856,9 @@
           "items": {
             "type": "string",
             "enum": [
-              "control.read",
-              "control.execute",
-              "control.write"
+              "stream.requests.read",
+              "stream.requests.invoke",
+              "stream.requests.write"
             ]
           },
           "maxItems": 3,
@@ -16992,8 +16982,7 @@
           "type": "string",
           "enum": [
             "app",
-            "user",
-            "api_key"
+            "user"
           ]
         },
         "principalID": {
@@ -17019,9 +17008,9 @@
           "items": {
             "type": "string",
             "enum": [
-              "control.read",
-              "control.execute",
-              "control.write"
+              "stream.requests.read",
+              "stream.requests.invoke",
+              "stream.requests.write"
             ]
           },
           "maxItems": 3,
@@ -17050,9 +17039,9 @@
           "items": {
             "type": "string",
             "enum": [
-              "control.read",
-              "control.execute",
-              "control.write"
+              "stream.requests.read",
+              "stream.requests.invoke",
+              "stream.requests.write"
             ]
           },
           "maxItems": 3,
@@ -17127,8 +17116,7 @@
           "type": "string",
           "enum": [
             "app",
-            "user",
-            "api_key"
+            "user"
           ]
         },
         "principalID": {
@@ -17393,9 +17381,9 @@
           "items": {
             "type": "string",
             "enum": [
-              "control.read",
-              "control.execute",
-              "control.write"
+              "stream.requests.read",
+              "stream.requests.invoke",
+              "stream.requests.write"
             ]
           },
           "maxItems": 3,
@@ -17992,8 +17980,7 @@
                   "id": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 128,
-                    "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+                    "maxLength": 128
                   },
                   "expiresAt": {
                     "type": "integer",
@@ -18207,8 +18194,7 @@
               "items": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 128,
-                "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+                "maxLength": 128
               }
             },
             "status": {
@@ -18406,20 +18392,17 @@
         "id": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 128,
-          "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+          "maxLength": 128
         },
         "collectionId": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 128,
-          "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+          "maxLength": 128
         },
         "recordId": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 128,
-          "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+          "maxLength": 128
         },
         "time": {
           "type": "integer",
@@ -18445,14 +18428,12 @@
         "streamId": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 128,
-          "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+          "maxLength": 128
         },
         "bindingId": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 128,
-          "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+          "maxLength": 128
         }
       },
       "required": [
@@ -18687,8 +18668,7 @@
           "items": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 128,
-            "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+            "maxLength": 128
           }
         }
       },
@@ -18749,8 +18729,7 @@
         "id": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 128,
-          "description": "仅在后续条目没有提交或已确认回滚时返回的安全续做位置；与 outcomeUnknown 互斥。"
+          "maxLength": 128
         },
         "token": {
           "type": "string"

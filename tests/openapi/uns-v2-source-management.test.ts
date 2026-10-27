@@ -67,6 +67,20 @@ describe('frozen v5 Source management contract', () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
+  it.each(['transport', 'invalid-json', 'invalid-envelope'] as const)(
+    'keeps discovery outcome unknown after %s without retry', async kind => {
+      const fetch = vi.fn(async () => {
+        if (kind === 'transport') throw new TypeError('fixture transport failure');
+        return kind === 'invalid-json' ? new Response('{', { status: 200 }) : json({ code: 200, data: null });
+      });
+      vi.stubGlobal('fetch', fetch);
+      const error = await api().sourceDiscover({ id: '101', expectedRevision: 2 }).catch(value => value);
+      expect(error).toBeInstanceOf(UnsV2OutcomeUnknownError);
+      expect(error).toMatchObject({ operation: 'sourceDiscover', retryable: false });
+      expect(fetch).toHaveBeenCalledTimes(1);
+    }
+  );
+
   it('preserves sourceTypes and the upstream SAP schema through the open protocols response', async () => {
     const sourceTypes = [{ id: 'sap-odata', protocol: 'http', configVersion: 3, configSchema: sapSchema, credentialKinds: ['vendorBasic'] }];
     const fetch = vi.fn(async () => json({ code: 200, msg: 'ok', requestId: 'protocols-fixture', data: { sourceTypes } }));

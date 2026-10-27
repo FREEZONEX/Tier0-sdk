@@ -4,6 +4,9 @@ import {
   type RuntimeStreamDefinition,
   type CloudAppCreateCapability,
   type CloudSourceConfig,
+  type CloudControlGrantInfo,
+  type CloudControlGrantMutation,
+  type CloudHostedAppControlPolicyUpdateReq,
   UnsV2RawNumber,
   type UnsV2Int64,
   type UnsV2JSONValue,
@@ -13,6 +16,21 @@ import {
 } from '../../src/index.js';
 
 const client = createClient({ apiHost: 'https://example.invalid', apiKey: 'workspace-bound' });
+client.unsV2.controlGrantGet({ code: 'fixture.telemetry', principalKind: 'user', principalID: '101' });
+client.unsV2.controlGrantSet({ code: 'fixture.telemetry', principalKind: 'app', principalID: 'fixture-app', active: 1,
+  expectedCodeRevision: 1, actions: ['stream.requests.read', 'stream.requests.invoke', 'stream.requests.write'] });
+// @ts-expect-error Keys cannot receive an independent request grant.
+client.unsV2.controlGrantGet({ code: 'fixture.telemetry', principalKind: 'api_key', principalID: '101' });
+// @ts-expect-error Keys cannot be independently granted or revoked.
+client.unsV2.controlGrantSet({ code: 'fixture.telemetry', principalKind: 'api_key', principalID: '101', active: 2, expectedCodeRevision: 1 });
+// @ts-expect-error Request grant responses cannot identify a Key subject.
+const keyGrantSubject: CloudControlGrantInfo['principalKind'] = 'api_key';
+// @ts-expect-error Grant mutation responses cannot identify a Key subject.
+const keyMutationSubject: CloudControlGrantMutation['principalKind'] = 'api_key';
+const requestPermission: CloudHostedAppControlPolicyUpdateReq['platformPermissions'][number] = 'stream.requests.invoke';
+// @ts-expect-error Hosted policy permissions use the unified Stream request vocabulary.
+const retiredControlPermission: CloudHostedAppControlPolicyUpdateReq['platformPermissions'][number] = 'control.execute';
+void [keyGrantSubject, keyMutationSubject, requestPermission, retiredControlPermission];
 const sapConfig: CloudSourceConfig = {
   configVersion: 3, sourceType: 'sap-odata', endpoint: 'https://sap.example.invalid/service/', options: {},
   auth: { kind: 'vendorBasic', credentialRef: 'opaque-ref' },
