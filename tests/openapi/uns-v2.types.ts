@@ -161,6 +161,14 @@ import type { PlatformV2ProjectMembersListReq } from '../../src/index.js';
 // @ts-expect-error Project membership was removed from the Cloud contract.
 import type { PlatformV2ProjectMembersListResponse } from '../../src/index.js';
 
+// The public Control readiness probe has no SDK method or DTO alias.
+// @ts-expect-error The public Stream runtime capability probe was retired.
+void client.unsV2.streamRuntimeCapabilitiesGet({});
+// @ts-expect-error The retired public probe has no request DTO export.
+import type { CloudStreamRuntimeCapabilitiesGetReq } from '../../src/index.js';
+// @ts-expect-error The retired public probe has no response DTO export.
+import type { CloudStreamRuntimeCapabilitiesGetResponse } from '../../src/index.js';
+
 import { appsApi } from '../../src/openapi/api.js';
 const appMembersBody: Parameters<typeof appsApi.openapiV1Appslistaccessmembers>[0] = {
   appId: 'owned-app', roleKeys: ['operator'], grantedAtStart: 1782864000000, page: 1, size: 20,

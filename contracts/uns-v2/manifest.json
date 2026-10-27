@@ -1,6 +1,6 @@
 {
   "version": "4.0.0",
-  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-collection/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1",
+  "cloudContractRevision": "cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-collection/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1+stream-control-probe-retirement/1",
   "operations": [
     {
       "name": "dataDiscover",
@@ -2776,42 +2776,6 @@
       },
       "responseSchema": {
         "$ref": "#/components/schemas/CloudStreamProgramDeleteResponse"
-      }
-    },
-    {
-      "name": "streamRuntimeCapabilitiesGet",
-      "suffix": "/uns/streams/runtime/capabilities/get",
-      "handler": "UnsV2StreamRuntimeCapabilitiesGet",
-      "request": "CloudStreamRuntimeCapabilitiesGetReq",
-      "response": "CloudStreamRuntimeCapabilitiesGetResponse",
-      "permission": "control.read",
-      "scope": "control:read",
-      "minPermission": 1,
-      "resource": "control",
-      "mutation": "",
-      "runtime": true,
-      "resourceId": 3320,
-      "summary": "读取运行能力",
-      "description": "Cloud extension reusing existing SourceStream logic and storage; internal and external requests share this schema. No shared transform or acquisition runtime is implied.",
-      "permissionAnyOf": [
-        "control.read",
-        "control.execute",
-        "control.write"
-      ],
-      "cloudExtension": true,
-      "appAllowed": false,
-      "tags": [
-        "处理流"
-      ],
-      "operation": "streamRuntimeCapabilitiesGet",
-      "path": "/uns/streams/runtime/capabilities/get",
-      "method": "POST",
-      "supported": true,
-      "requestSchema": {
-        "$ref": "#/components/schemas/CloudStreamRuntimeCapabilitiesGetReq"
-      },
-      "responseSchema": {
-        "$ref": "#/components/schemas/CloudStreamRuntimeCapabilitiesGetResponse"
       }
     },
     {
@@ -26859,53 +26823,6 @@
             {
               "$ref": "#/components/schemas/CloudPreviewResult"
             }
-          ]
-        }
-      },
-      "required": [
-        "code",
-        "msg",
-        "requestId",
-        "data"
-      ]
-    },
-    "CloudStreamRuntimeCapabilitiesGetReq": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {},
-      "required": []
-    },
-    "CloudStreamRuntimeCapabilitiesGetResponse": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "code": {
-          "type": "integer"
-        },
-        "msg": {
-          "type": "string"
-        },
-        "requestId": {
-          "type": "string"
-        },
-        "data": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "controlInvokeReady": {
-              "type": "boolean"
-            },
-            "scriptContractVersion": {
-              "type": "string"
-            },
-            "controlMetadataReady": {
-              "type": "boolean"
-            }
-          },
-          "required": [
-            "controlInvokeReady",
-            "scriptContractVersion",
-            "controlMetadataReady"
           ]
         }
       },
