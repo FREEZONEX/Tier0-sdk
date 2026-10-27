@@ -331,10 +331,10 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('5.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('de91fbe924e4489a3bc968f8c04ad0d2b07f8148');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('737002beb09467360a90607e6e2f6c7d0ed3ea62');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(86);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(97);
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(87);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(98);
     expect(received.slice(start)).toHaveLength(1);
   });
 

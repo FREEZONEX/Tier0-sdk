@@ -46,6 +46,7 @@
     {"name":"hostedAppControlPolicyUpdate","permission":"control.manage","scope":"control:manage","minPermission":3},
     {"name":"controlGrantGet","permission":"control.manage","scope":"control:manage","minPermission":3},
     {"name":"controlGrantSet","permission":"control.manage","scope":"control:manage","minPermission":3},
-    {"name":"appStreamAccessList","permission":"control.manage","scope":"control:manage","minPermission":3}
+    {"name":"appStreamAccessList","permission":"control.manage","scope":"control:manage","minPermission":3},
+    {"name":"sourceDiscover","permission":"uns.source.manage","scope":"source:manage","minPermission":3}
   ]
 }

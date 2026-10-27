@@ -22,15 +22,15 @@ const operation = (name: string) => manifest.operations.find(item => item.name =
 
 describe('Backend App UNS access contract without generic record audit', () => {
   it('pins the exact upstream commit and all generator inputs', () => {
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('de91fbe924e4489a3bc968f8c04ad0d2b07f8148');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('737002beb09467360a90607e6e2f6c7d0ed3ea62');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
     for (const [key, file] of Object.entries({ contract: 'contract.json', cloudSupport: 'cloud-support.json', manifest: 'manifest.json', provenance: 'provenance.json', registry: 'registry_generated.go' })) {
       expect(UNS_V2_CONTRACT_PROVENANCE.hashes[key as keyof typeof UNS_V2_CONTRACT_PROVENANCE.hashes]).toBe(
         createHash('sha256').update(read(file)).digest('hex')
       );
     }
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(86);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(97);
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(87);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(98);
   });
 
   it('exports exactly public v5 routes and rejects retired operations at the generation boundary', () => {

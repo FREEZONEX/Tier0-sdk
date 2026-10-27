@@ -1,6 +1,6 @@
 {
   "version": "5.0.0",
-  "cloudContractRevision": "cloud-source-impact/2+app-create-capability/1+data/3+record-reads/1+stream-receipt/1+collection-namespace/1+http-acquisition/2+app-collection/2+collection-ownership/1+metadata/1+app-context/2+collection-ttl/1+error-model/1+crud-consolidation/1+record-insert-return/1+lifecycle-consolidation/1+api-surface/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1+app-collections/1+http-in/1+app-resource-access/2",
+  "cloudContractRevision": "cloud-source-impact/2+source-vendor/1+app-create-capability/1+data/3+record-reads/1+stream-receipt/1+collection-namespace/1+http-acquisition/2+app-collection/2+collection-ownership/1+metadata/1+app-context/2+collection-ttl/1+error-model/1+crud-consolidation/1+record-insert-return/1+lifecycle-consolidation/1+api-surface/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1+app-collections/1+http-in/1+app-resource-access/2",
   "operations": [
     {
       "name": "dataDiscover",
@@ -573,6 +573,45 @@
       "responseSchema": {
         "$ref": "#/components/schemas/UnsV2SourceProbeResponse"
       }
+    },
+    {
+      "name": "sourceDiscover",
+      "handler": "UnsV2SourceDiscover",
+      "suffix": "/uns/sources/discover",
+      "request": "CloudSourceDiscoverReq",
+      "response": "CloudSourceDiscoverResponse",
+      "resourceId": 3301,
+      "resource": "source",
+      "mutation": "",
+      "permission": "uns.source.manage",
+      "summary": "Discover resources from a configured vendor Source",
+      "runtime": true,
+      "example": {
+        "dryRun": true,
+        "id": "example-id"
+      },
+      "requestSchema": {
+        "$ref": "#/components/schemas/CloudSourceDiscoverReq"
+      },
+      "responseSchema": {
+        "$ref": "#/components/schemas/CloudSourceDiscoverResponse"
+      },
+      "sideEffect": true,
+      "description": "Reads a fixed vendor service directory using the current Source revision and an audited credential-use lease. No caller-selected endpoint, method, or credential. Requires Source management and data read permission.",
+      "appAllowed": false,
+      "audience": "builder",
+      "starter": false,
+      "method": "POST",
+      "permissionAnyOf": [],
+      "minPermission": 3,
+      "scope": "source:manage",
+      "readOnly": false,
+      "tags": [
+        "数据源"
+      ],
+      "operation": "sourceDiscover",
+      "path": "/uns/sources/discover",
+      "supported": true
     },
     {
       "name": "streamProgramVersionsList",
@@ -11983,64 +12022,139 @@
       "description": "物理删除显式 recordIds 在 [from,to) 内的采样，需删除权限。dryRun 返回预计删除数量；不删除父 Record。"
     },
     "CloudSourceConfig": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "configVersion": {
-          "type": "integer",
-          "const": 2
-        },
-        "endpoint": {
-          "type": "string",
-          "minLength": 0
-        },
-        "options": {
-          "type": "object",
-          "additionalProperties": true
-        },
-        "auth": {
+      "oneOf": [
+        {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "kind": {
+            "configVersion": {
+              "type": "integer",
+              "const": 2
+            },
+            "endpoint": {
               "type": "string",
-              "enum": [
-                "basic",
-                "bearer",
-                "apiKey",
-                "usernamePassword",
-                "oauth2ClientCredentials"
+              "minLength": 0
+            },
+            "options": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "auth": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "basic",
+                    "bearer",
+                    "apiKey",
+                    "usernamePassword",
+                    "oauth2ClientCredentials"
+                  ]
+                },
+                "credentialRef": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "credentialRef"
               ]
             },
-            "credentialRef": {
+            "tls": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "caRef": {
+                  "type": "string"
+                },
+                "clientIdentityRef": {
+                  "type": "string"
+                }
+              },
+              "required": []
+            }
+          },
+          "required": [
+            "configVersion",
+            "endpoint",
+            "options"
+          ],
+          "description": "Existing cloud Source envelope. Only opaque credential/certificate references and safe MIME headers are allowed. This endpoint never returns or resolves secret material; existing driver validation remains authoritative."
+        },
+        {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "auth": {
+              "additionalProperties": false,
+              "description": "Endpoint-bound encrypted credential reference. Secret material is submitted separately and never returned in Source documents.",
+              "properties": {
+                "credentialRef": {
+                  "maxLength": 512,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "vendorBasic",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "credentialRef"
+              ],
+              "type": "object"
+            },
+            "configVersion": {
+              "const": 3,
+              "type": "integer"
+            },
+            "endpoint": {
+              "format": "uri",
+              "maxLength": 2048,
+              "minLength": 1,
+              "pattern": "^https://[^?#%\\\\\\s]+/$",
+              "type": "string"
+            },
+            "options": {
+              "additionalProperties": false,
+              "properties": {
+                "headers": {
+                  "additionalProperties": {
+                    "maxLength": 4096,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "description": "Custom non-secret headers are supported. Authentication and transport headers are reserved; Accept/Content-Type retain MIME validation.",
+                  "maxProperties": 64,
+                  "propertyNames": {
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$",
+                    "type": "string"
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "sourceType": {
+              "const": "sap-odata",
               "type": "string"
             }
           },
           "required": [
-            "kind",
-            "credentialRef"
-          ]
-        },
-        "tls": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "caRef": {
-              "type": "string"
-            },
-            "clientIdentityRef": {
-              "type": "string"
-            }
-          },
-          "required": []
+            "configVersion",
+            "sourceType",
+            "endpoint",
+            "options",
+            "auth"
+          ],
+          "type": "object"
         }
-      },
-      "required": [
-        "configVersion",
-        "endpoint",
-        "options"
-      ],
-      "description": "Existing cloud Source envelope. Only opaque credential/certificate references and safe MIME headers are allowed. This endpoint never returns or resolves secret material; existing driver validation remains authoritative."
+      ]
     },
     "CloudSourceDocument": {
       "type": "object",
@@ -14535,7 +14649,8 @@
             "basic",
             "bearer",
             "usernamePassword",
-            "anonymous"
+            "anonymous",
+            "vendorBasic"
           ]
         },
         "method": {
@@ -14576,6 +14691,10 @@
               "type": "string",
               "maxLength": 32768,
               "writeOnly": true
+            },
+            "profile": {
+              "type": "string",
+              "const": "sap-odata"
             }
           }
         }
@@ -14634,6 +14753,29 @@
               "method"
             ]
           }
+        },
+        {
+          "properties": {
+            "protocol": {
+              "const": "http"
+            },
+            "kind": {
+              "const": "vendorBasic"
+            },
+            "method": {
+              "const": "SESSION"
+            },
+            "material": {
+              "required": [
+                "profile",
+                "username",
+                "password"
+              ]
+            }
+          },
+          "required": [
+            "method"
+          ]
         }
       ]
     },
@@ -18242,6 +18384,92 @@
         "requestId",
         "data"
       ]
+    },
+    "CloudSourceDiscoverReq": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "expectedRevision"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*$",
+          "maxLength": 19
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "CloudSourceDiscoverResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "sourceType",
+            "resources"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "revision": {
+              "type": "integer"
+            },
+            "sourceType": {
+              "type": "string",
+              "const": "sap-odata"
+            },
+            "resources": {
+              "type": "array",
+              "maxItems": 1000,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "ref",
+                  "name",
+                  "readOnly"
+                ],
+                "properties": {
+                  "ref": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "code",
+        "msg",
+        "requestId",
+        "data"
+      ],
+      "additionalProperties": false
     },
     "UnsV2SampleFindReq": {
       "type": "object",
