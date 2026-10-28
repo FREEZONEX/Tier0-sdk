@@ -8,7 +8,7 @@
     "/openapi/v1/stream-requests/discover": {
       "post": {
         "description": "发现可见Stream 请求合同，只公开Stream 请求合同，不返回内部运行绑定",
-        "operationId": "openapi/V1/ControlsControlDiscover",
+        "operationId": "streamRequestDiscover",
         "requestBody": {
           "content": {
             "application/json": {
@@ -32,13 +32,16 @@
             "description": ""
           }
         },
-        "summary": "发现可见Stream 请求合同"
+        "summary": "Discover Stream requests",
+        "tags": [
+          "Stream requests"
+        ]
       }
     },
     "/openapi/v1/stream-requests/{requestCode}/describe": {
       "post": {
         "description": "读取公开Stream 请求合同，只公开Stream 请求合同，不返回内部运行绑定",
-        "operationId": "openapi/V1/ControlsControlDescribe",
+        "operationId": "streamRequestDescribe",
         "parameters": [
           {
             "in": "path",
@@ -61,13 +64,16 @@
             "description": ""
           }
         },
-        "summary": "读取公开Stream 请求合同"
+        "summary": "Describe Stream request",
+        "tags": [
+          "Stream requests"
+        ]
       }
     },
     "/openapi/v1/stream-requests/{requestCode}/invoke": {
       "post": {
         "description": "按公开合同调用Stream 请求；原始 body 为有效 UTF-8，最多 1MiB 字节；可选 idempotencyKey 解码后最多 128 UTF-8 字节，是否必填由冻结合同决定。返回 code、contractVersion、result、runID、status、replayed(boolean)，不返回内部运行绑定。结果未知返回 HTTP 504，errorCode=STREAM_REQUEST_RESULT_UNKNOWN；未知内部错误返回 HTTP 500，errorCode=STREAM_REQUEST_INTERNAL_ERROR，message 不泄漏内部异常",
-        "operationId": "openapi/V1/ControlsControlInvoke",
+        "operationId": "streamRequestInvoke",
         "parameters": [
           {
             "in": "path",
@@ -101,12 +107,15 @@
             "description": ""
           }
         },
-        "summary": "按公开合同调用Stream 请求"
+        "summary": "Invoke Stream request",
+        "tags": [
+          "Stream requests"
+        ]
       }
     },
     "/openapi/v1/stream-messages/connect": {
       "post": {
-        "operationId": "openapi/V1/StreammessagesStreamMessagesConnect",
+        "operationId": "streamMessagesConnect",
         "requestBody": {
           "content": {
             "application/json": {
@@ -130,26 +139,92 @@
             "description": ""
           }
         },
-        "summary": "StreamMessagesConnect"
+        "summary": "Connect Stream messages",
+        "tags": [
+          "Stream messages"
+        ]
       }
     },
-    "/openapi/v1/capabilities/discover": {
+    "/openapi/v2/capabilities/discover": {
       "post": {
-        "description": "需要有效 Workspace API Key，Body 仅接受空 JSON 对象，最大 4KiB UTF-8 字节，不接受查询参数或 Workspace 覆盖。成功响应直接为 CapabilityDiscoverResp，不包裹 code/msg/data。能力由默认关闭的公开发布开关、Workspace FeatureGate、Key 显式授权共同裁决；执行启用还必须由 unssvr readiness RPC 确认 runtime 就绪且解释器合同匹配，不能由本地开关替代。readiness RPC 失败返回 503 CAPABILITY_UNAVAILABLE，不静默伪装为正常关闭。响应允许客户端忽略未知扩展字段；版本标签不表示设备 ACK 或 npm 包版本。错误直接返回 CapabilityErrorResp 和真实 HTTP 状态，不泄漏内部异常。",
-        "operationId": "openapi/V1/CapabilitiesCapabilityDiscover",
+        "description": "需要有效 Workspace API Key，Body 仅接受空 JSON 对象，最大 4KiB UTF-8 字节，不接受查询参数或 Workspace 覆盖。成功响应直接为 CapabilityDiscoverResp，不包裹 code/msg/data。能力由默认关闭的公开发布开关、Workspace FeatureGate、Key 显式授权共同裁决；Stream request 能力仅报告当前发布与授权，运行可用性保持 readiness_unknown，不触发运行时探针。实际操作由后端执行安全检查，失败返回真实错误。响应允许客户端忽略未知扩展字段；版本标签不表示设备 ACK 或 npm 包版本。错误直接返回 CapabilityErrorResp 和真实 HTTP 状态，不泄漏内部异常。",
+        "operationId": "PlatformV2CapabilityDiscover",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CapabilityDiscoverResp"
+                  "$ref": "#/components/schemas/PlatformCapabilityDiscoverResp"
                 }
               }
             },
             "description": ""
+          },
+          "400": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformCapabilityErrorResp"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformCapabilityErrorResp"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformCapabilityErrorResp"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformCapabilityErrorResp"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformCapabilityErrorResp"
+                }
+              }
+            }
           }
         },
-        "summary": "发现当前 Workspace 的公开能力与版本合同"
+        "summary": "发现当前 Workspace 的公开能力与版本合同",
+        "tags": [
+          "平台信息"
+        ],
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-tier0-readonly": true,
+        "x-tier0-destructive": false,
+        "x-tier0-audience": "builder",
+        "x-tier0-platform": true,
+        "x-tier0-source-operation": "/openapi/v1/capabilities/discover"
       }
     }
   },
@@ -380,7 +455,7 @@
         ],
         "type": "object"
       },
-      "CapabilityDiscoverResp": {
+      "PlatformCapabilityDiscoverResp": {
         "properties": {
           "apiContractVersions": {
             "description": "openapi/v1",
@@ -392,24 +467,17 @@
           "capabilities": {
             "description": "只返回当前 Key 有授权摘要的已知能力，关闭的能力仍返回状态",
             "items": {
-              "$ref": "#/components/schemas/PublicCapability"
+              "$ref": "#/components/schemas/PlatformPublicCapability"
             },
             "type": "array"
           },
           "contractVersion": {
-            "description": "本发现响应合同版本，与单个 Control 的冻结合同版本独立",
+            "description": "本发现响应合同版本，与单个 Stream request 的冻结合同版本独立",
             "type": "string"
           },
           "deprecations": {
             "items": {
-              "$ref": "#/components/schemas/CapabilityDeprecation"
-            },
-            "type": "array"
-          },
-          "interpreterContractVersions": {
-            "description": "tier0-stream/v3 解释器合同，不是 npm 版本",
-            "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/PlatformCapabilityDeprecation"
             },
             "type": "array"
           },
@@ -432,17 +500,16 @@
           "product",
           "contractVersion",
           "apiContractVersions",
-          "interpreterContractVersions",
           "sdkContractVersions",
           "capabilities",
           "deprecations"
         ],
         "type": "object"
       },
-      "PublicCapability": {
+      "PlatformPublicCapability": {
         "properties": {
           "allowed": {
-            "description": "当前 Key 的能力授权摘要，不替代具体 Control code 与读写权限检查",
+            "description": "当前 Key 的能力授权摘要，不替代具体 Stream request code 与读写权限检查",
             "type": "boolean"
           },
           "availability": {
@@ -482,7 +549,7 @@
         ],
         "type": "object"
       },
-      "CapabilityDeprecation": {
+      "PlatformCapabilityDeprecation": {
         "properties": {
           "contract": {
             "type": "string"
@@ -496,6 +563,23 @@
         },
         "required": [
           "contract"
+        ],
+        "type": "object"
+      },
+      "PlatformCapabilityErrorResp": {
+        "properties": {
+          "errorCode": {
+            "description": "INVALID_CREDENTIAL / CAPABILITY_INVALID_REQUEST / CAPABILITY_FORBIDDEN / CAPABILITY_UNAVAILABLE / CAPABILITY_INTERNAL_ERROR",
+            "type": "string"
+          },
+          "message": {
+            "description": "固定公开消息，不透传内部异常",
+            "type": "string"
+          }
+        },
+        "required": [
+          "errorCode",
+          "message"
         ],
         "type": "object"
       }

@@ -22,7 +22,7 @@ const operation = (name: string) => manifest.operations.find(item => item.name =
 
 describe('Backend App UNS access contract without generic record audit', () => {
   it('pins the exact immutable canonical snapshot and all generator inputs', () => {
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('sha256:54d24ea3de5ab8a2478e4ce7fade6dfe1cd20f62261f006150f5f3353806985d');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('310bd513fd91efee78a1bf38fcce0b4128e70996');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
     expect(UNS_V2_CONTRACT_PROVENANCE.resolvedCloudContract).toBe(true);
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('+source-vendor/2');
@@ -32,7 +32,7 @@ describe('Backend App UNS access contract without generic record audit', () => {
       );
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(83);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(98);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(95);
   });
 
   it('exports exactly public v5 routes and rejects retired operations at the generation boundary', () => {
@@ -45,6 +45,25 @@ describe('Backend App UNS access contract without generic record audit', () => {
     for (const name of ['sourceDocumentCreate', 'sourceDocumentGet', 'streamDocumentCreate', 'metadataInsertOne', 'recordGet',
       'recordQueryBatch', 'recordUpdateOne', 'recordBulkWrite', 'sampleAppend', 'sampleFind', 'sampleLatestValues', 'recordSubscribe']) {
       expect(Object.hasOwn(UNS_V2_OPERATIONS, name), name).toBe(true);
+    }
+  });
+
+  it('pins the sole v1 execution surface and preserves explicit external App topic contracts', () => {
+    for (const name of ['controlDiscover', 'controlDescribe', 'controlInvoke',
+      'streamRequestDiscover', 'streamRequestDescribe', 'streamRequestInvoke']) {
+      expect(manifest.operations.some(item => item.name === name)).toBe(false);
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
+    }
+    for (const name of ['streamRequestGrantGet', 'streamRequestGrantSet', 'appStreamPolicyGet', 'appStreamPolicyUpdate']) {
+      expect(operation(name)).toMatchObject({ appAllowed: false });
+    }
+    const schemas = JSON.parse(read('manifest.json')).schemas;
+    for (const name of ['CloudStreamRequestAppProfile', 'CloudStreamRequestAppCreateReq', 'CloudStreamRequestAppPermissionsUpdateReq']) {
+      expect(schemas[name].properties.messageTopics).toMatchObject({ type: 'array', maxItems: 32 });
+      expect(schemas[name].required || []).not.toContain('messageTopics');
+      expect(schemas[name].properties.platformPermissions.items.enum).toEqual(expect.arrayContaining([
+        'stream.messages.publish', 'stream.messages.subscribe',
+      ]));
     }
   });
 
@@ -120,9 +139,6 @@ describe('Backend App UNS access contract without generic record audit', () => {
   });
 
   it.each([
-    ['streamRequestDiscover', 'read', ['stream.requests.read', 'stream.requests.manage']],
-    ['streamRequestDescribe', 'read', ['stream.requests.read', 'stream.requests.manage']],
-    ['streamRequestInvoke', 'invoke', []],
     ['appStreamPolicyGet', 'manage', []],
     ['appStreamPolicyUpdate', 'manage', []],
     ['streamRequestGrantGet', 'manage', []],

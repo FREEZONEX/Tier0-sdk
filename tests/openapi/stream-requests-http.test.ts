@@ -37,6 +37,44 @@ afterAll(async () => {
 });
 
 describe('StreamRequest real HTTP fixture (no external credentials)', () => {
+  it('uses injected Node App host/key and APP_ID automatically on the current HTTP mappings', async () => {
+    // This loopback adapter verifies SDK transport only. SYS authority rejection
+    // and legacy stored-scope migration require their separate native tests.
+    const appId = 'fa9e0650-931a-4b49-983b-6d0f130268c0';
+    const key = 'sk-app-local-contract-fixture';
+    vi.stubEnv('TIER0_API_HOST', apiHost);
+    vi.stubEnv('TIER0_API_KEY', key);
+    vi.stubEnv('APP_ID', appId);
+    const automatic = createClient();
+    const start = received.length;
+    try {
+      expect(typeof window).toBe('undefined');
+      respond = (req, res) => {
+        if (req.url?.endsWith('/stream-requests/discover')) send(res, { total: 1, list: [definition] });
+        else if (req.url?.endsWith('/describe')) send(res, definition);
+        else if (req.url?.endsWith('/invoke')) send(res, result);
+        else send(res, { errorCode: 'STREAM_MESSAGE_FORBIDDEN', message: 'fixture has no message grant' }, 403);
+      };
+      await automatic.streams.requests.discover();
+      await automatic.streams.requests.use({ code: 'pump.start' }).describe();
+      await automatic.streams.requests.use({ code: 'pump.start' }).invoke({}, { idempotencyKey: 'server-env-intent' });
+      await expect(automatic.streams.messages.use({ topic: 'server/env' }).publish({ intent: 'explicit' }))
+        .rejects.toMatchObject({ errorCode: 'STREAM_MESSAGE_CONNECT_DENIED' });
+      const rows = received.slice(start);
+      expect(rows.map(row => row.path)).toEqual([
+        '/openapi/v1/stream-requests/discover', '/openapi/v1/stream-requests/pump.start/describe',
+        '/openapi/v1/stream-requests/pump.start/invoke', '/openapi/v1/stream-messages/connect',
+      ]);
+      for (const row of rows) {
+        expect(row.headers.authorization).toBe(`Bearer ${key}`);
+        expect(row.headers['x-api-key']).toBe(key);
+        expect(row.headers['x-tier0-app-data-subject']).toBeUndefined();
+      }
+      expect(rows[3].body).toMatchObject({ appId, topics: [{ topic: 'server/env', publish: true, subscribe: false }] });
+      expect((rows[3].body as { clientPublicKey: string }).clientPublicKey).toMatch(/^U[A-Z2-7]{55}$/);
+    } finally { await automatic.dispose(); vi.unstubAllEnvs(); }
+  });
+
   it('matches all Gateway paths, bodies and existing authentication headers', async () => {
     const start = received.length;
     respond = (_req, res) => send(res, { total: 1, list: [definition] });

@@ -14,10 +14,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 发现可见Stream 请求合同
+         * Discover Stream requests
          * @description 发现可见Stream 请求合同，只公开Stream 请求合同，不返回内部运行绑定
          */
-        post: operations["openapi/V1/ControlsControlDiscover"];
+        post: operations["streamRequestDiscover"];
         delete?: never;
         options?: never;
         head?: never;
@@ -34,10 +34,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 读取公开Stream 请求合同
+         * Describe Stream request
          * @description 读取公开Stream 请求合同，只公开Stream 请求合同，不返回内部运行绑定
          */
-        post: operations["openapi/V1/ControlsControlDescribe"];
+        post: operations["streamRequestDescribe"];
         delete?: never;
         options?: never;
         head?: never;
@@ -54,10 +54,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 按公开合同调用Stream 请求
+         * Invoke Stream request
          * @description 按公开合同调用Stream 请求；原始 body 为有效 UTF-8，最多 1MiB 字节；可选 idempotencyKey 解码后最多 128 UTF-8 字节，是否必填由冻结合同决定。返回 code、contractVersion、result、runID、status、replayed(boolean)，不返回内部运行绑定。结果未知返回 HTTP 504，errorCode=STREAM_REQUEST_RESULT_UNKNOWN；未知内部错误返回 HTTP 500，errorCode=STREAM_REQUEST_INTERNAL_ERROR，message 不泄漏内部异常
          */
-        post: operations["openapi/V1/ControlsControlInvoke"];
+        post: operations["streamRequestInvoke"];
         delete?: never;
         options?: never;
         head?: never;
@@ -73,15 +73,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** StreamMessagesConnect */
-        post: operations["openapi/V1/StreammessagesStreamMessagesConnect"];
+        /** Connect Stream messages */
+        post: operations["streamMessagesConnect"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/openapi/v1/capabilities/discover": {
+    "/openapi/v2/capabilities/discover": {
         parameters: {
             query?: never;
             header?: never;
@@ -92,9 +92,9 @@ export interface paths {
         put?: never;
         /**
          * 发现当前 Workspace 的公开能力与版本合同
-         * @description 需要有效 Workspace API Key，Body 仅接受空 JSON 对象，最大 4KiB UTF-8 字节，不接受查询参数或 Workspace 覆盖。成功响应直接为 CapabilityDiscoverResp，不包裹 code/msg/data。能力由默认关闭的公开发布开关、Workspace FeatureGate、Key 显式授权共同裁决；执行启用还必须由 unssvr readiness RPC 确认 runtime 就绪且解释器合同匹配，不能由本地开关替代。readiness RPC 失败返回 503 CAPABILITY_UNAVAILABLE，不静默伪装为正常关闭。响应允许客户端忽略未知扩展字段；版本标签不表示设备 ACK 或 npm 包版本。错误直接返回 CapabilityErrorResp 和真实 HTTP 状态，不泄漏内部异常。
+         * @description 需要有效 Workspace API Key，Body 仅接受空 JSON 对象，最大 4KiB UTF-8 字节，不接受查询参数或 Workspace 覆盖。成功响应直接为 CapabilityDiscoverResp，不包裹 code/msg/data。能力由默认关闭的公开发布开关、Workspace FeatureGate、Key 显式授权共同裁决；Stream request 能力仅报告当前发布与授权，运行可用性保持 readiness_unknown，不触发运行时探针。实际操作由后端执行安全检查，失败返回真实错误。响应允许客户端忽略未知扩展字段；版本标签不表示设备 ACK 或 npm 包版本。错误直接返回 CapabilityErrorResp 和真实 HTTP 状态，不泄漏内部异常。
          */
-        post: operations["openapi/V1/CapabilitiesCapabilityDiscover"];
+        post: operations["PlatformV2CapabilityDiscover"];
         delete?: never;
         options?: never;
         head?: never;
@@ -173,24 +173,22 @@ export interface components {
             subscribeSubject: string;
             topic: string;
         };
-        CapabilityDiscoverResp: {
+        PlatformCapabilityDiscoverResp: {
             /** @description openapi/v1 */
             apiContractVersions: string[];
             /** @description 只返回当前 Key 有授权摘要的已知能力，关闭的能力仍返回状态 */
-            capabilities: components["schemas"]["PublicCapability"][];
-            /** @description 本发现响应合同版本，与单个 Control 的冻结合同版本独立 */
+            capabilities: components["schemas"]["PlatformPublicCapability"][];
+            /** @description 本发现响应合同版本，与单个 Stream request 的冻结合同版本独立 */
             contractVersion: string;
-            deprecations: components["schemas"]["CapabilityDeprecation"][];
-            /** @description tier0-stream/v3 解释器合同，不是 npm 版本 */
-            interpreterContractVersions: string[];
+            deprecations: components["schemas"]["PlatformCapabilityDeprecation"][];
             product: string;
             /** @description 仅返回显式配置的可信产品发布版本，未配置时省略 */
             productVersion?: string;
             /** @description stream-requests/v1 公共 SDK 合同，不是 npm 版本 */
             sdkContractVersions: string[];
         };
-        PublicCapability: {
-            /** @description 当前 Key 的能力授权摘要，不替代具体 Control code 与读写权限检查 */
+        PlatformPublicCapability: {
+            /** @description 当前 Key 的能力授权摘要，不替代具体 Stream request code 与读写权限检查 */
             allowed: boolean;
             /** @description unavailable / unknown / available；不是设备在线或执行成功证明 */
             availability: string;
@@ -203,10 +201,16 @@ export interface components {
             /** @description disabled / not_supported / unavailable / readiness_unknown / ready */
             state: string;
         };
-        CapabilityDeprecation: {
+        PlatformCapabilityDeprecation: {
             contract: string;
             replacement?: string;
             sunsetAt?: string;
+        };
+        PlatformCapabilityErrorResp: {
+            /** @description INVALID_CREDENTIAL / CAPABILITY_INVALID_REQUEST / CAPABILITY_FORBIDDEN / CAPABILITY_UNAVAILABLE / CAPABILITY_INTERNAL_ERROR */
+            errorCode: string;
+            /** @description 固定公开消息，不透传内部异常 */
+            message: string;
         };
     };
     responses: never;
@@ -217,7 +221,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    "openapi/V1/ControlsControlDiscover": {
+    streamRequestDiscover: {
         parameters: {
             query?: never;
             header?: never;
@@ -240,7 +244,7 @@ export interface operations {
             };
         };
     };
-    "openapi/V1/ControlsControlDescribe": {
+    streamRequestDescribe: {
         parameters: {
             query?: never;
             header?: never;
@@ -261,7 +265,7 @@ export interface operations {
             };
         };
     };
-    "openapi/V1/ControlsControlInvoke": {
+    streamRequestInvoke: {
         parameters: {
             query?: never;
             header?: never;
@@ -286,7 +290,7 @@ export interface operations {
             };
         };
     };
-    "openapi/V1/StreammessagesStreamMessagesConnect": {
+    streamMessagesConnect: {
         parameters: {
             query?: never;
             header?: never;
@@ -309,7 +313,7 @@ export interface operations {
             };
         };
     };
-    "openapi/V1/CapabilitiesCapabilityDiscover": {
+    PlatformV2CapabilityDiscover: {
         parameters: {
             query?: never;
             header?: never;
@@ -323,7 +327,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CapabilityDiscoverResp"];
+                    "application/json": components["schemas"]["PlatformCapabilityDiscoverResp"];
+                };
+            };
+            /** @description Platform operation failed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformCapabilityErrorResp"];
+                };
+            };
+            /** @description Platform operation failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformCapabilityErrorResp"];
+                };
+            };
+            /** @description Platform operation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformCapabilityErrorResp"];
+                };
+            };
+            /** @description Platform operation failed. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformCapabilityErrorResp"];
+                };
+            };
+            /** @description Platform operation failed. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformCapabilityErrorResp"];
                 };
             };
         };

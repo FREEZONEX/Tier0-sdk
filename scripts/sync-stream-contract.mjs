@@ -9,12 +9,13 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const target = resolve(root, 'contracts/openapi/streams.swagger.json');
 const provenancePath = resolve(root, 'contracts/openapi/streams-provenance.json');
 const sourcePath = 'service/gwsvr/internal/handler/swaggerui/swagger.json';
+const capabilitySourcePath = 'service/gwsvr/internal/handler/openapi/v2/unsv2/swagger_generated.json';
 const routes = [
   '/openapi/v1/stream-requests/discover',
   '/openapi/v1/stream-requests/{requestCode}/describe',
   '/openapi/v1/stream-requests/{requestCode}/invoke',
   '/openapi/v1/stream-messages/connect',
-  '/openapi/v1/capabilities/discover',
+  '/openapi/v2/capabilities/discover',
 ];
 const sha = value => createHash('sha256').update(value).digest('hex');
 if (process.argv[2] === '--check') {
@@ -29,9 +30,14 @@ if (process.argv[2] === '--check') {
   const revision = execFileSync('git', ['rev-parse', `${reference}^{commit}`], { cwd: backend, encoding: 'utf8' }).trim();
   const raw = execFileSync('git', ['show', `${revision}:${sourcePath}`], { cwd: backend, encoding: 'utf8', maxBuffer: 20 << 20 });
   const source = JSON.parse(raw);
+  const capabilityRaw = execFileSync('git', ['show', `${revision}:${capabilitySourcePath}`], { cwd: backend, encoding: 'utf8', maxBuffer: 20 << 20 });
+  const capabilitySource = JSON.parse(capabilityRaw);
+  const schemaSources = { ...source.components.schemas, ...capabilitySource.components.schemas };
   const paths = Object.fromEntries(routes.map(route => {
-    assert.ok(source.paths[route]?.post, `Missing public POST ${route}`);
-    return [route, source.paths[route]];
+    const operation = route.startsWith('/openapi/v2/')
+      ? capabilitySource.paths[route.slice('/openapi/v2'.length)] : source.paths[route];
+    assert.ok(operation?.post, `Missing public POST ${route}`);
+    return [route, operation];
   }));
   const schemas = {};
   function visit(value) {
@@ -39,8 +45,8 @@ if (process.argv[2] === '--check') {
     if (typeof value.$ref === 'string' && value.$ref.startsWith('#/components/schemas/')) {
       const name = value.$ref.split('/').pop();
       if (!Object.hasOwn(schemas, name)) {
-        assert.ok(source.components.schemas[name], `Missing public schema ${name}`);
-        schemas[name] = source.components.schemas[name];
+        assert.ok(schemaSources[name], `Missing public schema ${name}`);
+        schemas[name] = schemaSources[name];
         visit(schemas[name]);
       }
     }
@@ -52,6 +58,7 @@ if (process.argv[2] === '--check') {
   writeFileSync(provenancePath, JSON.stringify({
     repository: 'FREEZONEX/Tier0-Backend', revision, source: sourcePath,
     sourceSHA256: sha(raw), snapshotSHA256: sha(snapshot),
+    sourceInputs: [{ path: sourcePath, sha256: sha(raw) }, { path: capabilitySourcePath, sha256: sha(capabilityRaw) }],
     trustRevision: execFileSync('git', ['rev-parse', '5eecd2188^{commit}'], { cwd: backend, encoding: 'utf8' }).trim(),
     scope: 'Public Stream requests, message connection and capability discovery only. Current UNS v5 data and single-model inputs are pinned separately; this snapshot does not assert a matching deployed Backend/SWE/App or SYS/GW/browser acceptance.',
   }, null, 2) + '\n');

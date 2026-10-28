@@ -9,7 +9,7 @@ const provenance = JSON.parse(read('streams-provenance.json'));
 
 describe('committed public Stream contract projection', () => {
   it('pins the public contract and independently reviewed trust commit', () => {
-    expect(provenance.revision).toBe('c044bbea98acc3b9d2bcfb6ea597853c47b4f173');
+    expect(provenance.revision).toBe('310bd513fd91efee78a1bf38fcce0b4128e70996');
     expect(provenance.trustRevision).toMatch(/^5eecd2188[0-9a-f]+$/);
     expect(provenance.snapshotSHA256).toBe(createHash('sha256').update(raw).digest('hex'));
     expect(provenance.sourceSHA256).toMatch(/^[0-9a-f]{64}$/);
@@ -20,7 +20,7 @@ describe('committed public Stream contract projection', () => {
       '/openapi/v1/stream-requests/{requestCode}/describe',
       '/openapi/v1/stream-requests/{requestCode}/invoke',
       '/openapi/v1/stream-messages/connect',
-      '/openapi/v1/capabilities/discover',
+      '/openapi/v2/capabilities/discover',
     ]);
     for (const route of Object.values(source.paths) as { post?: unknown }[]) expect(route.post).toBeDefined();
   });
@@ -37,7 +37,7 @@ describe('committed public Stream contract projection', () => {
   });
   it('keeps current Cloud UNS v5 data and single-model provenance separate from request/message routes', () => {
     const data = JSON.parse(readFileSync(new URL('../../contracts/uns-v2/provenance.json', import.meta.url), 'utf8'));
-    expect(data.revision).toBe('sha256:54d24ea3de5ab8a2478e4ce7fade6dfe1cd20f62261f006150f5f3353806985d');
+    expect(data.revision).toBe('310bd513fd91efee78a1bf38fcce0b4128e70996');
     expect(data.version).toBe('5.0.0');
     expect(data.cloudContractRevision).toContain('source-stream-single-model');
     expect(provenance.scope).toContain('UNS v5 data and single-model inputs are pinned separately');

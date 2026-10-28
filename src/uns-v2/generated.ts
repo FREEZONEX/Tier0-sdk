@@ -3810,67 +3810,64 @@ export const UNS_V2_CODEC_SCHEMAS = {"UnsV2CatalogReq":{"k":"o"},"UnsV2Transacti
 
 export const UNS_V2_CONTRACT_PROVENANCE = {
   "repository": "FREEZONEX/Tier0-Backend",
-  "revision": "sha256:54d24ea3de5ab8a2478e4ce7fade6dfe1cd20f62261f006150f5f3353806985d",
-  "cloudRevision": "sha256:54d24ea3de5ab8a2478e4ce7fade6dfe1cd20f62261f006150f5f3353806985d",
+  "revision": "310bd513fd91efee78a1bf38fcce0b4128e70996",
   "version": "5.0.0",
-  "cloudContractRevision": "cloud-source-impact/2+source-vendor/2+app-create-capability/1+data/3+record-reads/1+stream-receipt/1+collection-namespace/1+http-acquisition/2+http-source-role/1+http-source-request/1+app-collection/2+collection-ownership/1+metadata/1+app-context/2+collection-ttl/1+error-model/1+crud-consolidation/1+record-insert-return/1+lifecycle-consolidation/1+api-surface/2+source-stream-single-model+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1+app-collections/1+http-in/1+app-resource-access/2+stream-control-probe-retirement/1+http-push-retirement/1",
-  "sourceMode": "immutable-snapshot",
-  "source": "share/unscontract/manifest.json",
+  "sourceMode": "commit",
   "sourceInputs": [
     {
-      "path": "service/gwsvr/http/openapi/v1/controls.api",
-      "sha256": "4947035c6835b5e3533cfaa42194dcd59da77084c2683f821a714bb458fbbf4d"
-    },
-    {
-      "path": "service/gwsvr/http/openapi/v1/stream-messages.api",
-      "sha256": "c26cf76c8f509098049a68a4c2f31ec4e38d90045bbaa76297f43ab0c15f1bb8"
-    },
-    {
-      "path": "service/gwsvr/internal/handler/openapi/v2/unsv2/swagger_generated.json",
-      "sha256": "7727aea4f2df497364d1f9f9c619599fa8345e4f17e02cbcfade98c80997b7cb"
-    },
-    {
-      "path": "service/syssvr/proto/streamMessages.proto",
-      "sha256": "e601c55cbac6afbd583a485dd021e06238033d15cbc0cea6b2019d44879aaee5"
-    },
-    {
-      "path": "service/unssvr/pb/uns/sourceStream.pb.go",
-      "sha256": "ca49865eb0d2fa940200c92121f9681f02ef827f8fedbdde45af69692ecf60f5"
-    },
-    {
-      "path": "service/unssvr/pb/uns/sourceStream_grpc.pb.go",
-      "sha256": "2a607efc72e2cf002156b3bf3383a93dd032770db55603ec6125ed24e9d91462"
-    },
-    {
-      "path": "service/unssvr/proto/sourceStream.proto",
-      "sha256": "5e4541a83745202c7e84379e9b080da39ca3ea008aeaebca48f50ddc1c8f8e0c"
-    },
-    {
-      "path": "service/unssvr/proto/unsShare.proto",
-      "sha256": "d0bf0934a663b1ea321d1e38a30518b4ae2da6a8cf30fd2880e917defad6cef1"
-    },
-    {
-      "path": "share/unscontract/cloud-extensions.json",
-      "sha256": "84c9fd3f13553f1fd5eb65d15628dc7a8c445ae5df92d7e8ff16bd59fda03df0"
+      "path": "service/unssvr/internal/domain/unsv2/contract_generated.go",
+      "sha256": "0fd7088d9dab9c3c8c67b02930e705b8c2dcede2440cb7016f44a8870e2e3875",
+      "matchesCommit": true
     },
     {
       "path": "share/unscontract/manifest.json",
-      "sha256": "bb129680bf055277052f8c73541a758c11a447291e7f8ac40e545dd3dbc17173"
+      "sha256": "b4e80c6f3c9763069c30691b66024344fe456dafc75ab4ab5537d21e563d0f25",
+      "matchesCommit": true
+    },
+    {
+      "path": "share/unscontract/cloud-support.json",
+      "sha256": "a0cee6d21406248314221c892cf66e60db36791ad6735347b1f5798c05e716bf",
+      "matchesCommit": true
     },
     {
       "path": "share/unscontract/registry_generated.go",
-      "sha256": "5dd5c3569623b2258caa6d340a24e88236e780e9e5273765ba944a36aa613127"
+      "sha256": "ce79c4afe338b08354106a1cb92fb646469b7ca563bb9322baddd38f81a7e0c5",
+      "matchesCommit": true
+    },
+    {
+      "path": "share/unscontract/provenance.json",
+      "sha256": "9d2d0b1b4038a9873dd1c555f9fb95d9ae99d8e0e743944cf0a92e49cc511993",
+      "matchesCommit": true
     }
   ],
+  "source": "service/unssvr/internal/domain/unsv2/contract_generated.go#ContractJSON",
+  "cloudRevision": "310bd513fd91efee78a1bf38fcce0b4128e70996",
+  "cloudContractRevision": "cloud-source-impact/2+source-vendor/2+app-create-capability/1+data/3+record-reads/1+stream-receipt/1+collection-namespace/1+http-acquisition/2+http-source-role/1+http-source-request/1+app-collection/2+collection-ownership/1+metadata/1+app-context/2+collection-ttl/1+error-model/1+crud-consolidation/1+record-insert-return/1+lifecycle-consolidation/1+api-surface/2+source-stream-single-model+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1+app-collections/1+http-in/1+app-resource-access/2+stream-control-probe-retirement/1+http-push-retirement/1",
   "resolvedCloudContract": true,
-  "note": "Contract projected from the complete resolved canonical manifest, verified against immutable source file hashes. Not a Git release or deployment. No separate Cloud overlay is applied.",
+  "enterpriseBase": {
+    "repository": "FREEZONEX/Tier0-Enterprise-New",
+    "revision": "ba2b953a47d54fbec10a419920554507399b85d3",
+    "version": "4.0.0",
+    "source": "backend/internal/domain/unsv2/contract_generated.go",
+    "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs.",
+    "cloudSourceCatalog": {
+      "generator": "go run ./service/unssvr/tools/sourcecatalog -output share/unscontract/source-protocols.json",
+      "modelSource": "service/unssvr/internal/domain/sourcestream/SourceEnvelopeSchema + SourceAcquisitionSchema",
+      "modelRevision": "aec9a778bf8bc7a153c26c40715ad85d670bdb06",
+      "managedServerRegistryRevision": "4fb470c03",
+      "capability": "x-tier0-opcua-server: static available=false; online availability is workspace/registry authoritative"
+    }
+  },
+  "sourceDerivedContractSHA256": "8586ba86b81c353a0cc734a37edf59ad51b8cd2d5a48eaf5299b70824fcd1093",
+  "upstreamSourceSHA256": "0fd7088d9dab9c3c8c67b02930e705b8c2dcede2440cb7016f44a8870e2e3875",
+  "note": "Resolved Cloud contract from the pinned commit; local fixtures do not establish deployment acceptance or device ACK.",
   "hashes": {
-    "contract": "bb129680bf055277052f8c73541a758c11a447291e7f8ac40e545dd3dbc17173",
-    "cloudSupport": "52717451535071393f53cfa2141e385baa2b890ddff67bac6584fe61af3e65ec",
-    "manifest": "bb129680bf055277052f8c73541a758c11a447291e7f8ac40e545dd3dbc17173",
-    "provenance": "a5297b78b5bf59737864e60ad144741f35239a942fb96712475cde497e904d75",
-    "registry": "5dd5c3569623b2258caa6d340a24e88236e780e9e5273765ba944a36aa613127"
+    "contract": "27efa682180b9244d179b36c57aba01f15cd750624f042c7934ebb419788c478",
+    "cloudSupport": "a0cee6d21406248314221c892cf66e60db36791ad6735347b1f5798c05e716bf",
+    "manifest": "b4e80c6f3c9763069c30691b66024344fe456dafc75ab4ab5537d21e563d0f25",
+    "provenance": "c04172eca7c6b7539f7c7e139e53d7e58007b920fbe439476e400e0ab0a7e5c7",
+    "registry": "ce79c4afe338b08354106a1cb92fb646469b7ca563bb9322baddd38f81a7e0c5"
   },
   "publicOperationCount": 83,
-  "manifestOperationCount": 98
+  "manifestOperationCount": 95
 } as const;
