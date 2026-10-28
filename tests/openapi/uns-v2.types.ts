@@ -16,6 +16,28 @@ import {
 } from '../../src/index.js';
 
 const client = createClient({ apiHost: 'https://example.invalid', apiKey: 'workspace-bound' });
+// @ts-expect-error Core-only App registration capabilities are not public SDK operations.
+const coreRegistrationCapabilities: UnsV2OperationName = 'appRegistrationCapabilities';
+// @ts-expect-error Core-only App registration list is not a public SDK operation.
+const coreRegistrationList: UnsV2OperationName = 'appRegistrationList';
+// @ts-expect-error Core-only App registration lookup is not a public SDK operation.
+const coreRegistrationGet: UnsV2OperationName = 'appRegistrationGet';
+// @ts-expect-error Core-only App registration create is not a public SDK operation.
+const coreRegistrationCreate: UnsV2OperationName = 'appRegistrationCreate';
+// @ts-expect-error Core-only App registration update is not a public SDK operation.
+const coreRegistrationUpdate: UnsV2OperationName = 'appRegistrationUpdate';
+// @ts-expect-error Core-only App permission update is not a public SDK operation.
+const coreRegistrationPermissions: UnsV2OperationName = 'appRegistrationPermissionsUpdate';
+void [coreRegistrationCapabilities, coreRegistrationList, coreRegistrationGet, coreRegistrationCreate,
+  coreRegistrationUpdate, coreRegistrationPermissions];
+type RunRow = UnsV2Response<'streamRunsList'>['data']['items'][number];
+const httpRun: RunRow = { id: 'http-run', kind: 'http', release: '2', entryId: 'http-entry', trigger: 'http-request',
+  status: 'response-sent', createdAt: 1_793_231_792_697, finishedAt: null, durationMs: null };
+const sentHTTPRun: RunRow = { ...httpRun, responseSentAt: 1_793_231_792_698 };
+const pendingHTTPRun: RunRow = { ...httpRun, responseSentAt: null };
+// @ts-expect-error HTTP response timestamps remain int64 epoch milliseconds, not strings.
+const stringHTTPTime: RunRow = { ...httpRun, responseSentAt: '1793231792698' };
+void [httpRun, sentHTTPRun, pendingHTTPRun, stringHTTPTime];
 // @ts-expect-error The Control-only readiness probe has no public Stream method.
 client.unsV2.streamRuntimeCapabilitiesGet({});
 // @ts-expect-error Generic dispatch cannot restore the retired probe.

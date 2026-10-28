@@ -303,6 +303,34 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received.slice(start).every(row => row.headers['x-api-key'] === 'workspace-bound-key')).toBe(true);
   });
 
+  it.each(['admitted', 'response-sent', 'completed', 'failed', 'unknown'] as const)(
+    'preserves HTTP run %s with absent, null and epoch-ms response timestamps', async status => {
+      const start = received.length;
+      const epochMs = 1_793_231_792_697;
+      for (const timestamp of [{}, { responseSentAt: null }, { responseSentAt: epochMs }]) {
+        const http = { id: 'http-run', kind: 'http' as const, release: '2', entryId: 'http-entry',
+          trigger: 'http-request', status, createdAt: epochMs - 10, finishedAt: null, durationMs: null, ...timestamp };
+        const historical = (['delivery', 'control'] as const).map(kind => ({
+          ...http, id: `${kind}-run`, kind, trigger: 'interval', status: 'completed',
+        }));
+        const items: UnsV2Response<'streamRunsList'>['data']['items'] = [http, ...historical];
+        respond = (_req, res) => send(res, {
+          code: 200, msg: 'ok', requestId: 'http-runs', data: { items, checkedAt: epochMs, nextCursor: '' },
+        });
+        const result = await client().unsV2.streamRunsList({ id: '202', size: 10 });
+        expect(result.data.items).toEqual(items);
+        expect(Object.hasOwn(result.data.items[0], 'responseSentAt')).toBe(Object.hasOwn(timestamp, 'responseSentAt'));
+        if ('responseSentAt' in timestamp) expect(result.data.items[0].responseSentAt).toBe(timestamp.responseSentAt);
+      }
+      expect(received.slice(start)).toHaveLength(3);
+      for (const call of received.slice(start)) {
+        expect(call.method).toBe('POST');
+        expect(call.path).toBe('/openapi/v2/uns/streams/runs/list');
+        expect(JSON.parse(call.body)).toEqual({ id: '202', size: 10 });
+      }
+    }
+  );
+
   it('never retries isolated sample execution or exposes Core-only credentials and ingress routes', async () => {
     const start = received.length;
     respond = (_req, res) => send(res, { code: 503, msg: 'sample runtime unavailable', requestId: 'sample-unavailable' }, 503);
@@ -311,7 +339,10 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received.slice(start)).toHaveLength(1);
     expect(received[start].path).toBe('/openapi/v2/uns/streams/sample/test');
     const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
-    for (const name of ['graph', 'sourceCredentialCreate', 'sourceIngressGet', 'sourceIngressRotate', 'controlAppCreate', 'sourceMqttAuthCreate']) {
+    for (const name of ['graph', 'sourceCredentialCreate', 'sourceIngressGet', 'sourceIngressRotate', 'sourceMqttAuthCreate',
+      ...['Capabilities', 'List', 'Get', 'Create', 'Update', 'PermissionsUpdate'].flatMap(suffix => [
+        `controlApp${suffix}`, `appRegistration${suffix}`,
+      ])]) {
       expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
       await expect(core.call(name, {})).rejects.toThrow('unknown UNS v2 operation');
     }
@@ -319,7 +350,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('5.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('310bd513fd91efee78a1bf38fcce0b4128e70996');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('c845ba79dad47741985852423215e059d64b948b');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(83);
     expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(95);

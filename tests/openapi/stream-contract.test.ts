@@ -37,7 +37,7 @@ describe('committed public Stream contract projection', () => {
   });
   it('keeps current Cloud UNS v5 data and single-model provenance separate from request/message routes', () => {
     const data = JSON.parse(readFileSync(new URL('../../contracts/uns-v2/provenance.json', import.meta.url), 'utf8'));
-    expect(data.revision).toBe('310bd513fd91efee78a1bf38fcce0b4128e70996');
+    expect(data.revision).toBe('c845ba79dad47741985852423215e059d64b948b');
     expect(data.version).toBe('5.0.0');
     expect(data.cloudContractRevision).toContain('source-stream-single-model');
     expect(provenance.scope).toContain('UNS v5 data and single-model inputs are pinned separately');

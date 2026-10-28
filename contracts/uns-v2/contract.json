@@ -1642,8 +1642,8 @@
       ]
     },
     {
-      "name": "controlAppCapabilities",
-      "suffix": "/uns/control-apps/capabilities",
+      "name": "appRegistrationCapabilities",
+      "suffix": "/uns/app-registrations/capabilities",
       "handler": "CloudStreamRequestAppCapabilities",
       "request": "CloudStreamRequestAppCapabilitiesReq",
       "response": "CloudStreamRequestAppCapabilitiesResponse",
@@ -1653,8 +1653,8 @@
       "coreOnly": true,
       "appAllowed": false,
       "resourceId": 3333,
-      "summary": "Cloud control App registration: Capabilities",
-      "description": "Internal authenticated governance; registration does not issue credentials or Control/Source grants.",
+      "summary": "External App registration: Capabilities",
+      "description": "Internal authenticated governance; registration does not issue credentials or Stream request/Source grants.",
       "cloudExtension": true,
       "audience": "governance",
       "starter": false,
@@ -1664,12 +1664,12 @@
       "scope": "app:manage",
       "readOnly": true,
       "tags": [
-        "控制"
+        "App 与授权"
       ]
     },
     {
-      "name": "controlAppList",
-      "suffix": "/uns/control-apps/list",
+      "name": "appRegistrationList",
+      "suffix": "/uns/app-registrations/list",
       "handler": "CloudStreamRequestAppList",
       "request": "CloudStreamRequestAppListReq",
       "response": "CloudStreamRequestAppListResponse",
@@ -1679,8 +1679,8 @@
       "coreOnly": true,
       "appAllowed": false,
       "resourceId": 3334,
-      "summary": "Cloud control App registration: List",
-      "description": "Internal authenticated governance; registration does not issue credentials or Control/Source grants.",
+      "summary": "External App registration: List",
+      "description": "Internal authenticated governance; registration does not issue credentials or Stream request/Source grants.",
       "cloudExtension": true,
       "audience": "governance",
       "starter": false,
@@ -1690,12 +1690,12 @@
       "scope": "app:manage",
       "readOnly": true,
       "tags": [
-        "控制"
+        "App 与授权"
       ]
     },
     {
-      "name": "controlAppGet",
-      "suffix": "/uns/control-apps/get",
+      "name": "appRegistrationGet",
+      "suffix": "/uns/app-registrations/get",
       "handler": "CloudStreamRequestAppGet",
       "request": "CloudStreamRequestAppGetReq",
       "response": "CloudStreamRequestAppGetResponse",
@@ -1705,8 +1705,8 @@
       "coreOnly": true,
       "appAllowed": false,
       "resourceId": 3335,
-      "summary": "Cloud control App registration: Get",
-      "description": "Internal authenticated governance; registration does not issue credentials or Control/Source grants.",
+      "summary": "External App registration: Get",
+      "description": "Internal authenticated governance; registration does not issue credentials or Stream request/Source grants.",
       "cloudExtension": true,
       "audience": "governance",
       "starter": false,
@@ -1716,12 +1716,12 @@
       "scope": "app:manage",
       "readOnly": true,
       "tags": [
-        "控制"
+        "App 与授权"
       ]
     },
     {
-      "name": "controlAppCreate",
-      "suffix": "/uns/control-apps/create",
+      "name": "appRegistrationCreate",
+      "suffix": "/uns/app-registrations/create",
       "handler": "CloudStreamRequestAppCreate",
       "request": "CloudStreamRequestAppCreateReq",
       "response": "CloudStreamRequestAppMutationResponse",
@@ -1731,8 +1731,8 @@
       "coreOnly": true,
       "appAllowed": false,
       "resourceId": 3336,
-      "summary": "Cloud control App registration: Create",
-      "description": "Internal authenticated governance; registration does not issue credentials or Control/Source grants.",
+      "summary": "External App registration: Create",
+      "description": "Internal authenticated governance; registration does not issue credentials or Stream request/Source grants.",
       "cloudExtension": true,
       "audience": "governance",
       "starter": false,
@@ -1742,12 +1742,12 @@
       "scope": "app:manage",
       "readOnly": false,
       "tags": [
-        "控制"
+        "App 与授权"
       ]
     },
     {
-      "name": "controlAppUpdate",
-      "suffix": "/uns/control-apps/update",
+      "name": "appRegistrationUpdate",
+      "suffix": "/uns/app-registrations/update",
       "handler": "CloudStreamRequestAppUpdate",
       "request": "CloudStreamRequestAppUpdateReq",
       "response": "CloudStreamRequestAppMutationResponse",
@@ -1757,8 +1757,8 @@
       "coreOnly": true,
       "appAllowed": false,
       "resourceId": 3337,
-      "summary": "Cloud control App registration: Update",
-      "description": "Internal authenticated governance; registration does not issue credentials or Control/Source grants.",
+      "summary": "External App registration: Update",
+      "description": "Internal authenticated governance; registration does not issue credentials or Stream request/Source grants.",
       "cloudExtension": true,
       "audience": "governance",
       "starter": false,
@@ -1768,12 +1768,12 @@
       "scope": "app:manage",
       "readOnly": false,
       "tags": [
-        "控制"
+        "App 与授权"
       ]
     },
     {
-      "name": "controlAppPermissionsUpdate",
-      "suffix": "/uns/control-apps/permissions/update",
+      "name": "appRegistrationPermissionsUpdate",
+      "suffix": "/uns/app-registrations/permissions/update",
       "handler": "CloudStreamRequestAppPermissionsUpdate",
       "request": "CloudStreamRequestAppPermissionsUpdateReq",
       "response": "CloudStreamRequestAppMutationResponse",
@@ -1783,8 +1783,8 @@
       "coreOnly": true,
       "appAllowed": false,
       "resourceId": 3338,
-      "summary": "Cloud control App registration: PermissionsUpdate",
-      "description": "Internal authenticated governance; registration does not issue credentials or Control/Source grants.",
+      "summary": "External App registration: PermissionsUpdate",
+      "description": "Internal authenticated governance; registration does not issue credentials or Stream request/Source grants.",
       "cloudExtension": true,
       "audience": "governance",
       "starter": false,
@@ -1794,7 +1794,7 @@
       "scope": "app:manage",
       "readOnly": false,
       "tags": [
-        "控制"
+        "App 与授权"
       ]
     },
     {
@@ -18020,7 +18020,8 @@
                     "type": "string",
                     "enum": [
                       "delivery",
-                      "control"
+                      "control",
+                      "http"
                     ]
                   },
                   "release": {
@@ -18052,6 +18053,12 @@
                     "type": "number",
                     "minimum": 0,
                     "nullable": true
+                  },
+                  "responseSentAt": {
+                    "type": "integer",
+                    "format": "int64",
+                    "nullable": true,
+                    "minimum": 0
                   }
                 },
                 "required": [

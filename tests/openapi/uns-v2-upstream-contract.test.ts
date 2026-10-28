@@ -22,7 +22,7 @@ const operation = (name: string) => manifest.operations.find(item => item.name =
 
 describe('Backend App UNS access contract without generic record audit', () => {
   it('pins the exact immutable canonical snapshot and all generator inputs', () => {
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('310bd513fd91efee78a1bf38fcce0b4128e70996');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('c845ba79dad47741985852423215e059d64b948b');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
     expect(UNS_V2_CONTRACT_PROVENANCE.resolvedCloudContract).toBe(true);
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('+source-vendor/2');
@@ -33,6 +33,18 @@ describe('Backend App UNS access contract without generic record audit', () => {
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(83);
     expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(95);
+  });
+
+  it('keeps HTTP run timestamps nullable and optional beside historical run kinds', () => {
+    const schema = manifest.schemas.CloudStreamRunsListResponse as {
+      properties: { data: { properties: { items: { items: {
+        properties: Record<string, unknown>; required: string[];
+      } } } } };
+    };
+    const row = schema.properties.data.properties.items.items;
+    expect(row.properties.kind).toEqual({ type: 'string', enum: ['delivery', 'control', 'http'] });
+    expect(row.properties.responseSentAt).toEqual({ type: 'integer', format: 'int64', nullable: true, minimum: 0 });
+    expect(row.required).not.toContain('responseSentAt');
   });
 
   it('exports exactly public v5 routes and rejects retired operations at the generation boundary', () => {
@@ -49,6 +61,14 @@ describe('Backend App UNS access contract without generic record audit', () => {
   });
 
   it('pins the sole v1 execution surface and preserves explicit external App topic contracts', () => {
+    for (const suffix of ['Capabilities', 'List', 'Get', 'Create', 'Update', 'PermissionsUpdate']) {
+      const retired = `controlApp${suffix}`;
+      const neutral = `appRegistration${suffix}`;
+      expect(manifest.operations.some(item => item.name === retired)).toBe(false);
+      expect(operation(neutral)).toMatchObject({ coreOnly: true, appAllowed: false, permission: 'workspace.api.manage' });
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, retired)).toBe(false);
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, neutral)).toBe(false);
+    }
     for (const name of ['controlDiscover', 'controlDescribe', 'controlInvoke',
       'streamRequestDiscover', 'streamRequestDescribe', 'streamRequestInvoke']) {
       expect(manifest.operations.some(item => item.name === name)).toBe(false);
