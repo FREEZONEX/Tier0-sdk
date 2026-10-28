@@ -113,6 +113,10 @@ function diagnostics(value: Record<string, unknown>, fail: () => never): Capabil
 
 const sourceOperations = ['read', 'configure', 'test', 'discover', 'enable', 'disable'];
 const streamOperations = ['read', 'configure', 'validate', 'deploy', 'execute', 'disable'];
+const resourceOperations: Partial<Record<CapabilityCode, readonly string[]>> = {
+  source: ['test', 'discover', 'enable'],
+  stream: ['deploy', 'execute'],
+};
 
 function operationFields(value: Record<string, unknown>, code: CapabilityCode, fail: () => never): { operations?: CapabilityOperation[] } {
   if (value.operations === undefined) return {};
@@ -129,6 +133,8 @@ function operationFields(value: Record<string, unknown>, code: CapabilityCode, f
     const expected = ready ? 'available' : item.state === 'readiness_unknown' ? 'unknown' : 'unavailable';
     if (typeof item.releaseEnabled !== 'boolean' || typeof item.enabled !== 'boolean' || typeof item.allowed !== 'boolean' ||
         typeof item.requiresResourceCheck !== 'boolean' ||
+        (resourceOperations[code]?.includes(item.operation) && !item.requiresResourceCheck) ||
+        (value.releaseEnabled === false && item.releaseEnabled !== false) ||
         !['disabled', 'not_supported', 'unavailable', 'readiness_unknown', 'ready'].includes(item.state as string) ||
         item.availability !== expected || item.enabled !== ready ||
         (ready && (!item.releaseEnabled || !item.allowed)) ||

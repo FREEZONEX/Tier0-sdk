@@ -591,5 +591,3007 @@
       ],
       "deprecations": []
     }
+  },
+  {
+    "name": "cloud-source-disabled-parent-ready-child",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-disabled-parent-released-unavailable-child",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-disabled-parent-disabled-child",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-unavailable-parent-ready-read",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-test-missing-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "test",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-test-disabled-still-needs-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "test",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-test-resource-recheck",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "test",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-discover-missing-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "discover",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-discover-disabled-still-needs-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "discover",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-discover-resource-recheck",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "discover",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-enable-missing-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-enable-disabled-still-needs-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-enable-resource-recheck",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-unknown-operations",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            },
+            {
+              "operation": "future"
+            },
+            {
+              "operation": "future-state",
+              "state": "future",
+              "enabled": "future",
+              "checkedAt": "not-a-time"
+            },
+            {
+              "operation": "execute",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "source",
+        "releaseEnabled": true,
+        "enabled": true,
+        "allowed": true,
+        "state": "ready",
+        "availability": "available",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": [
+          {
+            "operation": "read",
+            "releaseEnabled": true,
+            "enabled": true,
+            "allowed": true,
+            "state": "ready",
+            "availability": "available",
+            "requiresResourceCheck": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "cloud-source-unknown-operations-disabled-parent",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "future"
+            },
+            {
+              "operation": "future-state",
+              "state": "future",
+              "enabled": "future",
+              "checkedAt": "not-a-time"
+            },
+            {
+              "operation": "execute",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "source",
+        "releaseEnabled": false,
+        "enabled": false,
+        "allowed": true,
+        "state": "disabled",
+        "availability": "unavailable",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": []
+      }
+    ]
+  },
+  {
+    "name": "cloud-source-known-operation-invalid-state",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "future",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-known-operation-unauthorized-ready",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": false,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-operation-invalid-expiry",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true,
+              "checkedAt": "2026-10-28T14:00:00Z",
+              "validUntil": "2026-10-28T13:00:00Z"
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "schemaValid": true
+  },
+  {
+    "name": "cloud-stream-disabled-parent-ready-child",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-stream-disabled-parent-released-unavailable-child",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-stream-disabled-parent-disabled-child",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-stream-unavailable-parent-ready-read",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-stream-deploy-missing-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "deploy",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-stream-deploy-disabled-still-needs-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "deploy",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-stream-deploy-resource-recheck",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "deploy",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-stream-execute-missing-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-stream-execute-disabled-still-needs-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-stream-execute-resource-recheck",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-stream-unknown-operations",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            },
+            {
+              "operation": "future"
+            },
+            {
+              "operation": "future-state",
+              "state": "future",
+              "enabled": "future",
+              "checkedAt": "not-a-time"
+            },
+            {
+              "operation": "test",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "stream",
+        "releaseEnabled": true,
+        "enabled": true,
+        "allowed": true,
+        "state": "ready",
+        "availability": "available",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": [
+          {
+            "operation": "read",
+            "releaseEnabled": true,
+            "enabled": true,
+            "allowed": true,
+            "state": "ready",
+            "availability": "available",
+            "requiresResourceCheck": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "cloud-stream-unknown-operations-disabled-parent",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "future"
+            },
+            {
+              "operation": "future-state",
+              "state": "future",
+              "enabled": "future",
+              "checkedAt": "not-a-time"
+            },
+            {
+              "operation": "test",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "stream",
+        "releaseEnabled": false,
+        "enabled": false,
+        "allowed": true,
+        "state": "disabled",
+        "availability": "unavailable",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": []
+      }
+    ]
+  },
+  {
+    "name": "cloud-stream-known-operation-invalid-state",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "future",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-stream-known-operation-unauthorized-ready",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": false,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-stream-operation-invalid-expiry",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true,
+              "checkedAt": "2026-10-28T14:00:00Z",
+              "validUntil": "2026-10-28T13:00:00Z"
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "schemaValid": true
+  },
+  {
+    "name": "cloud-stream-unknown-capabilities",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": []
+        },
+        {
+          "code": "future.v7"
+        },
+        {
+          "code": "future-state",
+          "enabled": "future",
+          "state": "future",
+          "contractVersions": [
+            "future/v7"
+          ],
+          "checkedAt": "not-a-time"
+        },
+        {
+          "code": "__proto__"
+        },
+        {
+          "code": "constructor"
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "stream",
+        "releaseEnabled": true,
+        "enabled": true,
+        "allowed": true,
+        "state": "ready",
+        "availability": "available",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": []
+      }
+    ]
+  },
+  {
+    "name": "cloud-stream-unknown-capabilities-disabled-parent",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": []
+        },
+        {
+          "code": "future.v7"
+        },
+        {
+          "code": "future-state",
+          "enabled": "future",
+          "state": "future",
+          "contractVersions": [
+            "future/v7"
+          ],
+          "checkedAt": "not-a-time"
+        },
+        {
+          "code": "__proto__"
+        },
+        {
+          "code": "constructor"
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "stream",
+        "releaseEnabled": false,
+        "enabled": false,
+        "allowed": true,
+        "state": "disabled",
+        "availability": "unavailable",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": []
+      }
+    ]
+  },
+  {
+    "name": "cloud-namespace.v2-unknown-operation-without-assessment-catalog",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "state": "future"
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "namespace.v2",
+        "releaseEnabled": true,
+        "enabled": true,
+        "allowed": true,
+        "state": "ready",
+        "availability": "available",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": []
+      }
+    ]
+  },
+  {
+    "name": "enterprise-source-disabled-parent-ready-child",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-disabled-parent-released-unavailable-child",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-disabled-parent-disabled-child",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-unavailable-parent-ready-read",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-test-missing-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "test",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-test-disabled-still-needs-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "test",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-test-resource-recheck",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "test",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-discover-missing-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "discover",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-discover-disabled-still-needs-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "discover",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-discover-resource-recheck",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "discover",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-enable-missing-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-enable-disabled-still-needs-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-enable-resource-recheck",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-unknown-operations",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            },
+            {
+              "operation": "future"
+            },
+            {
+              "operation": "future-state",
+              "state": "future",
+              "enabled": "future",
+              "checkedAt": "not-a-time"
+            },
+            {
+              "operation": "execute",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "source",
+        "releaseEnabled": true,
+        "enabled": true,
+        "allowed": true,
+        "state": "ready",
+        "availability": "available",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": [
+          {
+            "operation": "read",
+            "releaseEnabled": true,
+            "enabled": true,
+            "allowed": true,
+            "state": "ready",
+            "availability": "available",
+            "requiresResourceCheck": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "enterprise-source-unknown-operations-disabled-parent",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "future"
+            },
+            {
+              "operation": "future-state",
+              "state": "future",
+              "enabled": "future",
+              "checkedAt": "not-a-time"
+            },
+            {
+              "operation": "execute",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "source",
+        "releaseEnabled": false,
+        "enabled": false,
+        "allowed": true,
+        "state": "disabled",
+        "availability": "unavailable",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": []
+      }
+    ]
+  },
+  {
+    "name": "enterprise-source-known-operation-invalid-state",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "future",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-known-operation-unauthorized-ready",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": false,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-operation-invalid-expiry",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true,
+              "checkedAt": "2026-10-28T14:00:00Z",
+              "validUntil": "2026-10-28T13:00:00Z"
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "schemaValid": true
+  },
+  {
+    "name": "enterprise-stream-disabled-parent-ready-child",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-stream-disabled-parent-released-unavailable-child",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-stream-disabled-parent-disabled-child",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-stream-unavailable-parent-ready-read",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-stream-deploy-missing-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "deploy",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-stream-deploy-disabled-still-needs-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "deploy",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-stream-deploy-resource-recheck",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "deploy",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-stream-execute-missing-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-stream-execute-disabled-still-needs-resource-recheck",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": false,
+              "enabled": false,
+              "allowed": true,
+              "state": "disabled",
+              "availability": "unavailable",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-stream-execute-resource-recheck",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-stream-unknown-operations",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false
+            },
+            {
+              "operation": "future"
+            },
+            {
+              "operation": "future-state",
+              "state": "future",
+              "enabled": "future",
+              "checkedAt": "not-a-time"
+            },
+            {
+              "operation": "test",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "stream",
+        "releaseEnabled": true,
+        "enabled": true,
+        "allowed": true,
+        "state": "ready",
+        "availability": "available",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": [
+          {
+            "operation": "read",
+            "releaseEnabled": true,
+            "enabled": true,
+            "allowed": true,
+            "state": "ready",
+            "availability": "available",
+            "requiresResourceCheck": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "enterprise-stream-unknown-operations-disabled-parent",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "future"
+            },
+            {
+              "operation": "future-state",
+              "state": "future",
+              "enabled": "future",
+              "checkedAt": "not-a-time"
+            },
+            {
+              "operation": "test",
+              "requiresResourceCheck": false
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "stream",
+        "releaseEnabled": false,
+        "enabled": false,
+        "allowed": true,
+        "state": "disabled",
+        "availability": "unavailable",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": []
+      }
+    ]
+  },
+  {
+    "name": "enterprise-stream-known-operation-invalid-state",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "future",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-stream-known-operation-unauthorized-ready",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": false,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-stream-operation-invalid-expiry",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": true,
+              "checkedAt": "2026-10-28T14:00:00Z",
+              "validUntil": "2026-10-28T13:00:00Z"
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "schemaValid": true
+  },
+  {
+    "name": "enterprise-stream-unknown-capabilities",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": []
+        },
+        {
+          "code": "future.v7"
+        },
+        {
+          "code": "future-state",
+          "enabled": "future",
+          "state": "future",
+          "contractVersions": [
+            "future/v7"
+          ],
+          "checkedAt": "not-a-time"
+        },
+        {
+          "code": "__proto__"
+        },
+        {
+          "code": "constructor"
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "stream",
+        "releaseEnabled": true,
+        "enabled": true,
+        "allowed": true,
+        "state": "ready",
+        "availability": "available",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": []
+      }
+    ]
+  },
+  {
+    "name": "enterprise-stream-unknown-capabilities-disabled-parent",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": false,
+          "enabled": false,
+          "allowed": true,
+          "state": "disabled",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": []
+        },
+        {
+          "code": "future.v7"
+        },
+        {
+          "code": "future-state",
+          "enabled": "future",
+          "state": "future",
+          "contractVersions": [
+            "future/v7"
+          ],
+          "checkedAt": "not-a-time"
+        },
+        {
+          "code": "__proto__"
+        },
+        {
+          "code": "constructor"
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "stream",
+        "releaseEnabled": false,
+        "enabled": false,
+        "allowed": true,
+        "state": "disabled",
+        "availability": "unavailable",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": []
+      }
+    ]
+  },
+  {
+    "name": "enterprise-namespace.v2-unknown-operation-without-assessment-catalog",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "operations": [
+            {
+              "operation": "execute",
+              "state": "future"
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "namespace.v2",
+        "releaseEnabled": true,
+        "enabled": true,
+        "allowed": true,
+        "state": "ready",
+        "availability": "available",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "operations": []
+      }
+    ]
   }
 ]

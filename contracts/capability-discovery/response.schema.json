@@ -72,6 +72,52 @@
     "capability": {
       "type": "object",
       "required": [
+        "code"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "description": "Unknown capability codes are ignored; only recognized codes use the frozen assessment contract.",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "enum": [
+                  "namespace.v2",
+                  "source",
+                  "stream",
+                  "control.v1",
+                  "control.invoke.v1"
+                ]
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/$defs/knownCapability"
+          }
+        }
+      ]
+    },
+    "operation": {
+      "type": "object",
+      "required": [
+        "operation"
+      ],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "description": "Unknown operation names are ignored within their parent capability; known names are validated by that capability."
+    },
+    "knownCapability": {
+      "type": "object",
+      "required": [
         "code",
         "contractVersions",
         "releaseEnabled",
@@ -253,10 +299,213 @@
               "checkedAt": {}
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "source"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "operations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "operation": {
+                            "enum": [
+                              "read",
+                              "configure",
+                              "test",
+                              "discover",
+                              "enable",
+                              "disable"
+                            ]
+                          }
+                        }
+                      },
+                      "then": {
+                        "$ref": "#/$defs/knownOperation"
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "operation": {
+                            "enum": [
+                              "test",
+                              "discover",
+                              "enable"
+                            ]
+                          }
+                        }
+                      },
+                      "then": {
+                        "properties": {
+                          "requiresResourceCheck": {
+                            "const": true
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "releaseEnabled": {
+                      "const": false
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "operations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "if": {
+                          "properties": {
+                            "operation": {
+                              "enum": [
+                                "read",
+                                "configure",
+                                "test",
+                                "discover",
+                                "enable",
+                                "disable"
+                              ]
+                            }
+                          }
+                        },
+                        "then": {
+                          "properties": {
+                            "releaseEnabled": {
+                              "const": false
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "stream"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "operations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "operation": {
+                            "enum": [
+                              "read",
+                              "configure",
+                              "validate",
+                              "deploy",
+                              "execute",
+                              "disable"
+                            ]
+                          }
+                        }
+                      },
+                      "then": {
+                        "$ref": "#/$defs/knownOperation"
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "operation": {
+                            "enum": [
+                              "deploy",
+                              "execute"
+                            ]
+                          }
+                        }
+                      },
+                      "then": {
+                        "properties": {
+                          "requiresResourceCheck": {
+                            "const": true
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "releaseEnabled": {
+                      "const": false
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "operations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "if": {
+                          "properties": {
+                            "operation": {
+                              "enum": [
+                                "read",
+                                "configure",
+                                "validate",
+                                "deploy",
+                                "execute",
+                                "disable"
+                              ]
+                            }
+                          }
+                        },
+                        "then": {
+                          "properties": {
+                            "releaseEnabled": {
+                              "const": false
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
         }
       ]
     },
-    "operation": {
+    "knownOperation": {
       "type": "object",
       "required": [
         "operation",
