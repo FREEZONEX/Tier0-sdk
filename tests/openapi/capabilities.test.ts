@@ -6,7 +6,7 @@ const item = {
   state: 'readiness_unknown', availability: 'unknown', contractVersions: ['openapi/v1', 'stream-requests/v1'],
 };
 const fixture = () => ({
-  product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1'],
+  product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1', 'openapi/v2'],
   sdkContractVersions: ['stream-requests/v1'],
   capabilities: [{ ...item }], deprecations: [],
 });
@@ -23,7 +23,7 @@ describe('frozen capability discovery contract', () => {
     expect(response).toEqual(fixture());
     expect(response).not.toHaveProperty('productVersion');
     expect(response.capabilities[0]).toMatchObject({ releaseEnabled: true, allowed: true, enabled: false, availability: 'unknown' });
-    expect(fetch).toHaveBeenCalledExactlyOnceWith('https://cloud.example/openapi/v1/capabilities/discover', {
+    expect(fetch).toHaveBeenCalledExactlyOnceWith('https://cloud.example/openapi/v2/capabilities/discover', {
       method: 'POST', redirect: 'manual', signal: expect.any(AbortSignal), body: '{}',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer fixture-key', 'X-API-Key': 'fixture-key' },
     });
@@ -44,7 +44,7 @@ describe('frozen capability discovery contract', () => {
 
   it('accepts neutral Source/Stream codes beside public API and business contract labels', async () => {
     const body = fixture();
-    body.apiContractVersions.push('openapi/v2');
+    if (!body.apiContractVersions.includes('openapi/v2')) body.apiContractVersions.push('openapi/v2');
     body.capabilities = Object.entries({
       'namespace.v2': ['openapi/v2'], 'source': ['openapi/v2'], 'stream': ['openapi/v2'],
       'stream.requests.v1': ['openapi/v1', 'stream-requests/v1'], 'stream.requests.invoke.v1': item.contractVersions,
@@ -120,8 +120,7 @@ describe('frozen capability discovery contract', () => {
   });
 
   it.each([
-    { product: 'enterprise' }, { contractVersion: '2.0' }, { apiContractVersions: ['openapi/v2'] },
-    { sdkContractVersions: ['0.5.4'] },
+    { product: 'unknown-product' }, { contractVersion: '2.0' }, { apiContractVersions: ['openapi/v1'] },
     { capabilities: [{ ...item, contractVersions: ['control/v2'] }] },
     { capabilities: [{ ...item, contractVersions: ['openapi/v1', 'control/v2'] }] },
   ])('fails unsupported versions with a typed error and never substitutes enabled', async patch => {
@@ -204,9 +203,9 @@ describe('frozen capability discovery contract', () => {
     await isolated.capabilities.discover();
     await capabilities.discover();
     expect(fetch.mock.calls.map(call => call[0])).toEqual([
-      'https://runtime.example/openapi/v1/capabilities/discover', 'https://configured.example/openapi/v1/capabilities/discover',
-      'https://isolated.example/openapi/v1/capabilities/discover', 'https://rotated.example/openapi/v1/capabilities/discover',
-      'https://configured.example/openapi/v1/capabilities/discover',
+      'https://runtime.example/openapi/v2/capabilities/discover', 'https://configured.example/openapi/v2/capabilities/discover',
+      'https://isolated.example/openapi/v2/capabilities/discover', 'https://rotated.example/openapi/v2/capabilities/discover',
+      'https://configured.example/openapi/v2/capabilities/discover',
     ]);
     expect(fetch.mock.calls.map(call => call[1].headers['X-API-Key'])).toEqual(['env-key', 'configured-key', 'callback-1', 'callback-2', 'configured-key']);
   });

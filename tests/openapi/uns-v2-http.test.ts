@@ -74,8 +74,8 @@ describe('UNS v2 localhost HTTP fixture', () => {
       else if (req.url === '/openapi/v1/stream-requests/pump.start/invoke') send(res, {
         code: 'pump.start', contractVersion: '1', result: {}, runID: 'fixture-run', status: 'completed', replayed: false,
       });
-      else if (req.url === '/openapi/v1/capabilities/discover') send(res, {
-        product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1'],
+      else if (req.url === '/openapi/v2/capabilities/discover') send(res, {
+        product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1', 'openapi/v2'],
         sdkContractVersions: ['stream-requests/v1'], capabilities: [], deprecations: [],
       });
       else send(res, {});
