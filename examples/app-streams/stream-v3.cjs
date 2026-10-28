@@ -1,4 +1,4 @@
-// Store this program in a Stream document whose sdkVersion is tier0-stream/v3.
+// Store this program in the current single-model Stream document; omit version selectors.
 module.exports = api => {
   const inputSchema = {
     type: 'object', properties: { orderId: { type: 'string' } },

@@ -116,14 +116,15 @@
     "fixture:streams:nats": "node scripts/test-stream-messages-nats.mjs --serve",
     "package:cloud-app": "node scripts/package-cloud-uns-app.mjs",
     "test:cloud-app": "node scripts/test-cloud-uns-app.mjs",
-    "generate:uns-v2": "node scripts/generate-uns-v2.mjs",
+    "generate:uns-v2": "node scripts/generate-stream-common.mjs && node scripts/generate-uns-v2.mjs",
     "check:uns-v2-contract": "node scripts/generate-uns-v2.mjs --check",
     "sync:app-identity": "node scripts/sync-app-identity-contract.mjs",
-    "sync:stream-runtime-contract": "node scripts/sync-stream-runtime-contract.mjs",
     "sync:stream-contract": "node scripts/sync-stream-contract.mjs",
     "generate:stream-contract": "openapi-typescript contracts/openapi/streams.swagger.json -o src/streams/contract.generated.ts --default-non-nullable=false",
     "check:stream-contract": "node scripts/sync-stream-contract.mjs --check && openapi-typescript contracts/openapi/streams.swagger.json -o src/streams/contract.generated.ts --default-non-nullable=false --check",
-    "test:streams:artifact": "npm run build && node scripts/test-stream-messages-nats.mjs --artifact"
+    "test:streams:artifact": "npm run build && node scripts/test-stream-messages-nats.mjs --artifact",
+    "generate:stream-common": "node scripts/generate-stream-common.mjs",
+    "check:stream-common-contract": "node scripts/generate-stream-common.mjs --check"
   },
   "optionalDependencies": {
     "@tanstack/react-query": "^5.0.0",

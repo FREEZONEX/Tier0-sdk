@@ -10,7 +10,6 @@ const inputs = {
   manifest: 'contracts/uns-v2/manifest.json',
   provenance: 'contracts/uns-v2/provenance.json',
   registry: 'contracts/uns-v2/registry_generated.go',
-  streamRuntime: 'contracts/uns-v2/stream-runtime.schema-overlay.json',
 };
 const output = 'src/uns-v2/generated.ts';
 const read = path => readFileSync(resolve(root, path), 'utf8');
@@ -27,28 +26,6 @@ const contract = JSON.parse(contractText);
 const cloudSupport = JSON.parse(cloudSupportText);
 const manifest = JSON.parse(manifestText);
 const provenance = JSON.parse(provenanceText);
-const streamRuntime = parse(inputs.streamRuntime);
-for (const input of [contract, manifest, cloudSupport]) {
-  if (input.operations.some(operation => operation.name === 'streamRuntimeCapabilitiesGet' ||
-      operation.path === '/uns/streams/runtime/capabilities/get' || operation.suffix === '/uns/streams/runtime/capabilities/get') ||
-      ['CloudStreamRuntimeCapabilitiesGetReq', 'CloudStreamRuntimeCapabilitiesGetResponse']
-        .some(name => Object.hasOwn(input.schemas || {}, name))) {
-    fail('retired Stream readiness probe must not be restored');
-  }
-}
-if (streamRuntime.version !== 'stream-runtime-schema-overlay/v1' || !/^[0-9a-f]{40}$/.test(streamRuntime.revision)) {
-  fail('invalid pinned Stream runtime schema overlay');
-}
-const streamSchemaNames = ['RuntimeStreamDefinition', 'CloudStreamScript',
-  'CloudStreamDocument', 'CloudStreamEntry',
-  'UnsV2StreamProgramVersionsListResponse', 'CloudHistoricalStreamDocument'];
-if (JSON.stringify(Object.keys(streamRuntime.schemas)) !== JSON.stringify(streamSchemaNames)) {
-  fail('Stream runtime overlay must not replace unrelated data schemas');
-}
-for (const name of streamSchemaNames) {
-  if (!manifest.schemas[name] && name !== 'CloudHistoricalStreamDocument') fail(`missing baseline Stream schema ${name}`);
-  manifest.schemas[name] = streamRuntime.schemas[name];
-}
 
 if (contract.version !== manifest.version || contract.version !== provenance.version) {
   fail('contract, manifest and provenance versions differ');
@@ -58,6 +35,9 @@ if (contract.cloudContractRevision !== manifest.cloudContractRevision ||
   fail('contract, manifest and provenance Cloud revisions differ');
 }
 const contractOperations = new Map(contract.operations.map(operation => [operation.name, operation]));
+if (contractOperations.size !== contract.operations.length || contract.operations.length !== manifest.operations.length) {
+  fail('resolved contract operation set differs from manifest.json');
+}
 const cloudOperations = new Map();
 for (const operation of cloudSupport.operations || []) {
   if (cloudOperations.has(operation.name)) fail(`duplicate Cloud-supported operation ${operation.name}`);
@@ -71,13 +51,16 @@ for (const operation of manifest.operations) {
   const cloud = cloudOperations.get(operation.name);
   if (!source && !cloud) fail(`manifest operation ${operation.name} is absent from contract.json and cloud-support.json`);
   if (source) {
-    for (const key of ['request', 'response']) {
-      const expected = source[key] || (key === 'response' ? 'UnsV2Envelope' : undefined);
+    for (const key of ['request', 'response', 'method', 'transport', 'coreOnly', 'appAllowed', 'readOnly', 'permission', 'scope', 'minPermission']) {
+      const expected = source[key] ?? (key === 'response' ? 'UnsV2Envelope' : undefined);
       if (operation[key] !== expected) fail(`${operation.name}.${key} differs from contract.json`);
     }
   }
+  if (typeof operation.readOnly !== 'boolean' || Boolean(operation.mutation) && operation.readOnly) {
+    fail(`${operation.name} has inconsistent side-effect metadata`);
+  }
   if ((source && operation.path !== source.suffix) || !operation.path?.startsWith('/uns/') ||
-      operation.method !== 'POST' || operation.supported !== true) {
+      (operation.method !== 'POST' && !(operation.method === 'GET' && operation.transport === 'sse')) || operation.supported !== true) {
     fail(`${operation.name} has an unsupported route contract`);
   }
   const pathParams = operation.path.split('/').filter(part => part.startsWith(':')).map(part => part.slice(1));
@@ -102,17 +85,10 @@ if (registryNames.length !== manifest.operations.length || registryNames.some((n
   fail('registry_generated.go operation order differs from manifest.json');
 }
 
-if (JSON.stringify(streamRuntime.operationMetadata) !== '{}') {
-  fail('Stream schema overlay must not restore operation authority metadata');
-}
-
-// Execution is exposed only through streams.requests; retain the frozen upstream inputs.
-const retiredRequestOperations = new Set(['controlDiscover', 'controlDescribe', 'controlInvoke']);
-const retiredRequestSchemas = new Set([...retiredRequestOperations].flatMap(name => {
-  const operation = manifest.operations.find(operation => operation.name === name);
-  return operation ? [operation.request, operation.response] : [];
-}));
-const publicOperations = manifest.operations.filter(operation => !operation.coreOnly && !retiredRequestOperations.has(operation.name));
+// Direct request discovery/execution has one SDK entry: streams.requests (v1).
+// Classify by authority metadata so renaming a v2 route cannot restore an alias.
+const requestExecution = operation => /^stream\.requests:(read|invoke)$/.test(operation.scope);
+const publicOperations = manifest.operations.filter(operation => !operation.coreOnly && !requestExecution(operation));
 const refName = ref => ref?.startsWith('#/components/schemas/') ? ref.slice('#/components/schemas/'.length) : undefined;
 const requestType = operation => refName(operation.requestSchema?.$ref) || operation.request;
 const responseType = operation => refName(operation.responseSchema?.$ref) || operation.response;
@@ -139,12 +115,11 @@ function reachableSchemas(operations) {
 }
 
 const publicSchemaNames = reachableSchemas(publicOperations);
-const privateSchemaNames = reachableSchemas(manifest.operations.filter(operation => operation.coreOnly));
+const privateSchemaNames = reachableSchemas(manifest.operations.filter(operation => operation.coreOnly || requestExecution(operation)));
 // A resolved Cloud source also contains Core-only schemas. Export only those
 // reachable publicly or unrelated to private operations; never expose private DTOs.
 const exportedSchemas = Object.fromEntries(Object.entries(manifest.schemas).filter(([name]) =>
-  (!privateSchemaNames.has(name) || publicSchemaNames.has(name)) &&
-  (!retiredRequestSchemas.has(name) || publicSchemaNames.has(name))));
+  !privateSchemaNames.has(name) || publicSchemaNames.has(name)));
 // Retained legacy DTO exports may share query primitives with Core graph schemas.
 // Include their transitive dependencies so generated public declarations remain closed.
 const dependencyQueue = Object.values(exportedSchemas);
@@ -164,18 +139,28 @@ const union = values => [...new Set(values.filter(Boolean))].join(' | ') || 'nev
 
 function typeFor(schema, nested = false) {
   if (!schema || typeof schema !== 'object' || Object.keys(schema).length === 0) return 'UnsV2JSONValue';
-  // Required-only object alternatives inherit the parent's field definitions.
-  // IndexSpec uses this to require exactly one of path/paths.
+  if (!schema.$ref && schema.const === undefined && !schema.enum && !schema.type && !schema.properties &&
+      schema.additionalProperties === undefined && !schema.oneOf && !schema.anyOf && !schema.allOf) return 'unknown';
+  // Required-only alternatives inherit the parent's field definitions.
+  // Preserve both the native document/batch XOR and single/composite indexes.
+  const excludedFields = branch => {
+    if (!branch.not) return [];
+    if (Object.keys(branch.not).length !== 1) return undefined;
+    if (branch.not.required?.length === 1) return branch.not.required;
+    if (branch.not.anyOf?.every(item => Object.keys(item).length === 1 && item.required?.length === 1)) {
+      return branch.not.anyOf.flatMap(item => item.required);
+    }
+    return undefined;
+  };
   if (schema.type === 'object' && schema.properties && Array.isArray(schema.oneOf) &&
       schema.oneOf.every(branch => Array.isArray(branch.required) &&
-        Object.keys(branch).every(key => key === 'required' || key === 'not') &&
-        (!branch.not || (Object.keys(branch.not).length === 1 && Array.isArray(branch.not.required) && branch.not.required.length === 1)))) {
+        Object.keys(branch).every(key => key === 'required' || key === 'not') && excludedFields(branch) !== undefined)) {
     const own = { ...schema };
     delete own.oneOf;
     const alternatives = schema.oneOf.map(branch => {
       const shape = typeFor({ ...own, required: [...new Set([...(own.required || []), ...branch.required])] });
-      const excluded = branch.not?.required?.[0];
-      return `(${shape}${excluded ? ` & { ${JSON.stringify(excluded)}?: never }` : ''})`;
+      const excluded = excludedFields(branch);
+      return `(${shape}${excluded.length ? ` & { ${excluded.map(name => `${JSON.stringify(name)}?: never`).join('; ')} }` : ''})`;
     });
     return `(${union(alternatives)}${schema.nullable === true ? ' | null' : ''})`;
   }
@@ -190,7 +175,15 @@ function typeFor(schema, nested = false) {
     composed.push(typeFor(own, true));
   }
   if (Array.isArray(schema.allOf)) composed.push(...schema.allOf.map(item => typeFor(item, true)));
-  if (Array.isArray(schema.oneOf)) composed.push(`(${union(schema.oneOf.map(item => typeFor(item, true)))})`);
+  if (Array.isArray(schema.oneOf)) {
+    const closedObjects = schema.oneOf.every(item => item.additionalProperties === false && item.properties);
+    const keys = closedObjects ? [...new Set(schema.oneOf.flatMap(item => Object.keys(item.properties)))] : [];
+    composed.push(`(${union(schema.oneOf.map(item => {
+      const excluded = keys.filter(key => !Object.hasOwn(item.properties, key));
+      const shape = typeFor(item, true);
+      return excluded.length ? `(${shape} & { ${excluded.map(key => `${JSON.stringify(key)}?: never`).join('; ')} })` : shape;
+    }))})`);
+  }
   if (Array.isArray(schema.anyOf)) composed.push(`(${union(schema.anyOf.map(item => typeFor(item, true)))})`);
   if (composed.length) {
     let combined = composed.join(' & ');
@@ -232,9 +225,13 @@ function codecFor(schema) {
   if (schema.type === 'integer') return { k: 'j' };
   if (schema.type === 'number') return { k: 'n' };
   if (schema.type === 'array') return { k: 'a', ...(schema.items ? { i: codecFor(schema.items) || {} } : {}) };
-  if (Array.isArray(schema.allOf)) return { k: 'u', a: schema.allOf.map(codecFor).filter(Boolean) };
-  if (Array.isArray(schema.oneOf)) return { k: 'u', a: schema.oneOf.map(codecFor).filter(Boolean) };
-  if (Array.isArray(schema.anyOf)) return { k: 'u', a: schema.anyOf.map(codecFor).filter(Boolean) };
+  const branches = [...(schema.allOf || []), ...(schema.oneOf || []), ...(schema.anyOf || [])];
+  if (branches.length) {
+    const own = { ...schema };
+    delete own.allOf; delete own.oneOf; delete own.anyOf;
+    const alternatives = [codecFor(own), ...branches.map(codecFor)].filter(Boolean);
+    if (alternatives.length) return { k: 'u', a: alternatives };
+  }
   if (schema.type === 'object' || schema.properties || schema.additionalProperties !== undefined) {
     const properties = Object.fromEntries(Object.entries(schema.properties || {})
       .map(([name, value]) => [name, codecFor(value)])
@@ -249,16 +246,18 @@ function codecFor(schema) {
 const schemaTypes = Object.entries(exportedSchemas).map(([name, schema]) =>
   `export type ${name} = ${typeFor(schema)};`).join('\n\n');
 const operationRows = publicOperations.map(operation =>
-  `  ${JSON.stringify(operation.name)}: { path: ${JSON.stringify(`/openapi/v2${operation.path}`)}, pathParams: ${JSON.stringify(operation.pathParams || [])}, request: ${JSON.stringify(requestType(operation))}, response: ${JSON.stringify(responseType(operation))}, mutation: ${JSON.stringify(Boolean(operation.mutation))}, scope: ${JSON.stringify(operation.scope)} },`).join('\n');
+  `  ${JSON.stringify(operation.name)}: { path: ${JSON.stringify(`/openapi/v2${operation.path}`)}, pathParams: ${JSON.stringify(operation.pathParams || [])}, request: ${JSON.stringify(requestType(operation))}, response: ${JSON.stringify(responseType(operation))}, method: ${JSON.stringify(operation.method)}, transport: ${JSON.stringify(operation.transport || 'json')}, mutation: ${JSON.stringify(!operation.readOnly)}, appAllowed: ${JSON.stringify(operation.appAllowed)}, scope: ${JSON.stringify(operation.scope)} },`).join('\n');
 const operationTypes = publicOperations.map(operation =>
-  `  ${JSON.stringify(operation.name)}: { request: ${requestType(operation)}; response: ${responseType(operation)} };`).join('\n');
-const operationMethods = publicOperations.map(operation =>
-  `  ${operation.name}(request: ${requestType(operation)}): Promise<${responseType(operation)}>;`).join('\n');
+  `  ${JSON.stringify(operation.name)}: { request: ${operation.transport === 'sse' ? 'RecordSubscribeRequest' : requestType(operation)}; response: ${operation.transport === 'sse' ? 'RecordSubscribeFrame' : responseType(operation)} };`).join('\n');
+const operationMethods = publicOperations.map(operation => operation.transport === 'sse'
+  ? `  ${operation.name}(request?: RecordSubscribeRequest, options?: { signal?: AbortSignal }): AsyncIterable<RecordSubscribeFrame>;`
+  : `  ${operation.name}(request: ${requestType(operation)}): Promise<${responseType(operation)}>;`).join('\n');
 const codecSchemas = Object.fromEntries(Object.entries(exportedSchemas).map(([name, schema]) => [name, codecFor(schema) || {}]));
 const hashes = Object.fromEntries(Object.entries(inputs).map(([name, path]) => [name, hash(read(path))]));
 
 const generated = `// Generated by scripts/generate-uns-v2.mjs from the frozen Backend contract. DO NOT EDIT.\n` +
-`import type { UnsV2RawNumber } from './codec.js';\n\n` +
+`import type { UnsV2RawNumber } from './codec.js';\n` +
+`import type { RecordSubscribeRequest, RecordSubscribeFrame } from './subscribe.js';\n\n` +
 `/** Signed int64: safe values use number, larger exact values use bigint. */\n` +
 `export type UnsV2Int64 = number | bigint;\n` +
 `/** JSON integer outside int64 fields: unsafe values use an exact raw-number wrapper. */\n` +
@@ -274,7 +273,7 @@ const generated = `// Generated by scripts/generate-uns-v2.mjs from the frozen B
 `export type UnsV2Request<Name extends UnsV2OperationName> = UnsV2OperationMap[Name]['request'];\n` +
 `export type UnsV2Response<Name extends UnsV2OperationName> = UnsV2OperationMap[Name]['response'];\n\n` +
 `export const UNS_V2_CODEC_SCHEMAS = ${JSON.stringify(codecSchemas)} as const;\n\n` +
-`export const UNS_V2_CONTRACT_PROVENANCE = ${JSON.stringify({ ...provenance, streamRuntimeSchemaRevision: streamRuntime.revision, hashes, publicOperationCount: publicOperations.length, manifestOperationCount: manifest.operations.length }, null, 2)} as const;\n`;
+`export const UNS_V2_CONTRACT_PROVENANCE = ${JSON.stringify({ ...provenance, hashes, publicOperationCount: publicOperations.length, manifestOperationCount: manifest.operations.length }, null, 2)} as const;\n`;
 
 const outputPath = resolve(root, output);
 if (process.argv.includes('--check')) {

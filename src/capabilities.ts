@@ -1,7 +1,7 @@
 import { CloudTransport, CloudTransportError, type CloudTransportConfig } from './cloud-transport.js';
 import { getClient, type HttpClient } from './openapi/client.js';
 
-export type CapabilityCode = 'namespace.v2' | 'source.v1' | 'stream.v2' | 'stream.requests.v1' | 'stream.requests.invoke.v1';
+export type CapabilityCode = 'namespace.v2' | 'source' | 'stream' | 'stream.requests.v1' | 'stream.requests.invoke.v1';
 export type CapabilityState = 'disabled' | 'not_supported' | 'unavailable' | 'readiness_unknown' | 'ready';
 export type CapabilityAvailability = 'unavailable' | 'unknown' | 'available';
 
@@ -11,7 +11,7 @@ export interface PublicCapability {
   releaseEnabled: boolean;
   /** Server-assessed implementation/readiness, never inferred from releaseEnabled. */
   enabled: boolean;
-  /** Authorization summary, not a grant for every individual Control code. */
+  /** Authorization summary, not a grant for every individual request code. */
   allowed: boolean;
   state: CapabilityState;
   /** Not device online status or execution/ACK confirmation. */
@@ -31,7 +31,6 @@ export interface CapabilityDiscoverResponse {
   productVersion?: string;
   contractVersion: '1.0';
   apiContractVersions: string[];
-  interpreterContractVersions: string[];
   /** Public SDK contract labels, not npm package versions. */
   sdkContractVersions: string[];
   capabilities: PublicCapability[];
@@ -59,10 +58,10 @@ export class CapabilityError extends Error {
 
 const contracts: Record<CapabilityCode, string[]> = {
   'namespace.v2': ['openapi/v2'],
-  'source.v1': ['openapi/v1'],
-  'stream.v2': ['tier0-stream/v3'],
+  'source': ['openapi/v2'],
+  'stream': ['openapi/v2'],
   'stream.requests.v1': ['openapi/v1', 'stream-requests/v1'],
-  'stream.requests.invoke.v1': ['openapi/v1', 'tier0-stream/v3', 'stream-requests/v1'],
+  'stream.requests.invoke.v1': ['openapi/v1', 'stream-requests/v1'],
 };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -84,12 +83,11 @@ function discovery(value: unknown, status: number): CapabilityDiscoverResponse {
   };
   if (!record(value)) return fail();
   if (!text(value.product) || !text(value.contractVersion) ||
-      !strings(value.apiContractVersions) || !strings(value.interpreterContractVersions) || !strings(value.sdkContractVersions) ||
+      !strings(value.apiContractVersions) || !strings(value.sdkContractVersions) ||
       !Array.isArray(value.capabilities) || !Array.isArray(value.deprecations) ||
       (value.productVersion !== undefined && !text(value.productVersion))) return fail();
   if (value.product !== 'cloud' || value.contractVersion !== '1.0' ||
       !value.apiContractVersions.includes('openapi/v1') ||
-      !value.interpreterContractVersions.includes('tier0-stream/v3') ||
       !value.sdkContractVersions.includes('stream-requests/v1')) return fail(true);
 
   const capabilities: PublicCapability[] = [];
@@ -130,7 +128,7 @@ function discovery(value: unknown, status: number): CapabilityDiscoverResponse {
   return {
     product: 'cloud', ...(value.productVersion === undefined ? {} : { productVersion: value.productVersion as string }),
     contractVersion: '1.0', apiContractVersions: [...value.apiContractVersions],
-    interpreterContractVersions: [...value.interpreterContractVersions], sdkContractVersions: [...value.sdkContractVersions],
+    sdkContractVersions: [...value.sdkContractVersions],
     capabilities, deprecations,
   };
 }

@@ -172,6 +172,109 @@ describe('Stream messages trusted runtime and NATS Core lifecycle', () => {
     expect(connections[0].nc.publish).toHaveBeenCalledTimes(2);
   });
 
+  it.each(['issuer', 'dial', 'flush'])('recovers the same publisher handle after initial %s failure without replay', async stage => {
+    const { client, handle, request, connections } = setup();
+    client.streams.messages.onError(vi.fn());
+    if (stage === 'issuer') request.mockRejectedValueOnce(new Error('issuer unavailable'));
+    if (stage === 'dial') vi.mocked(wsconnect).mockRejectedValueOnce(new Error('dial unavailable'));
+    if (stage === 'flush') vi.mocked(wsconnect).mockImplementationOnce(async () => {
+      const item = connection();
+      item.nc.flush.mockRejectedValueOnce(new Error('initial flush unavailable'));
+      connections.push(item);
+      return item.nc as never;
+    });
+    await expect(handle.publish({ intent: 'failed' })).rejects.toBeInstanceOf(Error);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(request).toHaveBeenCalledOnce();
+    expect(connections.every(item => item.nc.isClosed())).toBe(true);
+    const recovered = await handle.publish({ intent: 'new-explicit-operation' });
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(connections.flatMap(item => item.nc.publish.mock.calls)).toEqual([
+      [subject, new TextEncoder().encode(JSON.stringify(recovered))],
+    ]);
+    expect((request.mock.calls[0][1] as { clientPublicKey: string }).clientPublicKey)
+      .not.toBe((request.mock.calls[1][1] as { clientPublicKey: string }).clientPublicKey);
+    await client.dispose();
+    await expect(handle.publish({ intent: 'after-disposal' })).rejects.toThrow();
+    expect(request).toHaveBeenCalledTimes(2);
+  });
+
+  it('bounds an initial subscription flush that never receives PONG and closes its connection', async () => {
+    const { client, handle, connections } = setup();
+    vi.mocked(wsconnect).mockImplementationOnce(async () => {
+      const item = connection();
+      item.nc.flush.mockImplementation(() => new Promise<void>(() => {}));
+      connections.push(item);
+      return item.nc as never;
+    });
+    const pending = handle.subscribe(vi.fn()).catch(error => error);
+    await tick();
+    expect(connections).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(await pending).toMatchObject({ errorCode: 'STREAM_MESSAGE_CONNECT_FAILED' });
+    expect(connections[0].nc.isClosed()).toBe(true);
+    const auth = vi.mocked(wsconnect).mock.calls[0][0]!.authenticator as ReturnType<typeof jwtAuthenticator>;
+    expect(() => auth('nonce')).toThrow();
+    await client.dispose();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('bounds a published message flush as unknown, closes the socket and never replays its payload', async () => {
+    const { client, handle, request, connections } = setup();
+    client.streams.messages.onError(vi.fn());
+    await handle.publish({ intent: 'before-blackhole' });
+    connections[0].nc.flush.mockImplementationOnce(() => new Promise<void>(() => {}));
+    const pending = handle.publish({ intent: 'unknown' }).catch(error => error);
+    await tick();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(await pending).toMatchObject({ errorCode: 'STREAM_MESSAGE_RESULT_UNKNOWN', retryable: false });
+    expect(connections[0].nc.isClosed()).toBe(true);
+    expect(connections[0].nc.publish).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(connections[1].nc.publish).not.toHaveBeenCalled();
+    const next = await handle.publish({ intent: 'after-reconnect' });
+    expect(connections[1].nc.publish).toHaveBeenCalledExactlyOnceWith(subject, new TextEncoder().encode(JSON.stringify(next)));
+  });
+
+  it('rejects late subscriber frames after ticket expiry even before a delayed close timer runs', async () => {
+    const expiresAt = Date.now() + 1_000;
+    const { handle, connections } = setup({ expiresAt: new Date(expiresAt).toISOString() });
+    const handler = vi.fn();
+    await handle.subscribe(handler);
+    vi.setSystemTime(expiresAt + 1);
+    connections[0].deliver(incoming);
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['bootstrap', 'dispose'], ['bootstrap', 'expiry'], ['publish', 'dispose'], ['publish', 'expiry'],
+  ])('settles a blackholed %s flush on %s without retaining a socket or timer', async (phase, stop) => {
+    const { client, handle, connections } = setup({ expiresAt: new Date(Date.now() + 1_000).toISOString() });
+    client.streams.messages.onError(vi.fn());
+    if (phase === 'publish') {
+      await handle.publish({ intent: 'established' });
+      connections[0].nc.flush.mockImplementationOnce(() => new Promise<void>(() => {}));
+    } else vi.mocked(wsconnect).mockImplementationOnce(async () => {
+      const item = connection();
+      item.nc.flush.mockImplementation(() => new Promise<void>(() => {}));
+      connections.push(item);
+      return item.nc as never;
+    });
+    const pending = handle.publish({ intent: 'pending' }).catch(error => error);
+    await tick();
+    expect(connections).toHaveLength(1);
+    if (stop === 'dispose') await client.dispose();
+    else await vi.advanceTimersByTimeAsync(1_000);
+    const error = await pending;
+    expect(error).toMatchObject({ errorCode: phase === 'publish' ? 'STREAM_MESSAGE_RESULT_UNKNOWN' :
+      stop === 'dispose' ? 'STREAM_MESSAGE_DISPOSED' : 'STREAM_MESSAGE_CONNECT_FAILED' });
+    expect(connections[0].nc.isClosed()).toBe(true);
+    expect(connections[0].nc.publish).toHaveBeenCalledTimes(phase === 'publish' ? 2 : 0);
+    await client.dispose();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('surfaces handler rejection without an unhandled promise rejection', async () => {
     const { handle, connections } = setup(); const onError = vi.fn();
     await handle.subscribe(async () => { throw new Error('handler error'); }, { onError });

@@ -65,7 +65,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received.at(-1)?.headers['x-tier0-app-data-subject']).toBeUndefined();
   });
 
-  it('never sends a Control/capability, legacy or asset proof header, even on post to a v2 path', async () => {
+  it('never sends a Stream/capability, legacy or asset proof header, even on post to a v2 path', async () => {
     const start = received.length;
     const config = { apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: 'gateway.user.signature' };
     const api = createClient(config);
@@ -76,7 +76,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
       });
       else if (req.url === '/openapi/v1/capabilities/discover') send(res, {
         product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1'],
-        interpreterContractVersions: ['tier0-stream/v3'], sdkContractVersions: ['stream-requests/v1'], capabilities: [], deprecations: [],
+        sdkContractVersions: ['stream-requests/v1'], capabilities: [], deprecations: [],
       });
       else send(res, {});
     };
@@ -93,21 +93,45 @@ describe('UNS v2 localhost HTTP fixture', () => {
     for (const row of received.slice(start)) expect(row.headers['x-tier0-app-data-subject']).toBeUndefined();
   });
 
-  it('rejects the retired runtime probe before any HTTP request', async () => {
+  it('does not expose or dispatch the retired Stream runtime probe', async () => {
     const start = received.length;
-    const api = createClient({ apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: 'gateway.user.signature' });
-    expect(api.unsV2).not.toHaveProperty('streamRuntimeCapabilitiesGet');
-    await expect(api.unsV2.call('streamRuntimeCapabilitiesGet' as never, {} as never)).rejects.toThrow('unknown UNS v2 operation');
+    const api = client().unsV2;
+    expect(api).not.toHaveProperty('streamRuntimeCapabilitiesGet');
+    const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
+    await expect(core.call('streamRuntimeCapabilitiesGet', {})).rejects.toThrow('unknown UNS v2 operation');
     expect(received).toHaveLength(start);
   });
 
-  it('does not expose retired v2 request execution aliases at runtime or through generic dispatch', async () => {
+  it.each(['controlDiscover', 'controlDescribe', 'controlInvoke',
+    'streamRequestDiscover', 'streamRequestDescribe', 'streamRequestInvoke'] as const)
+  ('does not export or dispatch request execution alias %s', async name => {
+    const start = received.length;
     const api = client().unsV2;
-    for (const name of ['controlDiscover', 'controlDescribe', 'controlInvoke']) {
-      expect(api).not.toHaveProperty(name);
-      expect(UNS_V2_OPERATIONS).not.toHaveProperty(name);
-      await expect(api.call(name as never, {} as never)).rejects.toThrow('unknown UNS v2 operation');
-    }
+    expect(api).not.toHaveProperty(name);
+    const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
+    await expect(core.call(name, {})).rejects.toThrow('unknown UNS v2 operation');
+    expect(received).toHaveLength(start);
+  });
+
+  it.each([
+    '/openapi/v2/uns/controls/invoke', '/openapi/v2/uns/stream-requests/discover',
+    '/openapi/v2/uns/stream-requests/describe', '/openapi/v2/uns/stream-requests/invoke',
+    '/openapi/v2/uns/stream-requests/grants/get', '/openapi/v2/uns/stream-requests/grants/set',
+    '/openapi/v2/uns/app-stream-policy/get', '/openapi/v2/uns/app-stream-policy/update',
+    '/openapi/v2/uns/app/data-policy/get', '/openapi/v2/uns/not-registered',
+    '/openapi/v2/uns/collections/one/records:find?redirect=execution',
+    '/openapi/v2/uns/collections/../records:find',
+    '/openapi/v2/uns/collections/%2e%2e/records:find',
+    '/openapi/v2/uns/collections/one%2ftwo/records:find',
+    '/openapi/v2/uns/collections/one%5ctwo/records:find',
+  ])('never sends a data proof to execution, management or unregistered route %s', async path => {
+    const start = received.length;
+    respond = (_req, res) => send(res, {});
+    const config = { apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: 'gateway.user.signature' };
+    await new CloudTransport(() => new HttpClient(config), config).postText(path, '{}');
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start].headers['x-tier0-app-data-subject']).toBeUndefined();
+    expect(received[start].headers.authorization).toBe('Bearer workspace-bound-key');
   });
 
   it('rejects invalid proof configurations synchronously without requests or value disclosure', () => {
@@ -194,7 +218,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received[start].body).toBe('{}');
   });
 
-  it('sends unified index declarations and reads exact business numbers through the 4.0 find route', async () => {
+  it('sends unified index declarations and reads exact business numbers through the v5 metadata and find routes', async () => {
     const start = received.length;
     respond = (req, res) => {
       if (req.url === '/openapi/v2/uns/collections/devices/records:find') {
@@ -204,22 +228,22 @@ describe('UNS v2 localhost HTTP fixture', () => {
     };
     const api = client().unsV2;
     const item = {
-      id: 'devices', name: 'Devices', recordSchema: { type: 'object' as const, properties: { serial: { type: 'integer' as const } } },
+      name: 'Devices', recordSchema: { type: 'object' as const, properties: { serial: { type: 'integer' as const } } },
       indexes: [{ path: 'serial', kind: 'btree' as const, target: 'records' as const, unique: true }],
     };
-    await api.collectionCreate({ dryRun: false, idempotencyKey: 'index-intent-4', items: [item] });
+    await api.metadataInsertOne({ kind: 'collection', id: 'devices', dryRun: false, idempotencyKey: 'index-intent-5', data: item });
     const response = await api.recordFind({ collectionId: 'devices', filter: {}, limit: 10 });
     expect(received.slice(start).map(row => row.path)).toEqual([
-      '/openapi/v2/uns/collections/create', '/openapi/v2/uns/collections/devices/records:find',
+      '/openapi/v2/uns/metadata', '/openapi/v2/uns/collections/devices/records:find',
     ]);
-    expect(JSON.parse(received[start].body)).toEqual({ dryRun: false, idempotencyKey: 'index-intent-4', items: [item] });
+    expect(JSON.parse(received[start].body)).toEqual({ kind: 'collection', id: 'devices', dryRun: false, idempotencyKey: 'index-intent-5', data: item });
     expect(received[start].body).not.toContain('uniqueKeys');
     expect(received[start].body).not.toContain('queryIndexes');
     expect(response.data.items).toEqual([{ id: 'device-1', collectionId: 'devices', revision: 1, createdAt: 1, updatedAt: 2, sourceId: null, sourceTime: null, data: { serial: new UnsV2RawNumber('9007199254740993') } }]);
     expect(response.data.pageInfo).toEqual({ hasMore: false, mode: 'cursor', nextCursor: null, nextPage: null, snapshotScope: 'thisRequestOnly' });
   });
 
-  it('keeps one frozen intent and does not retry a 4.0 upsert after an ambiguous response', async () => {
+  it('keeps one frozen intent and does not retry a v5 upsert after an ambiguous response', async () => {
     const start = received.length;
     respond = (_req, res) => send(res, { code: 503, msg: 'unavailable', requestId: 'update-4' }, 503);
     const request = { collectionId: 'devices', filter: { serial: 'A' }, update: { $set: { enabled: true } }, upsert: true, idempotencyKey: 'upsert-intent-4' };
@@ -283,40 +307,38 @@ describe('UNS v2 localhost HTTP fixture', () => {
     const start = received.length;
     respond = (_req, res) => send(res, { code: 503, msg: 'sample runtime unavailable', requestId: 'sample-unavailable' }, 503);
     const api = client().unsV2;
-    await expect(api.streamSampleTest({ document: { name: 'sample', model: 'script', script: { sdkVersion: 'tier0-stream/v3', code: '', timeoutMs: 1000 } }, entryId: 'sample', input: { value: 1 } })).rejects.toBeInstanceOf(UnsV2Error);
+    await expect(api.streamSampleTest({ document: { name: 'sample', model: 'script', script: { code: '', timeoutMs: 1000 } }, entryId: 'sample', input: { value: 1 } })).rejects.toBeInstanceOf(UnsV2Error);
     expect(received.slice(start)).toHaveLength(1);
     expect(received[start].path).toBe('/openapi/v2/uns/streams/sample/test');
     const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
-    for (const name of ['graph', 'sourceCredentialCreate', 'sourceIngressGet', 'sourceIngressRotate', 'hostedAppControlPolicyGet', 'hostedAppControlPolicyUpdate']) {
+    for (const name of ['graph', 'sourceCredentialCreate', 'sourceIngressGet', 'sourceIngressRotate', 'controlAppCreate', 'sourceMqttAuthCreate']) {
       expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
       await expect(core.call(name, {})).rejects.toThrow('unknown UNS v2 operation');
     }
     for (const name of ['CloudSourceCredentialCreateReq', 'CloudSourceCredentialCreateResponse', 'CloudSourceIngressGetReq', 'CloudSourceIngressRotateReq']) {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
-    expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('4.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toBe('cloud-source-impact/1+app-create-capability/1+data/3+collection-namespace/1+http-acquisition/2+app-collection/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1+stream-control-probe-retirement/1');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('6c111671a2172eb14c38f2f6d9ec329f4ee08a3d');
+    expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('5.0.0');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('sha256:54d24ea3de5ab8a2478e4ce7fade6dfe1cd20f62261f006150f5f3353806985d');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    expect(UNS_V2_CONTRACT_PROVENANCE.sourceDerivedContractSHA256).toBe('0e82f1a9f4363bcdc1b8cc916f494aab5fb5f368a8d232850a299b5dbc165aa5');
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(97);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(113);
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(83);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(98);
     expect(received.slice(start)).toHaveLength(1);
   });
 
-  it.each(['appDataPolicyGet', 'appDataPolicyUpdate', 'collectionCreate'] as const)('preserves server App-management rejection for public %s without retry', async name => {
+  it.each(['appDataPolicyGet', 'appDataPolicyUpdate', 'metadataInsertOne'] as const)('preserves server App-management rejection for public %s without retry', async name => {
     const start = received.length;
     const app = createClient({ apiHost, apiKey: 'runtime-app-key' }).unsV2;
     respond = (_req, res) => send(res, {
       code: 403, msg: 'App credentials cannot manage grants', requestId: 'app-management-denied', data: null,
-      error: { code: 'FORBIDDEN', retryable: false, details: [],
-        retryAdvice: { recommendedAction: 'doNotRetry', canRetrySameRequest: false, keepIdempotencyKey: false } },
+      error: { code: 'FORBIDDEN', reason: 'fixture failure', execution: 'notStarted', details: [],
+        retry: { safe: false } },
     }, 403);
     const pending = name === 'appDataPolicyGet'
       ? app.appDataPolicyGet({ appId: 'owned-app' })
       : name === 'appDataPolicyUpdate'
         ? app.appDataPolicyUpdate({ appId: 'owned-app', expectedRevision: 1, status: 'disabled', collections: [], idempotencyKey: 'deny-grant', dryRun: false })
-        : app.collectionCreate({ items: [{ id: 'denied-collection', name: 'Denied', recordSchema: { type: 'object', properties: {} } }], dryRun: false, idempotencyKey: 'deny-create' });
+        : app.metadataInsertOne({ kind: 'collection', data: { name: 'Denied', recordSchema: { type: 'object', properties: {} } }, dryRun: false, idempotencyKey: 'deny-create' });
     await expect(pending).rejects.toMatchObject({ name: 'UnsV2Error', status: 403, code: 'FORBIDDEN', retryable: false });
     expect(received.slice(start)).toHaveLength(1);
     expect(received[start].headers.authorization).toBe('Bearer runtime-app-key');
@@ -324,7 +346,6 @@ describe('UNS v2 localhost HTTP fixture', () => {
 
   it('preserves summary and immutable full history projections without a restore request', async () => {
     const start = received.length;
-    // Explicit historical v2 snapshots must remain unchanged after the v3 upgrade.
     const summary = { name: 'history', sdkVersion: 'tier0-stream/v2', timeoutMs: 5000, scriptConfigured: true };
     const document = {
       name: 'frozen history', model: 'program',
@@ -451,8 +472,8 @@ describe('UNS v2 localhost HTTP fixture', () => {
       code: 200, msg: 'created', requestId: 'req-create',
       data: { status: 'committed', replayed: false, results: [] },
     });
-    await client().unsV2.directoryCreate({ dryRun: false, items: [{ name: 'root', parentId: null }] });
-    expect(JSON.parse(received[start].body)).toEqual({ dryRun: false, items: [{ name: 'root', parentId: null }] });
+    await client().unsV2.metadataInsertOne({ kind: 'directory', dryRun: false, data: { name: 'root', parentId: null } });
+    expect(JSON.parse(received[start].body)).toEqual({ kind: 'directory', dryRun: false, data: { name: 'root', parentId: null } });
     expect(received[start].body).not.toContain('workspace');
     expect(received[start].body).not.toContain('tenant');
     expect(received[start].body).not.toContain('deployment');
@@ -468,10 +489,10 @@ describe('UNS v2 localhost HTTP fixture', () => {
         total: 0, truncated: false, list: [],
       },
     });
-    const response = await client().unsV2.sourceList({ page: 1, size: 20, archived: false });
+    const response = await client().unsV2.sourceDocumentList({ page: 1, size: 20 });
     expect(response.data).toMatchObject({ complete: true, total: 0, list: [] });
     expect(received[start]).toMatchObject({
-      method: 'POST', path: '/openapi/v2/uns/sources/list', body: '{"page":1,"size":20,"archived":false}',
+      method: 'POST', path: '/openapi/v2/uns/sources/documents/list', body: '{"page":1,"size":20}',
     });
   });
 
@@ -563,8 +584,8 @@ describe('UNS v2 localhost HTTP fixture', () => {
     const start = received.length;
     respond = (_req, res) => send(res, {
       code: 409, msg: 'locked', requestId: 'lease-conflict', data: null,
-      error: { code: 'LOCK_CONFLICT', retryable: false, details: [],
-        retryAdvice: { recommendedAction: 'doNotRetry', canRetrySameRequest: false, keepIdempotencyKey: true } },
+      error: { code: 'LOCK_CONFLICT', reason: 'locked', execution: 'notStarted', details: [],
+        retry: { safe: false } },
     }, 409);
     await expect(client().unsV2.recordInsertOne({
       collectionId: 'orders', id: 'order-1', data: { total: 10 },
@@ -599,7 +620,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     });
     await client().unsV2.streamDocumentValidate({ document: {
       name: 'collector', model: 'collection',
-      script: { sdkVersion: 'tier0-stream/v3', code: 'module.exports = api => api;', timeoutMs: 1_000 },
+      script: { code: 'module.exports = api => api;', timeoutMs: 1_000 },
       sources: [{ alias: 'plant', sourceId: 'source-1', configRevision: 2, resources: ['line/1', 'line/2'] }],
     } });
     expect(JSON.parse(received[start].body)).toMatchObject({
@@ -627,23 +648,19 @@ describe('UNS v2 localhost HTTP fixture', () => {
     respond = (_req, res) => send(res, {
       code: 409, msg: 'status first', requestId: 'req-conflict', data: null,
       error: {
-        code: 'TRANSACTION_OUTCOME_UNKNOWN', retryable: false, rolledBack: false, details: [],
-        retryAdvice: {
-          recommendedAction: 'queryOriginalTransactionStatusDoNotReplaceKey',
-          canRetrySameRequest: false,
-          keepIdempotencyKey: true,
-        },
+        code: 'TRANSACTION_OUTCOME_UNKNOWN', reason: 'fixture failure', execution: 'unknown', details: [],
+        retry: { safe: false },
       },
     }, 409);
-    const error = await client().unsV2.metaBatchExecute({
-      idempotencyKey: 'intent-1', items: [{ opId: 'root', action: 'meta.create', kind: 'directory', id: 'root', data: {} }],
+    const error = await client().unsV2.metadataTransact({
+      idempotencyKey: 'intent-1', operations: [{ opId: 'root', action: 'insertOne', kind: 'directory', id: 'root', data: { name: 'Root' } }],
     }).catch(value => value);
     expect(error).toBeInstanceOf(UnsV2Error);
-    expect(error).not.toBeInstanceOf(UnsV2OutcomeUnknownError);
+    expect(error).toBeInstanceOf(UnsV2OutcomeUnknownError);
     expect(error).toMatchObject({
-      status: 409, operation: 'metaBatchExecute', code: 'TRANSACTION_OUTCOME_UNKNOWN', retryable: false,
-      rolledBack: false,
-      retryAdvice: { recommendedAction: 'queryOriginalTransactionStatusDoNotReplaceKey', canRetrySameRequest: false, keepIdempotencyKey: true },
+      status: 409, operation: 'metadataTransact', code: 'TRANSACTION_OUTCOME_UNKNOWN', retryable: false,
+      execution: 'unknown',
+      retry: { safe: false },
     });
     expect(received.length - start).toBe(1);
   });
@@ -667,8 +684,8 @@ describe('UNS v2 localhost HTTP fixture', () => {
     respond = (_req, res) => send(res, {
       code: 403, msg: 'mismatched', requestId: 'req-mismatch', data: null,
       error: {
-        code: 'FORBIDDEN', retryable: false, details: [],
-        retryAdvice: { recommendedAction: 'doNotRetry', canRetrySameRequest: false, keepIdempotencyKey: false },
+        code: 'FORBIDDEN', reason: 'fixture failure', execution: 'notStarted', details: [],
+        retry: { safe: false },
       },
     }, 500);
     await expect(client().unsV2.recordFind({ collectionId: 'orders' })).rejects.toMatchObject({
@@ -797,30 +814,91 @@ describe('UNS v2 localhost HTTP fixture', () => {
 });
 
 
-describe('Record notifications over the existing isolated HTTP transport', () => {
-  it('exposes a readonly operation and preserves cursor plus exact integer notification identity', async () => {
+describe('Native Record SSE', () => {
+  it('rejects retired operations and SSE-via-POST before sending any request', async () => {
+    const start = received.length;
+    const api = client().unsV2 as unknown as { call(name: string, request: unknown): Promise<unknown> };
+    for (const name of ['sourceCreate', 'sourceGet', 'streamProgramCreate', 'recordChangesPoll']) {
+      await expect(api.call(name, {})).rejects.toThrow('unknown UNS v2 operation');
+    }
+    await expect(api.call('recordSubscribe', {})).rejects.toThrow('use recordSubscribe');
+    expect(received.slice(start)).toHaveLength(0);
+  });
+
+  it('forwards a reset once and cancels the stream without reconnecting', async () => {
     const start = received.length;
     respond = (_req, res) => {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end('{"code":200,"msg":"ok","requestId":"changes","data":{"items":[{"eventId":"stable-event","collectionId":"orders","recordId":"9007199254740993","change":"record","occurredAt":9007199254740993}],"nextCursor":"rc1.sealed.fixture","retentionMs":3600000}}');
+      res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      res.write('event: reset\ndata: {"reason":"SCOPE_CHANGED"}\n\n');
     };
-    const result = await client().unsV2.recordChangesPoll({ collectionId: 'orders', cursor: 'rc1.old.fixture', limit: 20, waitMs: 0 });
-    expect(UNS_V2_OPERATIONS.recordChangesPoll.mutation).toBe(false);
-    expect(result.data.nextCursor).toBe('rc1.sealed.fixture');
-    expect(String(result.data.items[0].occurredAt)).toBe('9007199254740993');
-    expect(result.data.items[0].recordId).toBe('9007199254740993');
+    const frames = [];
+    for await (const frame of client().unsV2.recordSubscribe()) frames.push(frame);
+    expect(frames).toEqual([{ event: 'reset', data: { reason: 'SCOPE_CHANGED' } }]);
     expect(received.slice(start)).toHaveLength(1);
-    expect(received.at(-1)?.path).toBe('/openapi/v2/uns/records/changes');
-    expect(JSON.parse(received.at(-1)!.body)).toEqual({ collectionId: 'orders', cursor: 'rc1.old.fixture', limit: 20, waitMs: 0 });
   });
-  it.each([[409, 'CURSOR_EXPIRED'], [403, 'FORBIDDEN'], [503, 'TEMPORARILY_UNAVAILABLE']])('preserves %s/%s without automatic reconnect or write replay', async (status, code) => {
+
+  it('keeps employee delegation isolated on authenticated GET and releases a paused stream on break', async () => {
     const start = received.length;
-    respond = (_req, res) => send(res, { code: status, msg: 'safe failure', requestId: 'changes', data: null,
-      error: { code, retryable: false, details: [], retryAdvice: { recommendedAction: 'restoreAuthorizationBeforeRetry', canRetrySameRequest: false, keepIdempotencyKey: true } } }, status);
-    const error = await client().unsV2.recordChangesPoll({ collectionId: 'orders', cursor: 'rc1.old' }).catch(value => value);
+    respond = (_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      res.write('event: heartbeat\nid: opaque.head\ndata: {"at":1792540800000}\n\n');
+    };
+    await Promise.all(['fixture.userA.signature', 'fixture.userB.signature'].map(async proof => {
+      const api = createClient({ apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: proof }).unsV2;
+      for await (const frame of api.recordSubscribe()) { expect(frame.event).toBe('heartbeat'); break; }
+    }));
+    expect(received.slice(start)).toHaveLength(2);
+    expect(received.slice(start).map(row => row.headers['x-tier0-app-data-subject']).sort()).toEqual(['fixture.userA.signature', 'fixture.userB.signature']);
+    expect(received.slice(start).every(row => row.headers.accept === 'text/event-stream' && row.body === '')).toBe(true);
+  });
+
+  it('bounds a silent SSE body by the transport deadline without reporting a write outcome', async () => {
+    const start = received.length;
+    respond = (_req, res) => { res.writeHead(200, { 'Content-Type': 'text/event-stream' }); res.flushHeaders(); };
+    const error = await client(50).unsV2.recordSubscribe().next().catch(value => value);
     expect(error).toBeInstanceOf(UnsV2Error);
     expect(error).not.toBeInstanceOf(UnsV2OutcomeUnknownError);
-    expect(error).toMatchObject({ status, code, operation: 'recordChangesPoll' });
+    expect(error).toMatchObject({ code: 'UNS_V2_TRANSPORT_TIMEOUT', operation: 'recordSubscribe' });
+    expect(received.slice(start)).toHaveLength(1);
+  });
+
+  it('aborts a pending read and rejects malformed frames and oversized bodies without reconnecting', async () => {
+    const start = received.length;
+    respond = (_req, res) => { res.writeHead(200, { 'Content-Type': 'text/event-stream' }); res.flushHeaders(); };
+    const cancel = new AbortController();
+    const pending = client().unsV2.recordSubscribe({}, { signal: cancel.signal }).next();
+    setTimeout(() => cancel.abort(), 30);
+    await expect(pending).rejects.toMatchObject({ code: 'UNS_V2_TRANSPORT_ERROR' });
+    respond = (_req, res) => { res.writeHead(200, { 'Content-Type': 'text/event-stream' }); res.end('event: change\ndata: {}\n\n'); };
+    await expect(client().unsV2.recordSubscribe().next()).rejects.toMatchObject({ code: 'UNS_V2_PROTOCOL_ERROR' });
+    await expect(client(2000, 10).unsV2.recordSubscribe().next()).rejects.toMatchObject({ code: 'UNS_V2_PROTOCOL_ERROR' });
+    expect(received.slice(start)).toHaveLength(3);
+  });
+
+  it('uses GET, repeated collection parameters and a header cursor with exact numeric events', async () => {
+    const start = received.length;
+    respond = (_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      res.write(': connected\r\nevent: change\r\nid: opaque.next\r\ndata: {"eventId":"opaque.next","collectionId":"orders","recordId":"9007199254740993","change":"record","revision":9007199254740993,"occurredAt":9007199254740993,"restricted":true}\r');
+      res.end('\n\r\n');
+    };
+    const frames = [];
+    for await (const frame of client().unsV2.recordSubscribe({ collectionIds: ['orders', '设备 #'], cursor: 'opaque.old' })) frames.push(frame);
+    expect(frames).toHaveLength(1);
+    expect(frames[0]).toMatchObject({ event: 'change', id: 'opaque.next', data: { recordId: '9007199254740993', revision: new UnsV2RawNumber('9007199254740993') } });
+    expect(UNS_V2_OPERATIONS.recordSubscribe).toMatchObject({ method: 'GET', transport: 'sse', mutation: false });
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start]).toMatchObject({ method: 'GET', path: '/openapi/v2/uns/records:subscribe?collectionIds=orders&collectionIds=%E8%AE%BE%E5%A4%87+%23', body: '' });
+    expect(received[start].headers['last-event-id']).toBe('opaque.old');
+  });
+  it.each([[409, 'CURSOR_EXPIRED'], [403, 'FORBIDDEN'], [503, 'TEMPORARILY_UNAVAILABLE']])('preserves %s/%s without reconnect', async (status, code) => {
+    const start = received.length;
+    respond = (_req, res) => send(res, { code: status, msg: 'safe failure', requestId: 'changes', data: null,
+      error: { code, reason: 'fixture failure', execution: 'notStarted', details: [], retry: { safe: false } } }, status);
+    const error = await client().unsV2.recordSubscribe({ collectionIds: ['orders'], cursor: 'opaque.old' }).next().catch(value => value);
+    expect(error).toBeInstanceOf(UnsV2Error);
+    expect(error).not.toBeInstanceOf(UnsV2OutcomeUnknownError);
+    expect(error).toMatchObject({ status, code, operation: 'recordSubscribe' });
     expect(received.slice(start)).toHaveLength(1);
   });
 });

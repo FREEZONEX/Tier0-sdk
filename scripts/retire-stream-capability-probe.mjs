@@ -39,12 +39,6 @@ for (const name of ['cloud-support.json', 'registry_generated.go']) {
   const lines = readFileSync(file, 'utf8').split('\n');
   writeFileSync(file, lines.filter(line => !line.includes(`"${operation}"`)).join('\n'));
 }
-const overlayPath = contractPath('stream-runtime.schema-overlay.json');
-const overlay = JSON.parse(readFileSync(overlayPath, 'utf8'));
-for (const schema of schemas) delete overlay.schemas[schema];
-delete overlay.operationMetadata[operation];
-overlay.scope = 'Current Stream runtime/write DTOs, compiled message metadata and read-only history only; unrelated UNS data remains on its separately reviewed baseline.';
-writeFileSync(overlayPath, JSON.stringify(overlay, null, 2) + '\n');
 const provenancePath = contractPath('provenance.json');
 const provenance = JSON.parse(readFileSync(provenancePath, 'utf8'));
 provenance.cloudContractRevision = retireRevision(provenance.cloudContractRevision);

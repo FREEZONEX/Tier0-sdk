@@ -178,6 +178,7 @@ describe.skipIf(!fixture).sequential('Stream messages production Go issuer + nat
     // Independent auth probe: the SDK's own private keys remain inaccessible.
     const key = createUser();
     let nc: NatsConnection | undefined;
+    let reconnected: NatsConnection | undefined;
     try {
       const ticket = await mintNativeTicket(key.getPublicKey());
       const options = {
@@ -191,8 +192,17 @@ describe.skipIf(!fixture).sequential('Stream messages production Go issuer + nat
       const expired = await nc.closed();
       expect(expired).toBeInstanceOf(Error);
       expect(expired!.message).toMatch(/expired/i);
-      await expect(wsconnect(options)).rejects.toThrow();
+      // NATS JWT validation uses Unix seconds and now > exp. A reconnect in
+      // the expiry second can pass validation even after the expiry timer fired.
+      await until(async () => Math.floor(Date.now() / 1_000),
+        now => now > Math.floor(Date.parse(ticket.expiresAt) / 1_000), 2_000);
+      let rejected = false;
+      try { reconnected = await wsconnect(options); }
+      catch { rejected = true; }
+      // Avoid dumping the connection (including its fixture JWT) on failure.
+      expect(rejected).toBe(true);
     } finally {
+      await reconnected?.close();
       await nc?.close();
       key.clear();
     }

@@ -53,7 +53,7 @@ if (process.argv[2] === '--check') {
     repository: 'FREEZONEX/Tier0-Backend', revision, source: sourcePath,
     sourceSHA256: sha(raw), snapshotSHA256: sha(snapshot),
     trustRevision: execFileSync('git', ['rev-parse', '5eecd2188^{commit}'], { cwd: backend, encoding: 'utf8' }).trim(),
-    scope: 'Public Stream requests, message connection and capability discovery only. UNS data remains on the separately pinned Cloud SDK baseline; no UNS v5 migration or SYS/GW/browser acceptance is asserted.',
+    scope: 'Public Stream requests, message connection and capability discovery only. Current UNS v5 data and single-model inputs are pinned separately; this snapshot does not assert a matching deployed Backend/SWE/App or SYS/GW/browser acceptance.',
   }, null, 2) + '\n');
   console.log(`Pinned ${routes.length} public routes and ${Object.keys(schemas).length} schemas from ${revision}`);
 }

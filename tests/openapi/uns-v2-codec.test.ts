@@ -3,7 +3,7 @@ import { decodeUnsV2JSON, encodeUnsV2JSON, UnsV2RawNumber } from '../../src/uns-
 
 describe('UNS v2 lossless numeric boundary', () => {
   it('preserves native Source binding IDs, exact revisions and protocol acquisition without inventing credentials', () => {
-    const definition = { name: 'native-http', script: '', sdkVersion: 'tier0-stream/v3',
+    const definition = { name: 'native-http', script: '',
       sourceBindings: [{ sourceId: '9007199254740995', configRevision: new UnsV2RawNumber('9007199254740993'), acquisition: {} }] };
     const text = encodeUnsV2JSON(definition, 'RuntimeStreamDefinition');
     expect(text).toContain('"sourceId":"9007199254740995","configRevision":9007199254740993,"acquisition":{}');
@@ -11,46 +11,31 @@ describe('UNS v2 lossless numeric boundary', () => {
     expect(text).not.toMatch(/connection|credential|Capture/);
   });
 
-  it('round-trips mixed v2/v3 immutable history arrays through the read-only document codec', () => {
-    const legacy = {
-      name: 'legacy release', script: { sdkVersion: 'tier0-stream/v2', code: ' old source\\n', timeoutMs: 1000 },
-      entries: [{ id: 'legacy', kind: 'request', control: { code: 'legacy.read' }, config: { values: [null, true, { numeric: 'business' }] } }],
-      manifest: { sdkVersion: 'tier0-stream/v2', entries: [{ control: { code: 'legacy.read' } }] },
-    };
-    const current = {
-      name: 'current release', script: { sdkVersion: 'tier0-stream/v3', code: 'new source', timeoutMs: 1000 },
-      entries: [{ id: 'consumer', kind: 'business-message', topic: 'orders/created', config: { topic: 'orders/created' } }],
-      messages: [{ topic: 'orders/accepted', access: 'publish' }],
-    };
-    const documents = [legacy, current, { sdkVersion: 'tier0-stream/v2', scriptConfigured: true }, {}];
-    const response = { code: 200, msg: 'ok', requestId: 'history-array', data: {
-      list: documents.map((document, index) => ({ id: String(index + 1), streamId: '101', versionId: String(index + 1),
-        release: index + 1, status: 'inactive', digest: `digest-${index}`, document, createdAt: 1700000000000 })),
-      total: documents.length, page: 1, size: 20,
-    } };
-    const raw = JSON.stringify(response);
-    const decoded = decodeUnsV2JSON(raw, 'UnsV2StreamProgramVersionsListResponse') as typeof response;
-    expect(decoded).toEqual(response);
-    expect(encodeUnsV2JSON(decoded, 'UnsV2StreamProgramVersionsListResponse')).toBe(raw);
-    // Historical unknown fields stay opaque, including values outside current
-    // write DTO integer rules; no validation or migration occurs while reading.
-    const opaqueRaw = '{"script":{"sdkVersion":"tier0-stream/v2","timeoutMs":1.5},"legacyValues":[9007199254740993,1.0000000000000001]}';
-    const opaque = decodeUnsV2JSON(opaqueRaw, 'CloudHistoricalStreamDocument') as { legacyValues: unknown[] };
-    expect(opaque.legacyValues).toEqual([new UnsV2RawNumber('9007199254740993'), new UnsV2RawNumber('1.0000000000000001')]);
-    expect(encodeUnsV2JSON(opaque, 'CloudHistoricalStreamDocument')).toBe(opaqueRaw);
-  });
-
   it('keeps safe schema numbers as numbers on both sides', () => {
-    expect(encodeUnsV2JSON({ page: 12, size: 20 }, 'PlatformV2JobListReq')).toBe('{"page":12,"size":20}');
-    expect(decodeUnsV2JSON('{"page":12,"size":20}', 'PlatformV2JobListReq')).toEqual({ page: 12, size: 20 });
+    expect(encodeUnsV2JSON({ page: 12, size: 20 }, 'CloudSourceDocumentListReq')).toBe('{"page":12,"size":20}');
+    expect(decodeUnsV2JSON('{"page":12,"size":20}', 'CloudSourceDocumentListReq')).toEqual({ page: 12, size: 20 });
   });
 
-  it('preserves the complete signed int64 range as number or bigint', () => {
-    expect(decodeUnsV2JSON('{"page":9007199254740993}', 'PlatformV2UsersListReq')).toEqual({ page: 9007199254740993n });
-    expect(decodeUnsV2JSON('{"page":9223372036854775807}', 'PlatformV2UsersListReq')).toEqual({ page: 9223372036854775807n });
-    expect(decodeUnsV2JSON('{"page":-9223372036854775808}', 'PlatformV2UsersListReq')).toEqual({ page: -9223372036854775808n });
-    expect(encodeUnsV2JSON({ page: 9223372036854775807n }, 'PlatformV2UsersListReq')).toBe('{"page":9223372036854775807}');
-    expect(() => decodeUnsV2JSON('{"page":9223372036854775808}', 'PlatformV2UsersListReq')).toThrow('signed 64-bit');
+  it('preserves signed int64 observation times in the live v5 response schema', () => {
+    const wrap = (value: string) => `{"data":{"items":[{"lastDataAt":${value}}]}}`;
+    for (const value of ['9007199254740993', '9223372036854775807', '-9223372036854775808']) {
+      const decoded = decodeUnsV2JSON(wrap(value), 'CloudSourceObservationsGetResponse');
+      expect(decoded).toEqual({ data: { items: [{ lastDataAt: BigInt(value) }] } });
+      expect(encodeUnsV2JSON(decoded, 'CloudSourceObservationsGetResponse')).toBe(wrap(value));
+    }
+    expect(() => decodeUnsV2JSON(wrap('9223372036854775808'), 'CloudSourceObservationsGetResponse')).toThrow('signed 64-bit');
+  });
+
+  it('retains numeric codecs beside allOf/oneOf validation constraints', () => {
+    for (const schema of ['UnsV2RecordFindReq', 'UnsV2RecordInsertOneReq', 'UnsV2MetadataUpdateOneReq', 'CloudSourceDocumentUpdateReq']) {
+      const key = schema === 'UnsV2RecordFindReq' ? 'limit' : 'expectedRevision';
+      expect(() => encodeUnsV2JSON({ [key]: 1.5 }, schema)).toThrow('integer');
+      expect(() => decodeUnsV2JSON(`{"${key}":1.5}`, schema)).toThrow('integer');
+      const exact = { [key]: new UnsV2RawNumber('9007199254740993') };
+      const wire = encodeUnsV2JSON(exact, schema);
+      expect(wire).toBe(`{"${key}":9007199254740993}`);
+      expect(decodeUnsV2JSON(wire, schema)).toEqual(exact);
+    }
   });
 
   it('preserves unsafe integers, long decimals and exponents as exact raw numbers', () => {

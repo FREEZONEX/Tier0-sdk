@@ -55,6 +55,6 @@ Register `messages.onError` (or subscription `onError`) to handle asynchronous b
 
 ## Stream-side code
 
-Current Stream documents declare `sdkVersion: 'tier0-stream/v3'`. Request registration uses `api.stream.onRequest({ id, request }, handler)`; message consumers use `api.stream.messages.subscribe({ id, topic, inputSchema }, handler)`. Declare each outgoing logical topic with `api.stream.messages.use({ topic, access: 'publish' })` before calling `api.stream.messages.publish({ topic, payload })`.
+Current Cloud Source/Stream documents omit `sdkVersion` and `configVersion` selectors. When the coordinated request/message runtime is deployed, request registration uses `api.stream.onRequest({ id, request }, handler)`; business-message consumers use `api.stream.messages.subscribe({ id, topic, inputSchema }, handler)`. Declare each outgoing logical topic with `api.stream.messages.use({ topic, access: 'publish' })` before calling `api.stream.messages.publish({ topic, payload })`. The current `api.stream.onMessage` remains a Source-event handler, not a business-message subscription.
 
-The shipped `examples/app-streams/stream-v3.cjs`, `client.mjs` and README contain the complete paired example. Historical v2 documents may be displayed as immutable history; do not submit them as current write/validation fixtures.
+The shipped `examples/app-streams/stream-v3.cjs`, `client.mjs` and README contain the complete paired example. The historical filename does not select a runtime version. Historical documents may be displayed as immutable history; do not submit them as current write/validation fixtures or infer that current deployments provide the new message runtime.

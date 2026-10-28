@@ -52,6 +52,7 @@ const encoder = new TextEncoder();
 const uuid = /^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const MAX_PAYLOAD = 60 * 1024;
 const MAX_ENVELOPE = 64 * 1024;
+const MAX_FLUSH_TIMEOUT_MS = 10_000;
 
 function plain(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value) &&
@@ -81,6 +82,7 @@ function envelope(value: unknown, maxPayload: number): value is StreamMessage {
 /** One permission-scoped session. Every connection gets a fresh key and JWT. */
 class MessageSession implements StreamMessageSubscription {
   disposed = false;
+  readonly runtime: ReturnType<StreamTransport['runtime']>;
   private connection?: NatsConnection;
   private subscription?: Subscription;
   private connecting?: Promise<void>;
@@ -93,6 +95,7 @@ class MessageSession implements StreamMessageSubscription {
   private attempts = 0;
   private subject = '';
   private payloadLimit = MAX_PAYLOAD;
+  private expiresAt = 0;
   private brokerError?: StreamMessageError;
   private disposing?: Promise<void>;
   private removeRuntimeListener?: () => void;
@@ -105,8 +108,8 @@ class MessageSession implements StreamMessageSubscription {
     private remove: () => void,
     private handler?: (value: StreamMessage) => void | Promise<void>,
   ) {
-    const runtime = transport.runtime();
-    if (runtime) this.removeRuntimeListener = onAppRuntimeDispose(runtime, () => { void this.dispose(); });
+    this.runtime = transport.runtime();
+    if (this.runtime) this.removeRuntimeListener = onAppRuntimeDispose(this.runtime, () => { void this.dispose(); });
   }
 
   async ready(): Promise<void> {
@@ -148,23 +151,32 @@ class MessageSession implements StreamMessageSubscription {
       const { value, ok } = await this.transport.post('/openapi/v1/stream-messages/connect', request, this.abort.signal);
       const ticket = this.ticket(value, ok);
       if (this.disposed) return;
+      const expiresAt = Date.parse(ticket.expiresAt);
       const permission = ticket.permissions[0];
       this.subject = (this.mode === 'publish' ? permission.publishSubject : permission.subscribeSubject)!;
       this.payloadLimit = ticket.maxPayloadBytes;
       // Disable library reconnection so it cannot buffer writes or reuse expired JWTs.
       nc = await wsconnect({
         servers: [ticket.url], reconnect: false, waitOnFirstConnect: false,
-        ignoreClusterUpdates: true, timeout: 10_000,
+        ignoreClusterUpdates: true, timeout: Math.max(1, Math.min(MAX_FLUSH_TIMEOUT_MS, expiresAt - Date.now())),
         authenticator: jwtAuthenticator(ticket.userJwt, () => connectionKey.getSeed()),
       });
       if (this.disposed) { await nc.close(); return; }
       this.connection = nc;
+      this.expiresAt = expiresAt;
       this.brokerError = undefined;
       watched = true;
       this.watching = this.watch(nc, connectionKey);
+      // Renewal also bounds the initial handshake; it must not wait for its first PONG.
+      const untilExpiry = expiresAt - Date.now();
+      this.expiryTimer = setTimeout(() => {
+        if (this.connection !== nc) return;
+        this.connected = false;
+        void nc!.close();
+      }, Math.max(1, Math.min(2_147_483_647, untilExpiry - Math.min(5_000, untilExpiry / 10))));
       if (this.mode === 'subscribe') {
         this.subscription = nc.subscribe(this.subject, { callback: (error, msg) => {
-          if (this.disposed || this.connection !== nc) return;
+          if (this.disposed || this.connection !== nc || Date.now() >= expiresAt) return;
           if (error) { this.report(fail('SUBSCRIBE_FAILED', 'Stream subscription failed.')); return; }
           try {
             if (msg.data.length > MAX_ENVELOPE) throw fail('INVALID_ENVELOPE', 'Stream message envelope exceeds limit.');
@@ -186,15 +198,11 @@ class MessageSession implements StreamMessageSubscription {
           }
         } });
       }
-      await nc.flush();
-      if (this.disposed || nc.isClosed() || this.connection !== nc) return;
+      await this.flush(nc, false);
+      if (this.disposed) return;
+      if (nc.isClosed() || this.connection !== nc) throw fail('CONNECT_FAILED', 'Stream messages connection failed.');
       this.connected = true;
       this.attempts = 0;
-      const untilExpiry = Date.parse(ticket.expiresAt) - Date.now();
-      this.expiryTimer = setTimeout(() => {
-        this.connected = false;
-        void nc!.close();
-      }, Math.max(1, Math.min(2_147_483_647, untilExpiry - Math.min(5_000, untilExpiry / 10))));
     } catch (error) {
       if (nc) await nc.close();
       if (this.disposed) return;
@@ -206,6 +214,34 @@ class MessageSession implements StreamMessageSubscription {
         await nc?.close();
         key?.clear();
       }
+    }
+  }
+
+  private async flush(nc: NatsConnection, publishing: boolean): Promise<void> {
+    const failure = () => publishing
+      ? fail('RESULT_UNKNOWN', 'Stream publish result unknown; do not automatically retry.')
+      : fail('CONNECT_FAILED', 'Stream messages connection failed.');
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let stopped: (() => void) | undefined;
+    try {
+      if (this.disposed || nc.isClosed() || this.expiresAt <= Date.now()) throw failure();
+      const deadline = new Promise<never>((_resolve, reject) => {
+        stopped = () => reject(failure());
+        this.abort.signal.addEventListener('abort', stopped, { once: true });
+        if (this.abort.signal.aborted) stopped();
+        timer = setTimeout(stopped, Math.max(1, Math.min(MAX_FLUSH_TIMEOUT_MS, this.expiresAt - Date.now())));
+      });
+      await Promise.race([nc.flush(), deadline, nc.closed().then(() => { throw failure(); })]);
+    } catch {
+      const watching = this.connection === nc ? this.watching : undefined;
+      if (this.connection === nc) this.connected = false;
+      // Stop the transport and wipe its key before reporting a failed/unknown operation.
+      await nc.close();
+      await watching;
+      throw failure();
+    } finally {
+      clearTimeout(timer);
+      if (stopped) this.abort.signal.removeEventListener('abort', stopped);
     }
   }
 
@@ -295,7 +331,7 @@ class MessageSession implements StreamMessageSubscription {
     this.brokerError = undefined;
     try {
       nc.publish(this.subject, bytes);
-      await nc.flush();
+      await this.flush(nc, true);
       if (this.brokerError) throw this.brokerError;
       if (!this.connected || this.connection !== nc) throw fail('RESULT_UNKNOWN', 'Stream publish result unknown.');
     } catch (error) {
@@ -359,6 +395,7 @@ export class StreamMessagesClient {
     };
     return {
       publish: async (payload, options = {}) => {
+        if (this.disposed) throw fail('DISPOSED', 'Stream messages client disposed.');
         if (!plain(options) || Object.keys(options).some(k => !['messageId', 'correlationId'].includes(k)) ||
             (options.messageId !== undefined && typeof options.messageId !== 'string') ||
             (options.correlationId !== undefined && typeof options.correlationId !== 'string')) {
@@ -370,6 +407,12 @@ export class StreamMessagesClient {
         };
         if (!envelope(message, MAX_PAYLOAD)) throw fail('INVALID_ENVELOPE', 'Invalid Stream message envelope.');
         if (encoder.encode(JSON.stringify(message)).length > MAX_ENVELOPE) throw fail('PAYLOAD_TOO_LARGE', 'Stream message envelope exceeds limit.');
+        if (publisher?.disposed) {
+          const previous = publisher;
+          await previous.dispose();
+          if (previous.runtime !== this.transport.runtime()) throw fail('DISCONNECTED', 'Stream messages disconnected.');
+          if (publisher === previous) publisher = undefined;
+        }
         if (!publisher) publisher = session('publish');
         await publisher.publish(message as StreamMessage);
         return message;

@@ -18,59 +18,50 @@ const manifest = JSON.parse(read('manifest.json')) as {
 };
 const contract = JSON.parse(read('contract.json')) as { operations: Operation[] };
 const registry = read('registry_generated.go');
-const streamRuntime = JSON.parse(read('stream-runtime.schema-overlay.json'));
 const operation = (name: string) => manifest.operations.find(item => item.name === name)!;
 
 describe('Backend App UNS access contract without generic record audit', () => {
-  it('pins the exact upstream commit and all generator inputs', () => {
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('6c111671a2172eb14c38f2f6d9ec329f4ee08a3d');
+  it('pins the exact immutable canonical snapshot and all generator inputs', () => {
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('sha256:54d24ea3de5ab8a2478e4ce7fade6dfe1cd20f62261f006150f5f3353806985d');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    expect(UNS_V2_CONTRACT_PROVENANCE.streamCapabilityRetirement).toEqual({
-      revision: '273d58f7dcf0c5fee4a593b405b7102e7049adfe',
-      source: 'share/unscontract/manifest.json',
-      sha256: '30ffc9875cab8f9db7b651116492abffd498b56c7b99fea5c29eb6b49cca1320',
-      matchesCommit: true,
-    });
-    for (const [key, file] of Object.entries({ contract: 'contract.json', cloudSupport: 'cloud-support.json', manifest: 'manifest.json', provenance: 'provenance.json', registry: 'registry_generated.go', streamRuntime: 'stream-runtime.schema-overlay.json' })) {
+    expect(UNS_V2_CONTRACT_PROVENANCE.resolvedCloudContract).toBe(true);
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('+source-vendor/2');
+    for (const [key, file] of Object.entries({ contract: 'contract.json', cloudSupport: 'cloud-support.json', manifest: 'manifest.json', provenance: 'provenance.json', registry: 'registry_generated.go' })) {
       expect(UNS_V2_CONTRACT_PROVENANCE.hashes[key as keyof typeof UNS_V2_CONTRACT_PROVENANCE.hashes]).toBe(
         createHash('sha256').update(read(file)).digest('hex')
       );
     }
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(97);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(113);
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(83);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(98);
   });
 
-  it('pins current Stream write schemas independently of the retained data baseline', () => {
-    expect(UNS_V2_CONTRACT_PROVENANCE.streamRuntimeSchemaRevision).toBe(streamRuntime.revision);
-    expect(streamRuntime.revision).toBe('d71a38869b075d18df28540e30fbf955bdfb22c6');
-    expect(streamRuntime.sourceManifestSHA256).toMatch(/^[0-9a-f]{64}$/);
-    expect(Object.keys(streamRuntime.schemas)).toEqual([
-      'RuntimeStreamDefinition', 'CloudStreamScript',
-      'CloudStreamDocument', 'CloudStreamEntry',
-      'UnsV2StreamProgramVersionsListResponse', 'CloudHistoricalStreamDocument',
-    ]);
-    expect(streamRuntime.schemas.CloudHistoricalStreamDocument).toMatchObject({ type: 'object', readOnly: true, additionalProperties: true });
-    expect(streamRuntime.schemas.UnsV2StreamProgramVersionsListResponse.properties.data.properties.list.items.properties.document.$ref).toBe('#/components/schemas/CloudHistoricalStreamDocument');
-    expect(streamRuntime.schemas.CloudStreamDocument.properties.messages.readOnly).toBe(true);
-    expect(streamRuntime.schemas.CloudStreamEntry.properties.request).toBeDefined();
-    expect(streamRuntime.schemas.CloudStreamEntry.properties.topic).toMatchObject({ type: 'string', readOnly: true });
-    expect(streamRuntime.schemas.CloudStreamEntry.properties.topics).toBeUndefined();
-    expect(streamRuntime.schemas.CloudStreamEntry.properties.control).toBeUndefined();
-    expect(streamRuntime.operationMetadata).toEqual({});
-    expect(Object.hasOwn(UNS_V2_OPERATIONS, 'streamRuntimeCapabilitiesGet')).toBe(false);
-    for (const name of ['RuntimeStreamDefinition', 'CloudStreamScript']) {
-      expect(streamRuntime.schemas[name].properties.sdkVersion.enum).toEqual(['tier0-stream/v3']);
+  it('exports exactly public v5 routes and rejects retired operations at the generation boundary', () => {
+    expect(Object.keys(UNS_V2_OPERATIONS)).toEqual(manifest.operations.filter(item => !item.coreOnly && !/^stream\.requests:(read|invoke)$/.test((item as Operation & { scope: string }).scope)).map(item => item.name));
+    for (const name of ['sourceCreate', 'sourceGet', 'sourceList', 'sourceUpdate', 'streamProgramCreate', 'streamProgramGet',
+      'streamProgramInvoke', 'directoryCreate', 'collectionCreate', 'metaBatchExecute', 'recordChangesPoll', 'recordInsertMany']) {
+      expect(manifest.operations.some(item => item.name === name), name).toBe(false);
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, name), name).toBe(false);
+    }
+    for (const name of ['sourceDocumentCreate', 'sourceDocumentGet', 'streamDocumentCreate', 'metadataInsertOne', 'recordGet',
+      'recordQueryBatch', 'recordUpdateOne', 'recordBulkWrite', 'sampleAppend', 'sampleFind', 'sampleLatestValues', 'recordSubscribe']) {
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, name), name).toBe(true);
     }
   });
 
-  it('does not expose retired App policy or request execution management contracts', () => {
-    const generated = readFileSync(new URL('../../src/uns-v2/generated.ts', import.meta.url), 'utf8');
-    for (const retired of ['hostedControl', 'controlProfileVersion', 'cloud-control-app/', 'cloud-hosted-app-control/',
-      'CloudControlDiscoverReq', 'CloudControlDescribeReq', 'CloudControlInvokeReq']) {
-      expect(generated).not.toContain(retired);
+  it('retires only the public readiness probe and retains real Stream operations', () => {
+    const retired = 'streamRuntimeCapabilitiesGet';
+    expect(Object.hasOwn(UNS_V2_OPERATIONS, retired)).toBe(false);
+    expect(manifest.operations.some(item => item.name === retired)).toBe(false);
+    expect(contract.operations.some(item => item.name === retired)).toBe(false);
+    expect(registry).not.toContain(`Name: "${retired}"`);
+    for (const schema of ['CloudStreamRuntimeCapabilitiesGetReq', 'CloudStreamRuntimeCapabilitiesGetResponse']) {
+      expect(Object.hasOwn(manifest.schemas, schema)).toBe(false);
+      expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, schema)).toBe(false);
     }
-    for (const retired of ['controlDiscover', 'controlDescribe', 'controlInvoke', 'controlAppCreate', 'hostedAppControlPolicyUpdate']) {
-      expect(Object.hasOwn(UNS_V2_OPERATIONS, retired)).toBe(false);
+    for (const name of ['streamDocumentCreate', 'streamDocumentUpdate', 'streamDocumentValidate',
+      'streamProgramDeploy', 'streamProgramRollback', 'streamProgramVersionsList', 'streamRunsList',
+      'streamObservationGet', 'streamSampleTest']) {
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, name), name).toBe(true);
     }
   });
 
@@ -88,13 +79,6 @@ describe('Backend App UNS access contract without generic record audit', () => {
     visit(manifest.schemas);
   });
 
-  it('retains the frozen upstream inputs while removing the retired request execution aliases', () => {
-    for (const name of ['controlDiscover', 'controlDescribe', 'controlInvoke']) {
-      expect(manifest.operations.some(item => item.name === name)).toBe(true);
-      expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
-    }
-  });
-
   it.each([
     ['catalog', ['uns.read', 'uns.write', 'uns.delete']],
     ['jobs', ['uns.read', 'uns.write', 'uns.delete']],
@@ -103,27 +87,27 @@ describe('Backend App UNS access contract without generic record audit', () => {
   ] as const)('%s preserves the upstream resource alternatives without inventing read/manage rights', (name, permissions) => {
     const metadata = operation(name);
     expect(metadata.permissionAnyOf).toEqual(permissions);
-    expect(metadata.appAllowed).toBe(true);
+    expect(metadata.appAllowed).toBe(name !== 'jobs');
     expect(contract.operations.find(item => item.name === name)?.permissionAnyOf).toEqual(permissions);
     const line = registry.split('\n').find(row => row.includes(`Name: "${name}"`));
     expect(line).toContain(`PermissionAnyOf: []string{${permissions.map(permission => `"${permission}"`).join(', ')}}`);
-    expect(line).toContain('AppAllowed: true');
+    expect(line).toContain(`AppAllowed: ${name !== 'jobs'}`);
     expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(true);
   });
 
   it('keeps App credentials outside every management operation and preserves Core-only policy boundaries', () => {
-    const management = manifest.operations.filter(item => item.minPermission >= 3 || item.permission.includes('manage'));
+    const management = manifest.operations.filter(item => (item.minPermission >= 3 || item.permission.includes('manage')) && !item.name.startsWith('appCollections'));
     expect(management.length).toBeGreaterThan(0);
     for (const item of management) {
       expect(item.appAllowed, item.name).toBe(false);
       expect(item.permissionAnyOf.some(permission => permission.includes('manage')), item.name).toBe(false);
     }
     // Generic workspace SDK methods remain available; their presence grants no App authority.
-    expect(operation('collectionCreate').appAllowed).toBe(false);
-    expect(Object.hasOwn(UNS_V2_OPERATIONS, 'collectionCreate')).toBe(true);
-    for (const name of ['hostedAppControlPolicyGet', 'hostedAppControlPolicyUpdate']) {
-      expect(operation(name)).toMatchObject({ appAllowed: false, coreOnly: true, permission: 'workspace.api.manage', minPermission: 3 });
-      expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
+    expect(operation('metadataInsertOne').appAllowed).toBe(false);
+    expect(Object.hasOwn(UNS_V2_OPERATIONS, 'metadataInsertOne')).toBe(true);
+    for (const name of ['appStreamPolicyGet', 'appStreamPolicyUpdate']) {
+      expect(operation(name)).toMatchObject({ appAllowed: false, permission: 'stream.requests.manage', minPermission: 3 });
+      expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(true);
     }
     for (const name of ['appDataPolicyGet', 'appDataPolicyUpdate']) {
       expect(operation(name)).toMatchObject({ appAllowed: false, coreOnly: false, permission: 'uns.write', minPermission: 3, scope: 'uns:update' });
@@ -132,6 +116,38 @@ describe('Backend App UNS access contract without generic record audit', () => {
     for (const name of ['appAccessGet', 'appAccessUpdate']) {
       expect(manifest.operations.some(item => item.name === name)).toBe(false);
       expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
+    }
+  });
+
+  it.each([
+    ['streamRequestDiscover', 'read', ['stream.requests.read', 'stream.requests.manage']],
+    ['streamRequestDescribe', 'read', ['stream.requests.read', 'stream.requests.manage']],
+    ['streamRequestInvoke', 'invoke', []],
+    ['appStreamPolicyGet', 'manage', []],
+    ['appStreamPolicyUpdate', 'manage', []],
+    ['streamRequestGrantGet', 'manage', []],
+    ['streamRequestGrantSet', 'manage', []],
+    ['appStreamAccessList', 'manage', []],
+  ] as const)('%s uses unified Stream request permissions', (name, action, alternatives) => {
+    const permission = `stream.requests.${action}`;
+    const scope = `stream.requests:${action}`;
+    expect(operation(name)).toMatchObject({ permission, scope, permissionAnyOf: alternatives });
+    expect(contract.operations.find(item => item.name === name)).toMatchObject({ permission, scope, permissionAnyOf: alternatives });
+    if (action === 'manage') expect(UNS_V2_OPERATIONS[name as keyof typeof UNS_V2_OPERATIONS].scope).toBe(scope);
+    else expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
+    const row = registry.split('\n').find(line => line.includes(`Name: "${name}"`));
+    expect(row).toContain(`Permission: "${permission}"`);
+    expect(row).toContain(`Scope: "${scope}"`);
+  });
+
+  it('limits request grants to App/user subjects and removes retired Control permission enums', () => {
+    for (const name of ['CloudStreamRequestGrantGetReq', 'CloudStreamRequestGrantSetReq', 'CloudStreamRequestGrantInfo', 'CloudStreamRequestGrantMutation']) {
+      expect(manifest.schemas[name].properties).toHaveProperty('principalKind', { type: 'string', enum: ['app', 'user'] });
+      expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name), name).toBe(true);
+    }
+    const serialized = JSON.stringify({ operations: manifest.operations, schemas: manifest.schemas });
+    for (const permission of ['control.read', 'control.execute', 'control.write', 'control.manage']) {
+      expect(serialized).not.toContain(`"${permission}"`);
     }
   });
 

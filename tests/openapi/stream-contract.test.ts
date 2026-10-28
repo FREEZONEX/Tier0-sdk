@@ -35,10 +35,11 @@ describe('committed public Stream contract projection', () => {
       'contractVersion', 'expiresAt', 'maxPayloadBytes', 'permissions', 'url', 'userJwt',
     ]);
   });
-  it('keeps the pre-existing Cloud data provenance explicit instead of claiming UNS v5 compatibility', () => {
+  it('keeps current Cloud UNS v5 data and single-model provenance separate from request/message routes', () => {
     const data = JSON.parse(readFileSync(new URL('../../contracts/uns-v2/provenance.json', import.meta.url), 'utf8'));
-    expect(data.revision).toBe('6c111671a2172eb14c38f2f6d9ec329f4ee08a3d');
-    expect(data.version).toBe('4.0.0');
-    expect(provenance.scope).toContain('no UNS v5 migration');
+    expect(data.revision).toBe('sha256:54d24ea3de5ab8a2478e4ce7fade6dfe1cd20f62261f006150f5f3353806985d');
+    expect(data.version).toBe('5.0.0');
+    expect(data.cloudContractRevision).toContain('source-stream-single-model');
+    expect(provenance.scope).toContain('UNS v5 data and single-model inputs are pinned separately');
   });
 });

@@ -1,5 +1,24 @@
 import { getClient, type HttpClient } from './openapi/client.js';
 import type { AppRuntime } from './runtime.js';
+import { UNS_V2_OPERATIONS } from './uns-v2/generated.js';
+
+// Forward data-audience delegation only to registered App data operations.
+// Unknown, management and request-execution routes fail closed, even if renamed.
+const appDataRoutes = Object.values(UNS_V2_OPERATIONS)
+  .filter(operation => operation.appAllowed && operation.method === 'POST' && operation.scope.startsWith('uns:'))
+  .map(operation => new RegExp(`^${operation.path.split('/').map(part =>
+    part.startsWith(':') ? '[^/?#]+' : part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('/')}$`));
+
+function appDataPath(path: string): boolean {
+  if (!appDataRoutes.some(route => route.test(path))) return false;
+  try {
+    if (new URL(path, 'https://route.invalid').pathname !== path) return false;
+    return path.split('/').every(part => {
+      const decoded = decodeURIComponent(part);
+      return decoded !== '.' && decoded !== '..' && !/[\\/?#\u0000-\u001f]/.test(decoded);
+    });
+  } catch { return false; }
+}
 
 export interface CloudTransportConfig {
   /** Whole HTTP exchange including the response body, in milliseconds; default 60,000. */
@@ -24,10 +43,12 @@ type Failure = 'TRANSPORT_ERROR' | 'PROTOCOL_ERROR' | 'TRANSPORT_TIMEOUT';
 
 /** Internal redacted failure, translated by each public contract client. */
 export class CloudTransportError extends Error {
-  constructor(readonly kind: Failure, readonly status?: number) {
+  constructor(readonly kind: Failure, readonly status?: number, readonly responseText?: string) {
     super(kind);
     this.name = 'CloudTransportError';
   }
+
+
 }
 
 /** Single fetch, no redirects/retries; one deadline covers both headers and body. */
@@ -56,15 +77,78 @@ export class CloudTransport {
     this.#unsV2AppDataSubject = subject;
   }
 
+  /** One bounded SSE connection; the caller explicitly decides whether to resume. */
+  async *recordEvents(query: string, cursor?: string, signal?: AbortSignal): AsyncGenerator<{ text: string; checkActive: () => void }> {
+    const client = this.resolveClient();
+    const headers: Record<string, string> = { Accept: 'text/event-stream' };
+    const key = client.getApiKey();
+    if (key) { headers.Authorization = `Bearer ${key}`; headers['X-API-Key'] = key; }
+    if (this.#unsV2AppDataSubject) headers['X-Tier0-App-Data-Subject'] = this.#unsV2AppDataSubject;
+    if (cursor) headers['Last-Event-ID'] = cursor;
+    const controller = new AbortController();
+    let timedOut = false;
+    let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    let response: Response | undefined;
+    let rejectInterrupted: (reason: unknown) => void = () => undefined;
+    const interrupted = new Promise<never>((_resolve, reject) => { rejectInterrupted = reject; });
+    // Handle cancellation while a consumer is paused between frames as well.
+    void interrupted.catch(() => undefined);
+    const abort = () => {
+      controller.abort();
+      void reader?.cancel().catch(() => undefined);
+      rejectInterrupted(new CloudTransportError(timedOut ? 'TRANSPORT_TIMEOUT' : 'TRANSPORT_ERROR', response?.status));
+    };
+    const deadline = Date.now() + this.timeoutMs;
+    // A parser may yield several frames from one chunk, pausing between each.
+    const checkActive = () => {
+      if (!controller.signal.aborted && Date.now() >= deadline) { timedOut = true; abort(); }
+      if (controller.signal.aborted) throw new CloudTransportError(timedOut ? 'TRANSPORT_TIMEOUT' : 'TRANSPORT_ERROR', response?.status);
+    };
+    const timer = setTimeout(() => { timedOut = true; abort(); }, this.timeoutMs);
+    signal?.addEventListener('abort', abort, { once: true });
+    if (signal?.aborted) abort();
+    try {
+      response = await Promise.race([fetch(`${client.getBaseURL()}/openapi/v2/uns/records:subscribe${query}`, {
+        method: 'GET', headers, redirect: 'manual', signal: controller.signal,
+      }), interrupted]);
+      if (!response.body) throw new CloudTransportError('PROTOCOL_ERROR', response.status);
+      reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8', { fatal: true });
+      let bytes = 0;
+      let failure = '';
+      const valid = response.status === 200 && response.headers.get('content-type')?.split(';')[0].trim() === 'text/event-stream';
+      while (true) {
+        checkActive();
+        const { done, value } = await Promise.race([reader.read(), interrupted]);
+        checkActive();
+        if (done) break;
+        bytes += value.byteLength;
+        if (bytes > this.unsV2MaxResponseBytes) throw new CloudTransportError('PROTOCOL_ERROR', response.status);
+        const text = decoder.decode(value, { stream: true });
+        if (valid) yield { text, checkActive };
+        else failure += text;
+      }
+      const tail = decoder.decode();
+      if (!valid) throw new CloudTransportError('PROTOCOL_ERROR', response.status, failure + tail);
+      if (tail) { checkActive(); yield { text: tail, checkActive }; }
+    } catch (error) {
+      if (error instanceof CloudTransportError) throw error;
+      throw new CloudTransportError(timedOut ? 'TRANSPORT_TIMEOUT' : 'TRANSPORT_ERROR', response?.status);
+    } finally {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', abort);
+      controller.abort();
+      await reader?.cancel().catch(() => undefined);
+      reader?.releaseLock();
+    }
+  }
+
   async postText(path: string, body: string): Promise<{ text: string; status: number; ok: boolean }> {
     const client = this.resolveClient();
     const url = `${client.getBaseURL()}${path}`;
     const key = client.getApiKey();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    // Control routes also live under UNS v2, but must never receive data delegation.
-    // Keep this per-client proof out of shared HTTP headers and Control capabilities.
-    if (path.startsWith('/openapi/v2/uns/') &&
-        !path.startsWith('/openapi/v2/uns/controls/') &&
+    if (appDataPath(path) &&
         this.#unsV2AppDataSubject !== undefined) {
       headers['X-Tier0-App-Data-Subject'] = this.#unsV2AppDataSubject;
     }

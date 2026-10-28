@@ -19,7 +19,7 @@ await sdk.dispose();
 
 The trusted SWE App runtime automatically supplies the SDK connection provider before App code runs. Business App code supplies no broker URLs, physical subjects, keys, credentials or identity headers. Node services retain their existing server HTTP/App configuration. Requests preserve caller idempotency and frozen-version receipts with no write retries. Messages have disposable subscriptions, asynchronous error handlers, fresh in-memory keys on renewal, no offline buffering/replay and no receiver acknowledgement guarantee.
 
-See the complete [paired App and Stream v3 example](examples/app-streams/README.md) and [SDK Skills index](skills/tier0-sdk/SKILL.md). Stream scripts declare `sdkVersion: 'tier0-stream/v3'`. Existing Cloud data, file, notification and runtime helpers remain available; this unit does not migrate the separately pinned UNS data baseline.
+See the complete [paired App and Stream example](examples/app-streams/README.md) and [SDK Skills index](skills/tier0-sdk/SKILL.md). Current Cloud Source/Stream inputs omit `sdkVersion` and `configVersion` selectors. The Cloud UNS v5 data and single-model contracts remain independently pinned. New request/message APIs require the matching Backend and trusted App runtime integration; their presence in this SDK does not establish deployment readiness.
 
 Validation:
 

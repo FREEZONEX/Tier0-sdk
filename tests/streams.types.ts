@@ -31,3 +31,10 @@ topic.publish({ other: true });
 client.unsV2.controlInvoke({ code: 'pump.start', input: {} });
 // @ts-expect-error Retired root control types must not be exported.
 type RetiredControl = import('../src/index.js').ControlHandle;
+
+// @ts-expect-error Renaming the v2 route must not restore a second request entry.
+client.unsV2.streamRequestInvoke({ code: 'pump.start', input: {} });
+// @ts-expect-error Renamed v2 discovery is also exclusively streams.requests.
+client.unsV2.streamRequestDiscover({});
+// @ts-expect-error Renamed v2 describe is also exclusively streams.requests.
+client.unsV2.streamRequestDescribe({ code: 'pump.start' });

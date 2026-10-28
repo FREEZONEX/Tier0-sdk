@@ -3,8 +3,12 @@ import {
   type IndexSpec,
   type RuntimeStreamDefinition,
   type CloudAppCreateCapability,
+  type CloudSourceConfig,
+  type CloudStreamRequestGrantInfo,
+  type CloudStreamRequestGrantMutation,
+  type CloudAppStreamPolicyUpdateReq,
   UnsV2RawNumber,
-  type PlatformV2UsersListReq,
+  type UnsV2Int64,
   type UnsV2JSONValue,
   type UnsV2OperationName,
   type UnsV2Request,
@@ -12,34 +16,77 @@ import {
 } from '../../src/index.js';
 
 const client = createClient({ apiHost: 'https://example.invalid', apiKey: 'workspace-bound' });
-// @ts-expect-error The retired readiness probe has no public method.
+// @ts-expect-error The Control-only readiness probe has no public Stream method.
 client.unsV2.streamRuntimeCapabilitiesGet({});
 // @ts-expect-error Generic dispatch cannot restore the retired probe.
 client.unsV2.call('streamRuntimeCapabilitiesGet', {});
-// @ts-expect-error The retired probe is not a public operation.
+// @ts-expect-error The retired probe is not an operation name.
 const retiredStreamProbe: UnsV2OperationName = 'streamRuntimeCapabilitiesGet';
-// @ts-expect-error The retired probe has no request mapping.
+// @ts-expect-error The retired probe has no public request mapping.
 type RetiredStreamProbeRequest = UnsV2Request<'streamRuntimeCapabilitiesGet'>;
-// @ts-expect-error The retired probe has no response mapping.
+// @ts-expect-error The retired probe has no public response mapping.
 type RetiredStreamProbeResponse = UnsV2Response<'streamRuntimeCapabilitiesGet'>;
-// @ts-expect-error The retired request DTO is not exported.
+// @ts-expect-error The retired probe request DTO is not exported.
 import type { CloudStreamRuntimeCapabilitiesGetReq } from '../../src/index.js';
-// @ts-expect-error The retired response DTO is not exported.
+// @ts-expect-error The retired probe response DTO is not exported.
 import type { CloudStreamRuntimeCapabilitiesGetResponse } from '../../src/index.js';
-// @ts-expect-error The Cloud entry cannot export the retired DTO either.
-import type { CloudStreamRuntimeCapabilitiesGetResponse as RetiredCloudProbe } from '../../src/cloud.js';
+// @ts-expect-error The HTTP-only Cloud entry cannot export the retired DTO either.
+import type { CloudStreamRuntimeCapabilitiesGetResponse as RetiredCloudProbeResponse } from '../../src/cloud.js';
 void [retiredStreamProbe, null as RetiredStreamProbeRequest | RetiredStreamProbeResponse | null];
+client.unsV2.streamRequestGrantGet({ code: 'fixture.telemetry', principalKind: 'user', principalID: '101' });
+client.unsV2.streamRequestGrantSet({ code: 'fixture.telemetry', principalKind: 'app', principalID: 'fixture-app', active: 1,
+  expectedCodeRevision: 1, actions: ['stream.requests.read', 'stream.requests.invoke', 'stream.requests.write'] });
+// @ts-expect-error Keys cannot receive an independent request grant.
+client.unsV2.streamRequestGrantGet({ code: 'fixture.telemetry', principalKind: 'api_key', principalID: '101' });
+// @ts-expect-error Keys cannot be independently granted or revoked.
+client.unsV2.streamRequestGrantSet({ code: 'fixture.telemetry', principalKind: 'api_key', principalID: '101', active: 2, expectedCodeRevision: 1 });
+// @ts-expect-error Request grant responses cannot identify a Key subject.
+const keyGrantSubject: CloudStreamRequestGrantInfo['principalKind'] = 'api_key';
+// @ts-expect-error Grant mutation responses cannot identify a Key subject.
+const keyMutationSubject: CloudStreamRequestGrantMutation['principalKind'] = 'api_key';
+const requestPermission: CloudAppStreamPolicyUpdateReq['platformPermissions'][number] = 'stream.requests.invoke';
+// @ts-expect-error Hosted policy permissions use the unified Stream request vocabulary.
+const retiredControlPermission: CloudAppStreamPolicyUpdateReq['platformPermissions'][number] = 'control.execute';
+void [keyGrantSubject, keyMutationSubject, requestPermission, retiredControlPermission];
+const sapConfig: CloudSourceConfig = {
+  sourceType: 'sap-odata', endpoint: 'https://sap.example.invalid/service/', options: {},
+  auth: { kind: 'vendorBasic', credentialRef: 'opaque-ref' },
+};
+const genericConfig: CloudSourceConfig = { endpoint: 'https://generic.example.invalid/', options: {} };
+// @ts-expect-error SAP requires its opaque vendorBasic auth reference.
+const anonymousSAP: CloudSourceConfig = { sourceType: 'sap-odata', endpoint: 'https://sap.example.invalid/', options: {} };
+// @ts-expect-error Vendor profiles do not accept generic bearer credentials.
+const invalidSAP: CloudSourceConfig = {
+  sourceType: 'sap-odata', endpoint: 'https://sap.example.invalid/', options: {},
+  auth: { kind: 'bearer', credentialRef: 'opaque-ref' },
+};
+const unsupportedVendor: CloudSourceConfig = {
+  endpoint: 'https://vendor.example.invalid/', options: {}, auth: { kind: 'vendorBasic', credentialRef: 'opaque-ref' },
+  // @ts-expect-error Unregistered vendor profiles cannot select a native host.
+  sourceType: 'unsupported-vendor',
+};
+const teamcenterConfig: CloudSourceConfig = {
+  sourceType: 'teamcenter', endpoint: 'https://plm.example.invalid/', options: {},
+  auth: { kind: 'vendorNative', credentialRef: 'opaque-teamcenter-ref' },
+};
+const salesforceConfig: CloudSourceConfig = {
+  sourceType: 'salesforce', endpoint: 'https://crm.example.invalid/',
+  options: { parameters: { clientId: 'fixture-client', apiVersion: 'v67.0' } },
+  auth: { kind: 'vendorNative', credentialRef: 'opaque-salesforce-ref' },
+};
+client.unsV2.sourceDocumentCreate({ dryRun: true, document: { name: 'Teamcenter', protocol: 'http-api', config: teamcenterConfig } });
+client.unsV2.sourceDiscover({ id: '101', expectedRevision: 2 });
+// @ts-expect-error Discovery requires an explicit current revision.
+client.unsV2.sourceDiscover({ id: '101' });
+// @ts-expect-error Discovery has no caller-selected target URL.
+client.unsV2.sourceDiscover({ id: '101', expectedRevision: 2, endpoint: 'https://other.example.invalid/' });
+client.unsV2.sourceDocumentCreate({ dryRun: true, document: { name: 'SAP', protocol: 'http-api', config: sapConfig } });
+void [sapConfig, genericConfig, anonymousSAP, invalidSAP, unsupportedVendor, teamcenterConfig, salesforceConfig];
 // Native runtime DTO from the pinned source; hosted Cloud documents retain their own shape.
 const nativeDefinition: RuntimeStreamDefinition = {
-  name: 'native-http', script: '', sdkVersion: 'tier0-stream/v3',
+  name: 'native-http', script: '',
   sourceBindings: [{ sourceId: '101', configRevision: new UnsV2RawNumber('9007199254740993'), acquisition: {} }],
 };
-const retiredNativeVersion: RuntimeStreamDefinition = {
-  ...nativeDefinition,
-  // @ts-expect-error Current Stream writes require v3; v2 exists only in frozen history.
-  sdkVersion: 'tier0-stream/v2',
-};
-void retiredNativeVersion;
 const invalidBinding: NonNullable<RuntimeStreamDefinition['sourceBindings']>[number] = {
   sourceId: '101', acquisition: {},
   // @ts-expect-error Native binding revision must be an exact integer, not a string.
@@ -65,7 +112,7 @@ void ownAppContext;
 const list = client.unsV2.recordFind({ collectionId: 'orders', limit: 20, cursor: 'opaque' });
 const jobs = client.unsV2.jobs({ queries: [{ queryId: 'job', jobIds: ['job-1'] }] });
 const transaction = client.unsV2.recordTransactionExecute({ items: [] });
-const sources = client.unsV2.sourceList({ page: 1, size: 20, archived: false });
+const sources = client.unsV2.sourceDocumentList({ page: 1, size: 20 });
 const deployment = client.unsV2.streamProgramDeploy({
   id: 'stream-1', dryRun: false, expectedRevision: 3, expectedSourceRevision: 7, idempotencyKey: 'deploy-1',
 });
@@ -81,7 +128,7 @@ const streamObservation = client.unsV2.streamObservationGet({ id: '202' });
 const runs = client.unsV2.streamRunsList({ id: '202', size: 20, cursor: 'opaque' });
 const documentValidation = client.unsV2.streamDocumentValidate({ document: {
   name: 'collector', model: 'collection',
-  script: { sdkVersion: 'tier0-stream/v3', code: 'module.exports = api => api;', timeoutMs: 1_000 },
+  script: { code: 'module.exports = api => api;', timeoutMs: 1_000 },
   sources: [{ alias: 'plant', sourceId: 'source-1', configRevision: 2, resources: ['line/1'] }],
 } });
 const operation: UnsV2OperationName = 'recordInsertOne';
@@ -92,9 +139,9 @@ const missingIndexPath: IndexSpec = { unique: true };
 // @ts-expect-error Single and composite declarations are mutually exclusive.
 const ambiguousIndexPath: IndexSpec = { path: 'serial', paths: ['serial'] };
 void [singleIndex, compositeIndex, missingIndexPath, ambiguousIndexPath];
-const request: UnsV2Request<'directoryGet'> = { id: 'directory-1' };
-type DirectoryGetResponse = UnsV2Response<'directoryGet'>;
-const exactInt64: PlatformV2UsersListReq = { page: 9_223_372_036_854_775_807n };
+const request: UnsV2Request<'metadataFind'> = { kind: 'directory', filter: { _id: 'directory-1' } };
+type DirectoryGetResponse = UnsV2Response<'metadataFind'>;
+const exactInt64: UnsV2Int64 = 9_223_372_036_854_775_807n;
 const exactBusinessNumber: UnsV2JSONValue = new UnsV2RawNumber('1.0000000000000001');
 void [list, jobs, transaction, sources, deployment, scopedSamples, sourceState, sourceDelete, sourceImpact, sourceHistory, documentValidation,
   observations, streamObservation, runs, operation, request, exactInt64, exactBusinessNumber, null as DirectoryGetResponse | null];
@@ -109,7 +156,7 @@ client.unsV2.sourceIngressGet({ id: '101' });
 client.unsV2.sourceIngressRotate({ id: '101' });
 // @ts-expect-error identity and workspace binding cannot be supplied through list request DTOs.
 client.unsV2.directoryList({ workspaceId: 'other-workspace' });
-// @ts-expect-error Source mutations must carry an explicitly reviewed confirmation.
+// v5 only requires impact confirmation when the server reports an impact.
 client.unsV2.sourceDelete({ dryRun: false, items: [{ id: '101', expectedRevision: 2 }] });
 
 const lease = client.unsV2.recordLock({ collectionId: 'orders', ids: ['order-1'], ttlMs: 30000 });
@@ -124,11 +171,8 @@ client.unsV2.recordAuditAdminList({ collectionId: 'orders', recordId: 'order-1' 
 const removedAuditOperation: UnsV2OperationName = 'recordAuditList';
 // @ts-expect-error Removed admin audit operations have no request DTO.
 type RemovedAdminAuditRequest = UnsV2Request<'recordAuditAdminList'>;
-const auditCollection: UnsV2Request<'collectionUpdate'> = { dryRun: true,
-  items: [{ id: 'orders', expectedRevision: 1,
-    // @ts-expect-error Collection audit configuration has been removed.
-    audit: { enabled: true, historyRead: true } }] };
-void [removedAuditOperation, auditCollection, null as RemovedAdminAuditRequest | null];
+const metadataInput: UnsV2Request<'metadataInsertOne'> = { kind: 'collection', data: { name: 'orders', recordSchema: { type: 'object' } } };
+void [removedAuditOperation, metadataInput, null as RemovedAdminAuditRequest | null];
 // @ts-expect-error Retired Cloud batch-query route must not silently map to another contract.
 client.unsV2.records({ queries: [] });
 // @ts-expect-error Retired recordCreate is replaced by explicit recordInsertOne/Many operations.
@@ -149,37 +193,47 @@ const insertedShape = client.unsV2.recordInsertOne({ collectionId: 'orders', dat
 });
 void [resourceShape, insertedShape];
 
-// History is opaque JSON; callers narrow legacy fields before displaying them.
+// A version row may contain the view-only summary or the frozen manage projection.
 client.unsV2.streamProgramVersionsList({ id: 'stream-1', page: 1, size: 20 }).then(response => {
   for (const row of response.data.list) {
     const versionID: string = row.versionId;
-    const script = row.document.script;
-    if (script && typeof script === 'object' && !Array.isArray(script) && 'code' in script && typeof script.code === 'string') {
-      const code: string = script.code;
+    if ('script' in row.document) {
+      const code: string = row.document.script.code;
       void code;
+    } else {
+      const configured: boolean | undefined = row.document.scriptConfigured;
+      // @ts-expect-error A summary does not expose the historical script.
+      void row.document.script;
+      void configured;
     }
-    const configured = row.document.scriptConfigured;
-    if (typeof configured === 'boolean') {
-      const flag: boolean = configured;
-      void flag;
-    }
-    // @ts-expect-error Historical JSON cannot promise a current script DTO.
-    const currentScript: import('../../src/uns-v2/generated.js').CloudStreamScript = row.document.script;
-    void [versionID, currentScript];
+    void versionID;
   }
 });
 
 // Notifications expose identifiers only; business fields use the existing scoped query.
-const notifications = client.unsV2.recordChangesPoll({ collectionId: 'orders', limit: 20, waitMs: 1000 });
-notifications.then(result => {
-  const cursor: string = result.data.nextCursor;
-  const recordID: string | undefined = result.data.items[0]?.recordId;
-  void cursor; void recordID;
-  // @ts-expect-error notifications never export an unfiltered historical document
-  void result.data.items[0]?.data;
-});
-// @ts-expect-error the authenticated workspace cannot be overridden in the body
-void client.unsV2.recordChangesPoll({ collectionId: 'orders', workspaceId: 'other' });
+async function subscribe() {
+  for await (const frame of client.unsV2.recordSubscribe({ collectionIds: ['orders'], cursor: 'opaque' })) {
+    if (frame.event === 'change') {
+      const id: string = frame.data.recordId;
+      // @ts-expect-error Notifications never contain business documents.
+      void frame.data.data;
+      void id;
+    }
+  }
+}
+void subscribe;
+// @ts-expect-error Internal poll knobs are not public SSE query fields.
+client.unsV2.recordSubscribe({ limit: 20 });
+// @ts-expect-error SSE does not use the generic JSON POST dispatch.
+client.unsV2.call('recordSubscribe', {});
+// @ts-expect-error Retired long polling is not a v5 operation.
+client.unsV2.recordChangesPoll({ collectionId: 'orders' });
+// @ts-expect-error Native source documents replace the old Source create route.
+client.unsV2.sourceCreate({});
+// @ts-expect-error Native source documents replace the old Source get route.
+client.unsV2.sourceGet({ id: '101' });
+// @ts-expect-error Native stream documents replace the old program create route.
+client.unsV2.streamProgramCreate({});
 
 // Retired Cloud Project DTOs must not remain public type exports.
 // @ts-expect-error Project membership was removed from the Cloud contract.
@@ -199,35 +253,11 @@ const invalidAppMembersBody: Parameters<typeof appsApi.openapiV1Appslistaccessme
 void appMembersBody;
 void invalidAppMembersBody;
 
-// @ts-expect-error Retired execution DTOs are not management contracts.
-type RetiredControlInvoke = import('../../src/uns-v2/generated.js').CloudControlInvokeReq;
-const messageDeclarations: import('../../src/uns-v2/generated.js').CloudStreamDocument['messages'] = [{ topic: 'orders/accepted', access: 'publish' }];
-const requestMetadata: import('../../src/uns-v2/generated.js').CloudStreamEntry['request'] = undefined;
-void [messageDeclarations, requestMetadata];
-
-// Historical documents preserve retired metadata without becoming current writes.
-const oldHistory: import('../../src/uns-v2/generated.js').CloudHistoricalStreamDocument = {
-  script: { sdkVersion: 'tier0-stream/v2', code: 'original source', timeoutMs: 1000 },
-  entries: [{ id: 'old', kind: 'request', control: { code: 'legacy.read' } }],
-};
-const historyRows: import('../../src/uns-v2/generated.js').UnsV2StreamProgramVersionsListResponse['data']['list'] = [
-  { id: '1', streamId: '101', versionId: '1', release: 1, status: 'inactive', digest: 'old', createdAt: 1, document: oldHistory },
-  { id: '2', streamId: '101', versionId: '2', release: 2, status: 'active', digest: 'new', createdAt: 2,
-    document: { name: 'new', model: 'program', script: { sdkVersion: 'tier0-stream/v3', code: 'new source', timeoutMs: 1000 } } },
-];
-void historyRows;
-// @ts-expect-error Opaque history is not a current validated write document.
-client.unsV2.streamDocumentValidate({ document: oldHistory });
-const oldCloudWrite: import('../../src/uns-v2/generated.js').CloudStreamScript = {
-  // @ts-expect-error Current Cloud writes also require v3; history did not widen them.
-  sdkVersion: 'tier0-stream/v2', code: 'old source', timeoutMs: 1000,
-};
-void oldCloudWrite;
-
-const compiledConsumer: import('../../src/uns-v2/generated.js').CloudStreamEntry = {
-  id: 'consumer', kind: 'business-message', topic: 'orders/created',
-};
-const compiledTopic: string | undefined = compiledConsumer.topic;
-void compiledTopic;
-// @ts-expect-error Canonical compiled consumer metadata uses singular topic.
-compiledConsumer.topics;
+// @ts-expect-error v5 Source creation needs either document or items.
+client.unsV2.sourceDocumentCreate({ dryRun: true });
+// @ts-expect-error v5 Stream creation needs either document or program.
+client.unsV2.streamDocumentCreate({ dryRun: true });
+const nativeSource: UnsV2Request<'sourceDocumentCreate'> = { dryRun: true, document: { name: 'HTTP', protocol: 'http-api', config: { endpoint: 'https://example.invalid', options: {} } } };
+// @ts-expect-error Single document and batch items are mutually exclusive.
+client.unsV2.sourceDocumentCreate({ ...nativeSource, items: [{ document: nativeSource.document }] });
+void nativeSource;

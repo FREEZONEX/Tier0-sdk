@@ -309,7 +309,7 @@ async function pollNotifications(epoch) {
   } catch (error) {
     if (epoch !== notificationEpoch || error.name === 'AbortError') return;
     if (error.status === 401 || error.status === 403) { stopNotifications(); errorState(error); return; }
-    if (error.code === 'CURSOR_EXPIRED') {
+    if (['CURSOR_EXPIRED', 'SCOPE_CHANGED'].includes(error.code)) {
       stopNotifications();
       const resetEpoch = notificationEpoch;
       $('#notifications').textContent = text('notificationsReset');

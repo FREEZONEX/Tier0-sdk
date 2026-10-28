@@ -6,9 +6,13 @@ import {
 } from '../cloud-transport.js';
 import { getClient, type HttpClient } from '../openapi/client.js';
 import { decodeUnsV2JSON, encodeUnsV2JSON } from './codec.js';
+import { assertCurrentSourceStreamRequest } from './single-model.js';
+import { recordSubscription, type RecordSubscribeRequest, type RecordSubscribeFrame } from './subscribe.js';
+export type { RecordSubscribeRequest, RecordSubscribeFrame } from './subscribe.js';
 import {
   UNS_V2_OPERATIONS,
-  type RetryAdvice,
+  type ErrorRetry,
+  type Fault,
   type UnsV2OperationName,
   type UnsV2Operations,
   type UnsV2Request,
@@ -23,14 +27,16 @@ export interface UnsV2ErrorInfo {
   code: string;
   requestId?: string;
   retryable: boolean;
-  retryAdvice?: RetryAdvice;
-  rolledBack?: boolean;
+  retry?: ErrorRetry;
+  execution?: Fault['execution'];
   opId?: string;
   path?: string;
   details?: RecordValue[];
   repair?: string;
   reason?: string;
   queryId?: string;
+  data?: unknown;
+  fault?: Fault;
 }
 
 /** Server advice is exposed verbatim. The SDK never acts on it or retries a request. */
@@ -40,14 +46,16 @@ export class UnsV2Error extends Error implements UnsV2ErrorInfo {
   readonly code: string;
   readonly requestId?: string;
   readonly retryable: boolean;
-  readonly retryAdvice?: RetryAdvice;
-  readonly rolledBack?: boolean;
+  readonly retry?: ErrorRetry;
+  readonly execution?: Fault['execution'];
   readonly opId?: string;
   readonly path?: string;
   readonly details?: RecordValue[];
   readonly repair?: string;
   readonly reason?: string;
   readonly queryId?: string;
+  readonly data?: unknown;
+  readonly fault?: Fault;
 
   constructor(message: string, info: UnsV2ErrorInfo) {
     super(message);
@@ -87,26 +95,19 @@ function resourcePath(operation: { path: string; readonly pathParams: readonly s
 }
 
 function errorInfo(value: unknown, status: number, operation: UnsV2OperationName): UnsV2ErrorInfo | undefined {
-  if (!record(value) || !record(value.error) || typeof value.error.code !== 'string' ||
-      typeof value.error.retryable !== 'boolean' || !Array.isArray(value.error.details) ||
-      !record(value.error.retryAdvice)) return undefined;
-  const advice = value.error.retryAdvice;
-  if (typeof advice.recommendedAction !== 'string' || typeof advice.canRetrySameRequest !== 'boolean' ||
-      typeof advice.keepIdempotencyKey !== 'boolean') return undefined;
+  if (!record(value) || !record(value.error)) return undefined;
+  const fault = value.error;
+  if (typeof fault.code !== 'string' || typeof fault.reason !== 'string' || !Array.isArray(fault.details) ||
+      !fault.details.every(record) || !['notStarted', 'rolledBack', 'committed', 'unknown'].includes(String(fault.execution)) ||
+      !record(fault.retry) || typeof fault.retry.safe !== 'boolean' ||
+      (fault.retry.afterMs !== undefined && (typeof fault.retry.afterMs !== 'number' || !Number.isSafeInteger(fault.retry.afterMs) || fault.retry.afterMs < 0))) return undefined;
   return {
-    status,
-    operation,
-    code: value.error.code,
+    status, operation, code: fault.code,
     requestId: typeof value.requestId === 'string' ? value.requestId : undefined,
-    retryable: value.error.retryable,
-    retryAdvice: advice as unknown as RetryAdvice,
-    rolledBack: typeof value.error.rolledBack === 'boolean' ? value.error.rolledBack : undefined,
-    opId: typeof value.error.opId === 'string' ? value.error.opId : undefined,
-    path: typeof value.error.path === 'string' ? value.error.path : undefined,
-    details: value.error.details.every(record) ? value.error.details : undefined,
-    repair: typeof value.error.repair === 'string' ? value.error.repair : undefined,
-    reason: typeof value.error.reason === 'string' ? value.error.reason : undefined,
-    queryId: typeof value.error.queryId === 'string' ? value.error.queryId : undefined,
+    retryable: fault.retry.safe, retry: fault.retry as ErrorRetry, execution: fault.execution as Fault['execution'],
+    details: fault.details, data: value.data, fault: fault as Fault,
+    ...Object.fromEntries(['opId', 'path', 'repair', 'reason', 'queryId'].flatMap(key =>
+      typeof fault[key] === 'string' ? [[key, fault[key]]] : [])),
   };
 }
 
@@ -117,11 +118,32 @@ export class UnsV2ClientCore {
     this.transport = new CloudTransport(resolveClient, config);
   }
 
-  async call<Name extends UnsV2OperationName>(name: Name, request: UnsV2Request<Name>): Promise<UnsV2Response<Name>> {
+  /** GET/SSE, with an explicit resume cursor and no automatic reconnect. */
+  async *recordSubscribe(request: RecordSubscribeRequest = {}, options: { signal?: AbortSignal } = {}): AsyncGenerator<RecordSubscribeFrame> {
+    try {
+      yield* recordSubscription(this.transport, request, options.signal);
+    } catch (error) {
+      if (!(error instanceof CloudTransportError)) throw error;
+      let info: UnsV2ErrorInfo | undefined;
+      if (error.responseText && error.status !== undefined) {
+        try {
+          const value = decodeUnsV2JSON(error.responseText, 'UnsV2ErrorResponse');
+          if (record(value) && value.code === error.status) info = errorInfo(value, error.status, 'recordSubscribe');
+        } catch { /* Report a redacted protocol error. */ }
+      }
+      throw new UnsV2Error('UNS v2 subscription failed.', info || {
+        status: error.status, operation: 'recordSubscribe', code: `UNS_V2_${error.kind}`, retryable: false,
+      });
+    }
+  }
+
+  async call<Name extends Exclude<UnsV2OperationName, 'recordSubscribe'>>(name: Name, request: UnsV2Request<Name>): Promise<UnsV2Response<Name>> {
     if (typeof name !== 'string' || !Object.prototype.hasOwnProperty.call(UNS_V2_OPERATIONS, name)) {
       throw new TypeError('Tier0 SDK: unknown UNS v2 operation.');
     }
     const operation = UNS_V2_OPERATIONS[name];
+    if (operation.method !== 'POST') throw new TypeError('Tier0 SDK: use recordSubscribe for SSE.');
+    assertCurrentSourceStreamRequest(name, request);
     const mutation = operation.mutation;
     const path = resourcePath(operation, request);
     const body = encodeUnsV2JSON(request, operation.request);
@@ -173,6 +195,8 @@ export class UnsV2ClientCore {
         throw new UnsV2Error('Invalid UNS v2 error response.', invalid);
       }
       const message = record(value) && typeof value.msg === 'string' ? value.msg : info.code;
+      if (mutation && info.execution === 'unknown') throw new UnsV2OutcomeUnknownError(message, info);
+      if (!mutation && info.execution === 'unknown') throw new UnsV2Error('Invalid read execution outcome.', { status: response.status, operation: name, code: 'UNS_V2_PROTOCOL_ERROR', retryable: false });
       throw new UnsV2Error(message, info);
     }
 
@@ -195,8 +219,8 @@ export type UnsV2Client = UnsV2ClientCore & UnsV2Operations;
 
 export function createUnsV2Client(resolveClient: () => HttpClient = getClient, config: CloudTransportConfig = {}): UnsV2Client {
   const core = new UnsV2ClientCore(resolveClient, config);
-  const methods = Object.fromEntries(Object.keys(UNS_V2_OPERATIONS).map(name => [name, (request: unknown) =>
-    core.call(name as UnsV2OperationName, request as UnsV2Request<UnsV2OperationName>)]));
+  const methods = Object.fromEntries(Object.keys(UNS_V2_OPERATIONS).filter(name => name !== 'recordSubscribe').map(name => [name, (request: unknown) =>
+    core.call(name as Exclude<UnsV2OperationName, 'recordSubscribe'>, request as UnsV2Request<Exclude<UnsV2OperationName, 'recordSubscribe'>>)]));
   return Object.assign(core, methods) as unknown as UnsV2Client;
 }
 
