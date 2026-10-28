@@ -116,7 +116,8 @@
         },
         "validUntil": {
           "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "description": "Proof expiry must follow checkedAt. Cross-field chronological ordering is a semantic constraint checked by consumers in addition to this structural JSON Schema."
         },
         "retryAfterMs": {
           "type": "integer",
@@ -139,7 +140,121 @@
             "$ref": "#/$defs/operation"
           }
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "ready"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "enabled": {
+                "const": true
+              },
+              "releaseEnabled": {
+                "const": true
+              },
+              "allowed": {
+                "const": true
+              },
+              "availability": {
+                "const": "available"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "enabled": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "disabled"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "releaseEnabled": {
+                "const": false
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "releaseEnabled": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "readiness_unknown"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "availability": {
+                "const": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "disabled",
+                  "not_supported",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "availability": {
+                "const": "unavailable"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "validUntil"
+            ],
+            "properties": {
+              "validUntil": {}
+            }
+          },
+          "then": {
+            "required": [
+              "checkedAt"
+            ],
+            "properties": {
+              "state": {
+                "const": "ready"
+              },
+              "checkedAt": {}
+            }
+          }
+        }
+      ]
     },
     "operation": {
       "type": "object",
@@ -188,7 +303,8 @@
         },
         "validUntil": {
           "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "description": "Proof expiry must follow checkedAt. Cross-field chronological ordering is a semantic constraint checked by consumers in addition to this structural JSON Schema."
         },
         "retryAfterMs": {
           "type": "integer",
@@ -201,7 +317,121 @@
         "requiresResourceCheck": {
           "type": "boolean"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "ready"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "enabled": {
+                "const": true
+              },
+              "releaseEnabled": {
+                "const": true
+              },
+              "allowed": {
+                "const": true
+              },
+              "availability": {
+                "const": "available"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "enabled": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "disabled"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "releaseEnabled": {
+                "const": false
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "releaseEnabled": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "readiness_unknown"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "availability": {
+                "const": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "disabled",
+                  "not_supported",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "availability": {
+                "const": "unavailable"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "validUntil"
+            ],
+            "properties": {
+              "validUntil": {}
+            }
+          },
+          "then": {
+            "required": [
+              "checkedAt"
+            ],
+            "properties": {
+              "state": {
+                "const": "ready"
+              },
+              "checkedAt": {}
+            }
+          }
+        }
+      ]
     }
   }
 }

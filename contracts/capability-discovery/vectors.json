@@ -470,7 +470,8 @@
         }
       ],
       "deprecations": []
-    }
+    },
+    "schemaValid": true
   },
   {
     "name": "inconsistent-operation",
@@ -502,6 +503,88 @@
               "state": "unavailable",
               "availability": "unavailable",
               "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-numeric-timezone-offset",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "checkedAt": "2026-10-28T14:00:00+00:00",
+          "validUntil": "2026-10-28T22:00:15+08:00",
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false,
+              "checkedAt": "2026-10-28T14:00:00+00:00",
+              "validUntil": "2026-10-28T22:00:15+08:00"
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-numeric-timezone-offset",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "checkedAt": "2026-10-28T14:00:00+00:00",
+          "validUntil": "2026-10-28T22:00:15+08:00",
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false,
+              "checkedAt": "2026-10-28T14:00:00+00:00",
+              "validUntil": "2026-10-28T22:00:15+08:00"
             }
           ]
         }

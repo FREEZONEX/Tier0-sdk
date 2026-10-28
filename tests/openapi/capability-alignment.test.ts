@@ -1,14 +1,24 @@
+import Ajv2020 from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createClient } from '../../src/index.js';
 
 const vectors = JSON.parse(readFileSync(new URL('../../contracts/capability-discovery/vectors.json', import.meta.url), 'utf8')) as {
-  name: string; valid: boolean; response: unknown;
+  name: string; valid: boolean; schemaValid?: boolean; response: unknown;
 }[];
 const client = () => createClient({ apiHost: 'https://platform.example', apiKey: 'test-fixture' }).capabilities;
 afterEach(() => vi.unstubAllGlobals());
 
+const schema = JSON.parse(readFileSync(new URL('../../contracts/capability-discovery/response.schema.json', import.meta.url), 'utf8'));
+const ajv = new Ajv2020({ allErrors: true, strict: true });
+addFormats(ajv);
+const validateSchema = ajv.compile(schema);
+
 describe('shared Cloud and Enterprise discovery vectors', () => {
+  it.each(vectors)('structural schema: $name', ({ valid, schemaValid, response }) => {
+    expect(validateSchema(response), JSON.stringify(validateSchema.errors)).toBe(schemaValid ?? valid);
+  });
   it.each(vectors)('$name', async ({ valid, response }) => {
     const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(response)));
     vi.stubGlobal('fetch', fetch);

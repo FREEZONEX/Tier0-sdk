@@ -98,7 +98,7 @@ function diagnostics(value: Record<string, unknown>, fail: () => never): Capabil
   for (const field of ['reasonCode', 'checkedAt', 'validUntil'] as const) {
     if (value[field] === undefined) continue;
     if (!text(value[field])) return fail();
-    if (field !== 'reasonCode' && (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z$/.test(value[field]) ||
+    if (field !== 'reasonCode' && (!/^\d{4}-\d\d-\d\d[Tt]\d\d:\d\d:\d\d(?:\.\d+)?(?:[Zz]|[+-]\d\d:\d\d)$/.test(value[field]) ||
         !Number.isFinite(Date.parse(value[field])))) return fail();
     result[field] = value[field];
   }
