@@ -19,7 +19,8 @@
       ]
     },
     "productVersion": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "contractVersion": {
       "const": "1.0"
@@ -27,7 +28,8 @@
     "apiContractVersions": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "string",
+        "minLength": 1
       },
       "contains": {
         "const": "openapi/v2"
@@ -37,7 +39,8 @@
     "sdkContractVersions": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "string",
+        "minLength": 1
       },
       "uniqueItems": true
     },
@@ -56,13 +59,16 @@
         ],
         "properties": {
           "contract": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "replacement": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "sunsetAt": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           }
         }
       }
@@ -158,12 +164,14 @@
         },
         "checkedAt": {
           "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "minLength": 1
         },
         "validUntil": {
           "type": "string",
           "format": "date-time",
-          "description": "Proof expiry must follow checkedAt. Cross-field chronological ordering is a semantic constraint checked by consumers in addition to this structural JSON Schema."
+          "description": "Proof expiry must follow checkedAt. Cross-field chronological ordering is a semantic constraint checked by consumers in addition to this structural JSON Schema.",
+          "minLength": 1
         },
         "retryAfterMs": {
           "type": "integer",
@@ -176,7 +184,8 @@
         "contractVersions": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "uniqueItems": true
         },
@@ -602,12 +611,14 @@
         },
         "checkedAt": {
           "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "minLength": 1
         },
         "validUntil": {
           "type": "string",
           "format": "date-time",
-          "description": "Proof expiry must follow checkedAt. Cross-field chronological ordering is a semantic constraint checked by consumers in addition to this structural JSON Schema."
+          "description": "Proof expiry must follow checkedAt. Cross-field chronological ordering is a semantic constraint checked by consumers in addition to this structural JSON Schema.",
+          "minLength": 1
         },
         "retryAfterMs": {
           "type": "integer",
