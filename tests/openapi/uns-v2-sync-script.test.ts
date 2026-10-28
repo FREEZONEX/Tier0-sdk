@@ -41,6 +41,18 @@ it('syncs a committed Go contract containing literal Unicode line separators', (
     const provenance = JSON.parse(readFileSync(join(sdk, 'contracts/uns-v2/provenance.json'), 'utf8'));
     expect(provenance.revision).toBe(revision);
     expect(provenance.resolvedCloudContract).toBe(true);
+    expect(provenance.sourceMode).toBe('commit');
+    expect(provenance.sourceInputs.every((input: { matchesCommit: boolean }) => input.matchesCommit)).toBe(true);
+    const edited = { ...contract, schemas: { Fixture: { description: 'uncommitted current model' } } };
+    put(join(backend, 'service/unssvr/internal/domain/unsv2/contract_generated.go'),
+      `package unsv2\nconst ContractJSON = ${JSON.stringify(JSON.stringify(edited))}\n`);
+    const development = spawnSync(process.execPath, [script, backend, revision, '--working-tree'], { encoding: 'utf8' });
+    expect(development.status, development.stderr).toBe(0);
+    expect(JSON.parse(readFileSync(join(sdk, 'contracts/uns-v2/contract.json'), 'utf8'))).toEqual(edited);
+    const actual = JSON.parse(readFileSync(join(sdk, 'contracts/uns-v2/provenance.json'), 'utf8'));
+    expect(actual.sourceMode).toBe('working-tree');
+    expect(actual.sourceInputs.find((input: { path: string }) => input.path.endsWith('contract_generated.go')).matchesCommit).toBe(false);
+    expect(spawnSync(process.execPath, [script, backend, '0'.repeat(40), '--working-tree']).status).not.toBe(0);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

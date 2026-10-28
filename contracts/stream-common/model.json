@@ -1,0 +1,17 @@
+{
+  "name": "source-stream-current-model",
+  "scope": "model-selector-rejection",
+  "selectors": ["sdkVersion", "configVersion", "supportedVersions"],
+  "positions": ["source-config", "stream-script", "stream-program"],
+  "preservedFields": ["revision", "configRevision", "release", "contractVersion", "idempotencyKey", "receipt", "effect", "checkpoint"],
+  "rules": [
+    "Model positions accept only the current structure; legacy selectors are rejected before dispatch, not stripped or used for fallback.",
+    "Selectors inside business input, user schemas or protocol options are business data and must not be recursively rewritten.",
+    "Stored historical documents and invocation results remain readable without execution; immutable identity and deduplication evidence are preserved.",
+    "Legacy structures are converted offline under the coordinated maintenance and recovery procedure."
+  ],
+  "delivery": {
+    "included": ["selector rejection vectors", "caller guards", "generated model selector constants"],
+    "excluded": ["full Cloud/Enterprise semantic alignment", "App request and Core messaging rollout", "deployment acceptance"]
+  }
+}

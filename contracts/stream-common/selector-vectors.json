@@ -1,0 +1,14 @@
+[
+  { "id": "source-current", "position": "source-config", "value": { "endpoint": "https://device.example", "options": {} }, "expected": "no-selector" },
+  { "id": "source-old-first", "position": "source-config", "value": { "configVersion": 1, "endpoint": "https://device.example", "options": {} }, "expected": "selector-rejected" },
+  { "id": "source-old-connection", "position": "source-config", "value": { "configVersion": 2, "endpoint": "https://device.example", "options": {} }, "expected": "selector-rejected" },
+  { "id": "source-old-vendor", "position": "source-config", "value": { "configVersion": 3, "sourceType": "sap-odata", "endpoint": "https://sap.example/", "options": {} }, "expected": "selector-rejected" },
+  { "id": "source-null-selector", "position": "source-config", "value": { "configVersion": null }, "expected": "selector-rejected" },
+  { "id": "source-negotiation", "position": "source-config", "value": { "supportedVersions": [] }, "expected": "selector-rejected" },
+  { "id": "stream-current", "position": "stream-script", "value": { "code": "module.exports = () => {};", "timeoutMs": 1000 }, "expected": "no-selector" },
+  { "id": "stream-old-first", "position": "stream-script", "value": { "sdkVersion": "tier0-stream/v1" }, "expected": "selector-rejected" },
+  { "id": "stream-old-second", "position": "stream-script", "value": { "sdkVersion": "tier0-stream/v2" }, "expected": "selector-rejected" },
+  { "id": "stream-old-candidate", "position": "stream-script", "value": { "sdkVersion": "tier0-stream/v3" }, "expected": "selector-rejected" },
+  { "id": "program-negotiation", "position": "stream-program", "value": { "supportedVersions": ["old", "future"] }, "expected": "selector-rejected" },
+  { "id": "program-current", "position": "stream-program", "value": { "name": "Current", "script": "module.exports = () => {};", "sourceBindings": [{ "sourceId": "12", "configRevision": 3 }] }, "expected": "no-selector" }
+]

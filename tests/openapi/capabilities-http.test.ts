@@ -5,9 +5,9 @@ import { createClient, CapabilityError } from '../../src/index.js';
 
 const fixture = {
   product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1'],
-  interpreterContractVersions: ['tier0-stream/v2'], sdkContractVersions: ['control/v1'],
+  sdkContractVersions: ['control/v1'],
   capabilities: [{ code: 'control.invoke.v1', releaseEnabled: true, allowed: true, enabled: false,
-    state: 'unavailable', availability: 'unavailable', contractVersions: ['openapi/v1', 'tier0-stream/v2', 'control/v1'] }],
+    state: 'unavailable', availability: 'unavailable', contractVersions: ['openapi/v1', 'control/v1'] }],
   deprecations: [],
 };
 const received: { path?: string; method?: string; headers: IncomingMessage['headers']; body: string }[] = [];
@@ -50,6 +50,8 @@ describe('capability real HTTP fixture (no device execution or external credenti
       { code: 'namespace.v2', releaseEnabled: true, allowed: true, enabled: true,
         state: 'ready', availability: 'available', contractVersions: ['openapi/v2'] },
       ...fixture.capabilities,
+      ...['source', 'stream'].map(code => ({ code, releaseEnabled: true, allowed: true, enabled: true,
+        state: 'ready', availability: 'available', contractVersions: ['openapi/v2'] })),
     ] };
     respond = (_req, res) => send(res, body);
     const result = await client().capabilities.discover();

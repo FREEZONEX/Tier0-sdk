@@ -37,6 +37,12 @@ api.discover({ transportTimeoutMs: 10 });
 const enabled: PublicCapability['enabled'] = 1;
 // @ts-expect-error unknown availability cannot be treated as ready
 const availability: CapabilityAvailability = 'ready';
+const currentSource: PublicCapability['code'] = 'source';
+const currentStream: PublicCapability['code'] = 'stream';
+// @ts-expect-error Source capability does not select an internal generation
+const legacySource: PublicCapability['code'] = 'source.v1';
+// @ts-expect-error Stream capability does not select an internal generation
+const legacyStream: PublicCapability['code'] = 'stream.v2';
 const error = new CapabilityError('public', { status: 503, errorCode: 'UNKNOWN_BACKEND_STRING_CODE' });
 const retryable: false = error.retryable;
-void [globalDiscovery, inspect, enabled, availability, retryable];
+void [globalDiscovery, inspect, enabled, availability, retryable, currentSource, currentStream, legacySource, legacyStream];

@@ -257,8 +257,9 @@ export type HTTPConnection = {
   "authentication"?: string;
   "caCertificate"?: string;
   "oauth"?: OAuthConfig;
-  "parameters"?: ({} & Record<string, UnsV2JSONValue>);
+  "parameters"?: Record<string, UnsV2JSONValue>;
   "port"?: UnsV2Integer;
+  "headers"?: ({} & Record<string, string>);
 };
 
 export type IndexSpec = ((({
@@ -392,7 +393,6 @@ export type RuntimeStreamDefinition = {
   "extensions"?: Record<string, UnsV2JSONValue>;
   "name": string;
   "script": string;
-  "sdkVersion": "tier0-stream/v2";
   "timeoutMs"?: UnsV2Integer;
   "sourceBindings"?: (Array<({
   "sourceId": string;
@@ -416,7 +416,7 @@ export type Schema = {
   "format"?: "int32" | "float" | "double" | "date-time";
 };
 
-export type SourceDefinition = {
+export type SourceDefinition = ({
   "credentialRef"?: string;
   "description"?: string;
   "endpoint": string;
@@ -430,7 +430,7 @@ export type SourceDefinition = {
   "role"?: "client" | "server";
   "runtimeLocation"?: "local";
   "sourceType"?: string;
-};
+}) & unknown;
 
 export type TransactionQueryResult = {
   "hasMore": boolean;
@@ -561,7 +561,6 @@ export type UnsV2StreamProgramVersionsListResponse = {
   "document": ((CloudStreamDocument | ({
   "name"?: string;
   "description"?: string;
-  "sdkVersion"?: string;
   "timeoutMs"?: UnsV2Integer;
   "scriptConfigured"?: boolean;
 })));
@@ -958,17 +957,17 @@ export type UnsV2PipelineExpression = (UnsV2FilterScalar | ({
 });
 }));
 
-export type UnsV2PipelineAccumulator = (({
+export type UnsV2PipelineAccumulator = ((({
   "$sum": UnsV2PipelineExpression;
-}) | ({
+}) & { "$avg"?: never; "$min"?: never; "$max"?: never; "$count"?: never }) | (({
   "$avg": UnsV2PipelineExpression;
-}) | ({
+}) & { "$sum"?: never; "$min"?: never; "$max"?: never; "$count"?: never }) | (({
   "$min": UnsV2PipelineExpression;
-}) | ({
+}) & { "$sum"?: never; "$avg"?: never; "$max"?: never; "$count"?: never }) | (({
   "$max": UnsV2PipelineExpression;
-}) | ({
+}) & { "$sum"?: never; "$avg"?: never; "$min"?: never; "$count"?: never }) | (({
   "$count": {};
-}));
+}) & { "$sum"?: never; "$avg"?: never; "$min"?: never; "$max"?: never }));
 
 export type UnsV2PipelineSort = Array<Array<((string | 1 | -1))>>;
 
@@ -982,23 +981,23 @@ export type UnsV2Frequencies = {
   "by": (UnsV2DistinctBy);
 };
 
-export type UnsV2PipelineStage = (({
+export type UnsV2PipelineStage = ((({
   "$match": UnsV2DataFilter;
-}) | ({
+}) & { "$project"?: never; "$set"?: never; "$sort"?: never; "$group"?: never; "$distinct"?: never; "$frequencies"?: never; "$lookup"?: never; "$unwind"?: never; "$skip"?: never; "$limit"?: never; "$count"?: never; "$exists"?: never }) | (({
   "$project": ({} & Record<string, UnsV2PipelineExpression>);
-}) | ({
+}) & { "$match"?: never; "$set"?: never; "$sort"?: never; "$group"?: never; "$distinct"?: never; "$frequencies"?: never; "$lookup"?: never; "$unwind"?: never; "$skip"?: never; "$limit"?: never; "$count"?: never; "$exists"?: never }) | (({
   "$set": ({} & Record<string, UnsV2PipelineExpression>);
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$sort"?: never; "$group"?: never; "$distinct"?: never; "$frequencies"?: never; "$lookup"?: never; "$unwind"?: never; "$skip"?: never; "$limit"?: never; "$count"?: never; "$exists"?: never }) | (({
   "$sort": UnsV2PipelineSort;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$set"?: never; "$group"?: never; "$distinct"?: never; "$frequencies"?: never; "$lookup"?: never; "$unwind"?: never; "$skip"?: never; "$limit"?: never; "$count"?: never; "$exists"?: never }) | (({
   "$group": ({
   "_id": ((UnsV2PipelineExpression | ({} & Record<string, UnsV2PipelineExpression>)));
 } & Record<string, UnsV2PipelineAccumulator>);
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$set"?: never; "$sort"?: never; "$distinct"?: never; "$frequencies"?: never; "$lookup"?: never; "$unwind"?: never; "$skip"?: never; "$limit"?: never; "$count"?: never; "$exists"?: never }) | (({
   "$distinct": UnsV2Distinct;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$set"?: never; "$sort"?: never; "$group"?: never; "$frequencies"?: never; "$lookup"?: never; "$unwind"?: never; "$skip"?: never; "$limit"?: never; "$count"?: never; "$exists"?: never }) | (({
   "$frequencies": UnsV2Frequencies;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$set"?: never; "$sort"?: never; "$group"?: never; "$distinct"?: never; "$lookup"?: never; "$unwind"?: never; "$skip"?: never; "$limit"?: never; "$count"?: never; "$exists"?: never }) | (({
   "$lookup": (({
   "collectionId": string;
   "recordId"?: string;
@@ -1012,20 +1011,20 @@ export type UnsV2PipelineStage = (({
 }) | ({
   "kind"?: "records";
 })));
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$set"?: never; "$sort"?: never; "$group"?: never; "$distinct"?: never; "$frequencies"?: never; "$unwind"?: never; "$skip"?: never; "$limit"?: never; "$count"?: never; "$exists"?: never }) | (({
   "$unwind": ((string | ({
   "path": string;
   "preserveNullAndEmptyArrays"?: boolean;
 })));
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$set"?: never; "$sort"?: never; "$group"?: never; "$distinct"?: never; "$frequencies"?: never; "$lookup"?: never; "$skip"?: never; "$limit"?: never; "$count"?: never; "$exists"?: never }) | (({
   "$skip": UnsV2Integer;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$set"?: never; "$sort"?: never; "$group"?: never; "$distinct"?: never; "$frequencies"?: never; "$lookup"?: never; "$unwind"?: never; "$limit"?: never; "$count"?: never; "$exists"?: never }) | (({
   "$limit": UnsV2Integer;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$set"?: never; "$sort"?: never; "$group"?: never; "$distinct"?: never; "$frequencies"?: never; "$lookup"?: never; "$unwind"?: never; "$skip"?: never; "$count"?: never; "$exists"?: never }) | (({
   "$count": string;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$set"?: never; "$sort"?: never; "$group"?: never; "$distinct"?: never; "$frequencies"?: never; "$lookup"?: never; "$unwind"?: never; "$skip"?: never; "$limit"?: never; "$exists"?: never }) | (({
   "$exists": string;
-}));
+}) & { "$match"?: never; "$project"?: never; "$set"?: never; "$sort"?: never; "$group"?: never; "$distinct"?: never; "$frequencies"?: never; "$lookup"?: never; "$unwind"?: never; "$skip"?: never; "$limit"?: never; "$count"?: never }));
 
 export type UnsV2DataDiscoverResponse = {
   "code": UnsV2Integer;
@@ -1305,14 +1304,14 @@ export type UnsV2RecordBulkWriteReq = {
   "expectedRevision"?: UnsV2Integer;
   "dryRun"?: boolean;
   "idempotencyKey"?: string;
-  "operations": (Array<((({
+  "operations": (Array<(((({
   "insertOne": ({
   "id"?: string;
   "data": Record<string, UnsV2JSONValue>;
   "lockToken"?: string;
   "release"?: boolean;
 });
-}) | ({
+}) & { "updateOne"?: never; "replaceOne"?: never; "deleteOne"?: never }) | (({
   "updateOne": ({
   "filter": UnsV2DataFilter;
   "sort"?: UnsV2PipelineSort;
@@ -1322,7 +1321,7 @@ export type UnsV2RecordBulkWriteReq = {
   "lockToken"?: string;
   "release"?: boolean;
 });
-}) | ({
+}) & { "insertOne"?: never; "replaceOne"?: never; "deleteOne"?: never }) | (({
   "replaceOne": ({
   "filter": UnsV2DataFilter;
   "sort"?: UnsV2PipelineSort;
@@ -1331,14 +1330,14 @@ export type UnsV2RecordBulkWriteReq = {
   "lockToken"?: string;
   "release"?: boolean;
 });
-}) | ({
+}) & { "insertOne"?: never; "updateOne"?: never; "deleteOne"?: never }) | (({
   "deleteOne": ({
   "filter": UnsV2DataFilter;
   "sort"?: UnsV2PipelineSort;
   "lockToken"?: string;
   "release"?: boolean;
 });
-})))>);
+}) & { "insertOne"?: never; "updateOne"?: never; "replaceOne"?: never })))>);
   "ordered"?: boolean;
   "atomic"?: boolean;
   "lockToken"?: string;
@@ -1359,8 +1358,7 @@ export type UnsV2SampleDeleteRangeReq = {
   "dryRun"?: boolean;
 };
 
-export type CloudSourceConfig = (({
-  "configVersion": 2;
+export type CloudSourceConfig = ((({
   "endpoint": string;
   "options": Record<string, UnsV2JSONValue>;
   "auth"?: ({
@@ -1372,12 +1370,11 @@ export type CloudSourceConfig = (({
   "clientIdentityRef"?: string;
 });
   "role"?: "client" | "server";
-}) | ({
+}) & { "sourceType"?: never }) | (({
   "auth": ({
   "credentialRef": string;
   "kind": "vendorNative";
 });
-  "configVersion": 3;
   "endpoint": string;
   "options": ({
   "headers"?: ({} & Record<string, string>);
@@ -1385,13 +1382,13 @@ export type CloudSourceConfig = (({
   "serverName"?: string;
 });
 });
+  "role"?: "client";
   "sourceType": "pi-web-api";
-}) | ({
+}) & { "tls"?: never }) | (({
   "auth": ({
   "credentialRef": string;
   "kind": "vendorNative";
 });
-  "configVersion": 3;
   "endpoint": string;
   "options": ({
   "headers"?: ({} & Record<string, string>);
@@ -1400,25 +1397,25 @@ export type CloudSourceConfig = (({
   "tenantId"?: string;
 });
 });
+  "role"?: "client";
   "sourceType": "plex-mes";
-}) | ({
+}) & { "tls"?: never }) | (({
   "auth": ({
   "credentialRef": string;
   "kind": "vendorNative";
 });
-  "configVersion": 3;
   "endpoint": string;
   "options": ({
   "headers"?: ({} & Record<string, string>);
   "parameters"?: {};
 });
+  "role"?: "client";
   "sourceType": "wms-rest";
-}) | ({
+}) & { "tls"?: never }) | (({
   "auth": ({
   "credentialRef": string;
   "kind": "vendorNative" | "vendorBasic";
 });
-  "configVersion": 3;
   "endpoint": string;
   "options": ({
   "headers"?: ({} & Record<string, string>);
@@ -1426,13 +1423,13 @@ export type CloudSourceConfig = (({
   "client"?: string;
 });
 });
+  "role"?: "client";
   "sourceType": "sap-odata";
-}) | ({
+}) & { "tls"?: never }) | (({
   "auth": ({
   "credentialRef": string;
   "kind": "vendorNative";
 });
-  "configVersion": 3;
   "endpoint": string;
   "options": ({
   "headers"?: ({} & Record<string, string>);
@@ -1440,13 +1437,13 @@ export type CloudSourceConfig = (({
   "orgId"?: string;
 });
 });
+  "role"?: "client";
   "sourceType": "yonyou-yonbip";
-}) | ({
+}) & { "tls"?: never }) | (({
   "auth": ({
   "credentialRef": string;
   "kind": "vendorNative";
 });
-  "configVersion": 3;
   "endpoint": string;
   "options": ({
   "headers"?: ({} & Record<string, string>);
@@ -1454,13 +1451,13 @@ export type CloudSourceConfig = (({
   "domain"?: string;
 });
 });
+  "role"?: "client";
   "sourceType": "kingdee-jdy";
-}) | ({
+}) & { "tls"?: never }) | (({
   "auth": ({
   "credentialRef": string;
   "kind": "vendorNative";
 });
-  "configVersion": 3;
   "endpoint": string;
   "options": ({
   "headers"?: ({} & Record<string, string>);
@@ -1468,13 +1465,13 @@ export type CloudSourceConfig = (({
   "redirectUri"?: string;
 });
 });
+  "role"?: "client";
   "sourceType": "ngp";
-}) | ({
+}) & { "tls"?: never }) | (({
   "auth": ({
   "credentialRef": string;
   "kind": "vendorNative";
 });
-  "configVersion": 3;
   "endpoint": string;
   "options": ({
   "headers"?: ({} & Record<string, string>);
@@ -1485,13 +1482,13 @@ export type CloudSourceConfig = (({
   "user": (string & unknown);
 });
 });
+  "role"?: "client";
   "sourceType": "kingdee-k3cloud";
-}) | ({
+}) & { "tls"?: never }) | (({
   "auth": ({
   "credentialRef": string;
   "kind": "vendorNative";
 });
-  "configVersion": 3;
   "endpoint": string;
   "options": ({
   "headers"?: ({} & Record<string, string>);
@@ -1501,13 +1498,13 @@ export type CloudSourceConfig = (({
   "scopes"?: string;
 });
 });
+  "role"?: "client";
   "sourceType": "salesforce";
-}) | ({
+}) & { "tls"?: never }) | (({
   "auth": ({
   "credentialRef": string;
   "kind": "vendorNative";
 });
-  "configVersion": 3;
   "endpoint": string;
   "options": ({
   "headers"?: ({} & Record<string, string>);
@@ -1517,27 +1514,28 @@ export type CloudSourceConfig = (({
   "role"?: string;
 });
 });
+  "role"?: "client";
   "sourceType": "teamcenter";
-}) | ({
+}) & { "tls"?: never }) | (({
   "auth": ({
   "credentialRef": string;
   "kind": "vendorNative";
 });
-  "configVersion": 3;
   "endpoint": string;
   "options": ({
   "headers"?: ({} & Record<string, string>);
   "parameters"?: {};
 });
+  "role"?: "client";
   "sourceType": "hikvision-isapi";
-}));
+}) & { "tls"?: never }));
 
-export type CloudSourceDocument = {
+export type CloudSourceDocument = ({
   "name": string;
   "description"?: string;
-  "protocol": "http" | "modbus" | "mqtt" | "opcua" | "sap" | "teamcenter" | "mqtt_device" | "http_push" | "sql";
+  "protocol": "http-api" | "modbus" | "mqtt" | "opcua" | "sap" | "teamcenter" | "mqtt_device" | "http_push" | "sql";
   "config": CloudSourceConfig;
-};
+}) & unknown;
 
 export type CloudControlDefinition = {
   "code": string;
@@ -1553,7 +1551,6 @@ export type CloudControlDefinition = {
 };
 
 export type CloudStreamScript = {
-  "sdkVersion": "tier0-stream/v2";
   "code": string;
   "timeoutMs": UnsV2Integer;
 };
@@ -1746,8 +1743,10 @@ export type CloudSourceDocumentCreateReq = ((({
 }) & ((unknown | ({
   "idempotencyKey": string;
   "document"?: ({
-  "protocol"?: "http";
-  "config"?: unknown;
+  "protocol"?: "http-api";
+  "config"?: ({
+  "role"?: "client";
+});
 });
 }))) & { "items"?: never }) | (({
   "dryRun": boolean;
@@ -1761,8 +1760,10 @@ export type CloudSourceDocumentCreateReq = ((({
 }) & ((unknown | ({
   "idempotencyKey": string;
   "document"?: ({
-  "protocol"?: "http";
-  "config"?: unknown;
+  "protocol"?: "http-api";
+  "config"?: ({
+  "role"?: "client";
+});
 });
 }))) & { "document"?: never; "credentials"?: never }));
 
@@ -1870,7 +1871,7 @@ export type CloudSourceDocumentListReq = {
   "page"?: UnsV2Integer;
   "size"?: UnsV2Integer;
   "search"?: string;
-  "protocol"?: "http" | "modbus" | "mqtt" | "opcua" | "sap" | "teamcenter" | "mqtt_device" | "http_push" | "sql";
+  "protocol"?: "http-api" | "modbus" | "mqtt" | "opcua" | "sap" | "teamcenter" | "mqtt_device" | "http_push" | "sql";
   "desiredState"?: "enabled" | "disabled";
   "health"?: string;
   "archived"?: boolean;
@@ -2854,7 +2855,7 @@ export type CloudRecordLeaseGrant = {
   "record": RecordDocument;
 };
 
-export type CloudRecordBatchQuery = ((({
+export type CloudRecordBatchQuery = (((({
   "id": string;
   "op": "find";
   "collectionId": string;
@@ -2864,13 +2865,13 @@ export type CloudRecordBatchQuery = ((({
   "limit"?: UnsV2Integer;
   "cursor"?: string;
   "count"?: CloudRecordTotalOption;
-}) & unknown) | ({
+}) & unknown) & { "maxCount"?: never; "field"?: never; "page"?: never; "pipeline"?: never; "ids"?: never }) | (({
   "id": string;
   "op": "count";
   "collectionId": string;
   "filter"?: UnsV2DataFilter;
   "maxCount"?: UnsV2Integer;
-}) | (({
+}) & { "sort"?: never; "projection"?: never; "limit"?: never; "cursor"?: never; "count"?: never; "field"?: never; "page"?: never; "pipeline"?: never; "ids"?: never }) | ((({
   "id": string;
   "op": "distinct";
   "collectionId": string;
@@ -2878,7 +2879,7 @@ export type CloudRecordBatchQuery = ((({
   "field": string;
   "limit"?: UnsV2Integer;
   "page"?: CloudDistinctPage;
-}) & unknown) | (({
+}) & unknown) & { "sort"?: never; "projection"?: never; "cursor"?: never; "count"?: never; "maxCount"?: never; "pipeline"?: never; "ids"?: never }) | ((({
   "id": string;
   "op": "aggregate";
   "collectionId": string;
@@ -2886,21 +2887,21 @@ export type CloudRecordBatchQuery = ((({
   "limit"?: UnsV2Integer;
   "page"?: UnsV2PipelinePage;
   "count"?: CloudRecordTotalOption;
-}) & unknown & unknown) | ({
+}) & unknown & unknown) & { "filter"?: never; "sort"?: never; "projection"?: never; "cursor"?: never; "maxCount"?: never; "field"?: never; "ids"?: never }) | (({
   "id": string;
   "op": "get";
   "collectionId": string;
   "ids": Array<string>;
   "projection"?: ({} & Record<string, ((0 | 1 | boolean))>);
-}));
+}) & { "filter"?: never; "sort"?: never; "limit"?: never; "cursor"?: never; "count"?: never; "maxCount"?: never; "field"?: never; "page"?: never; "pipeline"?: never }));
 
-export type CloudRecordBatchQueryResult = (({
+export type CloudRecordBatchQueryResult = ((({
   "ok": true;
   "data": ((CloudRecordPage | CloudCappedCount | CloudDistinctResult | CloudRecordAggregatePage | CloudRecordGetResult));
-}) | ({
+}) & { "error"?: never }) | (({
   "ok": false;
   "error": Fault;
-}));
+}) & { "data"?: never }));
 
 export type UnsV2RecordQueryBatchReq = {
   "queries": Array<CloudRecordBatchQuery>;
@@ -2927,7 +2928,6 @@ export type CloudStreamProgramView = {
   "createdAt": UnsV2Integer;
   "updatedAt": UnsV2Integer;
   "document"?: ({
-  "sdkVersion"?: string;
   "name"?: string;
   "description"?: string;
   "timeoutMs"?: UnsV2Integer;
@@ -2936,8 +2936,8 @@ export type CloudStreamProgramView = {
 } & Record<string, UnsV2JSONValue>;
 
 export type CloudSourceCreateCredentials = ({
-  "method": string;
-  "kind": "basic" | "bearer" | "oauth2ClientCredentials";
+  "method"?: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "REQUEST";
+  "kind": "basic" | "bearer" | "apiKey" | "oauth2ClientCredentials";
   "material": {};
 }) & (({
   "kind"?: "basic";
@@ -2951,13 +2951,21 @@ export type CloudSourceCreateCredentials = ({
   "token": string;
 });
 }) | ({
+  "kind"?: "apiKey";
+  "method"?: "REQUEST";
+  "material"?: ({
+  "headerName": string;
+  "value": string;
+});
+}) | ({
   "kind"?: "oauth2ClientCredentials";
-  "method"?: "GET";
+  "method"?: "GET" | "REQUEST";
   "material"?: ({
   "tokenUrl": string;
   "clientId": string;
   "clientSecret": string;
   "scope"?: string;
+  "clientAuthentication"?: "client_secret_post" | "client_secret_basic";
 });
 }));
 
@@ -3022,21 +3030,21 @@ export type UnsV2MetadataAggregateReq = ((({
   "kinds"?: Array<"directory" | "topic" | "collection">;
   "state"?: "active" | "deleted" | "all";
   "filter"?: UnsV2DataFilter;
-  "pipeline": (Array<((({
+  "pipeline": (Array<(((({
   "$match": Record<string, UnsV2JSONValue>;
-}) | ({
+}) & { "$project"?: never; "$group"?: never; "$sort"?: never; "$skip"?: never; "$limit"?: never; "$distinct"?: never }) | (({
   "$project": Record<string, UnsV2JSONValue>;
-}) | ({
+}) & { "$match"?: never; "$group"?: never; "$sort"?: never; "$skip"?: never; "$limit"?: never; "$distinct"?: never }) | (({
   "$group": Record<string, UnsV2JSONValue>;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$sort"?: never; "$skip"?: never; "$limit"?: never; "$distinct"?: never }) | (({
   "$sort": UnsV2PipelineSort;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$group"?: never; "$skip"?: never; "$limit"?: never; "$distinct"?: never }) | (({
   "$skip": UnsV2Integer;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$group"?: never; "$sort"?: never; "$limit"?: never; "$distinct"?: never }) | (({
   "$limit": UnsV2Integer;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$group"?: never; "$sort"?: never; "$skip"?: never; "$distinct"?: never }) | (({
   "$distinct": string;
-})))>);
+}) & { "$match"?: never; "$project"?: never; "$group"?: never; "$sort"?: never; "$skip"?: never; "$limit"?: never })))>);
   "page"?: ({
   "mode"?: "offset";
   "page"?: UnsV2Integer;
@@ -3048,21 +3056,21 @@ export type UnsV2MetadataAggregateReq = ((({
   "kinds": Array<"directory" | "topic" | "collection">;
   "state"?: "active" | "deleted" | "all";
   "filter"?: UnsV2DataFilter;
-  "pipeline": (Array<((({
+  "pipeline": (Array<(((({
   "$match": Record<string, UnsV2JSONValue>;
-}) | ({
+}) & { "$project"?: never; "$group"?: never; "$sort"?: never; "$skip"?: never; "$limit"?: never; "$distinct"?: never }) | (({
   "$project": Record<string, UnsV2JSONValue>;
-}) | ({
+}) & { "$match"?: never; "$group"?: never; "$sort"?: never; "$skip"?: never; "$limit"?: never; "$distinct"?: never }) | (({
   "$group": Record<string, UnsV2JSONValue>;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$sort"?: never; "$skip"?: never; "$limit"?: never; "$distinct"?: never }) | (({
   "$sort": UnsV2PipelineSort;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$group"?: never; "$skip"?: never; "$limit"?: never; "$distinct"?: never }) | (({
   "$skip": UnsV2Integer;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$group"?: never; "$sort"?: never; "$limit"?: never; "$distinct"?: never }) | (({
   "$limit": UnsV2Integer;
-}) | ({
+}) & { "$match"?: never; "$project"?: never; "$group"?: never; "$sort"?: never; "$skip"?: never; "$distinct"?: never }) | (({
   "$distinct": string;
-})))>);
+}) & { "$match"?: never; "$project"?: never; "$group"?: never; "$sort"?: never; "$skip"?: never; "$limit"?: never })))>);
   "page"?: ({
   "mode"?: "offset";
   "page"?: UnsV2Integer;
@@ -3290,17 +3298,17 @@ export type UnsV2MetadataRestoreResponse = {
 
 export type UnsV2MetadataBulkWriteReq = {
   "kind": "directory" | "topic" | "collection";
-  "operations": (Array<((({
+  "operations": (Array<(((({
   "insertOne": MetadataBulkInsertOne;
-}) | ({
+}) & { "updateOne"?: never; "replaceOne"?: never; "deleteOne"?: never; "restoreOne"?: never }) | (({
   "updateOne": MetadataBulkUpdateOne;
-}) | ({
+}) & { "insertOne"?: never; "replaceOne"?: never; "deleteOne"?: never; "restoreOne"?: never }) | (({
   "replaceOne": MetadataBulkReplaceOne;
-}) | ({
+}) & { "insertOne"?: never; "updateOne"?: never; "deleteOne"?: never; "restoreOne"?: never }) | (({
   "deleteOne": MetadataBulkDeleteOne;
-}) | ({
+}) & { "insertOne"?: never; "updateOne"?: never; "replaceOne"?: never; "restoreOne"?: never }) | (({
   "restoreOne": MetadataBulkRestoreOne;
-})))>);
+}) & { "insertOne"?: never; "updateOne"?: never; "replaceOne"?: never; "deleteOne"?: never })))>);
   "atomic"?: boolean;
   "ordered"?: boolean;
   "dryRun"?: boolean;
@@ -3846,15 +3854,43 @@ export type UnsV2OperationName = keyof UnsV2OperationMap;
 export type UnsV2Request<Name extends UnsV2OperationName> = UnsV2OperationMap[Name]['request'];
 export type UnsV2Response<Name extends UnsV2OperationName> = UnsV2OperationMap[Name]['response'];
 
-export const UNS_V2_CODEC_SCHEMAS = {"UnsV2CatalogReq":{"k":"o"},"UnsV2TransactionQuery":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"limit":{"k":"j"},"expectCount":{"r":"UnsV2QueryCountExpectation"}}},"UnsV2QueryCountExpectation":{"k":"u","a":[{"k":"o","p":{"min":{"k":"j"},"max":{"k":"j"}}}]},"UnsV2FieldOperation":{"k":"u","a":[{"k":"o"},{"k":"o"},{"k":"o","p":{"value":{"k":"a","i":{}}}},{"k":"o"}]},"UnsV2ResultBinding":{"k":"o"},"UnsV2Page":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"UnsV2TimeRange":{"k":"o","p":{"from":{"k":"j"},"to":{"k":"j"}}},"UnsV2History":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"},"timeRange":{"r":"UnsV2TimeRange"}}},"UnsV2SelectedRecord":{"k":"o","p":{"history":{"r":"UnsV2History"}}},"UnsV2ReferenceTarget":{"k":"o"},"UnsV2PipelinePage":{"k":"u","a":[{"k":"o","p":{"size":{"k":"j"},"page":{"k":"j"}}},{"k":"u","a":[{"k":"o"},{"k":"o"}]}]},"UnsV2Envelope":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"Outcome"},{"r":"AppContext"},{"r":"AppKeyCreated"},{"r":"AppKeyRevoked"},{"k":"o","p":{"results":{"k":"a","i":{"k":"o"}}}},{"k":"o","p":{"capabilities":{"k":"o"}}}]}}},"UnsV2DiscoverySearchReq":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"UnsV2CollectionDescribeReq":{"k":"o"},"UnsV2RecordTransactionReq":{"k":"o","p":{"items":{"k":"a","i":{"r":"UnsV2RecordChange"}},"assertLocks":{"k":"a","i":{"k":"o"}}}},"UnsV2Identity":{"k":"u","a":[{"k":"o"}]},"AppCollectionContext":{"k":"o","p":{"indexes":{"k":"a","i":{"r":"IndexSpec"}},"permissions":{"k":"a","i":{}},"recordSchema":{"r":"Schema"},"sampleSchema":{"r":"Schema"},"createCapability":{"r":"CloudAppCreateCapability"},"revision":{"k":"j"},"indexStatus":{"k":"a","i":{"r":"IndexState"}},"ttl":{"k":"u","a":[{"r":"CloudCollectionTTL"}]}}},"AppContext":{"k":"o","p":{"collections":{"k":"a","i":{"r":"AppCollectionContext"}},"platformPermissions":{"k":"a","i":{}},"revision":{"k":"j"},"limits":{"r":"CloudAppDataLimits"}}},"AppKeyCreated":{"k":"o","p":{"resourceKeys":{"k":"a","i":{}}}},"AppKeyRevoked":{"k":"o"},"CollectionDescription":{"k":"o","p":{"fields":{"k":"a","i":{"r":"DiscoveredField"}},"indexStatus":{"k":"a","i":{"r":"IndexState"}},"indexes":{"k":"a","i":{"r":"IndexSpec"}},"recordSchema":{"r":"Schema"},"relationships":{"k":"a","i":{"r":"CollectionRelationship"}},"revision":{"k":"j"},"sampleSchema":{"r":"Schema"}}},"CollectionRelationship":{"k":"o"},"CollectionSemantics":{"k":"o","p":{"fields":{"k":"a","i":{"r":"FieldSemantics"}},"relationships":{"k":"a","i":{"r":"CollectionRelationship"}}}},"DiscoveredField":{"k":"o","p":{"enum":{"k":"a","i":{}}}},"DiscoveryCollection":{"k":"o","p":{"revision":{"k":"j"}}},"DiscoveryResult":{"k":"o","p":{"asOf":{"k":"j"},"list":{"k":"a","i":{"r":"DiscoveryCollection"}},"nextPage":{"k":"j"},"page":{"k":"j"},"size":{"k":"j"},"total":{"k":"j"}}},"Fault":{"k":"o","p":{"details":{"k":"a","i":{"k":"o"}},"retry":{"r":"ErrorRetry"},"candidates":{"k":"a","i":{"k":"o"}},"conditionIndex":{"k":"j"}}},"FieldBinding":{"k":"o","p":{"collectionId":{"r":"UnsV2Identity"},"recordId":{"r":"UnsV2Identity"}}},"FieldSemantics":{"k":"o"},"HTTPConnection":{"k":"o","p":{"oauth":{"r":"OAuthConfig"},"parameters":{"k":"o"},"port":{"k":"j"}}},"IndexSpec":{"k":"u","a":[{"k":"o","p":{"paths":{"k":"a","i":{}},"expireAfterSeconds":{"k":"j"}}},{"k":"u","a":[{"k":"o"}]}]},"IndexState":{"k":"o","p":{"spec":{"r":"IndexSpec"}}},"MQTTOptions":{"k":"o","p":{"qos":{"k":"j"},"serverSubscribeTopics":{"k":"a","i":{}},"subscriptions":{"k":"o","x":{"k":"j"}},"topicFilters":{"k":"a","i":{}}}},"ModbusOptions":{"k":"o","p":{"pollIntervalMs":{"k":"j"},"ranges":{"k":"a","i":{"r":"ModbusRange"}},"unitId":{"k":"j"}}},"ModbusRange":{"k":"o","p":{"address":{"k":"j"},"quantity":{"k":"j"},"unitId":{"k":"j"}}},"OAuthConfig":{"k":"o"},"OPCUAOptions":{"k":"o","p":{"nodeIds":{"k":"a","i":{}},"samplingIntervalMs":{"k":"j"},"serverNodes":{"k":"a","i":{"r":"OPCUAServerNode"}}}},"OPCUAServerNode":{"k":"o"},"Outcome":{"k":"o","p":{"results":{"k":"a","i":{"r":"Result"}},"summary":{"r":"OutcomeSummary"}}},"OutcomeSummary":{"k":"o","p":{"failed":{"k":"j"},"notExecuted":{"k":"j"},"succeeded":{"k":"j"},"total":{"k":"j"},"unknown":{"k":"j"}}},"RecordDocument":{"k":"o","p":{"data":{"k":"o"},"revision":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"},"sourceTime":{"k":"j"},"lock":{"r":"CloudRecordLockView"}}},"Result":{"k":"o","p":{"document":{"r":"RecordDocument"},"error":{"r":"Fault"},"query":{"r":"TransactionQueryResult"},"release":{"k":"j"},"revision":{"k":"j"}}},"RuntimeStreamDefinition":{"k":"o","p":{"extensions":{"k":"o"},"timeoutMs":{"k":"j"},"sourceBindings":{"k":"a","i":{"k":"o","p":{"configRevision":{"k":"j"},"acquisition":{"k":"o"}}}}}},"Schema":{"k":"o","p":{"enum":{"k":"a","i":{}},"items":{"r":"Schema"},"maximum":{"k":"n"},"minimum":{"k":"n"},"properties":{"k":"o","x":{"r":"Schema"}},"required":{"k":"a","i":{}}}},"SourceDefinition":{"k":"o","p":{"extensions":{"k":"o"},"http":{"r":"HTTPConnection"},"modbus":{"r":"ModbusOptions"},"mqtt":{"r":"MQTTOptions"},"opcua":{"r":"OPCUAOptions"}}},"TransactionQueryResult":{"k":"o","p":{"records":{"k":"a","i":{"r":"RecordDocument"}},"total":{"k":"j"}}},"UnsV2SourceStateUpdateReq":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"expectedRevision":{"k":"j"}}}}}},"UnsV2SourceStateUpdateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"Outcome"}}},"UnsV2SourceRuntimeGetReq":{"k":"o"},"UnsV2SourceRuntimeGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"revision":{"k":"j"},"state":{"k":"o","p":{"schemaVersion":{"k":"j"},"lastDataAt":{"k":"j"},"checkedAt":{"k":"j"},"resources":{"k":"a","i":{"k":"o"}},"streams":{"k":"o","x":{"k":"o","p":{"revision":{"k":"j"},"leaseUntil":{"k":"j"},"nextRunAt":{"k":"j"},"page":{"k":"j"},"lastDataAt":{"k":"j"},"records":{"k":"j"},"sequence":{"k":"j"},"retries":{"k":"j"}}}}}}}}}},"UnsV2SourceProtocolsListReq":{"k":"o"},"UnsV2SourceProtocolsListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o"}}},"UnsV2SourceValidateReq":{"k":"u","a":[{"k":"o","p":{"connection":{"r":"SourceDefinition"},"document":{"r":"CloudSourceDocument"}}}]},"UnsV2SourceValidateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o"}}},"UnsV2SourceProbeReq":{"k":"o","p":{"timeoutMs":{"k":"j"}}},"UnsV2SourceProbeResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o"}}},"UnsV2StreamProgramVersionsListReq":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"UnsV2StreamProgramVersionsListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"list":{"k":"a","i":{"k":"o","p":{"release":{"k":"j"},"createdAt":{"k":"j"},"document":{"k":"u","a":[{"r":"CloudStreamDocument"},{"k":"o","p":{"timeoutMs":{"k":"j"}}}]}}}},"total":{"k":"j"},"page":{"k":"j"},"size":{"k":"j"}}}}},"UnsV2StreamProgramDeployReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"expectedSourceRevision":{"k":"j"}}},"UnsV2StreamProgramDeployResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudStreamProgramView"},{"r":"CloudPreviewResult"}]}}},"UnsV2StreamProgramRollbackReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"expectedSourceRevision":{"k":"j"}}},"UnsV2StreamProgramRollbackResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudStreamProgramView"},{"r":"CloudPreviewResult"}]}}},"UnsV2SampleAppendResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"Outcome"}}},"UnsV2RecordFindResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudRecordPage"}}},"UnsV2RecordCountResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudCappedCount"}}},"UnsV2RecordAggregatePipelineResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudRecordAggregatePage"}}},"UnsV2RecordExplainResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"matchedCount":{"k":"j"},"sampleIds":{"k":"a","i":{}},"plan":{"k":"o"}}}}},"UnsV2RecordInsertOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"value":{"r":"RecordDocument"}}}}},"UnsV2RecordUpdateOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"value":{"r":"CloudNullableRecordDocument"}}}}},"UnsV2RecordReplaceOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"value":{"r":"CloudNullableRecordDocument"}}}}},"UnsV2RecordDeleteOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"deletedCount":{"k":"j"},"value":{"r":"CloudNullableRecordDocument"}}}}},"UnsV2RecordUpdateManyResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"writeErrors":{"k":"a","i":{"r":"CloudWriteError"}}}}]}}},"UnsV2RecordDeleteManyResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"k":"o","p":{"deletedCount":{"k":"j"},"writeErrors":{"k":"a","i":{"r":"CloudWriteError"}}}}]}}},"UnsV2RecordBulkWriteResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"insertedCount":{"k":"j"},"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"deletedCount":{"k":"j"},"upsertedCount":{"k":"j"},"insertedIds":{"k":"o"},"upsertedIds":{"k":"o"},"nextIndex":{"k":"j"},"unknownUntil":{"k":"j"},"writeErrors":{"k":"a","i":{"r":"CloudWriteError"}}}}}},"UnsV2SampleLatestValuesReq":{"k":"o","p":{"recordIds":{"k":"a","i":{}}}},"UnsV2SampleLatestValuesResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"series":{"k":"a","i":{"k":"o","p":{"sample":{"r":"CloudNullableSampleDocument"}}}}}}}},"UnsV2SampleDeleteRangeResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"deletedCount":{"k":"j"}}}}},"UnsV2RecordChange":{"k":"u","a":[{"k":"o","p":{"update":{"k":"o"},"arrayFilters":{"k":"a","i":{"k":"o"}},"id":{"k":"u","a":[{"r":"UnsV2Identity"}]},"collectionId":{"r":"UnsV2Identity"},"expectedRevision":{"k":"j"},"data":{"k":"o"},"dependsOn":{"k":"a","i":{}},"filter":{"r":"UnsV2DataFilter"},"sort":{"k":"u","a":[{"r":"UnsV2PipelineSort"}]},"operations":{"k":"a","i":{"r":"UnsV2FieldOperation"}},"bindings":{"k":"a","i":{"r":"UnsV2ResultBinding"}},"query":{"r":"UnsV2TransactionQuery"},"lockTokens":{"k":"o"},"conditions":{"k":"a","i":{"r":"UnsV2RecordFilter"}}}},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"},{"k":"o"}]},{"k":"u","a":[{"k":"o"},{"k":"o"}]},{"k":"u","a":[{"k":"o"},{"k":"o"}]},{"k":"o"},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"},{"k":"u","a":[{"k":"o"}]}]},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"}]},{"k":"o"}]},"UnsV2DataFilter":{"k":"o","p":{"$and":{"k":"a","i":{"r":"UnsV2DataFilter"}},"$or":{"k":"a","i":{"r":"UnsV2DataFilter"}},"$nor":{"k":"a","i":{"r":"UnsV2DataFilter"}},"$not":{"r":"UnsV2DataFilter"},"$expr":{"r":"UnsV2PipelineExpression"}},"x":{"k":"u","a":[{"r":"UnsV2FilterScalar"},{"r":"UnsV2FieldPredicate"}]}},"UnsV2FilterScalar":{"k":"u","a":[{"k":"n"}]},"UnsV2ArrayElementFilter":{"k":"o"},"UnsV2FieldComparisons":{"k":"o","p":{"$eq":{"r":"UnsV2FilterScalar"},"$ne":{"r":"UnsV2FilterScalar"},"$gt":{"r":"UnsV2FilterScalar"},"$gte":{"r":"UnsV2FilterScalar"},"$lt":{"r":"UnsV2FilterScalar"},"$lte":{"r":"UnsV2FilterScalar"},"$in":{"k":"a","i":{"r":"UnsV2FilterScalar"}},"$nin":{"k":"a","i":{"r":"UnsV2FilterScalar"}},"$all":{"k":"a","i":{}},"$size":{"k":"j"},"$elemMatch":{"r":"UnsV2ArrayElementFilter"}}},"UnsV2FieldPredicate":{"k":"o","p":{"$eq":{"r":"UnsV2FilterScalar"},"$ne":{"r":"UnsV2FilterScalar"},"$gt":{"r":"UnsV2FilterScalar"},"$gte":{"r":"UnsV2FilterScalar"},"$lt":{"r":"UnsV2FilterScalar"},"$lte":{"r":"UnsV2FilterScalar"},"$in":{"k":"a","i":{"r":"UnsV2FilterScalar"}},"$nin":{"k":"a","i":{"r":"UnsV2FilterScalar"}},"$all":{"k":"a","i":{}},"$size":{"k":"j"},"$elemMatch":{"r":"UnsV2ArrayElementFilter"},"$not":{"r":"UnsV2FieldComparisons"}}},"UnsV2PipelineExpression":{"k":"u","a":[{"r":"UnsV2FilterScalar"},{"k":"o","p":{"$ifNull":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$add":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$subtract":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$multiply":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$divide":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$literal":{"r":"UnsV2FilterScalar"}}},{"k":"o","p":{"$eq":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$ne":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$gt":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$gte":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$lt":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$lte":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$and":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$or":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$not":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$cond":{"k":"u","a":[{"k":"a","i":{"r":"UnsV2PipelineExpression"}},{"k":"o","p":{"if":{"r":"UnsV2PipelineExpression"},"then":{"r":"UnsV2PipelineExpression"},"else":{"r":"UnsV2PipelineExpression"}}}]}}},{"k":"o","p":{"$concat":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$toLower":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$toUpper":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$strLenCP":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$toString":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$toDecimal":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$toLong":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$toBool":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$trim":{"k":"o","p":{"input":{"r":"UnsV2PipelineExpression"},"chars":{"r":"UnsV2PipelineExpression"}}}}},{"k":"o","p":{"$convert":{"k":"o","p":{"input":{"r":"UnsV2PipelineExpression"}}}}},{"k":"o","p":{"$dateTrunc":{"k":"o","p":{"date":{"r":"UnsV2PipelineExpression"},"binSize":{"k":"j"}}}}}]},"UnsV2PipelineAccumulator":{"k":"u","a":[{"k":"o","p":{"$sum":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$avg":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$min":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$max":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$count":{"k":"o"}}}]},"UnsV2PipelineSort":{"k":"a","i":{"k":"a","i":{"k":"u","a":[{"k":"j"}]}}},"UnsV2DistinctBy":{"k":"o"},"UnsV2Distinct":{"k":"o","p":{"by":{"r":"UnsV2DistinctBy"}}},"UnsV2Frequencies":{"k":"o","p":{"by":{"k":"u","a":[{"r":"UnsV2DistinctBy"}]}}},"UnsV2PipelineStage":{"k":"u","a":[{"k":"o","p":{"$match":{"r":"UnsV2DataFilter"}}},{"k":"o","p":{"$project":{"k":"o","x":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$set":{"k":"o","x":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$sort":{"r":"UnsV2PipelineSort"}}},{"k":"o","p":{"$group":{"k":"o","p":{"_id":{"k":"u","a":[{"r":"UnsV2PipelineExpression"},{"k":"o","x":{"r":"UnsV2PipelineExpression"}}]}},"x":{"r":"UnsV2PipelineAccumulator"}}}},{"k":"o","p":{"$distinct":{"r":"UnsV2Distinct"}}},{"k":"o","p":{"$frequencies":{"r":"UnsV2Frequencies"}}},{"k":"o","p":{"$lookup":{"k":"u","a":[{"k":"o","p":{"pipeline":{"k":"a","i":{"r":"UnsV2PipelineStage"}}}},{"k":"o"},{"k":"o"}]}}},{"k":"o","p":{"$unwind":{"k":"u","a":[{"k":"o"}]}}},{"k":"o","p":{"$skip":{"k":"j"}}},{"k":"o","p":{"$limit":{"k":"j"}}},{"k":"o"},{"k":"o"}]},"UnsV2DataDiscoverResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"DiscoveryResult"}}},"UnsV2CollectionDescribeResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CollectionDescription"}}},"UnsV2RecordTransactionExecuteResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"Outcome"}}},"UnsV2NamespaceQuery":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"},"kinds":{"k":"a","i":{}},"ids":{"k":"a","i":{}}}},"UnsV2NamespaceDocumentedRequest":{"k":"o","p":{"queries":{"k":"a","i":{"r":"UnsV2NamespaceQuery"}}}},"UnsV2TopicsQuery":{"k":"o","p":{"include":{"k":"a","i":{}},"records":{"r":"UnsV2Page"},"selectedRecord":{"r":"UnsV2SelectedRecord"}}},"UnsV2TopicsDocumentedRequest":{"k":"o","p":{"queries":{"k":"a","i":{"r":"UnsV2TopicsQuery"}}}},"UnsV2ReferencesQuery":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"},"targets":{"k":"a","i":{"r":"UnsV2ReferenceTarget"}},"relationKinds":{"k":"a","i":{}},"kinds":{"k":"a","i":{}}}},"UnsV2ReferencesDocumentedRequest":{"k":"o","p":{"queries":{"k":"a","i":{"r":"UnsV2ReferencesQuery"}}}},"UnsV2JobsQuery":{"k":"o","p":{"jobIds":{"k":"a","i":{}}}},"UnsV2JobsDocumentedRequest":{"k":"o","p":{"queries":{"k":"a","i":{"r":"UnsV2JobsQuery"}}}},"UnsV2ErrorResponse":{"k":"o","p":{"code":{"k":"j"},"error":{"r":"Fault"}}},"UnsV2RecordFilter":{"k":"o"},"UnsV2RecordGetReq":{"k":"o","p":{"ids":{"k":"a","i":{}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},"UnsV2RecordGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudRecordGetResult"}}},"UnsV2SampleAppendReq":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"time":{"k":"j"},"data":{"k":"o"}}}}}},"UnsV2RecordFindReq":{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}},"limit":{"k":"j"},"count":{"r":"CloudRecordTotalOption"}}}]},"UnsV2RecordCountReq":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"maxCount":{"k":"j"}}},"UnsV2RecordAggregatePipelineReq":{"k":"u","a":[{"k":"o","p":{"pipeline":{"k":"a","i":{"r":"UnsV2PipelineStage"}},"limit":{"k":"j"},"page":{"r":"UnsV2PipelinePage"},"count":{"r":"CloudRecordTotalOption"}}}]},"UnsV2RecordExplainReq":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"limit":{"k":"j"}}},"UnsV2RecordInsertOneReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"data":{"k":"o"},"assertLocks":{"k":"a","i":{"k":"o"}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]}]},"UnsV2RecordUpdateOneReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"update":{"k":"o"},"arrayFilters":{"k":"a","i":{"k":"o"}},"assertLocks":{"k":"a","i":{"k":"o"}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]}]},"UnsV2RecordReplaceOneReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"replacement":{"k":"o"},"assertLocks":{"k":"a","i":{"k":"o"}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]}]},"UnsV2RecordDeleteOneReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"assertLocks":{"k":"a","i":{"k":"o"}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]}]},"UnsV2RecordUpdateManyReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"filter":{"r":"UnsV2DataFilter"},"update":{"k":"o"},"arrayFilters":{"k":"a","i":{"k":"o"}},"maxDocs":{"k":"j"},"assertLocks":{"k":"a","i":{"k":"o"}},"lockTokens":{"k":"o"}}},"UnsV2RecordDeleteManyReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"filter":{"r":"UnsV2DataFilter"},"maxDocs":{"k":"j"},"assertLocks":{"k":"a","i":{"k":"o"}},"lockTokens":{"k":"o"}}},"UnsV2RecordBulkWriteReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"operations":{"k":"a","i":{"k":"u","a":[{"k":"o","p":{"insertOne":{"k":"o","p":{"data":{"k":"o"}}}}},{"k":"o","p":{"updateOne":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"update":{"k":"o"},"arrayFilters":{"k":"a","i":{"k":"o"}}}}}},{"k":"o","p":{"replaceOne":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"replacement":{"k":"o"}}}}},{"k":"o","p":{"deleteOne":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"}}}}}]}},"assertLocks":{"k":"a","i":{"k":"o"}},"lockTokens":{"k":"o"}}},"UnsV2SampleDeleteRangeReq":{"k":"o","p":{"recordIds":{"k":"a","i":{}},"from":{"k":"j"},"to":{"k":"j"}}},"CloudSourceConfig":{"k":"u","a":[{"k":"o","p":{"configVersion":{"k":"j"},"options":{"k":"o"},"auth":{"k":"o"},"tls":{"k":"o"}}},{"k":"o","p":{"auth":{"k":"o"},"configVersion":{"k":"j"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"configVersion":{"k":"j"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"configVersion":{"k":"j"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"configVersion":{"k":"j"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"configVersion":{"k":"j"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"configVersion":{"k":"j"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"configVersion":{"k":"j"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"configVersion":{"k":"j"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"configVersion":{"k":"j"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"configVersion":{"k":"j"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"configVersion":{"k":"j"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}}]},"CloudSourceDocument":{"k":"o","p":{"config":{"r":"CloudSourceConfig"}}},"CloudControlDefinition":{"k":"o","p":{"inputSchema":{"k":"o"},"outputSchema":{"k":"o"},"timeoutMs":{"k":"j"}}},"CloudStreamScript":{"k":"o","p":{"timeoutMs":{"k":"j"}}},"CloudSourceBinding":{"k":"o","p":{"configRevision":{"k":"j"},"resources":{"k":"a","i":{}},"acquisition":{"k":"o"}}},"CloudStreamEntry":{"k":"o","p":{"config":{"k":"o"},"control":{"r":"CloudControlDefinition"}}},"CloudStreamDocument":{"k":"o","p":{"script":{"r":"CloudStreamScript"},"sources":{"k":"a","i":{"r":"CloudSourceBinding"}},"entries":{"k":"a","i":{"r":"CloudStreamEntry"}}}},"CloudSourceDocumentView":{"k":"o","p":{"revision":{"k":"j"},"document":{"r":"CloudSourceDocument"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudStreamDocumentView":{"k":"o","p":{"revision":{"k":"j"},"document":{"r":"CloudStreamDocument"},"activeDocument":{"r":"CloudStreamDocument"},"activeRelease":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudSourceDeleteReq":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"expectedRevision":{"k":"j"}}}}}},"CloudSourceDeleteResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"Outcome"}}},"CloudStreamProgramListReq":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"CloudStreamProgramListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"list":{"k":"a","i":{"r":"CloudStreamProgramSummary"}},"total":{"k":"j"},"page":{"k":"j"},"size":{"k":"j"},"nextPage":{"k":"j"}}}}},"CloudStreamProgramDeleteReq":{"k":"o","p":{"expectedRevision":{"k":"j"}}},"CloudStreamProgramDeleteResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"k":"o","p":{"revision":{"k":"j"}}},{"r":"CloudPreviewResult"}]}}},"CloudControlDiscoverReq":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"CloudControlDiscoverResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"list":{"k":"a","i":{"r":"CloudControlDefinition"}},"total":{"k":"j"},"page":{"k":"j"},"size":{"k":"j"},"nextPage":{"k":"j"}}}}},"CloudControlDescribeReq":{"k":"o"},"CloudControlDescribeResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudControlDefinition"}}},"CloudControlInvokeReq":{"k":"o"},"CloudControlInvokeResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"k":"o"},{"r":"CloudPreviewResult"}]}}},"CloudSourceDocumentGetReq":{"k":"o"},"CloudSourceDocumentGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudSourceDocumentView"},{"r":"CloudSourceDocumentSummary"}]}}},"CloudSourceDocumentCreateReq":{"k":"u","a":[{"k":"o","p":{"document":{"r":"CloudSourceDocument"},"credentials":{"r":"CloudSourceCreateCredentials"},"items":{"k":"a","i":{"k":"o","p":{"document":{"r":"CloudSourceDocument"}}}}}},{"k":"u","a":[{"k":"o","p":{"document":{"k":"o"}}}]}]},"CloudSourceDocumentCreateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudSourceDocumentView"},{"r":"CloudPreviewResult"},{"r":"Outcome"}]}}},"CloudSourceDocumentUpdateReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"document":{"r":"CloudSourceDocument"},"patch":{"r":"CloudSourceDocumentPatch"},"items":{"k":"a","i":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"document":{"r":"CloudSourceDocument"},"patch":{"r":"CloudSourceDocumentPatch"}}}]}}}}]},"CloudSourceDocumentUpdateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudSourceDocumentView"},{"r":"CloudPreviewResult"},{"r":"Outcome"}]}}},"CloudStreamDocumentGetReq":{"k":"o"},"CloudStreamDocumentGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudStreamDocumentView"},{"r":"CloudStreamDocumentSummary"}]}}},"CloudStreamDocumentCreateReq":{"k":"u","a":[{"k":"o","p":{"document":{"r":"CloudStreamDocument"},"program":{"r":"RuntimeStreamDefinition"},"expectedSourceRevision":{"k":"j"}}}]},"CloudStreamDocumentCreateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudStreamDocumentView"},{"r":"CloudPreviewResult"}]}}},"CloudStreamDocumentUpdateReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"document":{"r":"CloudStreamDocument"},"program":{"r":"RuntimeStreamDefinition"},"expectedSourceRevision":{"k":"j"}}}]},"CloudStreamDocumentUpdateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudStreamDocumentView"},{"r":"CloudPreviewResult"}]}}},"CloudPreviewResult":{"k":"o"},"CloudSourceDocumentListReq":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"CloudSourceDocumentListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"list":{"k":"a","i":{"k":"u","a":[{"r":"CloudSourceDocumentView"},{"r":"CloudSourceSummaryView"}]}},"total":{"k":"j"},"page":{"k":"j"},"size":{"k":"j"},"nextPage":{"k":"j"}}}}},"CloudStreamDocumentDisableReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"expectedActiveRelease":{"k":"j"}}},"CloudStreamDocumentDisableResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudStreamStopView"},{"r":"CloudPreviewResult"}]}}},"CloudStreamDocumentValidateReq":{"k":"u","a":[{"k":"o","p":{"document":{"r":"CloudStreamDocument"},"program":{"r":"RuntimeStreamDefinition"},"expectedSourceRevision":{"k":"j"}}}]},"CloudStreamDocumentValidateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"issues":{"k":"a","i":{"k":"o"}},"normalizedDocument":{"r":"CloudStreamDocument"}}}}},"CloudSourceSummaryView":{"k":"o","p":{"revision":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudStreamProgramSummary":{"k":"o","p":{"revision":{"k":"j"},"activeRelease":{"k":"j"},"document":{"k":"o"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudSourceImpactReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"document":{"r":"CloudSourceDocument"},"offset":{"k":"j"},"size":{"k":"j"},"patch":{"r":"CloudSourceDocumentPatch"}}},{"k":"u","a":[{"k":"o"}]},{"k":"o"}]},"CloudSourceHistoryReq":{"k":"o","p":{"beforeRevision":{"k":"j"},"size":{"k":"j"}}},"CloudSourceImpactResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"sourceRevision":{"k":"j"},"complete":{"k":"j"},"counts":{"k":"o","p":{"draft":{"k":"j"},"activeRelease":{"k":"j"},"historicalRelease":{"k":"j"}}},"restrictedCount":{"k":"j"},"references":{"k":"a","i":{"k":"o","p":{"streamRevision":{"k":"j"},"release":{"k":"j"},"configRevision":{"k":"j"},"streamDeleted":{"k":"j"},"parentMissing":{"k":"j"}}}},"nextOffset":{"k":"j"},"expiresAt":{"k":"j"}}}}},"CloudSourceHistoryResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"currentRevision":{"k":"j"},"deleted":{"k":"j"},"total":{"k":"j"},"missingRevisionCount":{"k":"j"},"nextBeforeRevision":{"k":"j"},"revisions":{"k":"a","i":{"k":"o","p":{"revision":{"k":"j"},"createdTime":{"k":"j"}}}}}}}},"CloudStreamStopView":{"k":"o","p":{"revision":{"k":"j"},"activeRelease":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudSourceObservationsGetReq":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"expectedRevision":{"k":"j"}}}}}},"CloudSourceObservationsGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"revision":{"k":"j"},"acceptedCaptures":{"k":"j"},"committedWrites":{"k":"j"},"failedRuns":{"k":"j"},"lastDataAt":{"k":"i"}}}},"window":{"k":"o","p":{"from":{"k":"i"},"to":{"k":"i"}}},"checkedAt":{"k":"i"}}}}},"CloudStreamObservationGetReq":{"k":"o"},"CloudStreamObservationGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"revision":{"k":"j"},"stats":{"k":"o","p":{"admitted":{"k":"j"},"completed":{"k":"j"},"failed":{"k":"j"},"unknown":{"k":"j"},"pending":{"k":"j"},"durationSamples":{"k":"j"},"successRate":{"k":"n"},"averageDurationMs":{"k":"n"}}},"window":{"k":"o","p":{"from":{"k":"i"},"to":{"k":"i"}}},"checkedAt":{"k":"i"}}}}},"CloudStreamRunsListReq":{"k":"o","p":{"size":{"k":"j"}}},"CloudStreamRunsListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"createdAt":{"k":"i"},"finishedAt":{"k":"i"},"durationMs":{"k":"n"}}}},"checkedAt":{"k":"i"}}}}},"CloudStreamSampleTestReq":{"k":"o","p":{"document":{"r":"CloudStreamDocument"}}},"CloudStreamSampleTestResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"writePreview":{"k":"a","i":{"k":"o"}},"logs":{"k":"a","i":{"k":"o"}},"durationMs":{"k":"j"}}}}},"CloudAppDataGrant":{"k":"o","p":{"permissions":{"k":"a","i":{}},"dataRule":{"r":"CloudAppDataRule"}}},"CloudAppDataPolicyGetReq":{"k":"o"},"CloudAppDataPolicyUpdateReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"collections":{"k":"a","i":{"r":"CloudAppDataGrant"}},"changes":{"k":"a","i":{"r":"CloudAppDataGrantChange"}}}}]},"CloudAppDataPolicy":{"k":"o","p":{"revision":{"k":"j"},"collections":{"k":"a","i":{"r":"CloudAppDataGrant"}}}},"CloudAppDataPolicyGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudAppDataPolicy"}}},"CloudAppDataPolicyMutationResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"Outcome"}}},"CloudDataAppContextReq":{"k":"o"},"CloudDataAppContextResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"AppContext"}}},"CloudHostedAppControlPolicyGetReq":{"k":"o"},"CloudHostedAppControlPolicyUpdateReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"platformPermissions":{"k":"a","i":{}}}},"CloudHostedAppControlPolicy":{"k":"o","p":{"revision":{"k":"j"},"platformPermissions":{"k":"a","i":{}}}},"CloudHostedAppControlPolicyGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudHostedAppControlPolicy"}}},"CloudHostedAppControlPolicyMutationResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"Outcome"}}},"CloudAppDataRuleTransition":{"k":"o"},"CloudAppDataRulePrincipal":{"k":"o","p":{"permissions":{"k":"a","i":{}},"readFields":{"k":"a","i":{}},"writeFields":{"k":"a","i":{}},"writeStates":{"k":"a","i":{}},"transitions":{"k":"a","i":{"r":"CloudAppDataRuleTransition"}}}},"CloudAppDataRule":{"k":"o","p":{"principals":{"k":"a","i":{"r":"CloudAppDataRulePrincipal"}}}},"CloudAppCollectionDeclaration":{"k":"o","p":{"recordSchema":{"r":"Schema"},"indexes":{"k":"a","i":{"r":"IndexSpec"}}}},"CloudAppCollectionsEnsureReq":{"k":"o","p":{"collections":{"k":"a","i":{"r":"CloudAppCollectionDeclaration"}}}},"CloudAppCollectionSchemaNote":{"k":"o"},"CloudAppCollectionWarning":{"k":"o"},"CloudAppCollectionEnsureResult":{"k":"o","p":{"revision":{"k":"j"},"ignored":{"k":"a","i":{"r":"CloudAppCollectionSchemaNote"}},"warnings":{"k":"a","i":{"r":"CloudAppCollectionWarning"}},"indexStatus":{"k":"a","i":{"r":"IndexState"}}}},"CloudAppCollectionsEnsureResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"results":{"k":"a","i":{"r":"CloudAppCollectionEnsureResult"}}}}}},"CloudAppCollectionsSchemaReplaceReq":{"k":"o","p":{"recordSchema":{"r":"Schema"},"indexes":{"k":"a","i":{"r":"IndexSpec"}},"expectedRevision":{"k":"j"}}},"CloudAppCollectionRetired":{"k":"o","p":{"paths":{"k":"a","i":{}},"enumValues":{"k":"a","i":{"k":"o","p":{"values":{"k":"a","i":{}}}}}}},"CloudAppCollectionsSchemaReplaceResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"revision":{"k":"j"},"retired":{"r":"CloudAppCollectionRetired"},"checkedRecords":{"k":"j"},"warnings":{"k":"a","i":{"r":"CloudAppCollectionWarning"}},"indexStatus":{"k":"a","i":{"r":"IndexState"}}}}}},"CloudAppCollectionAliasReq":{"k":"o"},"CloudAppCollectionStateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"revision":{"k":"j"}}}}},"CloudAppCollectionsListReq":{"k":"o"},"CloudAppCollectionView":{"k":"o","p":{"recordSchema":{"r":"Schema"},"indexes":{"k":"a","i":{"r":"IndexSpec"}},"indexStatus":{"k":"a","i":{"r":"IndexState"}},"retired":{"r":"CloudAppCollectionRetired"},"revision":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudAppCollectionsListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"collections":{"k":"a","i":{"r":"CloudAppCollectionView"}}}}}},"CloudRecordSubscribeReq":{"k":"u","a":[{"k":"o","p":{"collectionIds":{"k":"a","i":{}},"recordIds":{"k":"a","i":{}},"waitMs":{"k":"j"},"limit":{"k":"j"}}},{"k":"u","a":[{"k":"o"}]}]},"CloudRecordChangeEvent":{"k":"o","p":{"revision":{"k":"j"},"occurredAt":{"k":"j"}}},"CloudRecordSubscribeReset":{"k":"o"},"CloudRecordSubscribeResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"events":{"k":"a","i":{"r":"CloudRecordChangeEvent"}},"reset":{"k":"u","a":[{"r":"CloudRecordSubscribeReset"}]}}}}},"CloudControlGrantGetReq":{"k":"o"},"CloudControlGrantTargetRevision":{"k":"o","p":{"revision":{"k":"j"}}},"CloudControlGrantSetReq":{"k":"u","a":[{"k":"o","p":{"active":{"k":"j"},"expectedCodeRevision":{"k":"j"},"actions":{"k":"a","i":{}},"targetRevisions":{"k":"a","i":{"r":"CloudControlGrantTargetRevision"}}}}]},"CloudControlGrantTargetInfo":{"k":"o","p":{"revision":{"k":"j"},"active":{"k":"j"},"current":{"k":"j"}}},"CloudControlGrantInfo":{"k":"o","p":{"recipientEligible":{"k":"j"},"recipientActions":{"k":"a","i":{}},"registered":{"k":"j"},"active":{"k":"j"},"revision":{"k":"j"},"actions":{"k":"a","i":{}},"targets":{"k":"a","i":{"r":"CloudControlGrantTargetInfo"}},"createdTime":{"k":"j"},"updatedTime":{"k":"j"},"activationSupported":{"k":"j"}}},"CloudControlGrantMutation":{"k":"o","p":{"revision":{"k":"j"},"active":{"k":"j"}}},"CloudControlGrantGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudControlGrantInfo"}}},"CloudControlGrantSetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudControlGrantMutation"}}},"CloudAppDataGrantChange":{"k":"u","a":[{"k":"o","p":{"permissions":{"k":"a","i":{}},"dataRule":{"k":"u","a":[{"r":"CloudAppDataRule"}]}}},{"k":"u","a":[{"k":"o"},{"k":"o"}]}]},"CloudAppStreamAccessListReq":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"},"includeInactive":{"k":"j"}}},"CloudAppStreamAccessItem":{"k":"o","p":{"actions":{"k":"a","i":{}},"configuredActive":{"k":"j"},"blockedReasons":{"k":"a","i":{}},"revision":{"k":"j"}}},"CloudAppStreamAccessPage":{"k":"o","p":{"items":{"k":"a","i":{"r":"CloudAppStreamAccessItem"}},"page":{"k":"j"},"size":{"k":"j"},"total":{"k":"j"}}},"CloudAppStreamAccessListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudAppStreamAccessPage"}}},"CloudSourceDiscoverReq":{"k":"o","p":{"expectedRevision":{"k":"j"}}},"CloudSourceDiscoverResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"revision":{"k":"j"},"resources":{"k":"a","i":{"k":"o"}}}}}},"UnsV2SampleFindReq":{"k":"u","a":[{"k":"o","p":{"recordIds":{"k":"a","i":{}},"from":{"k":"j"},"to":{"k":"j"},"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}},"limit":{"k":"j"},"page":{"r":"UnsV2PipelinePage"}}}]},"UnsV2SampleFindResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudSamplePage"}}},"UnsV2SampleAggregateReq":{"k":"u","a":[{"k":"o","p":{"recordIds":{"k":"a","i":{}},"from":{"k":"j"},"to":{"k":"j"},"pipeline":{"k":"a","i":{"r":"UnsV2PipelineStage"}},"limit":{"k":"j"},"page":{"r":"UnsV2PipelinePage"}}}]},"UnsV2SampleAggregateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudDataPage"}}},"UnsV2RecordLockReq":{"k":"u","a":[{"k":"o","p":{"ids":{"k":"a","i":{}},"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"limit":{"k":"j"},"ttlMs":{"k":"j"}}}]},"UnsV2RecordLockResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"locks":{"k":"a","i":{"r":"CloudRecordLeaseGrant"}}}}}},"UnsV2RecordRenewReq":{"k":"o","p":{"locks":{"k":"a","i":{"k":"o"}},"ttlMs":{"k":"j"}}},"UnsV2RecordRenewResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"locks":{"k":"a","i":{"k":"o","p":{"expiresAt":{"k":"j"}}}}}}}},"UnsV2RecordUnlockReq":{"k":"u","a":[{"k":"o","p":{"locks":{"k":"a","i":{"k":"o"}},"ids":{"k":"a","i":{}}}},{"k":"o"},{"k":"o"}]},"UnsV2RecordUnlockResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"unlockedCount":{"k":"j"}}}}},"UnsV2RecordRestoreReq":{"k":"o","p":{"ids":{"k":"a","i":{}}}},"UnsV2RecordRestoreResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"restoredCount":{"k":"j"},"restoredIds":{"k":"a","i":{}}}}}},"CloudRecordTotalOption":{"k":"o","p":{"max":{"k":"j"}}},"CloudAppCreateCapability":{"k":"o","p":{"appRevision":{"k":"j"},"collectionRevision":{"k":"j"},"inputSchema":{"r":"Schema"}}},"CloudDataPage":{"k":"o","p":{"items":{"k":"a","i":{"k":"o"}},"pageInfo":{"r":"CloudPageInfo"}}},"CloudRecordLockView":{"k":"o","p":{"expiresAt":{"k":"j"},"fence":{"k":"j"},"since":{"k":"j"}}},"CloudNullableRecordDocument":{"k":"o","p":{"data":{"k":"o"},"revision":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"},"sourceTime":{"k":"j"},"lock":{"r":"CloudRecordLockView"}}},"SampleDocument":{"k":"o","p":{"time":{"k":"j"},"receivedAt":{"k":"j"},"data":{"k":"o"}}},"CloudNullableSampleDocument":{"k":"o","p":{"time":{"k":"j"},"receivedAt":{"k":"j"},"data":{"k":"o"}}},"CloudPageInfo":{"k":"o","p":{"nextPage":{"k":"j"}}},"CloudCappedCount":{"k":"o","p":{"count":{"k":"j"}}},"CloudRecordPage":{"k":"o","p":{"items":{"k":"a","i":{"r":"RecordDocument"}},"pageInfo":{"r":"CloudPageInfo"},"total":{"r":"CloudCappedCount"}}},"CloudSamplePage":{"k":"o","p":{"items":{"k":"a","i":{"r":"SampleDocument"}},"pageInfo":{"r":"CloudPageInfo"}}},"CloudRecordAggregatePage":{"k":"o","p":{"items":{"k":"a","i":{"k":"o"}},"pageInfo":{"r":"CloudPageInfo"},"total":{"r":"CloudCappedCount"}}},"CloudDistinctResult":{"k":"o","p":{"values":{"k":"a","i":{}},"pageInfo":{"r":"CloudPageInfo"}}},"CloudRecordGetResult":{"k":"o","p":{"items":{"k":"a","i":{"r":"RecordDocument"}},"missing":{"k":"a","i":{}}}},"CloudDistinctPage":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"CloudWriteError":{"k":"o","p":{"index":{"k":"j"},"error":{"r":"Fault"}}},"CloudRecordLeaseGrant":{"k":"o","p":{"expiresAt":{"k":"j"},"fence":{"k":"j"},"record":{"r":"RecordDocument"}}},"CloudRecordBatchQuery":{"k":"u","a":[{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}},"limit":{"k":"j"},"count":{"r":"CloudRecordTotalOption"}}}]},{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"maxCount":{"k":"j"}}},{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"limit":{"k":"j"},"page":{"r":"CloudDistinctPage"}}}]},{"k":"u","a":[{"k":"o","p":{"pipeline":{"k":"a","i":{"r":"UnsV2PipelineStage"}},"limit":{"k":"j"},"page":{"r":"UnsV2PipelinePage"},"count":{"r":"CloudRecordTotalOption"}}}]},{"k":"o","p":{"ids":{"k":"a","i":{}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}}]},"CloudRecordBatchQueryResult":{"k":"u","a":[{"k":"o","p":{"data":{"k":"u","a":[{"r":"CloudRecordPage"},{"r":"CloudCappedCount"},{"r":"CloudDistinctResult"},{"r":"CloudRecordAggregatePage"},{"r":"CloudRecordGetResult"}]}}},{"k":"o","p":{"error":{"r":"Fault"}}}]},"UnsV2RecordQueryBatchReq":{"k":"o","p":{"queries":{"k":"a","i":{"r":"CloudRecordBatchQuery"}}}},"UnsV2RecordQueryBatchResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"results":{"k":"o","x":{"r":"CloudRecordBatchQueryResult"}}}}}},"CloudStreamProgramView":{"k":"o","p":{"revision":{"k":"j"},"activeRelease":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"},"document":{"k":"o","p":{"timeoutMs":{"k":"j"}}}}},"CloudSourceCreateCredentials":{"k":"u","a":[{"k":"o","p":{"material":{"k":"o"}}},{"k":"o","p":{"material":{"k":"o"}}},{"k":"o","p":{"material":{"k":"o"}}},{"k":"o","p":{"material":{"k":"o"}}}]},"UnsV2MetadataFindReq":{"k":"u","a":[{"k":"o","p":{"kinds":{"k":"a","i":{}},"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}},"page":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"limit":{"k":"j"}}}]},"UnsV2MetadataFindResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"MetadataPage"}}},"UnsV2MetadataCountReq":{"k":"u","a":[{"k":"o","p":{"kinds":{"k":"a","i":{}},"filter":{"r":"UnsV2DataFilter"}}}]},"UnsV2MetadataCountResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"count":{"k":"j"}}}}},"UnsV2MetadataAggregateReq":{"k":"u","a":[{"k":"o","p":{"kinds":{"k":"a","i":{}},"filter":{"r":"UnsV2DataFilter"},"pipeline":{"k":"a","i":{"k":"u","a":[{"k":"o","p":{"$match":{"k":"o"}}},{"k":"o","p":{"$project":{"k":"o"}}},{"k":"o","p":{"$group":{"k":"o"}}},{"k":"o","p":{"$sort":{"r":"UnsV2PipelineSort"}}},{"k":"o","p":{"$skip":{"k":"j"}}},{"k":"o","p":{"$limit":{"k":"j"}}},{"k":"o"}]}},"page":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"limit":{"k":"j"}}}]},"UnsV2MetadataAggregateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"items":{"k":"a","i":{"k":"o"}},"pageInfo":{"r":"CloudPageInfo"}}}}},"UnsV2MetadataInsertOneReq":{"k":"u","a":[{"k":"o","p":{"data":{"k":"o"}}},{"k":"u","a":[{"k":"o"}]},{"k":"o","p":{"data":{"r":"MetadataDirectoryInput"}}},{"k":"o","p":{"data":{"r":"MetadataTopicInput"}}},{"k":"o","p":{"data":{"r":"MetadataCollectionInput"}}}]},"UnsV2MetadataInsertOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o"}}},"UnsV2MetadataUpdateOneReq":{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"expectedRevision":{"k":"j"},"update":{"k":"o","p":{"$set":{"k":"o"},"$unset":{"k":"o"},"$setOnInsert":{"k":"o"}}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]}]},"UnsV2MetadataUpdateOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"value":{"r":"MetadataNullableDocument"}}}}},"UnsV2MetadataReplaceOneReq":{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"expectedRevision":{"k":"j"},"replacement":{"k":"o"},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]},{"k":"o","p":{"replacement":{"r":"MetadataDirectoryInput"}}},{"k":"o","p":{"replacement":{"r":"MetadataTopicInput"}}},{"k":"o","p":{"replacement":{"r":"MetadataCollectionInput"}}}]},"UnsV2MetadataReplaceOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"value":{"r":"MetadataNullableDocument"}}}}},"UnsV2MetadataDeleteOneReq":{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"expectedRevision":{"k":"j"},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]}]},"UnsV2MetadataDeleteOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"deletedCount":{"k":"j"},"value":{"r":"MetadataNullableDocument"}}}}},"UnsV2MetadataUpdateManyReq":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"update":{"k":"o","p":{"$set":{"k":"o"},"$unset":{"k":"o"},"$setOnInsert":{"k":"o"}}},"maxDocs":{"k":"j"}}},"UnsV2MetadataUpdateManyResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"results":{"k":"a","i":{"r":"MetadataBulkResult"}},"errors":{"k":"a","i":{"k":"o","p":{"index":{"k":"j"},"error":{"r":"Fault"}}}}}}}},"UnsV2MetadataDeleteManyReq":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"maxDocs":{"k":"j"}}},"UnsV2MetadataDeleteManyResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"deletedCount":{"k":"j"},"results":{"k":"a","i":{"r":"MetadataBulkResult"}},"errors":{"k":"a","i":{"k":"o","p":{"index":{"k":"j"},"error":{"r":"Fault"}}}}}}}},"UnsV2MetadataRestoreReq":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"expectedRevision":{"k":"j"}}}}}},"UnsV2MetadataRestoreResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"restoredCount":{"k":"j"},"items":{"k":"a","i":{"r":"MetadataDocument"}}}}}},"UnsV2MetadataBulkWriteReq":{"k":"o","p":{"operations":{"k":"a","i":{"k":"u","a":[{"k":"o","p":{"insertOne":{"r":"MetadataBulkInsertOne"}}},{"k":"o","p":{"updateOne":{"r":"MetadataBulkUpdateOne"}}},{"k":"o","p":{"replaceOne":{"r":"MetadataBulkReplaceOne"}}},{"k":"o","p":{"deleteOne":{"r":"MetadataBulkDeleteOne"}}},{"k":"o","p":{"restoreOne":{"r":"MetadataBulkRestoreOne"}}}]}}}},"UnsV2MetadataBulkWriteResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"insertedCount":{"k":"j"},"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"deletedCount":{"k":"j"},"restoredCount":{"k":"j"},"upsertedCount":{"k":"j"},"insertedIds":{"k":"o"},"upsertedIds":{"k":"o"},"results":{"k":"a","i":{"r":"MetadataBulkResult"}},"errors":{"k":"a","i":{"k":"o","p":{"index":{"k":"j"},"error":{"r":"Fault"}}}},"nextIndex":{"k":"j"},"unknownUntil":{"k":"j"}}}}},"UnsV2MetadataTransactReq":{"k":"o","p":{"operations":{"k":"a","i":{"r":"MetadataTransactionOperation"}}}},"UnsV2MetadataTransactResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"results":{"k":"a","i":{"r":"MetadataTransactionResult"}}}}}},"CloudCollectionTTL":{"k":"o","p":{"expireAfterSeconds":{"k":"j"}}},"CloudAppDataLimits":{"k":"o","p":{"count":{"k":"o","p":{"defaultMax":{"k":"j"},"max":{"k":"j"}}},"total":{"k":"o","p":{"defaultMax":{"k":"j"},"max":{"k":"j"}}},"queryBatch":{"k":"o","p":{"maxQueries":{"k":"j"},"maxRows":{"k":"j"},"maxBytes":{"k":"j"}}},"get":{"k":"o","p":{"maxIds":{"k":"j"}}},"subscribe":{"k":"o","p":{"maxCollections":{"k":"j"},"maxRecordIds":{"k":"j"},"heartbeatMs":{"k":"j"},"retentionMs":{"k":"j"}}},"ttl":{"k":"o","p":{"minSeconds":{"k":"j"},"maxSeconds":{"k":"j"},"maxPerCollection":{"k":"j"}}},"concurrency":{"k":"o","p":{"reads":{"k":"j"},"writes":{"k":"j"},"queueMs":{"k":"j"}}},"idempotencyWindowMs":{"k":"j"}}},"ErrorRetry":{"k":"o","p":{"afterMs":{"k":"j"}}},"MetadataDocument":{"k":"o","p":{"revision":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"},"deletedAt":{"k":"j"},"data":{"k":"o"}}},"MetadataNullableDocument":{"k":"u","a":[{"r":"MetadataDocument"}]},"MetadataPage":{"k":"o","p":{"items":{"k":"a","i":{"r":"MetadataDocument"}},"pageInfo":{"r":"CloudPageInfo"}}},"MetadataDirectoryInput":{"k":"o","p":{"parentId":{"k":"u","a":[{"r":"UnsV2Identity"}]},"schemaVersion":{"k":"j"}}},"MetadataTopicInput":{"k":"o","p":{"collectionId":{"r":"UnsV2Identity"},"fields":{"k":"a","i":{"r":"FieldBinding"}},"parentId":{"k":"u","a":[{"r":"UnsV2Identity"}]},"schemaVersion":{"k":"j"}}},"MetadataCollectionInput":{"k":"o","p":{"indexes":{"k":"a","i":{"r":"IndexSpec"}},"recordSchema":{"r":"Schema"},"sampleSchema":{"r":"Schema"},"schemaVersion":{"k":"j"},"semantics":{"r":"CollectionSemantics"},"parentId":{"k":"u","a":[{"r":"UnsV2Identity"}]}}},"MetadataBulkResult":{"k":"o","p":{"index":{"k":"j"},"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"deletedCount":{"k":"j"},"restoredCount":{"k":"j"},"value":{"r":"MetadataNullableDocument"},"error":{"r":"Fault"}}},"MetadataTransactionResult":{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"deletedCount":{"k":"j"},"restoredCount":{"k":"j"},"value":{"r":"MetadataNullableDocument"}}},"MetadataBulkInsertOne":{"k":"o","p":{"data":{"k":"o"}}},"MetadataBulkUpdateOne":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"expectedRevision":{"k":"j"},"update":{"k":"o","p":{"$set":{"k":"o"},"$unset":{"k":"o"},"$setOnInsert":{"k":"o"}}}}},"MetadataBulkReplaceOne":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"expectedRevision":{"k":"j"},"replacement":{"k":"o"}}},"MetadataBulkDeleteOne":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"expectedRevision":{"k":"j"}}},"MetadataBulkRestoreOne":{"k":"o","p":{"expectedRevision":{"k":"j"}}},"MetadataTransactionOperation":{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"data":{"k":"o"},"update":{"k":"o","p":{"$set":{"k":"o"},"$unset":{"k":"o"},"$setOnInsert":{"k":"o"}}},"replacement":{"k":"o"},"expectedRevision":{"k":"j"},"dependsOn":{"k":"a","i":{}}}},{"k":"u","a":[{"k":"o","p":{"data":{"r":"MetadataDirectoryInput"},"replacement":{"r":"MetadataDirectoryInput"}}},{"k":"o","p":{"data":{"r":"MetadataTopicInput"},"replacement":{"r":"MetadataTopicInput"}}},{"k":"o","p":{"data":{"r":"MetadataCollectionInput"},"replacement":{"r":"MetadataCollectionInput"}}}]},{"k":"o"},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"}]},{"k":"o"}]},"CloudSourceDocumentPatch":{"k":"o","p":{"config":{"r":"CloudSourceConfig"}}},"CloudSourceDocumentSummary":{"k":"o","p":{"revision":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudStreamDocumentSummary":{"k":"o","p":{"revision":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"},"activeRelease":{"k":"j"}}}} as const;
+export const UNS_V2_CODEC_SCHEMAS = {"UnsV2CatalogReq":{"k":"o"},"UnsV2TransactionQuery":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"limit":{"k":"j"},"expectCount":{"r":"UnsV2QueryCountExpectation"}}},"UnsV2QueryCountExpectation":{"k":"u","a":[{"k":"o","p":{"min":{"k":"j"},"max":{"k":"j"}}}]},"UnsV2FieldOperation":{"k":"u","a":[{"k":"o"},{"k":"o"},{"k":"o","p":{"value":{"k":"a","i":{}}}},{"k":"o"}]},"UnsV2ResultBinding":{"k":"o"},"UnsV2Page":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"UnsV2TimeRange":{"k":"o","p":{"from":{"k":"j"},"to":{"k":"j"}}},"UnsV2History":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"},"timeRange":{"r":"UnsV2TimeRange"}}},"UnsV2SelectedRecord":{"k":"o","p":{"history":{"r":"UnsV2History"}}},"UnsV2ReferenceTarget":{"k":"o"},"UnsV2PipelinePage":{"k":"u","a":[{"k":"o","p":{"size":{"k":"j"},"page":{"k":"j"}}},{"k":"u","a":[{"k":"o"},{"k":"o"}]}]},"UnsV2Envelope":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"Outcome"},{"r":"AppContext"},{"r":"AppKeyCreated"},{"r":"AppKeyRevoked"},{"k":"o","p":{"results":{"k":"a","i":{"k":"o"}}}},{"k":"o","p":{"capabilities":{"k":"o"}}}]}}},"UnsV2DiscoverySearchReq":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"UnsV2CollectionDescribeReq":{"k":"o"},"UnsV2RecordTransactionReq":{"k":"o","p":{"items":{"k":"a","i":{"r":"UnsV2RecordChange"}},"assertLocks":{"k":"a","i":{"k":"o"}}}},"UnsV2Identity":{"k":"u","a":[{"k":"o"}]},"AppCollectionContext":{"k":"o","p":{"indexes":{"k":"a","i":{"r":"IndexSpec"}},"permissions":{"k":"a","i":{}},"recordSchema":{"r":"Schema"},"sampleSchema":{"r":"Schema"},"createCapability":{"r":"CloudAppCreateCapability"},"revision":{"k":"j"},"indexStatus":{"k":"a","i":{"r":"IndexState"}},"ttl":{"k":"u","a":[{"r":"CloudCollectionTTL"}]}}},"AppContext":{"k":"o","p":{"collections":{"k":"a","i":{"r":"AppCollectionContext"}},"platformPermissions":{"k":"a","i":{}},"revision":{"k":"j"},"limits":{"r":"CloudAppDataLimits"}}},"AppKeyCreated":{"k":"o","p":{"resourceKeys":{"k":"a","i":{}}}},"AppKeyRevoked":{"k":"o"},"CollectionDescription":{"k":"o","p":{"fields":{"k":"a","i":{"r":"DiscoveredField"}},"indexStatus":{"k":"a","i":{"r":"IndexState"}},"indexes":{"k":"a","i":{"r":"IndexSpec"}},"recordSchema":{"r":"Schema"},"relationships":{"k":"a","i":{"r":"CollectionRelationship"}},"revision":{"k":"j"},"sampleSchema":{"r":"Schema"}}},"CollectionRelationship":{"k":"o"},"CollectionSemantics":{"k":"o","p":{"fields":{"k":"a","i":{"r":"FieldSemantics"}},"relationships":{"k":"a","i":{"r":"CollectionRelationship"}}}},"DiscoveredField":{"k":"o","p":{"enum":{"k":"a","i":{}}}},"DiscoveryCollection":{"k":"o","p":{"revision":{"k":"j"}}},"DiscoveryResult":{"k":"o","p":{"asOf":{"k":"j"},"list":{"k":"a","i":{"r":"DiscoveryCollection"}},"nextPage":{"k":"j"},"page":{"k":"j"},"size":{"k":"j"},"total":{"k":"j"}}},"Fault":{"k":"o","p":{"details":{"k":"a","i":{"k":"o"}},"retry":{"r":"ErrorRetry"},"candidates":{"k":"a","i":{"k":"o"}},"conditionIndex":{"k":"j"}}},"FieldBinding":{"k":"o","p":{"collectionId":{"r":"UnsV2Identity"},"recordId":{"r":"UnsV2Identity"}}},"FieldSemantics":{"k":"o"},"HTTPConnection":{"k":"o","p":{"oauth":{"r":"OAuthConfig"},"parameters":{"k":"o"},"port":{"k":"j"},"headers":{"k":"o"}}},"IndexSpec":{"k":"u","a":[{"k":"o","p":{"paths":{"k":"a","i":{}},"expireAfterSeconds":{"k":"j"}}},{"k":"u","a":[{"k":"o"}]}]},"IndexState":{"k":"o","p":{"spec":{"r":"IndexSpec"}}},"MQTTOptions":{"k":"o","p":{"qos":{"k":"j"},"serverSubscribeTopics":{"k":"a","i":{}},"subscriptions":{"k":"o","x":{"k":"j"}},"topicFilters":{"k":"a","i":{}}}},"ModbusOptions":{"k":"o","p":{"pollIntervalMs":{"k":"j"},"ranges":{"k":"a","i":{"r":"ModbusRange"}},"unitId":{"k":"j"}}},"ModbusRange":{"k":"o","p":{"address":{"k":"j"},"quantity":{"k":"j"},"unitId":{"k":"j"}}},"OAuthConfig":{"k":"o"},"OPCUAOptions":{"k":"o","p":{"nodeIds":{"k":"a","i":{}},"samplingIntervalMs":{"k":"j"},"serverNodes":{"k":"a","i":{"r":"OPCUAServerNode"}}}},"OPCUAServerNode":{"k":"o"},"Outcome":{"k":"o","p":{"results":{"k":"a","i":{"r":"Result"}},"summary":{"r":"OutcomeSummary"}}},"OutcomeSummary":{"k":"o","p":{"failed":{"k":"j"},"notExecuted":{"k":"j"},"succeeded":{"k":"j"},"total":{"k":"j"},"unknown":{"k":"j"}}},"RecordDocument":{"k":"o","p":{"data":{"k":"o"},"revision":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"},"sourceTime":{"k":"j"},"lock":{"r":"CloudRecordLockView"}}},"Result":{"k":"o","p":{"document":{"r":"RecordDocument"},"error":{"r":"Fault"},"query":{"r":"TransactionQueryResult"},"release":{"k":"j"},"revision":{"k":"j"}}},"RuntimeStreamDefinition":{"k":"o","p":{"extensions":{"k":"o"},"timeoutMs":{"k":"j"},"sourceBindings":{"k":"a","i":{"k":"o","p":{"configRevision":{"k":"j"},"acquisition":{"k":"o"}}}}}},"Schema":{"k":"o","p":{"enum":{"k":"a","i":{}},"items":{"r":"Schema"},"maximum":{"k":"n"},"minimum":{"k":"n"},"properties":{"k":"o","x":{"r":"Schema"}},"required":{"k":"a","i":{}}}},"SourceDefinition":{"k":"u","a":[{"k":"o","p":{"extensions":{"k":"o"},"http":{"r":"HTTPConnection"},"modbus":{"r":"ModbusOptions"},"mqtt":{"r":"MQTTOptions"},"opcua":{"r":"OPCUAOptions"}}}]},"TransactionQueryResult":{"k":"o","p":{"records":{"k":"a","i":{"r":"RecordDocument"}},"total":{"k":"j"}}},"UnsV2SourceStateUpdateReq":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"expectedRevision":{"k":"j"}}}}}},"UnsV2SourceStateUpdateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"Outcome"}}},"UnsV2SourceRuntimeGetReq":{"k":"o"},"UnsV2SourceRuntimeGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"revision":{"k":"j"},"state":{"k":"o","p":{"schemaVersion":{"k":"j"},"lastDataAt":{"k":"j"},"checkedAt":{"k":"j"},"resources":{"k":"a","i":{"k":"o"}},"streams":{"k":"o","x":{"k":"o","p":{"revision":{"k":"j"},"leaseUntil":{"k":"j"},"nextRunAt":{"k":"j"},"page":{"k":"j"},"lastDataAt":{"k":"j"},"records":{"k":"j"},"sequence":{"k":"j"},"retries":{"k":"j"}}}}}}}}}},"UnsV2SourceProtocolsListReq":{"k":"o"},"UnsV2SourceProtocolsListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o"}}},"UnsV2SourceValidateReq":{"k":"u","a":[{"k":"o","p":{"connection":{"r":"SourceDefinition"},"document":{"r":"CloudSourceDocument"}}}]},"UnsV2SourceValidateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o"}}},"UnsV2SourceProbeReq":{"k":"o","p":{"timeoutMs":{"k":"j"}}},"UnsV2SourceProbeResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o"}}},"UnsV2StreamProgramVersionsListReq":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"UnsV2StreamProgramVersionsListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"list":{"k":"a","i":{"k":"o","p":{"release":{"k":"j"},"createdAt":{"k":"j"},"document":{"k":"u","a":[{"r":"CloudStreamDocument"},{"k":"o","p":{"timeoutMs":{"k":"j"}}}]}}}},"total":{"k":"j"},"page":{"k":"j"},"size":{"k":"j"}}}}},"UnsV2StreamProgramDeployReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"expectedSourceRevision":{"k":"j"}}},"UnsV2StreamProgramDeployResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudStreamProgramView"},{"r":"CloudPreviewResult"}]}}},"UnsV2StreamProgramRollbackReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"expectedSourceRevision":{"k":"j"}}},"UnsV2StreamProgramRollbackResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudStreamProgramView"},{"r":"CloudPreviewResult"}]}}},"UnsV2SampleAppendResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"Outcome"}}},"UnsV2RecordFindResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudRecordPage"}}},"UnsV2RecordCountResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudCappedCount"}}},"UnsV2RecordAggregatePipelineResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudRecordAggregatePage"}}},"UnsV2RecordExplainResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"matchedCount":{"k":"j"},"sampleIds":{"k":"a","i":{}},"plan":{"k":"o"}}}}},"UnsV2RecordInsertOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"value":{"r":"RecordDocument"}}}}},"UnsV2RecordUpdateOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"value":{"r":"CloudNullableRecordDocument"}}}}},"UnsV2RecordReplaceOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"value":{"r":"CloudNullableRecordDocument"}}}}},"UnsV2RecordDeleteOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"deletedCount":{"k":"j"},"value":{"r":"CloudNullableRecordDocument"}}}}},"UnsV2RecordUpdateManyResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"writeErrors":{"k":"a","i":{"r":"CloudWriteError"}}}}]}}},"UnsV2RecordDeleteManyResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"k":"o","p":{"deletedCount":{"k":"j"},"writeErrors":{"k":"a","i":{"r":"CloudWriteError"}}}}]}}},"UnsV2RecordBulkWriteResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"insertedCount":{"k":"j"},"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"deletedCount":{"k":"j"},"upsertedCount":{"k":"j"},"insertedIds":{"k":"o"},"upsertedIds":{"k":"o"},"nextIndex":{"k":"j"},"unknownUntil":{"k":"j"},"writeErrors":{"k":"a","i":{"r":"CloudWriteError"}}}}}},"UnsV2SampleLatestValuesReq":{"k":"o","p":{"recordIds":{"k":"a","i":{}}}},"UnsV2SampleLatestValuesResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"series":{"k":"a","i":{"k":"o","p":{"sample":{"r":"CloudNullableSampleDocument"}}}}}}}},"UnsV2SampleDeleteRangeResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"deletedCount":{"k":"j"}}}}},"UnsV2RecordChange":{"k":"u","a":[{"k":"o","p":{"update":{"k":"o"},"arrayFilters":{"k":"a","i":{"k":"o"}},"id":{"k":"u","a":[{"r":"UnsV2Identity"}]},"collectionId":{"r":"UnsV2Identity"},"expectedRevision":{"k":"j"},"data":{"k":"o"},"dependsOn":{"k":"a","i":{}},"filter":{"r":"UnsV2DataFilter"},"sort":{"k":"u","a":[{"r":"UnsV2PipelineSort"}]},"operations":{"k":"a","i":{"r":"UnsV2FieldOperation"}},"bindings":{"k":"a","i":{"r":"UnsV2ResultBinding"}},"query":{"r":"UnsV2TransactionQuery"},"lockTokens":{"k":"o"},"conditions":{"k":"a","i":{"r":"UnsV2RecordFilter"}}}},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"},{"k":"o"}]},{"k":"u","a":[{"k":"o"},{"k":"o"}]},{"k":"u","a":[{"k":"o"},{"k":"o"}]},{"k":"o"},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"},{"k":"u","a":[{"k":"o"}]}]},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"}]},{"k":"o"}]},"UnsV2DataFilter":{"k":"o","p":{"$and":{"k":"a","i":{"r":"UnsV2DataFilter"}},"$or":{"k":"a","i":{"r":"UnsV2DataFilter"}},"$nor":{"k":"a","i":{"r":"UnsV2DataFilter"}},"$not":{"r":"UnsV2DataFilter"},"$expr":{"r":"UnsV2PipelineExpression"}},"x":{"k":"u","a":[{"r":"UnsV2FilterScalar"},{"r":"UnsV2FieldPredicate"}]}},"UnsV2FilterScalar":{"k":"u","a":[{"k":"n"}]},"UnsV2ArrayElementFilter":{"k":"o"},"UnsV2FieldComparisons":{"k":"o","p":{"$eq":{"r":"UnsV2FilterScalar"},"$ne":{"r":"UnsV2FilterScalar"},"$gt":{"r":"UnsV2FilterScalar"},"$gte":{"r":"UnsV2FilterScalar"},"$lt":{"r":"UnsV2FilterScalar"},"$lte":{"r":"UnsV2FilterScalar"},"$in":{"k":"a","i":{"r":"UnsV2FilterScalar"}},"$nin":{"k":"a","i":{"r":"UnsV2FilterScalar"}},"$all":{"k":"a","i":{}},"$size":{"k":"j"},"$elemMatch":{"r":"UnsV2ArrayElementFilter"}}},"UnsV2FieldPredicate":{"k":"o","p":{"$eq":{"r":"UnsV2FilterScalar"},"$ne":{"r":"UnsV2FilterScalar"},"$gt":{"r":"UnsV2FilterScalar"},"$gte":{"r":"UnsV2FilterScalar"},"$lt":{"r":"UnsV2FilterScalar"},"$lte":{"r":"UnsV2FilterScalar"},"$in":{"k":"a","i":{"r":"UnsV2FilterScalar"}},"$nin":{"k":"a","i":{"r":"UnsV2FilterScalar"}},"$all":{"k":"a","i":{}},"$size":{"k":"j"},"$elemMatch":{"r":"UnsV2ArrayElementFilter"},"$not":{"r":"UnsV2FieldComparisons"}}},"UnsV2PipelineExpression":{"k":"u","a":[{"r":"UnsV2FilterScalar"},{"k":"o","p":{"$ifNull":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$add":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$subtract":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$multiply":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$divide":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$literal":{"r":"UnsV2FilterScalar"}}},{"k":"o","p":{"$eq":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$ne":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$gt":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$gte":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$lt":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$lte":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$and":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$or":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$not":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$cond":{"k":"u","a":[{"k":"a","i":{"r":"UnsV2PipelineExpression"}},{"k":"o","p":{"if":{"r":"UnsV2PipelineExpression"},"then":{"r":"UnsV2PipelineExpression"},"else":{"r":"UnsV2PipelineExpression"}}}]}}},{"k":"o","p":{"$concat":{"k":"a","i":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$toLower":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$toUpper":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$strLenCP":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$toString":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$toDecimal":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$toLong":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$toBool":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$trim":{"k":"o","p":{"input":{"r":"UnsV2PipelineExpression"},"chars":{"r":"UnsV2PipelineExpression"}}}}},{"k":"o","p":{"$convert":{"k":"o","p":{"input":{"r":"UnsV2PipelineExpression"}}}}},{"k":"o","p":{"$dateTrunc":{"k":"o","p":{"date":{"r":"UnsV2PipelineExpression"},"binSize":{"k":"j"}}}}}]},"UnsV2PipelineAccumulator":{"k":"u","a":[{"k":"o","p":{"$sum":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$avg":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$min":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$max":{"r":"UnsV2PipelineExpression"}}},{"k":"o","p":{"$count":{"k":"o"}}}]},"UnsV2PipelineSort":{"k":"a","i":{"k":"a","i":{"k":"u","a":[{"k":"j"}]}}},"UnsV2DistinctBy":{"k":"o"},"UnsV2Distinct":{"k":"o","p":{"by":{"r":"UnsV2DistinctBy"}}},"UnsV2Frequencies":{"k":"o","p":{"by":{"k":"u","a":[{"r":"UnsV2DistinctBy"}]}}},"UnsV2PipelineStage":{"k":"u","a":[{"k":"o","p":{"$match":{"r":"UnsV2DataFilter"}}},{"k":"o","p":{"$project":{"k":"o","x":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$set":{"k":"o","x":{"r":"UnsV2PipelineExpression"}}}},{"k":"o","p":{"$sort":{"r":"UnsV2PipelineSort"}}},{"k":"o","p":{"$group":{"k":"o","p":{"_id":{"k":"u","a":[{"r":"UnsV2PipelineExpression"},{"k":"o","x":{"r":"UnsV2PipelineExpression"}}]}},"x":{"r":"UnsV2PipelineAccumulator"}}}},{"k":"o","p":{"$distinct":{"r":"UnsV2Distinct"}}},{"k":"o","p":{"$frequencies":{"r":"UnsV2Frequencies"}}},{"k":"o","p":{"$lookup":{"k":"u","a":[{"k":"o","p":{"pipeline":{"k":"a","i":{"r":"UnsV2PipelineStage"}}}},{"k":"o"},{"k":"o"}]}}},{"k":"o","p":{"$unwind":{"k":"u","a":[{"k":"o"}]}}},{"k":"o","p":{"$skip":{"k":"j"}}},{"k":"o","p":{"$limit":{"k":"j"}}},{"k":"o"},{"k":"o"}]},"UnsV2DataDiscoverResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"DiscoveryResult"}}},"UnsV2CollectionDescribeResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CollectionDescription"}}},"UnsV2RecordTransactionExecuteResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"Outcome"}}},"UnsV2NamespaceQuery":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"},"kinds":{"k":"a","i":{}},"ids":{"k":"a","i":{}}}},"UnsV2NamespaceDocumentedRequest":{"k":"o","p":{"queries":{"k":"a","i":{"r":"UnsV2NamespaceQuery"}}}},"UnsV2TopicsQuery":{"k":"o","p":{"include":{"k":"a","i":{}},"records":{"r":"UnsV2Page"},"selectedRecord":{"r":"UnsV2SelectedRecord"}}},"UnsV2TopicsDocumentedRequest":{"k":"o","p":{"queries":{"k":"a","i":{"r":"UnsV2TopicsQuery"}}}},"UnsV2ReferencesQuery":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"},"targets":{"k":"a","i":{"r":"UnsV2ReferenceTarget"}},"relationKinds":{"k":"a","i":{}},"kinds":{"k":"a","i":{}}}},"UnsV2ReferencesDocumentedRequest":{"k":"o","p":{"queries":{"k":"a","i":{"r":"UnsV2ReferencesQuery"}}}},"UnsV2JobsQuery":{"k":"o","p":{"jobIds":{"k":"a","i":{}}}},"UnsV2JobsDocumentedRequest":{"k":"o","p":{"queries":{"k":"a","i":{"r":"UnsV2JobsQuery"}}}},"UnsV2ErrorResponse":{"k":"o","p":{"code":{"k":"j"},"error":{"r":"Fault"}}},"UnsV2RecordFilter":{"k":"o"},"UnsV2RecordGetReq":{"k":"o","p":{"ids":{"k":"a","i":{}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},"UnsV2RecordGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudRecordGetResult"}}},"UnsV2SampleAppendReq":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"time":{"k":"j"},"data":{"k":"o"}}}}}},"UnsV2RecordFindReq":{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}},"limit":{"k":"j"},"count":{"r":"CloudRecordTotalOption"}}}]},"UnsV2RecordCountReq":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"maxCount":{"k":"j"}}},"UnsV2RecordAggregatePipelineReq":{"k":"u","a":[{"k":"o","p":{"pipeline":{"k":"a","i":{"r":"UnsV2PipelineStage"}},"limit":{"k":"j"},"page":{"r":"UnsV2PipelinePage"},"count":{"r":"CloudRecordTotalOption"}}}]},"UnsV2RecordExplainReq":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"limit":{"k":"j"}}},"UnsV2RecordInsertOneReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"data":{"k":"o"},"assertLocks":{"k":"a","i":{"k":"o"}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]}]},"UnsV2RecordUpdateOneReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"update":{"k":"o"},"arrayFilters":{"k":"a","i":{"k":"o"}},"assertLocks":{"k":"a","i":{"k":"o"}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]}]},"UnsV2RecordReplaceOneReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"replacement":{"k":"o"},"assertLocks":{"k":"a","i":{"k":"o"}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]}]},"UnsV2RecordDeleteOneReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"assertLocks":{"k":"a","i":{"k":"o"}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]}]},"UnsV2RecordUpdateManyReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"filter":{"r":"UnsV2DataFilter"},"update":{"k":"o"},"arrayFilters":{"k":"a","i":{"k":"o"}},"maxDocs":{"k":"j"},"assertLocks":{"k":"a","i":{"k":"o"}},"lockTokens":{"k":"o"}}},"UnsV2RecordDeleteManyReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"filter":{"r":"UnsV2DataFilter"},"maxDocs":{"k":"j"},"assertLocks":{"k":"a","i":{"k":"o"}},"lockTokens":{"k":"o"}}},"UnsV2RecordBulkWriteReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"operations":{"k":"a","i":{"k":"u","a":[{"k":"o","p":{"insertOne":{"k":"o","p":{"data":{"k":"o"}}}}},{"k":"o","p":{"updateOne":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"update":{"k":"o"},"arrayFilters":{"k":"a","i":{"k":"o"}}}}}},{"k":"o","p":{"replaceOne":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"replacement":{"k":"o"}}}}},{"k":"o","p":{"deleteOne":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"}}}}}]}},"assertLocks":{"k":"a","i":{"k":"o"}},"lockTokens":{"k":"o"}}},"UnsV2SampleDeleteRangeReq":{"k":"o","p":{"recordIds":{"k":"a","i":{}},"from":{"k":"j"},"to":{"k":"j"}}},"CloudSourceConfig":{"k":"u","a":[{"k":"o","p":{"options":{"k":"o"},"auth":{"k":"o"},"tls":{"k":"o"}}},{"k":"o","p":{"auth":{"k":"o"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}},{"k":"o","p":{"auth":{"k":"o"},"options":{"k":"o","p":{"headers":{"k":"o"},"parameters":{"k":"o"}}}}}]},"CloudSourceDocument":{"k":"u","a":[{"k":"o","p":{"config":{"r":"CloudSourceConfig"}}}]},"CloudControlDefinition":{"k":"o","p":{"inputSchema":{"k":"o"},"outputSchema":{"k":"o"},"timeoutMs":{"k":"j"}}},"CloudStreamScript":{"k":"o","p":{"timeoutMs":{"k":"j"}}},"CloudSourceBinding":{"k":"o","p":{"configRevision":{"k":"j"},"resources":{"k":"a","i":{}},"acquisition":{"k":"o"}}},"CloudStreamEntry":{"k":"o","p":{"config":{"k":"o"},"control":{"r":"CloudControlDefinition"}}},"CloudStreamDocument":{"k":"o","p":{"script":{"r":"CloudStreamScript"},"sources":{"k":"a","i":{"r":"CloudSourceBinding"}},"entries":{"k":"a","i":{"r":"CloudStreamEntry"}}}},"CloudSourceDocumentView":{"k":"o","p":{"revision":{"k":"j"},"document":{"r":"CloudSourceDocument"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudStreamDocumentView":{"k":"o","p":{"revision":{"k":"j"},"document":{"r":"CloudStreamDocument"},"activeDocument":{"r":"CloudStreamDocument"},"activeRelease":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudSourceDeleteReq":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"expectedRevision":{"k":"j"}}}}}},"CloudSourceDeleteResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"Outcome"}}},"CloudStreamProgramListReq":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"CloudStreamProgramListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"list":{"k":"a","i":{"r":"CloudStreamProgramSummary"}},"total":{"k":"j"},"page":{"k":"j"},"size":{"k":"j"},"nextPage":{"k":"j"}}}}},"CloudStreamProgramDeleteReq":{"k":"o","p":{"expectedRevision":{"k":"j"}}},"CloudStreamProgramDeleteResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"k":"o","p":{"revision":{"k":"j"}}},{"r":"CloudPreviewResult"}]}}},"CloudControlDiscoverReq":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"CloudControlDiscoverResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"list":{"k":"a","i":{"r":"CloudControlDefinition"}},"total":{"k":"j"},"page":{"k":"j"},"size":{"k":"j"},"nextPage":{"k":"j"}}}}},"CloudControlDescribeReq":{"k":"o"},"CloudControlDescribeResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudControlDefinition"}}},"CloudControlInvokeReq":{"k":"o"},"CloudControlInvokeResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"k":"o"},{"r":"CloudPreviewResult"}]}}},"CloudSourceDocumentGetReq":{"k":"o"},"CloudSourceDocumentGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudSourceDocumentView"},{"r":"CloudSourceDocumentSummary"}]}}},"CloudSourceDocumentCreateReq":{"k":"u","a":[{"k":"o","p":{"document":{"r":"CloudSourceDocument"},"credentials":{"r":"CloudSourceCreateCredentials"},"items":{"k":"a","i":{"k":"o","p":{"document":{"r":"CloudSourceDocument"}}}}}},{"k":"u","a":[{"k":"o","p":{"document":{"k":"o","p":{"config":{"k":"o"}}}}}]}]},"CloudSourceDocumentCreateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudSourceDocumentView"},{"r":"CloudPreviewResult"},{"r":"Outcome"}]}}},"CloudSourceDocumentUpdateReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"document":{"r":"CloudSourceDocument"},"patch":{"r":"CloudSourceDocumentPatch"},"items":{"k":"a","i":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"document":{"r":"CloudSourceDocument"},"patch":{"r":"CloudSourceDocumentPatch"}}}]}}}}]},"CloudSourceDocumentUpdateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudSourceDocumentView"},{"r":"CloudPreviewResult"},{"r":"Outcome"}]}}},"CloudStreamDocumentGetReq":{"k":"o"},"CloudStreamDocumentGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudStreamDocumentView"},{"r":"CloudStreamDocumentSummary"}]}}},"CloudStreamDocumentCreateReq":{"k":"u","a":[{"k":"o","p":{"document":{"r":"CloudStreamDocument"},"program":{"r":"RuntimeStreamDefinition"},"expectedSourceRevision":{"k":"j"}}}]},"CloudStreamDocumentCreateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudStreamDocumentView"},{"r":"CloudPreviewResult"}]}}},"CloudStreamDocumentUpdateReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"document":{"r":"CloudStreamDocument"},"program":{"r":"RuntimeStreamDefinition"},"expectedSourceRevision":{"k":"j"}}}]},"CloudStreamDocumentUpdateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudStreamDocumentView"},{"r":"CloudPreviewResult"}]}}},"CloudPreviewResult":{"k":"o"},"CloudSourceDocumentListReq":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"CloudSourceDocumentListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"list":{"k":"a","i":{"k":"u","a":[{"r":"CloudSourceDocumentView"},{"r":"CloudSourceSummaryView"}]}},"total":{"k":"j"},"page":{"k":"j"},"size":{"k":"j"},"nextPage":{"k":"j"}}}}},"CloudStreamDocumentDisableReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"expectedActiveRelease":{"k":"j"}}},"CloudStreamDocumentDisableResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"u","a":[{"r":"CloudStreamStopView"},{"r":"CloudPreviewResult"}]}}},"CloudStreamDocumentValidateReq":{"k":"u","a":[{"k":"o","p":{"document":{"r":"CloudStreamDocument"},"program":{"r":"RuntimeStreamDefinition"},"expectedSourceRevision":{"k":"j"}}}]},"CloudStreamDocumentValidateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"issues":{"k":"a","i":{"k":"o"}},"normalizedDocument":{"r":"CloudStreamDocument"}}}}},"CloudSourceSummaryView":{"k":"o","p":{"revision":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudStreamProgramSummary":{"k":"o","p":{"revision":{"k":"j"},"activeRelease":{"k":"j"},"document":{"k":"o"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudSourceImpactReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"document":{"r":"CloudSourceDocument"},"offset":{"k":"j"},"size":{"k":"j"},"patch":{"r":"CloudSourceDocumentPatch"}}},{"k":"u","a":[{"k":"o"}]},{"k":"o"}]},"CloudSourceHistoryReq":{"k":"o","p":{"beforeRevision":{"k":"j"},"size":{"k":"j"}}},"CloudSourceImpactResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"sourceRevision":{"k":"j"},"complete":{"k":"j"},"counts":{"k":"o","p":{"draft":{"k":"j"},"activeRelease":{"k":"j"},"historicalRelease":{"k":"j"}}},"restrictedCount":{"k":"j"},"references":{"k":"a","i":{"k":"o","p":{"streamRevision":{"k":"j"},"release":{"k":"j"},"configRevision":{"k":"j"},"streamDeleted":{"k":"j"},"parentMissing":{"k":"j"}}}},"nextOffset":{"k":"j"},"expiresAt":{"k":"j"}}}}},"CloudSourceHistoryResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"currentRevision":{"k":"j"},"deleted":{"k":"j"},"total":{"k":"j"},"missingRevisionCount":{"k":"j"},"nextBeforeRevision":{"k":"j"},"revisions":{"k":"a","i":{"k":"o","p":{"revision":{"k":"j"},"createdTime":{"k":"j"}}}}}}}},"CloudStreamStopView":{"k":"o","p":{"revision":{"k":"j"},"activeRelease":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudSourceObservationsGetReq":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"expectedRevision":{"k":"j"}}}}}},"CloudSourceObservationsGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"revision":{"k":"j"},"acceptedCaptures":{"k":"j"},"committedWrites":{"k":"j"},"failedRuns":{"k":"j"},"lastDataAt":{"k":"i"}}}},"window":{"k":"o","p":{"from":{"k":"i"},"to":{"k":"i"}}},"checkedAt":{"k":"i"}}}}},"CloudStreamObservationGetReq":{"k":"o"},"CloudStreamObservationGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"revision":{"k":"j"},"stats":{"k":"o","p":{"admitted":{"k":"j"},"completed":{"k":"j"},"failed":{"k":"j"},"unknown":{"k":"j"},"pending":{"k":"j"},"durationSamples":{"k":"j"},"successRate":{"k":"n"},"averageDurationMs":{"k":"n"}}},"window":{"k":"o","p":{"from":{"k":"i"},"to":{"k":"i"}}},"checkedAt":{"k":"i"}}}}},"CloudStreamRunsListReq":{"k":"o","p":{"size":{"k":"j"}}},"CloudStreamRunsListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"createdAt":{"k":"i"},"finishedAt":{"k":"i"},"durationMs":{"k":"n"}}}},"checkedAt":{"k":"i"}}}}},"CloudStreamSampleTestReq":{"k":"o","p":{"document":{"r":"CloudStreamDocument"}}},"CloudStreamSampleTestResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"writePreview":{"k":"a","i":{"k":"o"}},"logs":{"k":"a","i":{"k":"o"}},"durationMs":{"k":"j"}}}}},"CloudAppDataGrant":{"k":"o","p":{"permissions":{"k":"a","i":{}},"dataRule":{"r":"CloudAppDataRule"}}},"CloudAppDataPolicyGetReq":{"k":"o"},"CloudAppDataPolicyUpdateReq":{"k":"u","a":[{"k":"o","p":{"expectedRevision":{"k":"j"},"collections":{"k":"a","i":{"r":"CloudAppDataGrant"}},"changes":{"k":"a","i":{"r":"CloudAppDataGrantChange"}}}}]},"CloudAppDataPolicy":{"k":"o","p":{"revision":{"k":"j"},"collections":{"k":"a","i":{"r":"CloudAppDataGrant"}}}},"CloudAppDataPolicyGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudAppDataPolicy"}}},"CloudAppDataPolicyMutationResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"Outcome"}}},"CloudDataAppContextReq":{"k":"o"},"CloudDataAppContextResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"AppContext"}}},"CloudHostedAppControlPolicyGetReq":{"k":"o"},"CloudHostedAppControlPolicyUpdateReq":{"k":"o","p":{"expectedRevision":{"k":"j"},"platformPermissions":{"k":"a","i":{}}}},"CloudHostedAppControlPolicy":{"k":"o","p":{"revision":{"k":"j"},"platformPermissions":{"k":"a","i":{}}}},"CloudHostedAppControlPolicyGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudHostedAppControlPolicy"}}},"CloudHostedAppControlPolicyMutationResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"Outcome"}}},"CloudAppDataRuleTransition":{"k":"o"},"CloudAppDataRulePrincipal":{"k":"o","p":{"permissions":{"k":"a","i":{}},"readFields":{"k":"a","i":{}},"writeFields":{"k":"a","i":{}},"writeStates":{"k":"a","i":{}},"transitions":{"k":"a","i":{"r":"CloudAppDataRuleTransition"}}}},"CloudAppDataRule":{"k":"o","p":{"principals":{"k":"a","i":{"r":"CloudAppDataRulePrincipal"}}}},"CloudAppCollectionDeclaration":{"k":"o","p":{"recordSchema":{"r":"Schema"},"indexes":{"k":"a","i":{"r":"IndexSpec"}}}},"CloudAppCollectionsEnsureReq":{"k":"o","p":{"collections":{"k":"a","i":{"r":"CloudAppCollectionDeclaration"}}}},"CloudAppCollectionSchemaNote":{"k":"o"},"CloudAppCollectionWarning":{"k":"o"},"CloudAppCollectionEnsureResult":{"k":"o","p":{"revision":{"k":"j"},"ignored":{"k":"a","i":{"r":"CloudAppCollectionSchemaNote"}},"warnings":{"k":"a","i":{"r":"CloudAppCollectionWarning"}},"indexStatus":{"k":"a","i":{"r":"IndexState"}}}},"CloudAppCollectionsEnsureResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"results":{"k":"a","i":{"r":"CloudAppCollectionEnsureResult"}}}}}},"CloudAppCollectionsSchemaReplaceReq":{"k":"o","p":{"recordSchema":{"r":"Schema"},"indexes":{"k":"a","i":{"r":"IndexSpec"}},"expectedRevision":{"k":"j"}}},"CloudAppCollectionRetired":{"k":"o","p":{"paths":{"k":"a","i":{}},"enumValues":{"k":"a","i":{"k":"o","p":{"values":{"k":"a","i":{}}}}}}},"CloudAppCollectionsSchemaReplaceResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"revision":{"k":"j"},"retired":{"r":"CloudAppCollectionRetired"},"checkedRecords":{"k":"j"},"warnings":{"k":"a","i":{"r":"CloudAppCollectionWarning"}},"indexStatus":{"k":"a","i":{"r":"IndexState"}}}}}},"CloudAppCollectionAliasReq":{"k":"o"},"CloudAppCollectionStateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"revision":{"k":"j"}}}}},"CloudAppCollectionsListReq":{"k":"o"},"CloudAppCollectionView":{"k":"o","p":{"recordSchema":{"r":"Schema"},"indexes":{"k":"a","i":{"r":"IndexSpec"}},"indexStatus":{"k":"a","i":{"r":"IndexState"}},"retired":{"r":"CloudAppCollectionRetired"},"revision":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudAppCollectionsListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"collections":{"k":"a","i":{"r":"CloudAppCollectionView"}}}}}},"CloudRecordSubscribeReq":{"k":"u","a":[{"k":"o","p":{"collectionIds":{"k":"a","i":{}},"recordIds":{"k":"a","i":{}},"waitMs":{"k":"j"},"limit":{"k":"j"}}},{"k":"u","a":[{"k":"o"}]}]},"CloudRecordChangeEvent":{"k":"o","p":{"revision":{"k":"j"},"occurredAt":{"k":"j"}}},"CloudRecordSubscribeReset":{"k":"o"},"CloudRecordSubscribeResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"events":{"k":"a","i":{"r":"CloudRecordChangeEvent"}},"reset":{"k":"u","a":[{"r":"CloudRecordSubscribeReset"}]}}}}},"CloudControlGrantGetReq":{"k":"o"},"CloudControlGrantTargetRevision":{"k":"o","p":{"revision":{"k":"j"}}},"CloudControlGrantSetReq":{"k":"u","a":[{"k":"o","p":{"active":{"k":"j"},"expectedCodeRevision":{"k":"j"},"actions":{"k":"a","i":{}},"targetRevisions":{"k":"a","i":{"r":"CloudControlGrantTargetRevision"}}}}]},"CloudControlGrantTargetInfo":{"k":"o","p":{"revision":{"k":"j"},"active":{"k":"j"},"current":{"k":"j"}}},"CloudControlGrantInfo":{"k":"o","p":{"recipientEligible":{"k":"j"},"recipientActions":{"k":"a","i":{}},"registered":{"k":"j"},"active":{"k":"j"},"revision":{"k":"j"},"actions":{"k":"a","i":{}},"targets":{"k":"a","i":{"r":"CloudControlGrantTargetInfo"}},"createdTime":{"k":"j"},"updatedTime":{"k":"j"},"activationSupported":{"k":"j"}}},"CloudControlGrantMutation":{"k":"o","p":{"revision":{"k":"j"},"active":{"k":"j"}}},"CloudControlGrantGetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudControlGrantInfo"}}},"CloudControlGrantSetResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudControlGrantMutation"}}},"CloudAppDataGrantChange":{"k":"u","a":[{"k":"o","p":{"permissions":{"k":"a","i":{}},"dataRule":{"k":"u","a":[{"r":"CloudAppDataRule"}]}}},{"k":"u","a":[{"k":"o"},{"k":"o"}]}]},"CloudAppStreamAccessListReq":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"},"includeInactive":{"k":"j"}}},"CloudAppStreamAccessItem":{"k":"o","p":{"actions":{"k":"a","i":{}},"configuredActive":{"k":"j"},"blockedReasons":{"k":"a","i":{}},"revision":{"k":"j"}}},"CloudAppStreamAccessPage":{"k":"o","p":{"items":{"k":"a","i":{"r":"CloudAppStreamAccessItem"}},"page":{"k":"j"},"size":{"k":"j"},"total":{"k":"j"}}},"CloudAppStreamAccessListResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudAppStreamAccessPage"}}},"CloudSourceDiscoverReq":{"k":"o","p":{"expectedRevision":{"k":"j"}}},"CloudSourceDiscoverResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"revision":{"k":"j"},"resources":{"k":"a","i":{"k":"o"}}}}}},"UnsV2SampleFindReq":{"k":"u","a":[{"k":"o","p":{"recordIds":{"k":"a","i":{}},"from":{"k":"j"},"to":{"k":"j"},"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}},"limit":{"k":"j"},"page":{"r":"UnsV2PipelinePage"}}}]},"UnsV2SampleFindResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudSamplePage"}}},"UnsV2SampleAggregateReq":{"k":"u","a":[{"k":"o","p":{"recordIds":{"k":"a","i":{}},"from":{"k":"j"},"to":{"k":"j"},"pipeline":{"k":"a","i":{"r":"UnsV2PipelineStage"}},"limit":{"k":"j"},"page":{"r":"UnsV2PipelinePage"}}}]},"UnsV2SampleAggregateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"CloudDataPage"}}},"UnsV2RecordLockReq":{"k":"u","a":[{"k":"o","p":{"ids":{"k":"a","i":{}},"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"limit":{"k":"j"},"ttlMs":{"k":"j"}}}]},"UnsV2RecordLockResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"locks":{"k":"a","i":{"r":"CloudRecordLeaseGrant"}}}}}},"UnsV2RecordRenewReq":{"k":"o","p":{"locks":{"k":"a","i":{"k":"o"}},"ttlMs":{"k":"j"}}},"UnsV2RecordRenewResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"locks":{"k":"a","i":{"k":"o","p":{"expiresAt":{"k":"j"}}}}}}}},"UnsV2RecordUnlockReq":{"k":"u","a":[{"k":"o","p":{"locks":{"k":"a","i":{"k":"o"}},"ids":{"k":"a","i":{}}}},{"k":"o"},{"k":"o"}]},"UnsV2RecordUnlockResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"unlockedCount":{"k":"j"}}}}},"UnsV2RecordRestoreReq":{"k":"o","p":{"ids":{"k":"a","i":{}}}},"UnsV2RecordRestoreResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"restoredCount":{"k":"j"},"restoredIds":{"k":"a","i":{}}}}}},"CloudRecordTotalOption":{"k":"o","p":{"max":{"k":"j"}}},"CloudAppCreateCapability":{"k":"o","p":{"appRevision":{"k":"j"},"collectionRevision":{"k":"j"},"inputSchema":{"r":"Schema"}}},"CloudDataPage":{"k":"o","p":{"items":{"k":"a","i":{"k":"o"}},"pageInfo":{"r":"CloudPageInfo"}}},"CloudRecordLockView":{"k":"o","p":{"expiresAt":{"k":"j"},"fence":{"k":"j"},"since":{"k":"j"}}},"CloudNullableRecordDocument":{"k":"o","p":{"data":{"k":"o"},"revision":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"},"sourceTime":{"k":"j"},"lock":{"r":"CloudRecordLockView"}}},"SampleDocument":{"k":"o","p":{"time":{"k":"j"},"receivedAt":{"k":"j"},"data":{"k":"o"}}},"CloudNullableSampleDocument":{"k":"o","p":{"time":{"k":"j"},"receivedAt":{"k":"j"},"data":{"k":"o"}}},"CloudPageInfo":{"k":"o","p":{"nextPage":{"k":"j"}}},"CloudCappedCount":{"k":"o","p":{"count":{"k":"j"}}},"CloudRecordPage":{"k":"o","p":{"items":{"k":"a","i":{"r":"RecordDocument"}},"pageInfo":{"r":"CloudPageInfo"},"total":{"r":"CloudCappedCount"}}},"CloudSamplePage":{"k":"o","p":{"items":{"k":"a","i":{"r":"SampleDocument"}},"pageInfo":{"r":"CloudPageInfo"}}},"CloudRecordAggregatePage":{"k":"o","p":{"items":{"k":"a","i":{"k":"o"}},"pageInfo":{"r":"CloudPageInfo"},"total":{"r":"CloudCappedCount"}}},"CloudDistinctResult":{"k":"o","p":{"values":{"k":"a","i":{}},"pageInfo":{"r":"CloudPageInfo"}}},"CloudRecordGetResult":{"k":"o","p":{"items":{"k":"a","i":{"r":"RecordDocument"}},"missing":{"k":"a","i":{}}}},"CloudDistinctPage":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"CloudWriteError":{"k":"o","p":{"index":{"k":"j"},"error":{"r":"Fault"}}},"CloudRecordLeaseGrant":{"k":"o","p":{"expiresAt":{"k":"j"},"fence":{"k":"j"},"record":{"r":"RecordDocument"}}},"CloudRecordBatchQuery":{"k":"u","a":[{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}},"limit":{"k":"j"},"count":{"r":"CloudRecordTotalOption"}}}]},{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"maxCount":{"k":"j"}}},{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"limit":{"k":"j"},"page":{"r":"CloudDistinctPage"}}}]},{"k":"u","a":[{"k":"o","p":{"pipeline":{"k":"a","i":{"r":"UnsV2PipelineStage"}},"limit":{"k":"j"},"page":{"r":"UnsV2PipelinePage"},"count":{"r":"CloudRecordTotalOption"}}}]},{"k":"o","p":{"ids":{"k":"a","i":{}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}}]},"CloudRecordBatchQueryResult":{"k":"u","a":[{"k":"o","p":{"data":{"k":"u","a":[{"r":"CloudRecordPage"},{"r":"CloudCappedCount"},{"r":"CloudDistinctResult"},{"r":"CloudRecordAggregatePage"},{"r":"CloudRecordGetResult"}]}}},{"k":"o","p":{"error":{"r":"Fault"}}}]},"UnsV2RecordQueryBatchReq":{"k":"o","p":{"queries":{"k":"a","i":{"r":"CloudRecordBatchQuery"}}}},"UnsV2RecordQueryBatchResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"results":{"k":"o","x":{"r":"CloudRecordBatchQueryResult"}}}}}},"CloudStreamProgramView":{"k":"o","p":{"revision":{"k":"j"},"activeRelease":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"},"document":{"k":"o","p":{"timeoutMs":{"k":"j"}}}}},"CloudSourceCreateCredentials":{"k":"u","a":[{"k":"o","p":{"material":{"k":"o"}}},{"k":"o","p":{"material":{"k":"o"}}},{"k":"o","p":{"material":{"k":"o"}}},{"k":"o","p":{"material":{"k":"o"}}},{"k":"o","p":{"material":{"k":"o"}}}]},"UnsV2MetadataFindReq":{"k":"u","a":[{"k":"o","p":{"kinds":{"k":"a","i":{}},"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}},"page":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"limit":{"k":"j"}}}]},"UnsV2MetadataFindResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"r":"MetadataPage"}}},"UnsV2MetadataCountReq":{"k":"u","a":[{"k":"o","p":{"kinds":{"k":"a","i":{}},"filter":{"r":"UnsV2DataFilter"}}}]},"UnsV2MetadataCountResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"count":{"k":"j"}}}}},"UnsV2MetadataAggregateReq":{"k":"u","a":[{"k":"o","p":{"kinds":{"k":"a","i":{}},"filter":{"r":"UnsV2DataFilter"},"pipeline":{"k":"a","i":{"k":"u","a":[{"k":"o","p":{"$match":{"k":"o"}}},{"k":"o","p":{"$project":{"k":"o"}}},{"k":"o","p":{"$group":{"k":"o"}}},{"k":"o","p":{"$sort":{"r":"UnsV2PipelineSort"}}},{"k":"o","p":{"$skip":{"k":"j"}}},{"k":"o","p":{"$limit":{"k":"j"}}},{"k":"o"}]}},"page":{"k":"o","p":{"page":{"k":"j"},"size":{"k":"j"}}},"limit":{"k":"j"}}}]},"UnsV2MetadataAggregateResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"items":{"k":"a","i":{"k":"o"}},"pageInfo":{"r":"CloudPageInfo"}}}}},"UnsV2MetadataInsertOneReq":{"k":"u","a":[{"k":"o","p":{"data":{"k":"o"}}},{"k":"u","a":[{"k":"o"}]},{"k":"o","p":{"data":{"r":"MetadataDirectoryInput"}}},{"k":"o","p":{"data":{"r":"MetadataTopicInput"}}},{"k":"o","p":{"data":{"r":"MetadataCollectionInput"}}}]},"UnsV2MetadataInsertOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o"}}},"UnsV2MetadataUpdateOneReq":{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"expectedRevision":{"k":"j"},"update":{"k":"o","p":{"$set":{"k":"o"},"$unset":{"k":"o"},"$setOnInsert":{"k":"o"}}},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]}]},"UnsV2MetadataUpdateOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"value":{"r":"MetadataNullableDocument"}}}}},"UnsV2MetadataReplaceOneReq":{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"expectedRevision":{"k":"j"},"replacement":{"k":"o"},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]},{"k":"o","p":{"replacement":{"r":"MetadataDirectoryInput"}}},{"k":"o","p":{"replacement":{"r":"MetadataTopicInput"}}},{"k":"o","p":{"replacement":{"r":"MetadataCollectionInput"}}}]},"UnsV2MetadataReplaceOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"value":{"r":"MetadataNullableDocument"}}}}},"UnsV2MetadataDeleteOneReq":{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"expectedRevision":{"k":"j"},"projection":{"k":"o","x":{"k":"u","a":[{"k":"j"}]}}}},{"k":"u","a":[{"k":"o"}]}]},"UnsV2MetadataDeleteOneResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"deletedCount":{"k":"j"},"value":{"r":"MetadataNullableDocument"}}}}},"UnsV2MetadataUpdateManyReq":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"update":{"k":"o","p":{"$set":{"k":"o"},"$unset":{"k":"o"},"$setOnInsert":{"k":"o"}}},"maxDocs":{"k":"j"}}},"UnsV2MetadataUpdateManyResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"results":{"k":"a","i":{"r":"MetadataBulkResult"}},"errors":{"k":"a","i":{"k":"o","p":{"index":{"k":"j"},"error":{"r":"Fault"}}}}}}}},"UnsV2MetadataDeleteManyReq":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"maxDocs":{"k":"j"}}},"UnsV2MetadataDeleteManyResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"deletedCount":{"k":"j"},"results":{"k":"a","i":{"r":"MetadataBulkResult"}},"errors":{"k":"a","i":{"k":"o","p":{"index":{"k":"j"},"error":{"r":"Fault"}}}}}}}},"UnsV2MetadataRestoreReq":{"k":"o","p":{"items":{"k":"a","i":{"k":"o","p":{"expectedRevision":{"k":"j"}}}}}},"UnsV2MetadataRestoreResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"restoredCount":{"k":"j"},"items":{"k":"a","i":{"r":"MetadataDocument"}}}}}},"UnsV2MetadataBulkWriteReq":{"k":"o","p":{"operations":{"k":"a","i":{"k":"u","a":[{"k":"o","p":{"insertOne":{"r":"MetadataBulkInsertOne"}}},{"k":"o","p":{"updateOne":{"r":"MetadataBulkUpdateOne"}}},{"k":"o","p":{"replaceOne":{"r":"MetadataBulkReplaceOne"}}},{"k":"o","p":{"deleteOne":{"r":"MetadataBulkDeleteOne"}}},{"k":"o","p":{"restoreOne":{"r":"MetadataBulkRestoreOne"}}}]}}}},"UnsV2MetadataBulkWriteResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"insertedCount":{"k":"j"},"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"deletedCount":{"k":"j"},"restoredCount":{"k":"j"},"upsertedCount":{"k":"j"},"insertedIds":{"k":"o"},"upsertedIds":{"k":"o"},"results":{"k":"a","i":{"r":"MetadataBulkResult"}},"errors":{"k":"a","i":{"k":"o","p":{"index":{"k":"j"},"error":{"r":"Fault"}}}},"nextIndex":{"k":"j"},"unknownUntil":{"k":"j"}}}}},"UnsV2MetadataTransactReq":{"k":"o","p":{"operations":{"k":"a","i":{"r":"MetadataTransactionOperation"}}}},"UnsV2MetadataTransactResponse":{"k":"o","p":{"code":{"k":"j"},"data":{"k":"o","p":{"results":{"k":"a","i":{"r":"MetadataTransactionResult"}}}}}},"CloudCollectionTTL":{"k":"o","p":{"expireAfterSeconds":{"k":"j"}}},"CloudAppDataLimits":{"k":"o","p":{"count":{"k":"o","p":{"defaultMax":{"k":"j"},"max":{"k":"j"}}},"total":{"k":"o","p":{"defaultMax":{"k":"j"},"max":{"k":"j"}}},"queryBatch":{"k":"o","p":{"maxQueries":{"k":"j"},"maxRows":{"k":"j"},"maxBytes":{"k":"j"}}},"get":{"k":"o","p":{"maxIds":{"k":"j"}}},"subscribe":{"k":"o","p":{"maxCollections":{"k":"j"},"maxRecordIds":{"k":"j"},"heartbeatMs":{"k":"j"},"retentionMs":{"k":"j"}}},"ttl":{"k":"o","p":{"minSeconds":{"k":"j"},"maxSeconds":{"k":"j"},"maxPerCollection":{"k":"j"}}},"concurrency":{"k":"o","p":{"reads":{"k":"j"},"writes":{"k":"j"},"queueMs":{"k":"j"}}},"idempotencyWindowMs":{"k":"j"}}},"ErrorRetry":{"k":"o","p":{"afterMs":{"k":"j"}}},"MetadataDocument":{"k":"o","p":{"revision":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"},"deletedAt":{"k":"j"},"data":{"k":"o"}}},"MetadataNullableDocument":{"k":"u","a":[{"r":"MetadataDocument"}]},"MetadataPage":{"k":"o","p":{"items":{"k":"a","i":{"r":"MetadataDocument"}},"pageInfo":{"r":"CloudPageInfo"}}},"MetadataDirectoryInput":{"k":"o","p":{"parentId":{"k":"u","a":[{"r":"UnsV2Identity"}]},"schemaVersion":{"k":"j"}}},"MetadataTopicInput":{"k":"o","p":{"collectionId":{"r":"UnsV2Identity"},"fields":{"k":"a","i":{"r":"FieldBinding"}},"parentId":{"k":"u","a":[{"r":"UnsV2Identity"}]},"schemaVersion":{"k":"j"}}},"MetadataCollectionInput":{"k":"o","p":{"indexes":{"k":"a","i":{"r":"IndexSpec"}},"recordSchema":{"r":"Schema"},"sampleSchema":{"r":"Schema"},"schemaVersion":{"k":"j"},"semantics":{"r":"CollectionSemantics"},"parentId":{"k":"u","a":[{"r":"UnsV2Identity"}]}}},"MetadataBulkResult":{"k":"o","p":{"index":{"k":"j"},"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"deletedCount":{"k":"j"},"restoredCount":{"k":"j"},"value":{"r":"MetadataNullableDocument"},"error":{"r":"Fault"}}},"MetadataTransactionResult":{"k":"o","p":{"matchedCount":{"k":"j"},"modifiedCount":{"k":"j"},"deletedCount":{"k":"j"},"restoredCount":{"k":"j"},"value":{"r":"MetadataNullableDocument"}}},"MetadataBulkInsertOne":{"k":"o","p":{"data":{"k":"o"}}},"MetadataBulkUpdateOne":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"expectedRevision":{"k":"j"},"update":{"k":"o","p":{"$set":{"k":"o"},"$unset":{"k":"o"},"$setOnInsert":{"k":"o"}}}}},"MetadataBulkReplaceOne":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"expectedRevision":{"k":"j"},"replacement":{"k":"o"}}},"MetadataBulkDeleteOne":{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"expectedRevision":{"k":"j"}}},"MetadataBulkRestoreOne":{"k":"o","p":{"expectedRevision":{"k":"j"}}},"MetadataTransactionOperation":{"k":"u","a":[{"k":"o","p":{"filter":{"r":"UnsV2DataFilter"},"sort":{"r":"UnsV2PipelineSort"},"data":{"k":"o"},"update":{"k":"o","p":{"$set":{"k":"o"},"$unset":{"k":"o"},"$setOnInsert":{"k":"o"}}},"replacement":{"k":"o"},"expectedRevision":{"k":"j"},"dependsOn":{"k":"a","i":{}}}},{"k":"u","a":[{"k":"o","p":{"data":{"r":"MetadataDirectoryInput"},"replacement":{"r":"MetadataDirectoryInput"}}},{"k":"o","p":{"data":{"r":"MetadataTopicInput"},"replacement":{"r":"MetadataTopicInput"}}},{"k":"o","p":{"data":{"r":"MetadataCollectionInput"},"replacement":{"r":"MetadataCollectionInput"}}}]},{"k":"o"},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"}]},{"k":"u","a":[{"k":"o"}]},{"k":"o"}]},"CloudSourceDocumentPatch":{"k":"o","p":{"config":{"r":"CloudSourceConfig"}}},"CloudSourceDocumentSummary":{"k":"o","p":{"revision":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"}}},"CloudStreamDocumentSummary":{"k":"o","p":{"revision":{"k":"j"},"createdAt":{"k":"j"},"updatedAt":{"k":"j"},"activeRelease":{"k":"j"}}}} as const;
 
 export const UNS_V2_CONTRACT_PROVENANCE = {
   "repository": "FREEZONEX/Tier0-Backend",
-  "revision": "7c76e3567e97bbcb5b61a15a933127b0e41f25b1",
+  "revision": "c4cd29d04aec1b5745ce45b2e025166810f721b4",
   "version": "5.0.0",
+  "sourceMode": "commit",
+  "sourceInputs": [
+    {
+      "path": "service/unssvr/internal/domain/unsv2/contract_generated.go",
+      "sha256": "72cd0c7d7cb72d3c024c5898e802ba7b223264f28d46b33a59de3328aef2b83c",
+      "matchesCommit": true
+    },
+    {
+      "path": "share/unscontract/manifest.json",
+      "sha256": "e516dc42d6e99fa4383c11796056a7e7c18aa2098809f0a7fd04587dbb790289",
+      "matchesCommit": true
+    },
+    {
+      "path": "share/unscontract/cloud-support.json",
+      "sha256": "23e5680ec2c4f645067789e366d783961817bbb7438a3aa98099fd5314e6a35f",
+      "matchesCommit": true
+    },
+    {
+      "path": "share/unscontract/registry_generated.go",
+      "sha256": "62dd03cf1240dddf40dfb663c1f4e742d25d8b1d78f349927a2120656c7ed24d",
+      "matchesCommit": true
+    },
+    {
+      "path": "share/unscontract/provenance.json",
+      "sha256": "3addf2aeebd4d2d315447caa8552e1309b26466a8343d7a6b76d39fc6e123923",
+      "matchesCommit": true
+    }
+  ],
   "source": "service/unssvr/internal/domain/unsv2/contract_generated.go#ContractJSON",
-  "cloudRevision": "7c76e3567e97bbcb5b61a15a933127b0e41f25b1",
-  "cloudContractRevision": "cloud-source-impact/2+source-vendor/2+app-create-capability/1+data/3+record-reads/1+stream-receipt/1+collection-namespace/1+http-acquisition/2+app-collection/2+collection-ownership/1+metadata/1+app-context/2+collection-ttl/1+error-model/1+crud-consolidation/1+record-insert-return/1+lifecycle-consolidation/1+api-surface/2+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1+app-collections/1+http-in/1+app-resource-access/2+stream-control-probe-retirement/1",
+  "cloudRevision": "c4cd29d04aec1b5745ce45b2e025166810f721b4",
+  "cloudContractRevision": "cloud-source-impact/2+source-vendor/2+app-create-capability/1+data/3+record-reads/1+stream-receipt/1+collection-namespace/1+http-acquisition/2+http-source-role/1+http-source-request/1+app-collection/2+collection-ownership/1+metadata/1+app-context/2+collection-ttl/1+error-model/1+crud-consolidation/1+record-insert-return/1+lifecycle-consolidation/1+api-surface/2+source-stream-single-model+app-data/2+hosted-control/1+source-bindings/1+record-notifications/1+record-delete-samples/1+stream-history/1+app-collections/1+http-in/1+app-resource-access/2+stream-control-probe-retirement/1",
   "resolvedCloudContract": true,
   "enterpriseBase": {
     "repository": "FREEZONEX/Tier0-Enterprise-New",
@@ -3863,14 +3899,14 @@ export const UNS_V2_CONTRACT_PROVENANCE = {
     "source": "backend/internal/domain/unsv2/contract_generated.go",
     "note": "Reviewed Enterprise wire contract imported as editable Cloud contract source; regenerate all adapters with scripts/generate-uns-v2.mjs."
   },
-  "sourceDerivedContractSHA256": "f6f5b62cba5fda868d42f477b5f17f65f7d45609c722ee8b2350b3bafd2cc2c7",
-  "upstreamSourceSHA256": "0a583d5dc7e4b85d29f823ab5a2182a9f0e6bb4d611b6ae3aac23d26373eb31c",
+  "sourceDerivedContractSHA256": "dd438e419afdadbab19868501685795d6534f2e8dd017e9126984cc4e7322a6a",
+  "upstreamSourceSHA256": "72cd0c7d7cb72d3c024c5898e802ba7b223264f28d46b33a59de3328aef2b83c",
   "note": "Resolved Cloud contract from the pinned commit; local fixtures do not establish deployment acceptance or device ACK.",
   "hashes": {
-    "contract": "5874fd5976d22ba873f4f3878c1f5b76676a243e3468a26fe349a638cf11bcbb",
+    "contract": "311ac73da9d2da594b37ffc1e2eb006dd012c76591d259936bd3a860e170df8b",
     "cloudSupport": "23e5680ec2c4f645067789e366d783961817bbb7438a3aa98099fd5314e6a35f",
-    "manifest": "e9ad92e525233a7fa45976d6b9726b51b12e29cf9042297964958497b675bc9f",
-    "provenance": "ae199114afbd26fae4d6161ede0828b713d456f3c6d693aa9218e634061839ca",
+    "manifest": "e516dc42d6e99fa4383c11796056a7e7c18aa2098809f0a7fd04587dbb790289",
+    "provenance": "50f40beacc7e3cc6c7bfd5a0ffc4572ccb0229a9a480a31d0b1fc87503544da7",
     "registry": "62dd03cf1240dddf40dfb663c1f4e742d25d8b1d78f349927a2120656c7ed24d"
   },
   "publicOperationCount": 86,

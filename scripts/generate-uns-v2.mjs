@@ -172,7 +172,15 @@ function typeFor(schema, nested = false) {
     composed.push(typeFor(own, true));
   }
   if (Array.isArray(schema.allOf)) composed.push(...schema.allOf.map(item => typeFor(item, true)));
-  if (Array.isArray(schema.oneOf)) composed.push(`(${union(schema.oneOf.map(item => typeFor(item, true)))})`);
+  if (Array.isArray(schema.oneOf)) {
+    const closedObjects = schema.oneOf.every(item => item.additionalProperties === false && item.properties);
+    const keys = closedObjects ? [...new Set(schema.oneOf.flatMap(item => Object.keys(item.properties)))] : [];
+    composed.push(`(${union(schema.oneOf.map(item => {
+      const excluded = keys.filter(key => !Object.hasOwn(item.properties, key));
+      const shape = typeFor(item, true);
+      return excluded.length ? `(${shape} & { ${excluded.map(key => `${JSON.stringify(key)}?: never`).join('; ')} })` : shape;
+    }))})`);
+  }
   if (Array.isArray(schema.anyOf)) composed.push(`(${union(schema.anyOf.map(item => typeFor(item, true)))})`);
   if (composed.length) {
     let combined = composed.join(' & ');
