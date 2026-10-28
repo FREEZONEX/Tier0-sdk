@@ -3,7 +3,7 @@ import { decodeUnsV2JSON, encodeUnsV2JSON, UnsV2RawNumber } from '../../src/uns-
 
 describe('UNS v2 lossless numeric boundary', () => {
   it('preserves native Source binding IDs, exact revisions and protocol acquisition without inventing credentials', () => {
-    const definition = { name: 'native-http', script: '', sdkVersion: 'tier0-stream/v2',
+    const definition = { name: 'native-http', script: '',
       sourceBindings: [{ sourceId: '9007199254740995', configRevision: new UnsV2RawNumber('9007199254740993'), acquisition: {} }] };
     const text = encodeUnsV2JSON(definition, 'RuntimeStreamDefinition');
     expect(text).toContain('"sourceId":"9007199254740995","configRevision":9007199254740993,"acquisition":{}');

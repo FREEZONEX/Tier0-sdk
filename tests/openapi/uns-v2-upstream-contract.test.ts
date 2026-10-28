@@ -22,7 +22,7 @@ const operation = (name: string) => manifest.operations.find(item => item.name =
 
 describe('Backend App UNS access contract without generic record audit', () => {
   it('pins the exact upstream commit and all generator inputs', () => {
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('7c76e3567e97bbcb5b61a15a933127b0e41f25b1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('ed4ab593a142457278727e650f1fb795734d9907');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
     expect(UNS_V2_CONTRACT_PROVENANCE.resolvedCloudContract).toBe(true);
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('+source-vendor/2');

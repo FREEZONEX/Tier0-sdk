@@ -49,42 +49,42 @@ const requestPermission: CloudHostedAppControlPolicyUpdateReq['platformPermissio
 const retiredControlPermission: CloudHostedAppControlPolicyUpdateReq['platformPermissions'][number] = 'control.execute';
 void [keyGrantSubject, keyMutationSubject, requestPermission, retiredControlPermission];
 const sapConfig: CloudSourceConfig = {
-  configVersion: 3, sourceType: 'sap-odata', endpoint: 'https://sap.example.invalid/service/', options: {},
+  sourceType: 'sap-odata', endpoint: 'https://sap.example.invalid/service/', options: {},
   auth: { kind: 'vendorBasic', credentialRef: 'opaque-ref' },
 };
-const genericConfig: CloudSourceConfig = { configVersion: 2, endpoint: 'https://generic.example.invalid/', options: {} };
-// @ts-expect-error SAP v3 requires its opaque vendorBasic auth reference.
-const anonymousSAP: CloudSourceConfig = { configVersion: 3, sourceType: 'sap-odata', endpoint: 'https://sap.example.invalid/', options: {} };
-// @ts-expect-error v3 does not inherit the v2 bearer credential kind.
+const genericConfig: CloudSourceConfig = { endpoint: 'https://generic.example.invalid/', options: {} };
+// @ts-expect-error SAP requires its opaque vendorBasic auth reference.
+const anonymousSAP: CloudSourceConfig = { sourceType: 'sap-odata', endpoint: 'https://sap.example.invalid/', options: {} };
+// @ts-expect-error Vendor profiles do not accept generic bearer credentials.
 const invalidSAP: CloudSourceConfig = {
-  configVersion: 3, sourceType: 'sap-odata', endpoint: 'https://sap.example.invalid/', options: {},
+  sourceType: 'sap-odata', endpoint: 'https://sap.example.invalid/', options: {},
   auth: { kind: 'bearer', credentialRef: 'opaque-ref' },
 };
 const unsupportedVendor: CloudSourceConfig = {
-  configVersion: 3, endpoint: 'https://vendor.example.invalid/', options: {}, auth: { kind: 'vendorBasic', credentialRef: 'opaque-ref' },
+  endpoint: 'https://vendor.example.invalid/', options: {}, auth: { kind: 'vendorBasic', credentialRef: 'opaque-ref' },
   // @ts-expect-error Unregistered vendor profiles cannot select a native host.
   sourceType: 'unsupported-vendor',
 };
 const teamcenterConfig: CloudSourceConfig = {
-  configVersion: 3, sourceType: 'teamcenter', endpoint: 'https://plm.example.invalid/', options: {},
+  sourceType: 'teamcenter', endpoint: 'https://plm.example.invalid/', options: {},
   auth: { kind: 'vendorNative', credentialRef: 'opaque-teamcenter-ref' },
 };
 const salesforceConfig: CloudSourceConfig = {
-  configVersion: 3, sourceType: 'salesforce', endpoint: 'https://crm.example.invalid/',
+  sourceType: 'salesforce', endpoint: 'https://crm.example.invalid/',
   options: { parameters: { clientId: 'fixture-client', apiVersion: 'v67.0' } },
   auth: { kind: 'vendorNative', credentialRef: 'opaque-salesforce-ref' },
 };
-client.unsV2.sourceDocumentCreate({ dryRun: true, document: { name: 'Teamcenter', protocol: 'http', config: teamcenterConfig } });
+client.unsV2.sourceDocumentCreate({ dryRun: true, document: { name: 'Teamcenter', protocol: 'http-api', config: teamcenterConfig } });
 client.unsV2.sourceDiscover({ id: '101', expectedRevision: 2 });
 // @ts-expect-error Discovery requires an explicit current revision.
 client.unsV2.sourceDiscover({ id: '101' });
 // @ts-expect-error Discovery has no caller-selected target URL.
 client.unsV2.sourceDiscover({ id: '101', expectedRevision: 2, endpoint: 'https://other.example.invalid/' });
-client.unsV2.sourceDocumentCreate({ dryRun: true, document: { name: 'SAP', protocol: 'http', config: sapConfig } });
+client.unsV2.sourceDocumentCreate({ dryRun: true, document: { name: 'SAP', protocol: 'http-api', config: sapConfig } });
 void [sapConfig, genericConfig, anonymousSAP, invalidSAP, unsupportedVendor, teamcenterConfig, salesforceConfig];
 // Native runtime DTO from the pinned source; hosted Cloud documents retain their own shape.
 const nativeDefinition: RuntimeStreamDefinition = {
-  name: 'native-http', script: '', sdkVersion: 'tier0-stream/v2',
+  name: 'native-http', script: '',
   sourceBindings: [{ sourceId: '101', configRevision: new UnsV2RawNumber('9007199254740993'), acquisition: {} }],
 };
 const invalidBinding: NonNullable<RuntimeStreamDefinition['sourceBindings']>[number] = {
@@ -128,7 +128,7 @@ const streamObservation = client.unsV2.streamObservationGet({ id: '202' });
 const runs = client.unsV2.streamRunsList({ id: '202', size: 20, cursor: 'opaque' });
 const documentValidation = client.unsV2.streamDocumentValidate({ document: {
   name: 'collector', model: 'collection',
-  script: { sdkVersion: 'tier0-stream/v2', code: 'module.exports = api => api;', timeoutMs: 1_000 },
+  script: { code: 'module.exports = api => api;', timeoutMs: 1_000 },
   sources: [{ alias: 'plant', sourceId: 'source-1', configRevision: 2, resources: ['line/1'] }],
 } });
 const operation: UnsV2OperationName = 'recordInsertOne';
@@ -257,7 +257,7 @@ void invalidAppMembersBody;
 client.unsV2.sourceDocumentCreate({ dryRun: true });
 // @ts-expect-error v5 Stream creation needs either document or program.
 client.unsV2.streamDocumentCreate({ dryRun: true });
-const nativeSource: UnsV2Request<'sourceDocumentCreate'> = { dryRun: true, document: { name: 'HTTP', protocol: 'http', config: { configVersion: 2, endpoint: 'https://example.invalid', options: {} } } };
+const nativeSource: UnsV2Request<'sourceDocumentCreate'> = { dryRun: true, document: { name: 'HTTP', protocol: 'http-api', config: { endpoint: 'https://example.invalid', options: {} } } };
 // @ts-expect-error Single document and batch items are mutually exclusive.
 client.unsV2.sourceDocumentCreate({ ...nativeSource, items: [{ document: nativeSource.document }] });
 void nativeSource;

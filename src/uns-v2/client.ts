@@ -6,6 +6,7 @@ import {
 } from '../cloud-transport.js';
 import { getClient, type HttpClient } from '../openapi/client.js';
 import { decodeUnsV2JSON, encodeUnsV2JSON } from './codec.js';
+import { assertCurrentSourceStreamRequest } from './single-model.js';
 import { recordSubscription, type RecordSubscribeRequest, type RecordSubscribeFrame } from './subscribe.js';
 export type { RecordSubscribeRequest, RecordSubscribeFrame } from './subscribe.js';
 import {
@@ -142,6 +143,7 @@ export class UnsV2ClientCore {
     }
     const operation = UNS_V2_OPERATIONS[name];
     if (operation.method !== 'POST') throw new TypeError('Tier0 SDK: use recordSubscribe for SSE.');
+    assertCurrentSourceStreamRequest(name, request);
     const mutation = operation.mutation;
     const path = resourcePath(operation, request);
     const body = encodeUnsV2JSON(request, operation.request);

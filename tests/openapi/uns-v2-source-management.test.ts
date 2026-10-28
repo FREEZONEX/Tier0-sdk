@@ -8,7 +8,7 @@ const sapSchema = manifest.schemas.CloudSourceConfig.oneOf.find((schema: { prope
   schema.properties.sourceType?.const === 'sap-odata');
 const api = () => createClient({ apiHost: 'https://gateway.example.test', apiKey: 'fixture-management-key' }).unsV2;
 const sap = {
-  configVersion: 3 as const, sourceType: 'sap-odata' as const, endpoint: 'https://sap.example.test/service/',
+  sourceType: 'sap-odata' as const, endpoint: 'https://sap.example.test/service/',
   options: { headers: { 'X-Vendor-Scope': 'fixture-scope' } }, auth: { kind: 'vendorBasic' as const, credentialRef: 'opaque-sap-ref' },
 };
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
@@ -31,15 +31,15 @@ describe('frozen v5 Source management contract', () => {
     expect(manifest.schemas.CloudSourceDiscoverReq).toMatchObject({
       additionalProperties: false, required: ['id', 'expectedRevision'],
     });
-    expect(sapSchema).toMatchObject({ additionalProperties: false, required: ['configVersion', 'sourceType', 'endpoint', 'options', 'auth'] });
+    expect(sapSchema).toMatchObject({ additionalProperties: false, required: ['sourceType', 'endpoint', 'options', 'auth'] });
     expect(sapSchema.properties.auth.properties.kind.enum).toEqual(['vendorNative', 'vendorBasic']);
     expect(sapSchema.properties).not.toHaveProperty('tls');
     expect(sapSchema.properties.options.additionalProperties).toBe(false);
   });
 
   it('retains all native vendor contracts without exposing credential material in Source configuration', () => {
-    const vendors = manifest.schemas.CloudSourceConfig.oneOf.filter((schema: { properties: { configVersion: { const: number } } }) =>
-      schema.properties.configVersion.const === 3);
+    const vendors = manifest.schemas.CloudSourceConfig.oneOf.filter((schema: { properties: { sourceType?: { const: string } } }) =>
+      schema.properties.sourceType?.const !== undefined);
     expect(vendors).toHaveLength(11);
     expect(new Set(vendors.map((schema: { properties: { sourceType: { const: string } } }) => schema.properties.sourceType.const))).toEqual(
       new Set(['sap-odata', 'pi-web-api', 'plex-mes', 'wms-rest', 'yonyou-yonbip', 'kingdee-jdy', 'ngp', 'kingdee-k3cloud', 'salesforce', 'teamcenter', 'hikvision-isapi'])
@@ -107,7 +107,7 @@ describe('frozen v5 Source management contract', () => {
   );
 
   it('preserves sourceTypes and the upstream SAP schema through the open protocols response', async () => {
-    const sourceTypes = [{ id: 'sap-odata', protocol: 'http', configVersion: 3, configSchema: sapSchema, credentialKinds: ['vendorBasic'] }];
+    const sourceTypes = [{ id: 'sap-odata', protocol: 'http-api', configSchema: sapSchema, credentialKinds: ['vendorBasic'] }];
     const fetch = vi.fn(async () => json({ code: 200, msg: 'ok', requestId: 'protocols-fixture', data: { sourceTypes } }));
     vi.stubGlobal('fetch', fetch);
     expect((await api().sourceProtocolsList({})).data.sourceTypes).toEqual(sourceTypes);
@@ -115,24 +115,23 @@ describe('frozen v5 Source management contract', () => {
   });
 
   it.each([
-    { configVersion: 2, endpoint: 'https://generic.example.test/data', options: { custom: 1.25 } }, sap,
-  ])('retains numeric codecs across configVersion $configVersion schema alternatives and batch items', config => {
+    { endpoint: 'https://generic.example.test/data', options: { custom: 1.25 } }, sap,
+  ])('retains numeric codecs across protocol profiles and batch items', config => {
     const request = { dryRun: true, items: [{ id: '101', expectedRevision: new UnsV2RawNumber('9007199254740993'),
-      document: { name: 'Source fixture', protocol: 'http', config } }] };
+      document: { name: 'Source fixture', protocol: 'http-api', config } }] };
     const wire = encodeUnsV2JSON(request, 'CloudSourceDocumentUpdateReq');
     expect(wire).toContain('"expectedRevision":9007199254740993');
     expect(decodeUnsV2JSON(wire, 'CloudSourceDocumentUpdateReq')).toEqual(request);
-    const invalid = { ...request, items: [{ ...request.items[0], document: { ...request.items[0].document,
-      config: { ...config, configVersion: 1.5 } } }] };
+    const invalid = { ...request, items: [{ ...request.items[0], expectedRevision: 1.5 }] };
     expect(() => encodeUnsV2JSON(invalid, 'CloudSourceDocumentUpdateReq')).toThrow('integer');
-    expect(() => decodeUnsV2JSON(wire.replace(`"configVersion":${config.configVersion}`, '"configVersion":1.5'),
+    expect(() => decodeUnsV2JSON(wire.replace('"expectedRevision":9007199254740993', '"expectedRevision":1.5'),
       'CloudSourceDocumentUpdateReq')).toThrow('integer');
   });
 
   it('maps SAP create/update/patch requests through every supported request schema shape', async () => {
     const fetch = vi.fn(async () => json({ code: 200, msg: 'ok', requestId: 'source-preview', data: { dryRun: true } }));
     vi.stubGlobal('fetch', fetch);
-    const document = { name: 'SAP fixture', protocol: 'http' as const, config: sap };
+    const document = { name: 'SAP fixture', protocol: 'http-api' as const, config: sap };
     const sdk = api();
     await sdk.sourceDocumentCreate({ dryRun: true, document });
     await sdk.sourceDocumentCreate({ dryRun: true, items: [{ document }] });

@@ -76,7 +76,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
       });
       else if (req.url === '/openapi/v1/capabilities/discover') send(res, {
         product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1'],
-        interpreterContractVersions: ['tier0-stream/v2'], sdkContractVersions: ['control/v1'], capabilities: [], deprecations: [],
+        sdkContractVersions: ['control/v1'], capabilities: [], deprecations: [],
       });
       else send(res, {});
     };
@@ -322,7 +322,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     const start = received.length;
     respond = (_req, res) => send(res, { code: 503, msg: 'sample runtime unavailable', requestId: 'sample-unavailable' }, 503);
     const api = client().unsV2;
-    await expect(api.streamSampleTest({ document: { name: 'sample', model: 'script', script: { sdkVersion: 'tier0-stream/v2', code: '', timeoutMs: 1000 } }, entryId: 'sample', input: { value: 1 } })).rejects.toBeInstanceOf(UnsV2Error);
+    await expect(api.streamSampleTest({ document: { name: 'sample', model: 'script', script: { code: '', timeoutMs: 1000 } }, entryId: 'sample', input: { value: 1 } })).rejects.toBeInstanceOf(UnsV2Error);
     expect(received.slice(start)).toHaveLength(1);
     expect(received[start].path).toBe('/openapi/v2/uns/streams/sample/test');
     const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
@@ -334,7 +334,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('5.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('7c76e3567e97bbcb5b61a15a933127b0e41f25b1');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('ed4ab593a142457278727e650f1fb795734d9907');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(86);
     expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(97);
@@ -635,7 +635,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
     });
     await client().unsV2.streamDocumentValidate({ document: {
       name: 'collector', model: 'collection',
-      script: { sdkVersion: 'tier0-stream/v2', code: 'module.exports = api => api;', timeoutMs: 1_000 },
+      script: { code: 'module.exports = api => api;', timeoutMs: 1_000 },
       sources: [{ alias: 'plant', sourceId: 'source-1', configRevision: 2, resources: ['line/1', 'line/2'] }],
     } });
     expect(JSON.parse(received[start].body)).toMatchObject({
