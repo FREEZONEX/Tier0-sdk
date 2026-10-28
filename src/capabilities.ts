@@ -5,7 +5,24 @@ export type CapabilityCode = 'namespace.v2' | 'source' | 'stream' | 'control.v1'
 export type CapabilityState = 'disabled' | 'not_supported' | 'unavailable' | 'readiness_unknown' | 'ready';
 export type CapabilityAvailability = 'unavailable' | 'unknown' | 'available';
 
-export interface PublicCapability {
+export interface CapabilityDiagnostics {
+  reasonCode?: string;
+  checkedAt?: string;
+  validUntil?: string;
+  retryAfterMs?: number;
+}
+
+export interface CapabilityOperation extends CapabilityDiagnostics {
+  operation: string;
+  releaseEnabled: boolean;
+  enabled: boolean;
+  allowed: boolean;
+  state: CapabilityState;
+  availability: CapabilityAvailability;
+  requiresResourceCheck: boolean;
+}
+
+export interface PublicCapability extends CapabilityDiagnostics {
   code: CapabilityCode;
   /** Public release and workspace gates; does not establish runtime readiness. */
   releaseEnabled: boolean;
@@ -17,6 +34,7 @@ export interface PublicCapability {
   /** Not device online status or execution/ACK confirmation. */
   availability: CapabilityAvailability;
   contractVersions: string[];
+  operations?: CapabilityOperation[];
 }
 
 export interface CapabilityDeprecation {
@@ -26,7 +44,7 @@ export interface CapabilityDeprecation {
 }
 
 export interface CapabilityDiscoverResponse {
-  product: 'cloud';
+  product: 'cloud' | 'enterprise';
   /** Trusted server configuration only; absent when unconfigured. */
   productVersion?: string;
   contractVersion: '1.0';
@@ -74,6 +92,54 @@ function strings(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(text) && new Set(value).size === value.length;
 }
 
+
+function diagnostics(value: Record<string, unknown>, fail: () => never): CapabilityDiagnostics {
+  const result: CapabilityDiagnostics = {};
+  for (const field of ['reasonCode', 'checkedAt', 'validUntil'] as const) {
+    if (value[field] === undefined) continue;
+    if (!text(value[field])) return fail();
+    if (field !== 'reasonCode' && (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z$/.test(value[field]) ||
+        !Number.isFinite(Date.parse(value[field])))) return fail();
+    result[field] = value[field];
+  }
+  if (value.retryAfterMs !== undefined) {
+    if (typeof value.retryAfterMs !== 'number' || !Number.isSafeInteger(value.retryAfterMs) || value.retryAfterMs < 0) return fail();
+    result.retryAfterMs = value.retryAfterMs;
+  }
+  if (result.validUntil !== undefined && (value.state !== 'ready' || result.checkedAt === undefined ||
+      Date.parse(result.validUntil) <= Date.parse(result.checkedAt))) return fail();
+  return result;
+}
+
+const sourceOperations = ['read', 'configure', 'test', 'discover', 'enable', 'disable'];
+const streamOperations = ['read', 'configure', 'validate', 'deploy', 'execute', 'disable'];
+
+function operationFields(value: Record<string, unknown>, code: CapabilityCode, fail: () => never): { operations?: CapabilityOperation[] } {
+  if (value.operations === undefined) return {};
+  if (!Array.isArray(value.operations)) return fail();
+  const operations: CapabilityOperation[] = [];
+  const supported = code === 'source' ? sourceOperations : code === 'stream' ? streamOperations : [];
+  const seen = new Set<string>();
+  for (const item of value.operations) {
+    if (!record(item) || !text(item.operation)) return fail();
+    if (!supported.includes(item.operation)) continue;
+    if (seen.has(item.operation)) return fail();
+    seen.add(item.operation);
+    const ready = item.state === 'ready';
+    const expected = ready ? 'available' : item.state === 'readiness_unknown' ? 'unknown' : 'unavailable';
+    if (typeof item.releaseEnabled !== 'boolean' || typeof item.enabled !== 'boolean' || typeof item.allowed !== 'boolean' ||
+        typeof item.requiresResourceCheck !== 'boolean' ||
+        !['disabled', 'not_supported', 'unavailable', 'readiness_unknown', 'ready'].includes(item.state as string) ||
+        item.availability !== expected || item.enabled !== ready ||
+        (ready && (!item.releaseEnabled || !item.allowed)) ||
+        (item.state === 'disabled' ? item.releaseEnabled : !item.releaseEnabled)) return fail();
+    operations.push({operation: item.operation, releaseEnabled: item.releaseEnabled, enabled: item.enabled,
+      allowed: item.allowed, state: item.state as CapabilityState, availability: item.availability as CapabilityAvailability,
+      requiresResourceCheck: item.requiresResourceCheck, ...diagnostics(item, fail)});
+  }
+  return { operations };
+}
+
 /** Validate and explicitly project the frozen contract; unknown capabilities/extension fields are ignored. */
 function discovery(value: unknown, status: number): CapabilityDiscoverResponse {
   const fail = (version = false): never => {
@@ -86,9 +152,8 @@ function discovery(value: unknown, status: number): CapabilityDiscoverResponse {
       !strings(value.apiContractVersions) || !strings(value.sdkContractVersions) ||
       !Array.isArray(value.capabilities) || !Array.isArray(value.deprecations) ||
       (value.productVersion !== undefined && !text(value.productVersion))) return fail();
-  if (value.product !== 'cloud' || value.contractVersion !== '1.0' ||
-      !value.apiContractVersions.includes('openapi/v1') ||
-      !value.sdkContractVersions.includes('control/v1')) return fail(true);
+  if (!['cloud', 'enterprise'].includes(value.product) || value.contractVersion !== '1.0' ||
+      !value.apiContractVersions.includes('openapi/v2')) return fail(true);
 
   const capabilities: PublicCapability[] = [];
   const seen = new Set<string>();
@@ -113,6 +178,8 @@ function discovery(value: unknown, status: number): CapabilityDiscoverResponse {
       code, releaseEnabled: item.releaseEnabled, enabled: item.enabled, allowed: item.allowed,
       state: item.state as CapabilityState, availability: item.availability as CapabilityAvailability,
       contractVersions: [...item.contractVersions],
+      ...diagnostics(item, fail),
+      ...operationFields(item, code, fail),
     });
   }
   const deprecations: CapabilityDeprecation[] = [];
@@ -126,7 +193,7 @@ function discovery(value: unknown, status: number): CapabilityDiscoverResponse {
     });
   }
   return {
-    product: 'cloud', ...(value.productVersion === undefined ? {} : { productVersion: value.productVersion as string }),
+    product: value.product as CapabilityDiscoverResponse['product'], ...(value.productVersion === undefined ? {} : { productVersion: value.productVersion as string }),
     contractVersion: '1.0', apiContractVersions: [...value.apiContractVersions],
     sdkContractVersions: [...value.sdkContractVersions],
     capabilities, deprecations,
@@ -145,7 +212,7 @@ export class CapabilitiesClient {
     if (arguments.length !== 0) throw new TypeError('Tier0 SDK: capability discovery accepts no arguments.');
     let response: Awaited<ReturnType<CloudTransport['post']>>;
     try {
-      response = await this.transport.post('/openapi/v1/capabilities/discover', {});
+      response = await this.transport.post('/openapi/v2/capabilities/discover', {});
     } catch (error) {
       if (!(error instanceof CloudTransportError)) throw error;
       throw new CapabilityError('Capability discovery HTTP exchange failed.', {

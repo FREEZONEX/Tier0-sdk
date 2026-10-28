@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:tier0:capability-discovery",
+  "title": "Tier0 capability discovery",
+  "type": "object",
+  "required": [
+    "product",
+    "contractVersion",
+    "apiContractVersions",
+    "sdkContractVersions",
+    "capabilities",
+    "deprecations"
+  ],
+  "properties": {
+    "product": {
+      "enum": [
+        "cloud",
+        "enterprise"
+      ]
+    },
+    "productVersion": {
+      "type": "string"
+    },
+    "contractVersion": {
+      "const": "1.0"
+    },
+    "apiContractVersions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "contains": {
+        "const": "openapi/v2"
+      },
+      "uniqueItems": true
+    },
+    "sdkContractVersions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/capability"
+      }
+    },
+    "deprecations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "contract"
+        ],
+        "properties": {
+          "contract": {
+            "type": "string"
+          },
+          "replacement": {
+            "type": "string"
+          },
+          "sunsetAt": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "capability": {
+      "type": "object",
+      "required": [
+        "code",
+        "contractVersions",
+        "releaseEnabled",
+        "enabled",
+        "allowed",
+        "state",
+        "availability"
+      ],
+      "properties": {
+        "releaseEnabled": {
+          "type": "boolean"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "allowed": {
+          "type": "boolean"
+        },
+        "state": {
+          "enum": [
+            "disabled",
+            "not_supported",
+            "unavailable",
+            "readiness_unknown",
+            "ready"
+          ]
+        },
+        "availability": {
+          "enum": [
+            "unavailable",
+            "unknown",
+            "available"
+          ]
+        },
+        "reasonCode": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checkedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "validUntil": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retryAfterMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contractVersions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/operation"
+          }
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "required": [
+        "operation",
+        "requiresResourceCheck",
+        "releaseEnabled",
+        "enabled",
+        "allowed",
+        "state",
+        "availability"
+      ],
+      "properties": {
+        "releaseEnabled": {
+          "type": "boolean"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "allowed": {
+          "type": "boolean"
+        },
+        "state": {
+          "enum": [
+            "disabled",
+            "not_supported",
+            "unavailable",
+            "readiness_unknown",
+            "ready"
+          ]
+        },
+        "availability": {
+          "enum": [
+            "unavailable",
+            "unknown",
+            "available"
+          ]
+        },
+        "reasonCode": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checkedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "validUntil": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retryAfterMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requiresResourceCheck": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

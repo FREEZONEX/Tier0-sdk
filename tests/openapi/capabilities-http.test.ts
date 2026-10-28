@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createClient, CapabilityError } from '../../src/index.js';
 
 const fixture = {
-  product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1'],
+  product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1', 'openapi/v2'],
   sdkContractVersions: ['control/v1'],
   capabilities: [{ code: 'control.invoke.v1', releaseEnabled: true, allowed: true, enabled: false,
     state: 'unavailable', availability: 'unavailable', contractVersions: ['openapi/v1', 'control/v1'] }],
@@ -39,7 +39,7 @@ describe('capability real HTTP fixture (no device execution or external credenti
     respond = (_req, res) => send(res, fixture);
     expect(await client().capabilities.discover()).toEqual(fixture);
     expect(received.length - start).toBe(1);
-    expect(received[start]).toMatchObject({ path: '/openapi/v1/capabilities/discover', method: 'POST', body: '{}',
+    expect(received[start]).toMatchObject({ path: '/openapi/v2/capabilities/discover', method: 'POST', body: '{}',
       headers: { authorization: 'Bearer fixture-workspace-key', 'x-api-key': 'fixture-workspace-key', 'content-type': 'application/json' } });
     expect(received[start].headers['idempotency-key']).toBeUndefined();
   });
@@ -58,7 +58,7 @@ describe('capability real HTTP fixture (no device execution or external credenti
     expect(result).toEqual(body);
     expect(result.capabilities[1]).toMatchObject({ enabled: false, state: 'unavailable' });
     expect(received.length - start).toBe(1);
-    expect(received[start].path).toBe('/openapi/v1/capabilities/discover');
+    expect(received[start].path).toBe('/openapi/v2/capabilities/discover');
   });
 
   it('does not cache a release or readiness transition', async () => {
