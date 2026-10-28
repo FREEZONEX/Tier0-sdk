@@ -3593,5 +3593,1749 @@
         "operations": []
       }
     ]
+  },
+  {
+    "name": "cloud-namespace.v2-versions-empty",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": []
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-namespace.v2-versions-v1-only",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-namespace.v2-versions-v3-only",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v3"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-namespace.v2-versions-required-and-future",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2",
+            "future/v9"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-source-versions-empty",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": []
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-source-versions-v1-only",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-source-versions-v3-only",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v3"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-source-versions-required-and-future",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2",
+            "future/v9"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-stream-versions-empty",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": []
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-stream-versions-v1-only",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-stream-versions-v3-only",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v3"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-stream-versions-required-and-future",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2",
+            "future/v9"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-control.v1-versions-empty",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": []
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-control.v1-versions-missing-sdk-contract",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-control.v1-versions-missing-api-contract",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-control.v1-versions-wrong-api-contract",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2",
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-control.v1-versions-wrong-sdk-contract",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v2"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-control.v1-versions-required-and-future",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1",
+            "future/v9"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-control.v1-versions-required",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-control.v1-versions-unadvertised-api",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-control.invoke.v1-versions-empty",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": []
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-control.invoke.v1-versions-missing-sdk-contract",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-control.invoke.v1-versions-missing-api-contract",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-control.invoke.v1-versions-wrong-api-contract",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2",
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-control.invoke.v1-versions-wrong-sdk-contract",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v2"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-control.invoke.v1-versions-required-and-future",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1",
+            "future/v9"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-control.invoke.v1-versions-required",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-control.invoke.v1-versions-unadvertised-api",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "cloud-future.capability-versions-empty",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "future.capability",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": []
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": []
+  },
+  {
+    "name": "cloud-future.capability-versions-v1-only",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "future.capability",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": []
+  },
+  {
+    "name": "cloud-future.capability-versions-future-only",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "future.capability",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "future/v9"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": []
+  },
+  {
+    "name": "cloud-future.capability-versions-malformed",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "future.capability",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": null
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": []
+  },
+  {
+    "name": "enterprise-namespace.v2-versions-empty",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": []
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-namespace.v2-versions-v1-only",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-namespace.v2-versions-v3-only",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v3"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-namespace.v2-versions-required-and-future",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2",
+            "future/v9"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-source-versions-empty",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": []
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-source-versions-v1-only",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-source-versions-v3-only",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v3"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-source-versions-required-and-future",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2",
+            "future/v9"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-stream-versions-empty",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": []
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-stream-versions-v1-only",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-stream-versions-v3-only",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v3"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-stream-versions-required-and-future",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2",
+            "future/v9"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-control.v1-versions-empty",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": []
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-control.v1-versions-missing-sdk-contract",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-control.v1-versions-missing-api-contract",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-control.v1-versions-wrong-api-contract",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2",
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-control.v1-versions-wrong-sdk-contract",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v2"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-control.v1-versions-required-and-future",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1",
+            "future/v9"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-control.v1-versions-required",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-control.v1-versions-unadvertised-api",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-control.invoke.v1-versions-empty",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": []
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-control.invoke.v1-versions-missing-sdk-contract",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-control.invoke.v1-versions-missing-api-contract",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-control.invoke.v1-versions-wrong-api-contract",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v2",
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-control.invoke.v1-versions-wrong-sdk-contract",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v2"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-control.invoke.v1-versions-required-and-future",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1",
+            "future/v9"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-control.invoke.v1-versions-required",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v1",
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-control.invoke.v1-versions-unadvertised-api",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
+  },
+  {
+    "name": "enterprise-future.capability-versions-empty",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "future.capability",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": []
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": []
+  },
+  {
+    "name": "enterprise-future.capability-versions-v1-only",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "future.capability",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "openapi/v1"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": []
+  },
+  {
+    "name": "enterprise-future.capability-versions-future-only",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "future.capability",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": [
+            "future/v9"
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": []
+  },
+  {
+    "name": "enterprise-future.capability-versions-malformed",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "future.capability",
+          "releaseEnabled": true,
+          "enabled": true,
+          "allowed": true,
+          "state": "ready",
+          "availability": "available",
+          "contractVersions": null
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": []
   }
 ]

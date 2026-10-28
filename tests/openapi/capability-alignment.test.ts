@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createClient } from '../../src/index.js';
 
 const vectors = JSON.parse(readFileSync(new URL('../../contracts/capability-discovery/vectors.json', import.meta.url), 'utf8')) as {
-  name: string; valid: boolean; schemaValid?: boolean; response: unknown; expectedCapabilities?: unknown[];
+  name: string; valid: boolean; schemaValid?: boolean; expectedErrorCode?: string; response: unknown; expectedCapabilities?: unknown[];
 }[];
 const client = () => createClient({ apiHost: 'https://platform.example', apiKey: 'test-fixture' }).capabilities;
 afterEach(() => vi.unstubAllGlobals());
@@ -19,14 +19,14 @@ describe('shared Cloud and Enterprise discovery vectors', () => {
   it.each(vectors)('structural schema: $name', ({ valid, schemaValid, response }) => {
     expect(validateSchema(response), JSON.stringify(validateSchema.errors)).toBe(schemaValid ?? valid);
   });
-  it.each(vectors)('$name', async ({ valid, response, expectedCapabilities }) => {
+  it.each(vectors)('$name', async ({ valid, response, expectedCapabilities, expectedErrorCode }) => {
     const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(response)));
     vi.stubGlobal('fetch', fetch);
     const expected = expectedCapabilities === undefined ? response : {
       ...(response as Record<string, unknown>), capabilities: expectedCapabilities,
     };
     if (valid) expect(await client().discover()).toEqual(expected);
-    else await expect(client().discover()).rejects.toMatchObject({ errorCode: 'CAPABILITY_PROTOCOL_ERROR' });
+    else await expect(client().discover()).rejects.toMatchObject({ errorCode: expectedErrorCode ?? 'CAPABILITY_PROTOCOL_ERROR' });
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(fetch.mock.calls[0][0]).toBe('https://platform.example/openapi/v2/capabilities/discover');
   });

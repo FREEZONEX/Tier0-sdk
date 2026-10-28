@@ -502,6 +502,60 @@
               }
             ]
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "enum": [
+                  "namespace.v2",
+                  "source",
+                  "stream"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "contractVersions": {
+                "type": "array",
+                "contains": {
+                  "const": "openapi/v2"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "enum": [
+                  "control.v1",
+                  "control.invoke.v1"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "contractVersions": {
+                "type": "array",
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "openapi/v1"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "control/v1"
+                    }
+                  }
+                ]
+              }
+            }
+          }
         }
       ]
     },
@@ -682,5 +736,40 @@
         }
       ]
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "type": "array",
+            "contains": {
+              "type": "object",
+              "required": [
+                "code"
+              ],
+              "properties": {
+                "code": {
+                  "enum": [
+                    "control.v1",
+                    "control.invoke.v1"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "apiContractVersions": {
+            "type": "array",
+            "contains": {
+              "const": "openapi/v1"
+            }
+          }
+        }
+      }
+    }
+  ]
 }
