@@ -9,7 +9,7 @@ const discovery: Promise<CapabilityDiscoverResponse> = api.discover();
 const globalDiscovery: Promise<CapabilityDiscoverResponse> = capabilities.discover();
 async function inspect() {
   const response = await discovery;
-  const product: 'cloud' = response.product;
+  const product: 'cloud' | 'enterprise' = response.product;
   const version: '1.0' = response.contractVersion;
   const optionalProductVersion: string | undefined = response.productVersion;
   const capability: PublicCapability | undefined = response.capabilities[0];
