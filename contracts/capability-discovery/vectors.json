@@ -6075,5 +6075,1965 @@
       ],
       "deprecations": []
     }
+  },
+  {
+    "name": "cloud-duplicate-known-namespace.v2",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2",
+        "openapi/v1"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        },
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "readiness_unknown",
+          "availability": "unknown",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-known-source",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2",
+        "openapi/v1"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        },
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "readiness_unknown",
+          "availability": "unknown",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-known-stream",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2",
+        "openapi/v1"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        },
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "readiness_unknown",
+          "availability": "unknown",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-known-control.v1",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2",
+        "openapi/v1"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        },
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "readiness_unknown",
+          "availability": "unknown",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-known-control.invoke.v1",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2",
+        "openapi/v1"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        },
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "readiness_unknown",
+          "availability": "unknown",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-source-read",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-source-configure",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "configure",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "configure",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-source-test",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "test",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "test",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-source-discover",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "discover",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "discover",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-source-enable",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-source-disable",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "disable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "disable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-stream-read",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-stream-configure",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "configure",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "configure",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-stream-validate",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "validate",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "validate",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-stream-deploy",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "deploy",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "deploy",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-stream-execute",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-stream-disable",
+    "valid": false,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "disable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "disable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "cloud-duplicate-unknown-capabilities-ignored",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false,
+              "reasonCode": "READY"
+            },
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true,
+              "reasonCode": "WORKER_NOT_REGISTERED"
+            }
+          ]
+        },
+        {
+          "code": "future",
+          "version": "a"
+        },
+        {
+          "code": "future",
+          "version": "b"
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "stream",
+        "releaseEnabled": true,
+        "enabled": false,
+        "allowed": true,
+        "state": "unavailable",
+        "availability": "unavailable",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "reasonCode": "WORKER_NOT_REGISTERED",
+        "checkedAt": "2026-10-28T14:00:00Z",
+        "operations": [
+          {
+            "operation": "read",
+            "releaseEnabled": true,
+            "enabled": true,
+            "allowed": true,
+            "state": "ready",
+            "availability": "available",
+            "requiresResourceCheck": false,
+            "reasonCode": "READY"
+          },
+          {
+            "operation": "execute",
+            "releaseEnabled": true,
+            "enabled": false,
+            "allowed": true,
+            "state": "unavailable",
+            "availability": "unavailable",
+            "requiresResourceCheck": true,
+            "reasonCode": "WORKER_NOT_REGISTERED"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "cloud-duplicate-unknown-operations-ignored",
+    "valid": true,
+    "response": {
+      "product": "cloud",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false,
+              "reasonCode": "READY"
+            },
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true,
+              "reasonCode": "WORKER_NOT_REGISTERED"
+            },
+            {
+              "operation": "future",
+              "version": "a"
+            },
+            {
+              "operation": "future",
+              "version": "b"
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "stream",
+        "releaseEnabled": true,
+        "enabled": false,
+        "allowed": true,
+        "state": "unavailable",
+        "availability": "unavailable",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "reasonCode": "WORKER_NOT_REGISTERED",
+        "checkedAt": "2026-10-28T14:00:00Z",
+        "operations": [
+          {
+            "operation": "read",
+            "releaseEnabled": true,
+            "enabled": true,
+            "allowed": true,
+            "state": "ready",
+            "availability": "available",
+            "requiresResourceCheck": false,
+            "reasonCode": "READY"
+          },
+          {
+            "operation": "execute",
+            "releaseEnabled": true,
+            "enabled": false,
+            "allowed": true,
+            "state": "unavailable",
+            "availability": "unavailable",
+            "requiresResourceCheck": true,
+            "reasonCode": "WORKER_NOT_REGISTERED"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "enterprise-duplicate-known-namespace.v2",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2",
+        "openapi/v1"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        },
+        {
+          "code": "namespace.v2",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "readiness_unknown",
+          "availability": "unknown",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-known-source",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2",
+        "openapi/v1"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        },
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "readiness_unknown",
+          "availability": "unknown",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-known-stream",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2",
+        "openapi/v1"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        },
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "readiness_unknown",
+          "availability": "unknown",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-known-control.v1",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2",
+        "openapi/v1"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        },
+        {
+          "code": "control.v1",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "readiness_unknown",
+          "availability": "unknown",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-known-control.invoke.v1",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2",
+        "openapi/v1"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        },
+        {
+          "code": "control.invoke.v1",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "readiness_unknown",
+          "availability": "unknown",
+          "contractVersions": [
+            "openapi/v1",
+            "control/v1"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z"
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-source-read",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-source-configure",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "configure",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "configure",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-source-test",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "test",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "test",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-source-discover",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "discover",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "discover",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-source-enable",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "enable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-source-disable",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "source",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "disable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "disable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-stream-read",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-stream-configure",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "configure",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "configure",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-stream-validate",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "validate",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "validate",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-stream-deploy",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "deploy",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "deploy",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-stream-execute",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-stream-disable",
+    "valid": false,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "disable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true
+            },
+            {
+              "operation": "disable",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "readiness_unknown",
+              "availability": "unknown",
+              "requiresResourceCheck": true
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    }
+  },
+  {
+    "name": "enterprise-duplicate-unknown-capabilities-ignored",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false,
+              "reasonCode": "READY"
+            },
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true,
+              "reasonCode": "WORKER_NOT_REGISTERED"
+            }
+          ]
+        },
+        {
+          "code": "future",
+          "version": "a"
+        },
+        {
+          "code": "future",
+          "version": "b"
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "stream",
+        "releaseEnabled": true,
+        "enabled": false,
+        "allowed": true,
+        "state": "unavailable",
+        "availability": "unavailable",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "reasonCode": "WORKER_NOT_REGISTERED",
+        "checkedAt": "2026-10-28T14:00:00Z",
+        "operations": [
+          {
+            "operation": "read",
+            "releaseEnabled": true,
+            "enabled": true,
+            "allowed": true,
+            "state": "ready",
+            "availability": "available",
+            "requiresResourceCheck": false,
+            "reasonCode": "READY"
+          },
+          {
+            "operation": "execute",
+            "releaseEnabled": true,
+            "enabled": false,
+            "allowed": true,
+            "state": "unavailable",
+            "availability": "unavailable",
+            "requiresResourceCheck": true,
+            "reasonCode": "WORKER_NOT_REGISTERED"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "enterprise-duplicate-unknown-operations-ignored",
+    "valid": true,
+    "response": {
+      "product": "enterprise",
+      "contractVersion": "1.0",
+      "apiContractVersions": [
+        "openapi/v2"
+      ],
+      "sdkContractVersions": [],
+      "capabilities": [
+        {
+          "code": "stream",
+          "releaseEnabled": true,
+          "enabled": false,
+          "allowed": true,
+          "state": "unavailable",
+          "availability": "unavailable",
+          "contractVersions": [
+            "openapi/v2"
+          ],
+          "reasonCode": "WORKER_NOT_REGISTERED",
+          "checkedAt": "2026-10-28T14:00:00Z",
+          "operations": [
+            {
+              "operation": "read",
+              "releaseEnabled": true,
+              "enabled": true,
+              "allowed": true,
+              "state": "ready",
+              "availability": "available",
+              "requiresResourceCheck": false,
+              "reasonCode": "READY"
+            },
+            {
+              "operation": "execute",
+              "releaseEnabled": true,
+              "enabled": false,
+              "allowed": true,
+              "state": "unavailable",
+              "availability": "unavailable",
+              "requiresResourceCheck": true,
+              "reasonCode": "WORKER_NOT_REGISTERED"
+            },
+            {
+              "operation": "future",
+              "version": "a"
+            },
+            {
+              "operation": "future",
+              "version": "b"
+            }
+          ]
+        }
+      ],
+      "deprecations": []
+    },
+    "expectedCapabilities": [
+      {
+        "code": "stream",
+        "releaseEnabled": true,
+        "enabled": false,
+        "allowed": true,
+        "state": "unavailable",
+        "availability": "unavailable",
+        "contractVersions": [
+          "openapi/v2"
+        ],
+        "reasonCode": "WORKER_NOT_REGISTERED",
+        "checkedAt": "2026-10-28T14:00:00Z",
+        "operations": [
+          {
+            "operation": "read",
+            "releaseEnabled": true,
+            "enabled": true,
+            "allowed": true,
+            "state": "ready",
+            "availability": "available",
+            "requiresResourceCheck": false,
+            "reasonCode": "READY"
+          },
+          {
+            "operation": "execute",
+            "releaseEnabled": true,
+            "enabled": false,
+            "allowed": true,
+            "state": "unavailable",
+            "availability": "unavailable",
+            "requiresResourceCheck": true,
+            "reasonCode": "WORKER_NOT_REGISTERED"
+          }
+        ]
+      }
+    ]
   }
 ]
