@@ -46,8 +46,7 @@ describe('Stream Control readiness probe retirement', () => {
     for (const api of [unsV2, cloudUnsV2]) {
       for (const name of ['streamDocumentCreate', 'streamDocumentGet', 'streamDocumentUpdate', 'streamDocumentValidate',
         'streamProgramDeploy', 'streamProgramRollback', 'streamProgramVersionsList', 'streamProgramList',
-        'streamDocumentDisable', 'streamProgramDelete', 'streamObservationGet', 'streamRunsList', 'streamSampleTest',
-        'controlDiscover', 'controlDescribe', 'controlInvoke'] as const) {
+        'streamDocumentDisable', 'streamProgramDelete', 'streamObservationGet', 'streamRunsList', 'streamSampleTest'] as const) {
         expect(api[name], name).toBeTypeOf('function');
         expect(UNS_V2_OPERATIONS[name].path, name).toMatch(/^\/openapi\/v2\/uns\//);
       }

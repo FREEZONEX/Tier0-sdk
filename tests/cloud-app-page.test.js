@@ -24,7 +24,7 @@ async function page({ language = 'en', canWrite = false, canCreate, createState 
   const pageEvents = new Map(); const windowEvents = new Map();
   const fetch = vi.fn(async (path) => path.startsWith('/api/orders/notifications/poll') && notifications ? notifications(path) : ({ ok: path === '/api/orders', status: path === '/api/orders' ? 200 : path.startsWith('/api/orders/notifications/poll') ? 404 : 403,
     json: async () => path === '/api/orders' ? { operator: '42', app: 'Fixture', ...hint, dataMode,
-      receiptDomain: intents.receiptDomains[dataMode], items: [{ id: 'fixture-id', revision: 1, data }] } : { code: 'CONTROL_FORBIDDEN' } }));
+      receiptDomain: intents.receiptDomains[dataMode], items: [{ id: 'fixture-id', revision: 1, data }] } : { code: 'STREAM_REQUEST_FORBIDDEN' } }));
   runInNewContext(source, { ...intents, fetch, crypto: { randomUUID: createKey },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
     AbortController, setTimeout: (fn, ms) => { const id = ++nextTimer; timers.set(id, { fn, ms }); return id; }, clearTimeout: id => timers.delete(id),

@@ -126,12 +126,12 @@ function userGrant(name) {
 const dataUsers = dataMode === 'legacy' ? userGrant('CLOUD_DATA_USER_IDS') : undefined;
 if (dataMode === 'core' && !verifyIdentity) throw new Error('APP_IDENTITY_CONFIGURATION_INVALID');
 let controlAuthority;
-if (process.env.CLOUD_CONTROL_USER_IDS || process.env.CLOUD_CONTROL_CODE) {
-  const users = userGrant('CLOUD_CONTROL_USER_IDS');
-  if (!users || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(process.env.CLOUD_CONTROL_CODE || '')) {
-    throw new Error('CONTROL_CONFIGURATION_INVALID');
+if (process.env.CLOUD_STREAM_REQUEST_USER_IDS || process.env.CLOUD_STREAM_REQUEST_CODE) {
+  const users = userGrant('CLOUD_STREAM_REQUEST_USER_IDS');
+  if (!users || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(process.env.CLOUD_STREAM_REQUEST_CODE || '')) {
+    throw new Error('STREAM_REQUEST_CONFIGURATION_INVALID');
   }
-  controlAuthority = { users, code: process.env.CLOUD_CONTROL_CODE, verify: verifyIdentity };
+  controlAuthority = { users, code: process.env.CLOUD_STREAM_REQUEST_CODE, verify: verifyIdentity };
 }
 async function orderSubject(req, requestPath = '/api/orders') {
   if (dataMode === 'legacy' && !dataUsers) throw Object.assign(new Error(), { status: 503, code: 'APP_DATA_UNAVAILABLE' });
@@ -174,8 +174,8 @@ const orderIdentity = (kind, subject, intent) => kind + ':' + createHash('sha256
   .update(JSON.stringify([subject.appID, subject.workspaceID, subject.userID, intent])).digest('hex');
 
 async function deviceControl(req) {
-  if (!controlAuthority || !process.env.TIER0_CONTROL_API_KEY?.trim()) {
-    throw Object.assign(new Error(), { status: 503, code: 'CONTROL_UNAVAILABLE' });
+  if (!controlAuthority || !process.env.TIER0_STREAM_REQUEST_API_KEY?.trim()) {
+    throw Object.assign(new Error(), { status: 503, code: 'STREAM_REQUEST_UNAVAILABLE' });
   }
   const parts = []; let size = 0;
   for await (const part of req) {
@@ -190,11 +190,11 @@ async function deviceControl(req) {
       method: req.method, requestURI: req.url, body: raw });
   } catch { throw Object.assign(new Error(), { status: 401, code: 'APP_IDENTITY_INVALID' }); }
   if (!controlAuthority.users.has(subject.userID)) {
-    throw Object.assign(new Error(), { status: 403, code: 'CONTROL_FORBIDDEN' });
+    throw Object.assign(new Error(), { status: 403, code: 'STREAM_REQUEST_FORBIDDEN' });
   }
   // An absent control credential must never fall back to the default data Key.
-  const control = createClient({ apiKey: process.env.TIER0_CONTROL_API_KEY, transportTimeoutMs: 15000 })
-    .controls.use({ code: controlAuthority.code });
+  const control = createClient({ apiKey: process.env.TIER0_STREAM_REQUEST_API_KEY, transportTimeoutMs: 15000 })
+    .streams.requests.use({ code: controlAuthority.code });
   if (req.method === 'GET') {
     if (raw.length) throw Object.assign(new Error(), { status: 400, code: 'INVALID_INPUT' });
     const definition = await control.describe();

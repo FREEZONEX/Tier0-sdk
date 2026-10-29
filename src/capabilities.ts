@@ -1,7 +1,7 @@
 import { CloudTransport, CloudTransportError, type CloudTransportConfig } from './cloud-transport.js';
 import { getClient, type HttpClient } from './openapi/client.js';
 
-export type CapabilityCode = 'namespace.v2' | 'source' | 'stream' | 'control.v1' | 'control.invoke.v1';
+export type CapabilityCode = 'namespace.v2' | 'source' | 'stream' | 'stream.requests.v1' | 'stream.requests.invoke.v1';
 export type CapabilityState = 'disabled' | 'not_supported' | 'unavailable' | 'readiness_unknown' | 'ready';
 export type CapabilityAvailability = 'unavailable' | 'unknown' | 'available';
 
@@ -28,7 +28,7 @@ export interface PublicCapability extends CapabilityDiagnostics {
   releaseEnabled: boolean;
   /** Server-assessed implementation/readiness, never inferred from releaseEnabled. */
   enabled: boolean;
-  /** Authorization summary, not a grant for every individual Control code. */
+  /** Authorization summary, not a grant for every individual request code. */
   allowed: boolean;
   state: CapabilityState;
   /** Not device online status or execution/ACK confirmation. */
@@ -78,8 +78,8 @@ const contracts: Record<CapabilityCode, string[]> = {
   'namespace.v2': ['openapi/v2'],
   'source': ['openapi/v2'],
   'stream': ['openapi/v2'],
-  'control.v1': ['openapi/v1', 'control/v1'],
-  'control.invoke.v1': ['openapi/v1', 'control/v1'],
+  'stream.requests.v1': ['openapi/v1', 'stream-requests/v1'],
+  'stream.requests.invoke.v1': ['openapi/v1', 'stream-requests/v1'],
 };
 
 function record(value: unknown): value is Record<string, unknown> {

@@ -103,7 +103,7 @@
             ],
             "properties": {
               "code": {
-                "const": "control.v1"
+                "const": "stream.requests.v1"
               }
             }
           },
@@ -118,7 +118,7 @@
             ],
             "properties": {
               "code": {
-                "const": "control.invoke.v1"
+                "const": "stream.requests.invoke.v1"
               }
             }
           },
@@ -173,8 +173,8 @@
                   "namespace.v2",
                   "source",
                   "stream",
-                  "control.v1",
-                  "control.invoke.v1"
+                  "stream.requests.v1",
+                  "stream.requests.invoke.v1"
                 ]
               }
             }
@@ -801,8 +801,8 @@
             "properties": {
               "code": {
                 "enum": [
-                  "control.v1",
-                  "control.invoke.v1"
+                  "stream.requests.v1",
+                  "stream.requests.invoke.v1"
                 ]
               }
             }
@@ -819,7 +819,7 @@
                   },
                   {
                     "contains": {
-                      "const": "control/v1"
+                      "const": "stream-requests/v1"
                     }
                   }
                 ]
@@ -1023,8 +1023,8 @@
               "properties": {
                 "code": {
                   "enum": [
-                    "control.v1",
-                    "control.invoke.v1"
+                    "stream.requests.v1",
+                    "stream.requests.invoke.v1"
                   ]
                 }
               }

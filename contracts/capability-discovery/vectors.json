@@ -3913,7 +3913,7 @@
     }
   },
   {
-    "name": "cloud-control.v1-versions-empty",
+    "name": "cloud-stream.requests.v1-versions-empty",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -3925,7 +3925,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -3939,7 +3939,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "cloud-control.v1-versions-missing-sdk-contract",
+    "name": "cloud-stream.requests.v1-versions-missing-sdk-contract",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -3951,7 +3951,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -3967,7 +3967,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "cloud-control.v1-versions-missing-api-contract",
+    "name": "cloud-stream.requests.v1-versions-missing-api-contract",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -3979,14 +3979,14 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
           "state": "ready",
           "availability": "available",
           "contractVersions": [
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -3995,7 +3995,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "cloud-control.v1-versions-wrong-api-contract",
+    "name": "cloud-stream.requests.v1-versions-wrong-api-contract",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -4007,7 +4007,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4015,7 +4015,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v2",
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -4024,7 +4024,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "cloud-control.v1-versions-wrong-sdk-contract",
+    "name": "cloud-stream.requests.v1-versions-wrong-sdk-contract",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -4036,7 +4036,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4053,7 +4053,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "cloud-control.v1-versions-required-and-future",
+    "name": "cloud-stream.requests.v1-versions-required-and-future",
     "valid": true,
     "response": {
       "product": "cloud",
@@ -4065,7 +4065,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4073,7 +4073,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v1",
-            "control/v1",
+            "stream-requests/v1",
             "future/v9"
           ]
         }
@@ -4082,7 +4082,7 @@
     }
   },
   {
-    "name": "cloud-control.v1-versions-required",
+    "name": "cloud-stream.requests.v1-versions-required",
     "valid": true,
     "response": {
       "product": "cloud",
@@ -4094,7 +4094,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4102,7 +4102,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -4110,7 +4110,7 @@
     }
   },
   {
-    "name": "cloud-control.v1-versions-unadvertised-api",
+    "name": "cloud-stream.requests.v1-versions-unadvertised-api",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -4121,7 +4121,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4129,7 +4129,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -4138,7 +4138,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "cloud-control.invoke.v1-versions-empty",
+    "name": "cloud-stream.requests.invoke.v1-versions-empty",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -4150,7 +4150,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4164,7 +4164,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "cloud-control.invoke.v1-versions-missing-sdk-contract",
+    "name": "cloud-stream.requests.invoke.v1-versions-missing-sdk-contract",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -4176,7 +4176,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4192,7 +4192,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "cloud-control.invoke.v1-versions-missing-api-contract",
+    "name": "cloud-stream.requests.invoke.v1-versions-missing-api-contract",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -4204,14 +4204,14 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
           "state": "ready",
           "availability": "available",
           "contractVersions": [
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -4220,7 +4220,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "cloud-control.invoke.v1-versions-wrong-api-contract",
+    "name": "cloud-stream.requests.invoke.v1-versions-wrong-api-contract",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -4232,7 +4232,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4240,7 +4240,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v2",
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -4249,7 +4249,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "cloud-control.invoke.v1-versions-wrong-sdk-contract",
+    "name": "cloud-stream.requests.invoke.v1-versions-wrong-sdk-contract",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -4261,7 +4261,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4278,7 +4278,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "cloud-control.invoke.v1-versions-required-and-future",
+    "name": "cloud-stream.requests.invoke.v1-versions-required-and-future",
     "valid": true,
     "response": {
       "product": "cloud",
@@ -4290,7 +4290,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4298,7 +4298,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v1",
-            "control/v1",
+            "stream-requests/v1",
             "future/v9"
           ]
         }
@@ -4307,7 +4307,7 @@
     }
   },
   {
-    "name": "cloud-control.invoke.v1-versions-required",
+    "name": "cloud-stream.requests.invoke.v1-versions-required",
     "valid": true,
     "response": {
       "product": "cloud",
@@ -4319,7 +4319,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4327,7 +4327,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -4335,7 +4335,7 @@
     }
   },
   {
-    "name": "cloud-control.invoke.v1-versions-unadvertised-api",
+    "name": "cloud-stream.requests.invoke.v1-versions-unadvertised-api",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -4346,7 +4346,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4354,7 +4354,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -4785,7 +4785,7 @@
     }
   },
   {
-    "name": "enterprise-control.v1-versions-empty",
+    "name": "enterprise-stream.requests.v1-versions-empty",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -4797,7 +4797,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4811,7 +4811,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "enterprise-control.v1-versions-missing-sdk-contract",
+    "name": "enterprise-stream.requests.v1-versions-missing-sdk-contract",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -4823,7 +4823,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4839,7 +4839,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "enterprise-control.v1-versions-missing-api-contract",
+    "name": "enterprise-stream.requests.v1-versions-missing-api-contract",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -4851,14 +4851,14 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
           "state": "ready",
           "availability": "available",
           "contractVersions": [
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -4867,7 +4867,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "enterprise-control.v1-versions-wrong-api-contract",
+    "name": "enterprise-stream.requests.v1-versions-wrong-api-contract",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -4879,7 +4879,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4887,7 +4887,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v2",
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -4896,7 +4896,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "enterprise-control.v1-versions-wrong-sdk-contract",
+    "name": "enterprise-stream.requests.v1-versions-wrong-sdk-contract",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -4908,7 +4908,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4925,7 +4925,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "enterprise-control.v1-versions-required-and-future",
+    "name": "enterprise-stream.requests.v1-versions-required-and-future",
     "valid": true,
     "response": {
       "product": "enterprise",
@@ -4937,7 +4937,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4945,7 +4945,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v1",
-            "control/v1",
+            "stream-requests/v1",
             "future/v9"
           ]
         }
@@ -4954,7 +4954,7 @@
     }
   },
   {
-    "name": "enterprise-control.v1-versions-required",
+    "name": "enterprise-stream.requests.v1-versions-required",
     "valid": true,
     "response": {
       "product": "enterprise",
@@ -4966,7 +4966,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -4974,7 +4974,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -4982,7 +4982,7 @@
     }
   },
   {
-    "name": "enterprise-control.v1-versions-unadvertised-api",
+    "name": "enterprise-stream.requests.v1-versions-unadvertised-api",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -4993,7 +4993,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -5001,7 +5001,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -5010,7 +5010,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "enterprise-control.invoke.v1-versions-empty",
+    "name": "enterprise-stream.requests.invoke.v1-versions-empty",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -5022,7 +5022,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -5036,7 +5036,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "enterprise-control.invoke.v1-versions-missing-sdk-contract",
+    "name": "enterprise-stream.requests.invoke.v1-versions-missing-sdk-contract",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -5048,7 +5048,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -5064,7 +5064,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "enterprise-control.invoke.v1-versions-missing-api-contract",
+    "name": "enterprise-stream.requests.invoke.v1-versions-missing-api-contract",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -5076,14 +5076,14 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
           "state": "ready",
           "availability": "available",
           "contractVersions": [
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -5092,7 +5092,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "enterprise-control.invoke.v1-versions-wrong-api-contract",
+    "name": "enterprise-stream.requests.invoke.v1-versions-wrong-api-contract",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -5104,7 +5104,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -5112,7 +5112,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v2",
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -5121,7 +5121,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "enterprise-control.invoke.v1-versions-wrong-sdk-contract",
+    "name": "enterprise-stream.requests.invoke.v1-versions-wrong-sdk-contract",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -5133,7 +5133,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -5150,7 +5150,7 @@
     "expectedErrorCode": "CAPABILITY_UNSUPPORTED_VERSION"
   },
   {
-    "name": "enterprise-control.invoke.v1-versions-required-and-future",
+    "name": "enterprise-stream.requests.invoke.v1-versions-required-and-future",
     "valid": true,
     "response": {
       "product": "enterprise",
@@ -5162,7 +5162,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -5170,7 +5170,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v1",
-            "control/v1",
+            "stream-requests/v1",
             "future/v9"
           ]
         }
@@ -5179,7 +5179,7 @@
     }
   },
   {
-    "name": "enterprise-control.invoke.v1-versions-required",
+    "name": "enterprise-stream.requests.invoke.v1-versions-required",
     "valid": true,
     "response": {
       "product": "enterprise",
@@ -5191,7 +5191,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -5199,7 +5199,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -5207,7 +5207,7 @@
     }
   },
   {
-    "name": "enterprise-control.invoke.v1-versions-unadvertised-api",
+    "name": "enterprise-stream.requests.invoke.v1-versions-unadvertised-api",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -5218,7 +5218,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": true,
           "allowed": true,
@@ -5226,7 +5226,7 @@
           "availability": "available",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ]
         }
       ],
@@ -6203,7 +6203,7 @@
     }
   },
   {
-    "name": "cloud-duplicate-known-control.v1",
+    "name": "cloud-duplicate-known-stream.requests.v1",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -6215,7 +6215,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": false,
           "allowed": true,
@@ -6223,13 +6223,13 @@
           "availability": "unavailable",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ],
           "reasonCode": "WORKER_NOT_REGISTERED",
           "checkedAt": "2026-10-28T14:00:00Z"
         },
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": false,
           "allowed": true,
@@ -6237,7 +6237,7 @@
           "availability": "unknown",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ],
           "reasonCode": "WORKER_NOT_REGISTERED",
           "checkedAt": "2026-10-28T14:00:00Z"
@@ -6247,7 +6247,7 @@
     }
   },
   {
-    "name": "cloud-duplicate-known-control.invoke.v1",
+    "name": "cloud-duplicate-known-stream.requests.invoke.v1",
     "valid": false,
     "response": {
       "product": "cloud",
@@ -6259,7 +6259,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": false,
           "allowed": true,
@@ -6267,13 +6267,13 @@
           "availability": "unavailable",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ],
           "reasonCode": "WORKER_NOT_REGISTERED",
           "checkedAt": "2026-10-28T14:00:00Z"
         },
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": false,
           "allowed": true,
@@ -6281,7 +6281,7 @@
           "availability": "unknown",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ],
           "reasonCode": "WORKER_NOT_REGISTERED",
           "checkedAt": "2026-10-28T14:00:00Z"
@@ -7183,7 +7183,7 @@
     }
   },
   {
-    "name": "enterprise-duplicate-known-control.v1",
+    "name": "enterprise-duplicate-known-stream.requests.v1",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -7195,7 +7195,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": false,
           "allowed": true,
@@ -7203,13 +7203,13 @@
           "availability": "unavailable",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ],
           "reasonCode": "WORKER_NOT_REGISTERED",
           "checkedAt": "2026-10-28T14:00:00Z"
         },
         {
-          "code": "control.v1",
+          "code": "stream.requests.v1",
           "releaseEnabled": true,
           "enabled": false,
           "allowed": true,
@@ -7217,7 +7217,7 @@
           "availability": "unknown",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ],
           "reasonCode": "WORKER_NOT_REGISTERED",
           "checkedAt": "2026-10-28T14:00:00Z"
@@ -7227,7 +7227,7 @@
     }
   },
   {
-    "name": "enterprise-duplicate-known-control.invoke.v1",
+    "name": "enterprise-duplicate-known-stream.requests.invoke.v1",
     "valid": false,
     "response": {
       "product": "enterprise",
@@ -7239,7 +7239,7 @@
       "sdkContractVersions": [],
       "capabilities": [
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": false,
           "allowed": true,
@@ -7247,13 +7247,13 @@
           "availability": "unavailable",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ],
           "reasonCode": "WORKER_NOT_REGISTERED",
           "checkedAt": "2026-10-28T14:00:00Z"
         },
         {
-          "code": "control.invoke.v1",
+          "code": "stream.requests.invoke.v1",
           "releaseEnabled": true,
           "enabled": false,
           "allowed": true,
@@ -7261,7 +7261,7 @@
           "availability": "unknown",
           "contractVersions": [
             "openapi/v1",
-            "control/v1"
+            "stream-requests/v1"
           ],
           "reasonCode": "WORKER_NOT_REGISTERED",
           "checkedAt": "2026-10-28T14:00:00Z"

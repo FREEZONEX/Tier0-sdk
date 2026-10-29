@@ -33,6 +33,15 @@ const client = (timeout = 2_000, unsV2MaxResponseBytes?: number) => createClient
   apiHost, apiKey: 'workspace-bound-key', transportTimeoutMs: timeout, unsV2MaxResponseBytes,
 });
 
+// Synthetic local response values, not runtime defaults or live readiness proof.
+const appLimits = {
+  count: { defaultMax: 10, max: 100 }, total: { defaultMax: 10, max: 100 },
+  queryBatch: { maxQueries: 2, maxRows: 10, maxBytes: 65536 }, get: { maxIds: 10 },
+  subscribe: { maxCollections: 2, maxRecordIds: 10, heartbeatMs: 1000, retentionMs: 60000 },
+  ttl: { minSeconds: 60, maxSeconds: 31536000, maxPerCollection: 2 },
+  concurrency: { reads: 2, writes: 1, queueMs: 0 }, idempotencyWindowMs: 60000,
+};
+
 describe('UNS v2 localhost HTTP fixture', () => {
   it('isolates concurrent per-request clients and snapshots their proof configuration', async () => {
     const start = received.length;
@@ -65,25 +74,25 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received.at(-1)?.headers['x-tier0-app-data-subject']).toBeUndefined();
   });
 
-  it('never sends a Control/capability, legacy or asset proof header, even on post to a v2 path', async () => {
+  it('never sends a Stream/capability, legacy or asset proof header, even on post to a v2 path', async () => {
     const start = received.length;
     const config = { apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: 'gateway.user.signature' };
     const api = createClient(config);
     respond = (req, res) => {
-      if (req.url === '/openapi/v1/controls/discover') send(res, { total: 0, list: [] });
-      else if (req.url === '/openapi/v1/controls/pump.start/invoke') send(res, {
-        code: 'pump.start', contractVersion: '1', result: {}, runID: 'fixture-run', status: 'succeeded', replayed: false,
+      if (req.url === '/openapi/v1/stream-requests/discover') send(res, { total: 0, list: [] });
+      else if (req.url === '/openapi/v1/stream-requests/pump.start/invoke') send(res, {
+        code: 'pump.start', contractVersion: '1', result: {}, runID: 'fixture-run', status: 'completed', replayed: false,
       });
       else if (req.url === '/openapi/v2/capabilities/discover') send(res, {
         product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1', 'openapi/v2'],
-        sdkContractVersions: ['control/v1'], capabilities: [], deprecations: [],
+        sdkContractVersions: ['stream-requests/v1'], capabilities: [], deprecations: [],
       });
       else send(res, {});
     };
     const http = new HttpClient(config);
     const transport = new CloudTransport(() => http, config);
     await Promise.all([
-      api.controls.discover(), api.controls.use({ code: 'pump.start' }).invoke({}), api.capabilities.discover(),
+      api.streams.requests.discover(), api.streams.requests.use({ code: 'pump.start' }).invoke({}), api.capabilities.discover(),
       http.post('/openapi/v1/uns/query', {}), http.post('/openapi/v1/assets/files/url', {}),
       transport.post('/openapi/v2/uns/test', {}),
       ...['/openapi/v1/uns/query', '/openapi/v2/assets/test', '/openapi/v2/uns-other/test', '/openapi/v2/uns']
@@ -102,51 +111,36 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received).toHaveLength(start);
   });
 
-  it.each(['controlDiscover', 'controlDescribe', 'controlInvoke'] as const)
-  ('never forwards data delegation through unsV2.%s', async operation => {
+  it.each(['controlDiscover', 'controlDescribe', 'controlInvoke',
+    'streamRequestDiscover', 'streamRequestDescribe', 'streamRequestInvoke'] as const)
+  ('does not export or dispatch request execution alias %s', async name => {
     const start = received.length;
-    const definition = {
-      code: 'pump.start', name: 'Start pump', contractVersion: '1',
-      inputSchema: {}, outputSchema: {}, sideEffect: 'write', idempotency: 'required', timeoutMs: 1000,
-    } as const;
-    const envelope = { code: 200, msg: 'ok', requestId: 'v2-control-fixture' };
-    const responses = {
-      controlDiscover: { ...envelope, data: {
-        list: [definition], total: 1, page: 1, size: 20, hasMore: false,
-        complete: true, truncated: false, snapshotScope: 'thisRequestOnly',
-      } },
-      controlDescribe: { ...envelope, data: definition },
-      controlInvoke: { ...envelope, data: {
-        code: 'pump.start', contractVersion: '1', result: { started: true },
-        runId: 'v2-control-run', status: 'succeeded', replayed: false,
-      } },
-    } satisfies { [Name in typeof operation]: UnsV2Response<Name> };
-    const requests = {
-      controlDiscover: { page: 1, size: 20 },
-      controlDescribe: { code: 'pump.start' },
-      controlInvoke: { code: 'pump.start', input: {}, idempotencyKey: 'v2-control-intent' },
-    };
-    respond = (_req, res) => send(res, responses[operation]);
-    const api = createClient({
-      apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: 'gateway.user.signature',
-    });
-    const results = {
-      controlDiscover: () => api.unsV2.controlDiscover(requests.controlDiscover),
-      controlDescribe: () => api.unsV2.controlDescribe(requests.controlDescribe),
-      controlInvoke: () => api.unsV2.controlInvoke(requests.controlInvoke),
-    };
-    await expect(results[operation]()).resolves.toEqual(responses[operation]);
-    const paths = {
-      controlDiscover: '/openapi/v2/uns/controls/discover',
-      controlDescribe: '/openapi/v2/uns/controls/describe',
-      controlInvoke: '/openapi/v2/uns/controls/invoke',
-    };
+    const api = client().unsV2;
+    expect(api).not.toHaveProperty(name);
+    const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
+    await expect(core.call(name, {})).rejects.toThrow('unknown UNS v2 operation');
+    expect(received).toHaveLength(start);
+  });
+
+  it.each([
+    '/openapi/v2/uns/controls/invoke', '/openapi/v2/uns/stream-requests/discover',
+    '/openapi/v2/uns/stream-requests/describe', '/openapi/v2/uns/stream-requests/invoke',
+    '/openapi/v2/uns/stream-requests/grants/get', '/openapi/v2/uns/stream-requests/grants/set',
+    '/openapi/v2/uns/app-stream-policy/get', '/openapi/v2/uns/app-stream-policy/update',
+    '/openapi/v2/uns/app/data-policy/get', '/openapi/v2/uns/not-registered',
+    '/openapi/v2/uns/collections/one/records:find?redirect=execution',
+    '/openapi/v2/uns/collections/../records:find',
+    '/openapi/v2/uns/collections/%2e%2e/records:find',
+    '/openapi/v2/uns/collections/one%2ftwo/records:find',
+    '/openapi/v2/uns/collections/one%5ctwo/records:find',
+  ])('never sends a data proof to execution, management or unregistered route %s', async path => {
+    const start = received.length;
+    respond = (_req, res) => send(res, {});
+    const config = { apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: 'gateway.user.signature' };
+    await new CloudTransport(() => new HttpClient(config), config).postText(path, '{}');
     expect(received.slice(start)).toHaveLength(1);
-    expect(received[start]).toMatchObject({ method: 'POST', path: paths[operation] });
-    expect(JSON.parse(received[start].body)).toEqual(requests[operation]);
     expect(received[start].headers['x-tier0-app-data-subject']).toBeUndefined();
     expect(received[start].headers.authorization).toBe('Bearer workspace-bound-key');
-    expect(received[start].headers['x-api-key']).toBe('workspace-bound-key');
   });
 
   it('rejects invalid proof configurations synchronously without requests or value disclosure', () => {
@@ -205,22 +199,52 @@ describe('UNS v2 localhost HTTP fixture', () => {
     const start = received.length;
     respond = (_req, res) => send(res, { code: 200, msg: '', requestId: 'app-context', data: {
       appId: '14bfc189-8516-4709-a4c9-865a0f1dc345', name: 'Hosted App', revision: 1,
-      collections: [], platformPermissions: [],
+      collections: [], platformPermissions: [], dataState: 'ready', limits: appLimits,
     } });
     const out = await client().unsV2.dataAppContext({});
     expect(out.data.appId).toBe('14bfc189-8516-4709-a4c9-865a0f1dc345');
     expect(out.data.name).toBe('Hosted App');
+    expect(out.data.dataState).toBe('ready');
+    expect(out.data.limits).toEqual(appLimits);
     expect(out.data.collections).toEqual([]);
     expect(received.length - start).toBe(1);
     expect(received.at(-1)?.path).toBe('/openapi/v2/uns/app/context');
     expect(received.at(-1)?.body).toBe('{}');
   });
 
+  it('reads uninitialized App context once without initializing, granting or retrying', async () => {
+    const start = received.length;
+    respond = (_req, res) => send(res, { code: 200, msg: '', requestId: 'empty-app-context', data: {
+      appId: 'fixture-app', name: 'No data policy', revision: 0, collections: [], platformPermissions: [],
+      dataState: 'uninitialized', limits: appLimits,
+    } });
+    const out = await client().unsV2.dataAppContext({});
+    expect(out.data.dataState).toBe('uninitialized');
+    expect(out.data.revision).toBe(0);
+    expect(out.data.collections).toEqual([]);
+    expect(out.data.limits).toEqual(appLimits);
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start].path).toBe('/openapi/v2/uns/app/context');
+    expect(received[start].body).toBe('{}');
+  });
+
+  it('preserves disabled App context rejection without automatic policy recovery or retries', async () => {
+    const start = received.length;
+    respond = (_req, res) => send(res, { code: 403, msg: 'App data policy disabled', requestId: 'disabled-app-context', data: null,
+      error: { code: 'FORBIDDEN', reason: 'APP_DATA_POLICY_DISABLED', execution: 'notStarted', details: [], retry: { safe: false } },
+    }, 403);
+    await expect(client().unsV2.dataAppContext({})).rejects.toMatchObject({
+      name: 'UnsV2Error', status: 403, code: 'FORBIDDEN', retryable: false,
+    });
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start].path).toBe('/openapi/v2/uns/app/context');
+  });
+
   it('decodes current employee create capability separately from readable fields without adding a selector or binding to the request', async () => {
     const start = received.length;
     respond = (_req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end('{"code":200,"msg":"ok","requestId":"create-hint","data":{"appId":"app-1","name":"App","revision":19,"platformPermissions":[],"collections":[{"alias":"orders","collectionId":"orders","permissions":["record:read","record:write"],"recordSchema":{"type":"object","properties":{"orderNo":{"type":"string"}}},"createCapability":{"version":"cloud-app-create-capability/v1","allowed":true,"reason":"allowed","appRevision":19,"collectionRevision":9007199254740993,"binding":"' + 'a'.repeat(64) + '","inputSchema":{"type":"object","additionalProperties":false,"required":["orderNo","amount"],"properties":{"orderNo":{"type":"string"},"amount":{"type":"integer","minimum":0,"enum":[9007199254740993]}}}}}]}}');
+      res.end('{"code":200,"msg":"ok","requestId":"create-hint","data":{"appId":"app-1","name":"App","revision":19,"dataState":"ready","limits":' + JSON.stringify(appLimits) + ',"platformPermissions":[],"collections":[{"alias":"orders","collectionId":"orders","permissions":["record:read","record:write"],"recordSchema":{"type":"object","properties":{"orderNo":{"type":"string"}}},"createCapability":{"version":"cloud-app-create-capability/v1","allowed":true,"reason":"allowed","appRevision":19,"collectionRevision":9007199254740993,"binding":"' + 'a'.repeat(64) + '","inputSchema":{"type":"object","additionalProperties":false,"required":["orderNo","amount"],"properties":{"orderNo":{"type":"string"},"amount":{"type":"integer","minimum":0,"enum":[9007199254740993]}}}}}]}}');
     };
     const out = await client().unsV2.dataAppContext({});
     const grant = out.data.collections[0], cap = grant.createCapability;
@@ -318,6 +342,61 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received.slice(start).every(row => row.headers['x-api-key'] === 'workspace-bound-key')).toBe(true);
   });
 
+  it('preserves optional safe run diagnostics and unknown run status without retry or dispatch inference', async () => {
+    const api = client().unsV2;
+    for (const diagnostic of [undefined, {
+      code: 'FUTURE_SOURCE_DIAGNOSTIC', stage: 'source', message: 'Safe diagnostic',
+      repair: 'Review the existing scope', sourceRequest: 'notDispatched',
+    }, {
+      code: 'FUTURE_RUN_DIAGNOSTIC', stage: 'unknown', message: 'Safe diagnostic', repair: 'Reconcile the existing run',
+    }]) {
+      const start = received.length;
+      respond = (_req, res) => send(res, { code: 200, msg: '', requestId: 'run-diagnostic', data: {
+        checkedAt: 1793231792697, nextCursor: '', items: [{
+          id: 'fixture-run', kind: 'request', release: '2', entryId: 'fixture-entry', trigger: 'request',
+          status: 'unknown', createdAt: 1793231792697, finishedAt: null, durationMs: null,
+          ...(diagnostic ? { error: diagnostic } : {}),
+        }],
+      } });
+      const response = await api.streamRunsList({ id: '101', size: 1 });
+      const run = response.data.items[0];
+      expect(run.status).toBe('unknown');
+      expect(run.error).toEqual(diagnostic);
+      expect(Object.hasOwn(run, 'error')).toBe(diagnostic !== undefined);
+      expect(received.slice(start)).toHaveLength(1);
+      expect(received[start].path).toBe('/openapi/v2/uns/streams/runs/list');
+      // notDispatched describes this Source request, never prior effects of the run.
+    }
+  });
+
+  it.each(['admitted', 'response-sent', 'completed', 'failed', 'unknown'] as const)(
+    'preserves HTTP run %s with absent, null and epoch-ms response timestamps', async status => {
+      const start = received.length;
+      const epochMs = 1_793_231_792_697;
+      for (const timestamp of [{}, { responseSentAt: null }, { responseSentAt: epochMs }]) {
+        const http = { id: 'http-run', kind: 'http' as const, release: '2', entryId: 'http-entry',
+          trigger: 'http-request', status, createdAt: epochMs - 10, finishedAt: null, durationMs: null, ...timestamp };
+        const historical = (['delivery', 'control'] as const).map(kind => ({
+          ...http, id: `${kind}-run`, kind, trigger: 'interval', status: 'completed',
+        }));
+        const items: UnsV2Response<'streamRunsList'>['data']['items'] = [http, ...historical];
+        respond = (_req, res) => send(res, {
+          code: 200, msg: 'ok', requestId: 'http-runs', data: { items, checkedAt: epochMs, nextCursor: '' },
+        });
+        const result = await client().unsV2.streamRunsList({ id: '202', size: 10 });
+        expect(result.data.items).toEqual(items);
+        expect(Object.hasOwn(result.data.items[0], 'responseSentAt')).toBe(Object.hasOwn(timestamp, 'responseSentAt'));
+        if ('responseSentAt' in timestamp) expect(result.data.items[0].responseSentAt).toBe(timestamp.responseSentAt);
+      }
+      expect(received.slice(start)).toHaveLength(3);
+      for (const call of received.slice(start)) {
+        expect(call.method).toBe('POST');
+        expect(call.path).toBe('/openapi/v2/uns/streams/runs/list');
+        expect(JSON.parse(call.body)).toEqual({ id: '202', size: 10 });
+      }
+    }
+  );
+
   it('never retries isolated sample execution or exposes Core-only credentials and ingress routes', async () => {
     const start = received.length;
     respond = (_req, res) => send(res, { code: 503, msg: 'sample runtime unavailable', requestId: 'sample-unavailable' }, 503);
@@ -326,7 +405,10 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received.slice(start)).toHaveLength(1);
     expect(received[start].path).toBe('/openapi/v2/uns/streams/sample/test');
     const core = api as unknown as { call(name: string, request: unknown): Promise<unknown> };
-    for (const name of ['graph', 'sourceCredentialCreate', 'sourceIngressGet', 'sourceIngressRotate', 'controlAppCreate', 'sourceMqttAuthCreate']) {
+    for (const name of ['graph', 'sourceCredentialCreate', 'sourceIngressGet', 'sourceIngressRotate', 'sourceMqttAuthCreate',
+      ...['Capabilities', 'List', 'Get', 'Create', 'Update', 'PermissionsUpdate'].flatMap(suffix => [
+        `controlApp${suffix}`, `appRegistration${suffix}`,
+      ])]) {
       expect(Object.hasOwn(UNS_V2_OPERATIONS, name)).toBe(false);
       await expect(core.call(name, {})).rejects.toThrow('unknown UNS v2 operation');
     }
@@ -334,10 +416,10 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('5.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('ed4ab593a142457278727e650f1fb795734d9907');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('397ac88a89593872cf76ad579a3c59753d832668');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
-    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(86);
-    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(97);
+    expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(83);
+    expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(95);
     expect(received.slice(start)).toHaveLength(1);
   });
 

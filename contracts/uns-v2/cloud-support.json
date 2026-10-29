@@ -1,51 +1,274 @@
 {
   "operations": [
-    {"name":"sourceMqttAuthCreate","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
-    {"name":"sourceStateUpdate","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
-    {"name":"sourceRuntimeGet","permission":"uns.source.view","scope":"source:read","minPermission":1},
-    {"name":"sourceProtocolsList","permission":"uns.source.view","scope":"source:read","minPermission":1},
-    {"name":"sourceValidate","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
-    {"name":"sourceProbe","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
-    {"name":"streamProgramVersionsList","permission":"uns.stream.view","scope":"stream:read","minPermission":1},
-    {"name":"streamProgramDeploy","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
-    {"name":"streamProgramRollback","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
-    {"name":"sourceDelete","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
-    {"name":"streamProgramList","permission":"uns.stream.view","scope":"stream:read","minPermission":1},
-    {"name":"streamProgramDelete","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
-    {"name":"controlDiscover","permission":"stream.requests.read","scope":"stream.requests:read","minPermission":1},
-    {"name":"controlDescribe","permission":"stream.requests.read","scope":"stream.requests:read","minPermission":1},
-    {"name":"controlInvoke","permission":"stream.requests.invoke","scope":"stream.requests:invoke","minPermission":1},
-    {"name":"sourceDocumentGet","permission":"uns.source.view","scope":"source:read","minPermission":1},
-    {"name":"sourceDocumentCreate","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
-    {"name":"sourceDocumentUpdate","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
-    {"name":"streamDocumentGet","permission":"uns.stream.view","scope":"stream:read","minPermission":1},
-    {"name":"streamDocumentCreate","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
-    {"name":"streamDocumentUpdate","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
-    {"name":"sourceDocumentList","permission":"uns.source.view","scope":"source:read","minPermission":1},
-    {"name":"streamDocumentDisable","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
-    {"name":"streamDocumentValidate","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
-    {"name":"sourceImpact","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
-    {"name":"sourceHistory","permission":"uns.source.view","scope":"source:read","minPermission":1},
-    {"name":"sourceCredentialCreate","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
-    {"name":"sourceIngressGet","permission":"uns.source.view","scope":"source:read","minPermission":1},
-    {"name":"sourceIngressRotate","permission":"uns.source.manage","scope":"source:manage","minPermission":3},
-    {"name":"sourceObservationsGet","permission":"uns.source.view","scope":"source:read","minPermission":1},
-    {"name":"streamObservationGet","permission":"uns.stream.view","scope":"stream:read","minPermission":1},
-    {"name":"streamRunsList","permission":"uns.stream.view","scope":"stream:read","minPermission":1},
-    {"name":"streamSampleTest","permission":"uns.stream.manage","scope":"stream:manage","minPermission":3},
-    {"name":"controlAppCapabilities","permission":"workspace.api.manage","scope":"app:manage","minPermission":3},
-    {"name":"controlAppList","permission":"workspace.api.manage","scope":"app:manage","minPermission":3},
-    {"name":"controlAppGet","permission":"workspace.api.manage","scope":"app:manage","minPermission":3},
-    {"name":"controlAppCreate","permission":"workspace.api.manage","scope":"app:manage","minPermission":3},
-    {"name":"controlAppUpdate","permission":"workspace.api.manage","scope":"app:manage","minPermission":3},
-    {"name":"controlAppPermissionsUpdate","permission":"workspace.api.manage","scope":"app:manage","minPermission":3},
-    {"name":"appDataPolicyGet","permission":"uns.write","scope":"uns:update","minPermission":3},
-    {"name":"appDataPolicyUpdate","permission":"uns.write","scope":"uns:update","minPermission":3},
-    {"name":"hostedAppControlPolicyGet","permission":"stream.requests.manage","scope":"stream.requests:manage","minPermission":3},
-    {"name":"hostedAppControlPolicyUpdate","permission":"stream.requests.manage","scope":"stream.requests:manage","minPermission":3},
-    {"name":"controlGrantGet","permission":"stream.requests.manage","scope":"stream.requests:manage","minPermission":3},
-    {"name":"controlGrantSet","permission":"stream.requests.manage","scope":"stream.requests:manage","minPermission":3},
-    {"name":"appStreamAccessList","permission":"stream.requests.manage","scope":"stream.requests:manage","minPermission":3},
-    {"name":"sourceDiscover","permission":"uns.source.manage","scope":"source:manage","minPermission":3}
+    {
+      "name": "sourceMqttAuthCreate",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "sourceStateUpdate",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "sourceRuntimeGet",
+      "permission": "uns.source.view",
+      "scope": "source:read",
+      "minPermission": 1
+    },
+    {
+      "name": "sourceProtocolsList",
+      "permission": "uns.source.view",
+      "scope": "source:read",
+      "minPermission": 1
+    },
+    {
+      "name": "sourceValidate",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "sourceProbe",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "streamProgramVersionsList",
+      "permission": "uns.stream.view",
+      "scope": "stream:read",
+      "minPermission": 1
+    },
+    {
+      "name": "streamProgramDeploy",
+      "permission": "uns.stream.manage",
+      "scope": "stream:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "streamProgramRollback",
+      "permission": "uns.stream.manage",
+      "scope": "stream:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "sourceDelete",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "streamProgramList",
+      "permission": "uns.stream.view",
+      "scope": "stream:read",
+      "minPermission": 1
+    },
+    {
+      "name": "streamProgramDelete",
+      "permission": "uns.stream.manage",
+      "scope": "stream:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "sourceDocumentGet",
+      "permission": "uns.source.view",
+      "scope": "source:read",
+      "minPermission": 1
+    },
+    {
+      "name": "sourceDocumentCreate",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "sourceDocumentUpdate",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "streamDocumentGet",
+      "permission": "uns.stream.view",
+      "scope": "stream:read",
+      "minPermission": 1
+    },
+    {
+      "name": "streamDocumentCreate",
+      "permission": "uns.stream.manage",
+      "scope": "stream:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "streamDocumentUpdate",
+      "permission": "uns.stream.manage",
+      "scope": "stream:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "sourceDocumentList",
+      "permission": "uns.source.view",
+      "scope": "source:read",
+      "minPermission": 1
+    },
+    {
+      "name": "streamDocumentDisable",
+      "permission": "uns.stream.manage",
+      "scope": "stream:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "streamDocumentValidate",
+      "permission": "uns.stream.manage",
+      "scope": "stream:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "sourceImpact",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "sourceHistory",
+      "permission": "uns.source.view",
+      "scope": "source:read",
+      "minPermission": 1
+    },
+    {
+      "name": "sourceCredentialCreate",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "sourceIngressGet",
+      "permission": "uns.source.view",
+      "scope": "source:read",
+      "minPermission": 1
+    },
+    {
+      "name": "sourceIngressRotate",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "sourceIngressRevoke",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "sourceObservationsGet",
+      "permission": "uns.source.view",
+      "scope": "source:read",
+      "minPermission": 1
+    },
+    {
+      "name": "streamObservationGet",
+      "permission": "uns.stream.view",
+      "scope": "stream:read",
+      "minPermission": 1
+    },
+    {
+      "name": "streamRunsList",
+      "permission": "uns.stream.view",
+      "scope": "stream:read",
+      "minPermission": 1
+    },
+    {
+      "name": "streamSampleTest",
+      "permission": "uns.stream.manage",
+      "scope": "stream:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "appRegistrationCapabilities",
+      "permission": "workspace.api.manage",
+      "scope": "app:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "appRegistrationList",
+      "permission": "workspace.api.manage",
+      "scope": "app:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "appRegistrationGet",
+      "permission": "workspace.api.manage",
+      "scope": "app:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "appRegistrationCreate",
+      "permission": "workspace.api.manage",
+      "scope": "app:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "appRegistrationUpdate",
+      "permission": "workspace.api.manage",
+      "scope": "app:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "appRegistrationPermissionsUpdate",
+      "permission": "workspace.api.manage",
+      "scope": "app:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "appDataPolicyGet",
+      "permission": "uns.write",
+      "scope": "uns:update",
+      "minPermission": 3
+    },
+    {
+      "name": "appDataPolicyUpdate",
+      "permission": "uns.write",
+      "scope": "uns:update",
+      "minPermission": 3
+    },
+    {
+      "name": "appStreamPolicyGet",
+      "permission": "stream.requests.manage",
+      "scope": "stream.requests:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "appStreamPolicyUpdate",
+      "permission": "stream.requests.manage",
+      "scope": "stream.requests:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "streamRequestGrantGet",
+      "permission": "stream.requests.manage",
+      "scope": "stream.requests:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "streamRequestGrantSet",
+      "permission": "stream.requests.manage",
+      "scope": "stream.requests:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "appStreamAccessList",
+      "permission": "stream.requests.manage",
+      "scope": "stream.requests:manage",
+      "minPermission": 3
+    },
+    {
+      "name": "sourceDiscover",
+      "permission": "uns.source.manage",
+      "scope": "source:manage",
+      "minPermission": 3
+    }
   ]
 }

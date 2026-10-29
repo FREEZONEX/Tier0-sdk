@@ -2,12 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { capabilities, CapabilityError, configureClient, createClient } from '../../src/index.js';
 
 const item = {
-  code: 'control.invoke.v1', releaseEnabled: true, enabled: false, allowed: true,
-  state: 'readiness_unknown', availability: 'unknown', contractVersions: ['openapi/v1', 'control/v1'],
+  code: 'stream.requests.invoke.v1', releaseEnabled: true, enabled: false, allowed: true,
+  state: 'readiness_unknown', availability: 'unknown', contractVersions: ['openapi/v1', 'stream-requests/v1'],
 };
 const fixture = () => ({
   product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1', 'openapi/v2'],
-  sdkContractVersions: ['control/v1'],
+  sdkContractVersions: ['stream-requests/v1'],
   capabilities: [{ ...item }], deprecations: [],
 });
 const client = () => createClient({ apiHost: 'https://cloud.example', apiKey: 'fixture-key', transportTimeoutMs: 100 }).capabilities;
@@ -47,7 +47,7 @@ describe('frozen capability discovery contract', () => {
     if (!body.apiContractVersions.includes('openapi/v2')) body.apiContractVersions.push('openapi/v2');
     body.capabilities = Object.entries({
       'namespace.v2': ['openapi/v2'], 'source': ['openapi/v2'], 'stream': ['openapi/v2'],
-      'control.v1': ['openapi/v1', 'control/v1'], 'control.invoke.v1': item.contractVersions,
+      'stream.requests.v1': ['openapi/v1', 'stream-requests/v1'], 'stream.requests.invoke.v1': item.contractVersions,
     }).map(([code, contractVersions]) => ({ ...item, code, contractVersions }));
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reply(body)));
     expect(await client().discover()).toEqual(body);
@@ -57,6 +57,8 @@ describe('frozen capability discovery contract', () => {
     const body = { ...fixture(), capabilities: [
       { ...item, code: 'source.v1', contractVersions: ['openapi/v1'] },
       { ...item, code: 'stream.v2', contractVersions: [] },
+      { ...item, code: 'control.v1', contractVersions: ['openapi/v1', 'control/v1'] },
+      { ...item, code: 'control.invoke.v1', contractVersions: ['openapi/v1', 'control/v1'] },
     ] };
     const fetch = vi.fn().mockResolvedValue(reply(body));
     vi.stubGlobal('fetch', fetch);
@@ -74,7 +76,7 @@ describe('frozen capability discovery contract', () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it('accepts the mixed Cloud API versions while preserving unavailable Control execution', async () => {
+  it('accepts the mixed Cloud API versions while preserving unavailable Stream request execution', async () => {
     const body = { ...fixture(), apiContractVersions: ['openapi/v1', 'openapi/v2'], capabilities: [
       { code: 'namespace.v2', releaseEnabled: true, allowed: true, enabled: true,
         state: 'ready', availability: 'available', contractVersions: ['openapi/v2'] },
@@ -129,7 +131,7 @@ describe('frozen capability discovery contract', () => {
   });
 
   it.each([
-    { ...item, code: 'control.v1', contractVersions: ['openapi/v1', 'control/v1', 'control/v2'] },
+    { ...item, code: 'stream.requests.v1', contractVersions: ['openapi/v1', 'stream-requests/v1', 'control/v2'] },
     { ...item, contractVersions: [...item.contractVersions, 'control/v2'] },
   ])('preserves additional versions when all required versions remain without inferring readiness', async capability => {
     const body = { ...fixture(), capabilities: [capability] };
@@ -144,7 +146,7 @@ describe('frozen capability discovery contract', () => {
     ...['product', 'contractVersion', 'apiContractVersions', 'sdkContractVersions', 'capabilities', 'deprecations']
       .map(key => ({ ...fixture(), [key]: undefined })),
     { ...fixture(), productVersion: 12 }, { ...fixture(), productVersion: null },
-    { ...fixture(), apiContractVersions: [1] }, { ...fixture(), sdkContractVersions: ['control/v1', 'control/v1'] },
+    { ...fixture(), apiContractVersions: [1] }, { ...fixture(), sdkContractVersions: ['stream-requests/v1', 'stream-requests/v1'] },
     ...[{ enabled: 1 }, { allowed: 'true' }, { releaseEnabled: 1 }, { state: 'future' }, { availability: 'future' },
       { contractVersions: [1] }, { contractVersions: [...item.contractVersions, 2] },
       { contractVersions: [...item.contractVersions, 'control/v2', 'control/v2'] },

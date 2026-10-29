@@ -1,0 +1,69 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { client } from '@tier0/sdk';
+import { businessSelector, parseBusinessJSON, publicFailure, SubscriptionSlot } from '../src/lib/sdk-acceptance';
+
+test('only exact business selectors and bounded valid JSON are accepted', () => {
+  assert.equal(businessSelector(' ack.echo '), 'ack.echo');
+  assert.equal(businessSelector('acceptance/ack'), 'acceptance/ack');
+  for (const invalid of ['', 'wss://host', 'mqtt:*', 'a.>', 'a?b', 'topic with space']) {
+    assert.throws(() => businessSelector(invalid));
+  }
+  assert.deepEqual(parseBusinessJSON('{"intent":"acceptance"}'), { intent: 'acceptance' });
+  assert.throws(() => parseBusinessJSON('{'));
+  assert.throws(() => parseBusinessJSON(JSON.stringify('a'.repeat(65536))));
+});
+
+test('unknown execution and public ledger metadata survive error projection', () => {
+  const error = Object.assign(new Error('Uncertain execution'), {
+    errorCode: 'STREAM_REQUEST_RESULT_UNKNOWN', status: 504, runID: 'run-opaque',
+    runStatus: 'unknown', contractVersion: '1.0', outcomeUnknown: true,
+    authorization: 'must-not-export', transport: { secret: 'must-not-export' },
+  });
+  const projected = publicFailure(error);
+  assert.equal(projected.outcomeUnknown, true);
+  assert.equal(projected.runID, 'run-opaque');
+  assert.equal(projected.status, 504);
+  assert.ok(!JSON.stringify(projected).includes('must-not-export'));
+});
+
+test('pending subscribe cancelled before resolution disposes its late handle', async () => {
+  const slot = new SubscriptionSlot();
+  const ticket = slot.begin();
+  await slot.dispose();
+  let disposed = false;
+  const attached = await slot.attach(ticket, {
+    get disposed() { return disposed; }, async dispose() { disposed = true; },
+  });
+  assert.equal(attached, false);
+  assert.equal(disposed, true);
+  assert.equal(slot.current(ticket), false);
+});
+
+test('active subscription disposal invalidates callbacks and is idempotent', async () => {
+  const slot = new SubscriptionSlot();
+  const ticket = slot.begin();
+  let count = 0;
+  assert.equal(await slot.attach(ticket, { disposed: false, async dispose() { count++; } }), true);
+  await slot.dispose();
+  await slot.dispose();
+  assert.equal(count, 1);
+  assert.equal(slot.current(ticket), false);
+});
+
+test('actual frozen root SDK fails closed without browser runtime; no transport substitute', async () => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: {} });
+  try {
+    const request = client.streams.requests.use({ code: 'ack.echo' });
+    await assert.rejects(request.describe(), { errorCode: 'STREAM_REQUEST_TRANSPORT_ERROR' });
+    await assert.rejects(request.invoke({ intent: 'acceptance' }, { idempotencyKey: 'offline-no-runtime' }),
+      { errorCode: 'STREAM_REQUEST_TRANSPORT_ERROR' });
+    const topic = client.streams.messages.use({ topic: 'acceptance/unconfigured' });
+    await assert.rejects(topic.publish({ intent: 'acceptance' }));
+    await assert.rejects(topic.subscribe(() => assert.fail('unexpected message without trusted runtime')));
+  } finally {
+    if (previous) Object.defineProperty(globalThis, 'window', previous);
+    else Reflect.deleteProperty(globalThis, 'window');
+  }
+});

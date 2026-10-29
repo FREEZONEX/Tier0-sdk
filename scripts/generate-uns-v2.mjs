@@ -85,7 +85,10 @@ if (registryNames.length !== manifest.operations.length || registryNames.some((n
   fail('registry_generated.go operation order differs from manifest.json');
 }
 
-const publicOperations = manifest.operations.filter(operation => !operation.coreOnly);
+// Direct request discovery/execution has one SDK entry: streams.requests (v1).
+// Classify by authority metadata so renaming a v2 route cannot restore an alias.
+const requestExecution = operation => /^stream\.requests:(read|invoke)$/.test(operation.scope);
+const publicOperations = manifest.operations.filter(operation => !operation.coreOnly && !requestExecution(operation));
 const refName = ref => ref?.startsWith('#/components/schemas/') ? ref.slice('#/components/schemas/'.length) : undefined;
 const requestType = operation => refName(operation.requestSchema?.$ref) || operation.request;
 const responseType = operation => refName(operation.responseSchema?.$ref) || operation.response;
@@ -112,7 +115,7 @@ function reachableSchemas(operations) {
 }
 
 const publicSchemaNames = reachableSchemas(publicOperations);
-const privateSchemaNames = reachableSchemas(manifest.operations.filter(operation => operation.coreOnly));
+const privateSchemaNames = reachableSchemas(manifest.operations.filter(operation => operation.coreOnly || requestExecution(operation)));
 // A resolved Cloud source also contains Core-only schemas. Export only those
 // reachable publicly or unrelated to private operations; never expose private DTOs.
 const exportedSchemas = Object.fromEntries(Object.entries(manifest.schemas).filter(([name]) =>
@@ -243,7 +246,7 @@ function codecFor(schema) {
 const schemaTypes = Object.entries(exportedSchemas).map(([name, schema]) =>
   `export type ${name} = ${typeFor(schema)};`).join('\n\n');
 const operationRows = publicOperations.map(operation =>
-  `  ${JSON.stringify(operation.name)}: { path: ${JSON.stringify(`/openapi/v2${operation.path}`)}, pathParams: ${JSON.stringify(operation.pathParams || [])}, request: ${JSON.stringify(requestType(operation))}, response: ${JSON.stringify(responseType(operation))}, method: ${JSON.stringify(operation.method)}, transport: ${JSON.stringify(operation.transport || 'json')}, mutation: ${JSON.stringify(!operation.readOnly)}, scope: ${JSON.stringify(operation.scope)} },`).join('\n');
+  `  ${JSON.stringify(operation.name)}: { path: ${JSON.stringify(`/openapi/v2${operation.path}`)}, pathParams: ${JSON.stringify(operation.pathParams || [])}, request: ${JSON.stringify(requestType(operation))}, response: ${JSON.stringify(responseType(operation))}, method: ${JSON.stringify(operation.method)}, transport: ${JSON.stringify(operation.transport || 'json')}, mutation: ${JSON.stringify(!operation.readOnly)}, appAllowed: ${JSON.stringify(operation.appAllowed)}, scope: ${JSON.stringify(operation.scope)} },`).join('\n');
 const operationTypes = publicOperations.map(operation =>
   `  ${JSON.stringify(operation.name)}: { request: ${operation.transport === 'sse' ? 'RecordSubscribeRequest' : requestType(operation)}; response: ${operation.transport === 'sse' ? 'RecordSubscribeFrame' : responseType(operation)} };`).join('\n');
 const operationMethods = publicOperations.map(operation => operation.transport === 'sse'

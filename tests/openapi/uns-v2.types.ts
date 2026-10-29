@@ -4,9 +4,9 @@ import {
   type RuntimeStreamDefinition,
   type CloudAppCreateCapability,
   type CloudSourceConfig,
-  type CloudControlGrantInfo,
-  type CloudControlGrantMutation,
-  type CloudHostedAppControlPolicyUpdateReq,
+  type CloudStreamRequestGrantInfo,
+  type CloudStreamRequestGrantMutation,
+  type CloudAppStreamPolicyUpdateReq,
   UnsV2RawNumber,
   type UnsV2Int64,
   type UnsV2JSONValue,
@@ -16,6 +16,41 @@ import {
 } from '../../src/index.js';
 
 const client = createClient({ apiHost: 'https://example.invalid', apiKey: 'workspace-bound' });
+// @ts-expect-error Core-only App registration capabilities are not public SDK operations.
+const coreRegistrationCapabilities: UnsV2OperationName = 'appRegistrationCapabilities';
+// @ts-expect-error Core-only App registration list is not a public SDK operation.
+const coreRegistrationList: UnsV2OperationName = 'appRegistrationList';
+// @ts-expect-error Core-only App registration lookup is not a public SDK operation.
+const coreRegistrationGet: UnsV2OperationName = 'appRegistrationGet';
+// @ts-expect-error Core-only App registration create is not a public SDK operation.
+const coreRegistrationCreate: UnsV2OperationName = 'appRegistrationCreate';
+// @ts-expect-error Core-only App registration update is not a public SDK operation.
+const coreRegistrationUpdate: UnsV2OperationName = 'appRegistrationUpdate';
+// @ts-expect-error Core-only App permission update is not a public SDK operation.
+const coreRegistrationPermissions: UnsV2OperationName = 'appRegistrationPermissionsUpdate';
+void [coreRegistrationCapabilities, coreRegistrationList, coreRegistrationGet, coreRegistrationCreate,
+  coreRegistrationUpdate, coreRegistrationPermissions];
+type RunRow = UnsV2Response<'streamRunsList'>['data']['items'][number];
+const httpRun: RunRow = { id: 'http-run', kind: 'http', release: '2', entryId: 'http-entry', trigger: 'http-request',
+  status: 'response-sent', createdAt: 1_793_231_792_697, finishedAt: null, durationMs: null };
+const sentHTTPRun: RunRow = { ...httpRun, responseSentAt: 1_793_231_792_698 };
+const pendingHTTPRun: RunRow = { ...httpRun, responseSentAt: null };
+// @ts-expect-error HTTP response timestamps remain int64 epoch milliseconds, not strings.
+const stringHTTPTime: RunRow = { ...httpRun, responseSentAt: '1793231792698' };
+void [httpRun, sentHTTPRun, pendingHTTPRun, stringHTTPTime];
+const diagnosedRun: RunRow = { ...httpRun, status: 'unknown', error: {
+  code: 'FUTURE_SOURCE_DIAGNOSTIC', stage: 'source', message: 'Safe diagnostic', repair: 'Review the existing scope',
+  sourceRequest: 'notDispatched',
+} };
+const generalDiagnosticRun: RunRow = { ...httpRun, error: {
+  code: 'FUTURE_RUN_DIAGNOSTIC', stage: 'unknown', message: 'Safe diagnostic', repair: 'Reconcile the existing run',
+} };
+// @ts-expect-error The optional Source fact permits only the producer's notDispatched value.
+const invalidDispatchFact: NonNullable<RunRow['error']>['sourceRequest'] = 'dispatched';
+// @ts-expect-error A safe diagnostic requires the fixed repair guidance field.
+const missingRunRepair: NonNullable<RunRow['error']> = { code: 'X', stage: 'unknown', message: 'Safe diagnostic' };
+void [diagnosedRun, generalDiagnosticRun, invalidDispatchFact, missingRunRepair];
+
 // @ts-expect-error The Control-only readiness probe has no public Stream method.
 client.unsV2.streamRuntimeCapabilitiesGet({});
 // @ts-expect-error Generic dispatch cannot restore the retired probe.
@@ -33,20 +68,20 @@ import type { CloudStreamRuntimeCapabilitiesGetResponse } from '../../src/index.
 // @ts-expect-error The HTTP-only Cloud entry cannot export the retired DTO either.
 import type { CloudStreamRuntimeCapabilitiesGetResponse as RetiredCloudProbeResponse } from '../../src/cloud.js';
 void [retiredStreamProbe, null as RetiredStreamProbeRequest | RetiredStreamProbeResponse | null];
-client.unsV2.controlGrantGet({ code: 'fixture.telemetry', principalKind: 'user', principalID: '101' });
-client.unsV2.controlGrantSet({ code: 'fixture.telemetry', principalKind: 'app', principalID: 'fixture-app', active: 1,
+client.unsV2.streamRequestGrantGet({ code: 'fixture.telemetry', principalKind: 'user', principalID: '101' });
+client.unsV2.streamRequestGrantSet({ code: 'fixture.telemetry', principalKind: 'app', principalID: 'fixture-app', active: 1,
   expectedCodeRevision: 1, actions: ['stream.requests.read', 'stream.requests.invoke', 'stream.requests.write'] });
 // @ts-expect-error Keys cannot receive an independent request grant.
-client.unsV2.controlGrantGet({ code: 'fixture.telemetry', principalKind: 'api_key', principalID: '101' });
+client.unsV2.streamRequestGrantGet({ code: 'fixture.telemetry', principalKind: 'api_key', principalID: '101' });
 // @ts-expect-error Keys cannot be independently granted or revoked.
-client.unsV2.controlGrantSet({ code: 'fixture.telemetry', principalKind: 'api_key', principalID: '101', active: 2, expectedCodeRevision: 1 });
+client.unsV2.streamRequestGrantSet({ code: 'fixture.telemetry', principalKind: 'api_key', principalID: '101', active: 2, expectedCodeRevision: 1 });
 // @ts-expect-error Request grant responses cannot identify a Key subject.
-const keyGrantSubject: CloudControlGrantInfo['principalKind'] = 'api_key';
+const keyGrantSubject: CloudStreamRequestGrantInfo['principalKind'] = 'api_key';
 // @ts-expect-error Grant mutation responses cannot identify a Key subject.
-const keyMutationSubject: CloudControlGrantMutation['principalKind'] = 'api_key';
-const requestPermission: CloudHostedAppControlPolicyUpdateReq['platformPermissions'][number] = 'stream.requests.invoke';
+const keyMutationSubject: CloudStreamRequestGrantMutation['principalKind'] = 'api_key';
+const requestPermission: CloudAppStreamPolicyUpdateReq['platformPermissions'][number] = 'stream.requests.invoke';
 // @ts-expect-error Hosted policy permissions use the unified Stream request vocabulary.
-const retiredControlPermission: CloudHostedAppControlPolicyUpdateReq['platformPermissions'][number] = 'control.execute';
+const retiredControlPermission: CloudAppStreamPolicyUpdateReq['platformPermissions'][number] = 'control.execute';
 void [keyGrantSubject, keyMutationSubject, requestPermission, retiredControlPermission];
 const sapConfig: CloudSourceConfig = {
   sourceType: 'sap-odata', endpoint: 'https://sap.example.invalid/service/', options: {},
@@ -95,6 +130,16 @@ const invalidBinding: NonNullable<RuntimeStreamDefinition['sourceBindings']>[num
 // @ts-expect-error Each native binding requires protocol acquisition parameters.
 const missingAcquisition: NonNullable<RuntimeStreamDefinition['sourceBindings']>[number] = { sourceId: '101', configRevision: 2 };
 void [nativeDefinition, invalidBinding, missingAcquisition];
+type CurrentAppContext = Awaited<ReturnType<typeof client.unsV2.dataAppContext>>['data'];
+const uninitializedState: CurrentAppContext['dataState'] = 'uninitialized';
+const readyState: CurrentAppContext['dataState'] = 'ready';
+// @ts-expect-error Unknown states must not become ready implicitly.
+const invalidContextState: CurrentAppContext['dataState'] = 'unknown';
+// @ts-expect-error AppContext state is required, not optional.
+const missingContextState: CurrentAppContext['dataState'] = undefined;
+// @ts-expect-error Null is not a legitimate AppContext state.
+const nullContextState: CurrentAppContext['dataState'] = null;
+void [uninitializedState, readyState, invalidContextState, missingContextState, nullContextState];
 const ownAppContext = client.unsV2.dataAppContext({});
 const createHint: CloudAppCreateCapability = { version: 'cloud-app-create-capability/v1', allowed: true, reason: 'allowed',
   appRevision: 19, collectionRevision: new UnsV2RawNumber('9007199254740993'), binding: 'a'.repeat(64),

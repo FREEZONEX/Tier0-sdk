@@ -1,4 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -56,4 +57,37 @@ it('syncs a committed Go contract containing literal Unicode line separators', (
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+it('verifies every immutable canonical snapshot input before publishing generated inputs', () => {
+  const root = mkdtempSync(join(tmpdir(), 'tier0-sdk-snapshot-sync-'));
+  try {
+    const script = join(root, 'scripts/sync-uns-v2.mjs');
+    const output = join(root, 'contracts/uns-v2');
+    mkdirSync(dirname(script), { recursive: true });
+    mkdirSync(output, { recursive: true });
+    copyFileSync(fileURLToPath(new URL('../../scripts/sync-uns-v2.mjs', import.meta.url)), script);
+    const pin = `sha256:${'a'.repeat(64)}`;
+    const manifest = { version: '5.0.0', cloudContractRevision: 'single-model/fixture', operations: [], schemas: {} };
+    const files = [
+      ['share/unscontract/manifest.json', JSON.stringify(manifest)],
+      ['share/unscontract/registry_generated.go', 'package fixture\n'],
+    ].map(([path, value], index) => {
+      const snapshot = join(root, `input-${index}`);
+      writeFileSync(snapshot, value);
+      return { path, snapshot, sha256: createHash('sha256').update(value).digest('hex') };
+    });
+    const metadata = join(root, 'canonical.json');
+    writeFileSync(metadata, JSON.stringify({ pin, files }));
+    const run = (expected = pin) => spawnSync(process.execPath, [script, '--snapshot', metadata, expected], { encoding: 'utf8' });
+    expect(run(`sha256:${'b'.repeat(64)}`).status).not.toBe(0);
+    expect(run().status).toBe(0);
+    const provenancePath = join(output, 'provenance.json');
+    const before = readFileSync(provenancePath, 'utf8');
+    expect(JSON.parse(before)).toMatchObject({ revision: pin, sourceMode: 'immutable-snapshot', sourceInputs: files.map(({ path, sha256 }) => ({ path, sha256 })) });
+    expect(JSON.parse(readFileSync(join(output, 'contract.json'), 'utf8'))).toEqual(manifest);
+    writeFileSync(files[1].snapshot, 'tampered registry');
+    expect(run().status).not.toBe(0);
+    expect(readFileSync(provenancePath, 'utf8')).toBe(before);
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });

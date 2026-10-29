@@ -1,61 +1,58 @@
-import { getClient, HttpClient, type ClientConfig } from './openapi/client.js';
-import { CloudTransport, CloudTransportError, DEFAULT_CLOUD_TRANSPORT_TIMEOUT_MS, type CloudTransportConfig } from './cloud-transport.js';
-import { CapabilitiesClient } from './capabilities.js';
-import { createUnsV2Client, type UnsV2Client } from './uns-v2/client.js';
+import { StreamTransport, StreamTransportError, DEFAULT_STREAM_TRANSPORT_TIMEOUT_MS, type StreamTransportConfig } from './transport.js';
+import type { components } from './contract.generated.js';
+/** Public request contracts do not expose runtime bindings. */
+export type StreamJSON = null | boolean | number | string | StreamJSON[] | { [key: string]: StreamJSON };
 
-/** Cloud Control contracts are independent of generated OpenAPI / Enterprise flow types. */
-export type ControlJSON = null | boolean | number | string | ControlJSON[] | { [key: string]: ControlJSON };
-
-export interface PublicControl {
+export interface PublicStreamRequest extends Omit<components['schemas']['PublicStreamRequest'], 'inputSchema' | 'outputSchema' | 'sideEffect' | 'idempotency'> {
   code: string;
   name: string;
   description: string;
   contractVersion: string;
-  inputSchema: Record<string, ControlJSON>;
-  outputSchema: Record<string, ControlJSON>;
+  inputSchema: Record<string, StreamJSON>;
+  outputSchema: Record<string, StreamJSON>;
   sideEffect: 'read' | 'write';
   idempotency: 'none' | 'optional' | 'required';
   timeoutMs: number;
   status: string;
 }
 
-export interface ControlDiscoverOptions {
+type WireDiscovery = components['schemas']['StreamRequestDiscoverReq'];
+export interface StreamRequestDiscoverOptions extends WireDiscovery {
   page?: number;
   size?: number;
   search?: string;
 }
 
-export interface ControlDiscoverResponse {
+export interface StreamRequestDiscoverResponse {
   total: number;
-  list: PublicControl[];
+  list: PublicStreamRequest[];
 }
 
-/** Shared HTTP settings; UNS v2 options never affect Control execution or headers. */
-export interface ControlTransportConfig extends CloudTransportConfig {}
+/** HTTP transport settings do not override server execution semantics. */
+export interface StreamRequestTransportConfig extends StreamTransportConfig {}
 
-export interface CloudClientConfig extends ClientConfig, ControlTransportConfig {}
+export const DEFAULT_STREAM_REQUEST_TRANSPORT_TIMEOUT_MS = DEFAULT_STREAM_TRANSPORT_TIMEOUT_MS;
 
-export const DEFAULT_CONTROL_TRANSPORT_TIMEOUT_MS = DEFAULT_CLOUD_TRANSPORT_TIMEOUT_MS;
-
-export interface ControlInvokeOptions {
+export interface StreamRequestInvokeOptions {
   /** Stable caller-owned key for one business intent, at most 128 UTF-8 bytes. Never generated or retried by the SDK. */
   idempotencyKey?: string;
 }
 
-export interface ControlInvokeResponse<Result = ControlJSON> {
+export interface StreamRequestInvokeResponse<Result = StreamJSON> extends Omit<components['schemas']['StreamRequestInvokeResp'], 'result' | 'status'> {
   code: string;
   contractVersion: string;
   result: Result;
   runID: string;
-  status: string;
+  /** Persisted request ledger success; all other states reject conservatively. */
+  status: 'completed';
   /** True only when the server explicitly reports an idempotent replay. */
   replayed: boolean;
 }
 
-export interface ControlErrorInfo {
+export interface StreamRequestErrorInfo {
   /** HTTP status, absent when no HTTP response was received. */
   status?: number;
-  /** Gateway string errorCode, or an SDK-local CONTROL_* transport/protocol code. */
+  /** Gateway string errorCode, or an SDK-local STREAM_REQUEST_* transport/protocol code. */
   errorCode: string;
   runID?: string;
   contractVersion?: string;
@@ -63,8 +60,8 @@ export interface ControlErrorInfo {
   replayed?: boolean;
 }
 
-/** No Control error is automatically retried, including authentication failures. */
-export class ControlError extends Error {
+/** No StreamRequest error is automatically retried, including authentication failures. */
+export class StreamRequestError extends Error {
   readonly status?: number;
   readonly errorCode: string;
   readonly runID?: string;
@@ -72,10 +69,11 @@ export class ControlError extends Error {
   readonly runStatus?: string;
   readonly replayed?: boolean;
   readonly retryable = false;
+  readonly outcomeUnknown: boolean = false;
 
-  constructor(message: string, info: ControlErrorInfo) {
+  constructor(message: string, info: StreamRequestErrorInfo) {
     super(message);
-    this.name = 'ControlError';
+    this.name = 'StreamRequestError';
     this.status = info.status;
     this.errorCode = info.errorCode;
     this.runID = info.runID;
@@ -86,12 +84,12 @@ export class ControlError extends Error {
 }
 
 /** Execution may have happened. Reconcile run information; any deliberate replay must reuse the same key. */
-export class ControlResultUnknownError extends ControlError {
+export class StreamRequestResultUnknownError extends StreamRequestError {
   readonly outcomeUnknown = true;
 
-  constructor(info: ControlErrorInfo) {
-    super('Control result is unknown; execution may have occurred. Do not automatically retry.', info);
-    this.name = 'ControlResultUnknownError';
+  constructor(info: StreamRequestErrorInfo) {
+    super('StreamRequest result is unknown; execution may have occurred. Do not automatically retry.', info);
+    this.name = 'StreamRequestResultUnknownError';
   }
 }
 
@@ -101,7 +99,7 @@ function record(value: unknown): value is Record<string, unknown> {
 
 function keys(value: unknown, allowed: string[]): void {
   if (!record(value) || Reflect.ownKeys(value).some(key => typeof key !== 'string' || !allowed.includes(key))) {
-    throw new TypeError('Tier0 SDK: unsupported Control option.');
+    throw new TypeError('Tier0 SDK: unsupported StreamRequest option.');
   }
 }
 
@@ -118,7 +116,7 @@ function json(value: unknown, seen = new Set<unknown>()): boolean {
   return valid;
 }
 
-function definition(value: unknown): value is PublicControl {
+function definition(value: unknown): value is PublicStreamRequest {
   if (!record(value)) return false;
   return ['code', 'name', 'description', 'contractVersion', 'status'].every(key => typeof value[key] === 'string') &&
     value.code !== '' && value.contractVersion !== '' && record(value.inputSchema) && record(value.outputSchema) &&
@@ -127,7 +125,7 @@ function definition(value: unknown): value is PublicControl {
     typeof value.timeoutMs === 'number' && Number.isSafeInteger(value.timeoutMs) && value.timeoutMs > 0;
 }
 
-function runInfo(value: unknown): Partial<ControlErrorInfo> {
+function runInfo(value: unknown): Partial<StreamRequestErrorInfo> {
   if (!record(value)) return {};
   return {
     runID: typeof value.runID === 'string' ? value.runID : undefined,
@@ -137,79 +135,79 @@ function runInfo(value: unknown): Partial<ControlErrorInfo> {
   };
 }
 
-export interface ControlHandle<Input = ControlJSON, Result = ControlJSON> {
-  describe(): Promise<PublicControl>;
+export interface StreamRequestHandle<Input = StreamJSON, Result = StreamJSON> {
+  describe(): Promise<PublicStreamRequest>;
   /**
    * One POST only. Input is opaque business JSON, including fields named streamId,
    * entryId, deploymentVersion or timeoutMs. Only the server chooses binding/version/timeout.
    * Generic types are caller assertions; the server validates the contract schemas.
    */
-  invoke(input: Input, options?: ControlInvokeOptions): Promise<ControlInvokeResponse<Result>>;
+  invoke(input: Input, options?: StreamRequestInvokeOptions): Promise<StreamRequestInvokeResponse<Result>>;
 }
 
-export class ControlsClient {
-  private readonly transport: CloudTransport;
+export class StreamRequestsClient {
+  private readonly transport: StreamTransport;
 
-  constructor(resolveClient: () => HttpClient = getClient, config: ControlTransportConfig = {}) {
-    this.transport = new CloudTransport(resolveClient, config);
+  constructor(transport = new StreamTransport()) {
+    this.transport = transport;
   }
 
   private async post(path: string, body: unknown, invoked: boolean): Promise<{ value: unknown; status: number }> {
-    let response: Awaited<ReturnType<CloudTransport['post']>>;
+    let response: Awaited<ReturnType<StreamTransport['post']>>;
     try {
       response = await this.transport.post(path, body);
     } catch (error) {
-      if (!(error instanceof CloudTransportError)) throw error;
-      const info = { status: error.status, errorCode: `CONTROL_${error.kind}` };
-      if (invoked) throw new ControlResultUnknownError(info);
-      const message = error.kind === 'TRANSPORT_TIMEOUT' ? 'Control HTTP transport deadline exceeded.' :
-        error.kind === 'PROTOCOL_ERROR' ? 'Invalid Control response.' : 'Control transport failed.';
-      throw new ControlError(message, info);
+      if (!(error instanceof StreamTransportError)) throw error;
+      const info = { status: error.status, errorCode: `STREAM_REQUEST_${error.kind}` };
+      if (invoked) throw new StreamRequestResultUnknownError(info);
+      const message = error.kind === 'TRANSPORT_TIMEOUT' ? 'StreamRequest HTTP transport deadline exceeded.' :
+        error.kind === 'PROTOCOL_ERROR' ? 'Invalid StreamRequest response.' : 'StreamRequest transport failed.';
+      throw new StreamRequestError(message, info);
     }
     const { value, status, ok } = response;
     if (!ok) {
       const error = record(value) ? value : {};
       const valid = typeof error.errorCode === 'string' && typeof error.message === 'string';
-      const info: ControlErrorInfo = {
+      const info: StreamRequestErrorInfo = {
         ...runInfo(value), status,
-        errorCode: valid ? error.errorCode as string : 'CONTROL_PROTOCOL_ERROR',
+        errorCode: valid ? error.errorCode as string : 'STREAM_REQUEST_PROTOCOL_ERROR',
       };
-      if (info.errorCode === 'CONTROL_RESULT_UNKNOWN' || (invoked && !valid)) {
-        throw new ControlResultUnknownError(info);
+      if (info.errorCode === 'STREAM_REQUEST_RESULT_UNKNOWN' || (invoked && !valid)) {
+        throw new StreamRequestResultUnknownError(info);
       }
-      throw new ControlError(valid ? error.message as string : 'Invalid Control error response.', info);
+      throw new StreamRequestError(valid ? error.message as string : 'Invalid StreamRequest error response.', info);
     }
     return { value, status };
   }
 
   /** Discover visible contracts; defaults and authorization are resolved by the server. */
-  async discover(options: ControlDiscoverOptions = {}): Promise<ControlDiscoverResponse> {
+  async discover(options: StreamRequestDiscoverOptions = {}): Promise<StreamRequestDiscoverResponse> {
     keys(options, ['page', 'size', 'search']);
     if ((options.page !== undefined && (!Number.isSafeInteger(options.page) || options.page < 1)) ||
         (options.size !== undefined && (!Number.isSafeInteger(options.size) || options.size < 1 || options.size > 200)) ||
         (options.search !== undefined && typeof options.search !== 'string')) {
-      throw new TypeError('Tier0 SDK: invalid Control discovery options.');
+      throw new TypeError('Tier0 SDK: invalid StreamRequest discovery options.');
     }
-    const { value, status } = await this.post('/openapi/v1/controls/discover', options, false);
+    const { value, status } = await this.post('/openapi/v1/stream-requests/discover', options, false);
     if (!record(value) || !Number.isSafeInteger(value.total) || (value.total as number) < 0 ||
         !Array.isArray(value.list) || !value.list.every(definition)) {
-      throw new ControlError('Invalid Control discovery response.', { status, errorCode: 'CONTROL_PROTOCOL_ERROR' });
+      throw new StreamRequestError('Invalid StreamRequest discovery response.', { status, errorCode: 'STREAM_REQUEST_PROTOCOL_ERROR' });
     }
-    return value as unknown as ControlDiscoverResponse;
+    return value as unknown as StreamRequestDiscoverResponse;
   }
 
-  use<Input = ControlJSON, Result = ControlJSON>(selector: { code: string }): ControlHandle<Input, Result> {
+  use<Input = StreamJSON, Result = StreamJSON>(selector: { code: string }): StreamRequestHandle<Input, Result> {
     keys(selector, ['code']);
     const code = selector.code;
     if (typeof code !== 'string' || code.length > 128 || !/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/.test(code)) {
-      throw new TypeError('Tier0 SDK: invalid Control code.');
+      throw new TypeError('Tier0 SDK: invalid StreamRequest code.');
     }
-    const path = `/openapi/v1/controls/${encodeURIComponent(code)}`;
+    const path = `/openapi/v1/stream-requests/${encodeURIComponent(code)}`;
     return {
       describe: async () => {
         const { value, status } = await this.post(`${path}/describe`, {}, false);
         if (!definition(value) || value.code !== code) {
-          throw new ControlError('Invalid Control description.', { status, errorCode: 'CONTROL_PROTOCOL_ERROR' });
+          throw new StreamRequestError('Invalid StreamRequest description.', { status, errorCode: 'STREAM_REQUEST_PROTOCOL_ERROR' });
         }
         return value;
       },
@@ -217,43 +215,20 @@ export class ControlsClient {
         keys(options, ['idempotencyKey']);
         const key = options.idempotencyKey;
         if (key !== undefined && (typeof key !== 'string' || !key || key.trim() !== key || new TextEncoder().encode(key).length > 128)) {
-          throw new TypeError('Tier0 SDK: invalid Control idempotency key.');
+          throw new TypeError('Tier0 SDK: invalid StreamRequest idempotency key.');
         }
-        if (!json(input)) throw new TypeError('Tier0 SDK: Control input must be JSON.');
+        if (!json(input)) throw new TypeError('Tier0 SDK: StreamRequest input must be JSON.');
         const { value, status } = await this.post(`${path}/invoke`, {
           input, ...(key === undefined ? {} : { idempotencyKey: key }),
         }, true);
         if (!record(value) || value.code !== code || typeof value.contractVersion !== 'string' || !value.contractVersion ||
             !Object.prototype.hasOwnProperty.call(value, 'result') || typeof value.runID !== 'string' || !value.runID ||
-            typeof value.status !== 'string' || !value.status || ['accepted', 'queued', 'pending', 'running'].includes(value.status) ||
+            value.status !== 'completed' ||
             typeof value.replayed !== 'boolean') {
-          throw new ControlResultUnknownError({ ...runInfo(value), status, errorCode: 'CONTROL_PROTOCOL_ERROR' });
+          throw new StreamRequestResultUnknownError({ ...runInfo(value), status, errorCode: 'STREAM_REQUEST_PROTOCOL_ERROR' });
         }
-        return value as unknown as ControlInvokeResponse<Result>;
+        return value as unknown as StreamRequestInvokeResponse<Result>;
       },
     };
   }
-}
-
-/** Uses configureClient()/TIER0_API_HOST/TIER0_API_KEY, resolved for every call. */
-export const controls = new ControlsClient();
-
-/**
- * Isolated Cloud client using the existing ClientConfig host/key/runtime callbacks.
- * transportTimeoutMs bounds HTTP headers and body reading (default 60s); it does not
- * change the server execution contract. An invoke deadline means result unknown.
- * No global configuration changes, credential refresh, retries or generated API changes.
- */
-export function createClient(config: CloudClientConfig = {}): {
-  controls: ControlsClient;
-  capabilities: CapabilitiesClient;
-  unsV2: UnsV2Client;
-} {
-  const http = new HttpClient(config);
-  const resolveClient = () => http;
-  return {
-    controls: new ControlsClient(resolveClient, config),
-    capabilities: new CapabilitiesClient(resolveClient, config),
-    unsV2: createUnsV2Client(resolveClient, config),
-  };
 }

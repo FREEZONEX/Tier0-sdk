@@ -26,6 +26,18 @@ describe('UNS v2 lossless numeric boundary', () => {
     expect(() => decodeUnsV2JSON(wrap('9223372036854775808'), 'CloudSourceObservationsGetResponse')).toThrow('signed 64-bit');
   });
 
+  it('preserves optional HTTP response timestamps, null and exact epoch-ms values', () => {
+    for (const row of ['{}', '{"responseSentAt":null}', '{"responseSentAt":1793231792697}', '{"responseSentAt":9007199254740993}']) {
+      const wire = `{"data":{"items":[${row}]}}`;
+      const decoded = decodeUnsV2JSON(wire, 'CloudStreamRunsListResponse') as { data: { items: { responseSentAt?: unknown }[] } };
+      expect(encodeUnsV2JSON(decoded, 'CloudStreamRunsListResponse')).toBe(wire);
+      if (row === '{}') expect(Object.hasOwn(decoded.data.items[0], 'responseSentAt')).toBe(false);
+      if (row.includes('null')) expect(decoded.data.items[0].responseSentAt).toBeNull();
+      if (row.includes('1793231792697')) expect(decoded.data.items[0].responseSentAt).toBe(1_793_231_792_697);
+      if (row.includes('9007199254740993')) expect(decoded.data.items[0].responseSentAt).toBe(9_007_199_254_740_993n);
+    }
+  });
+
   it('retains numeric codecs beside allOf/oneOf validation constraints', () => {
     for (const schema of ['UnsV2RecordFindReq', 'UnsV2RecordInsertOneReq', 'UnsV2MetadataUpdateOneReq', 'CloudSourceDocumentUpdateReq']) {
       const key = schema === 'UnsV2RecordFindReq' ? 'limit' : 'expectedRevision';

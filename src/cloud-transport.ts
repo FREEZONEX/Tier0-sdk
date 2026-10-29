@@ -1,4 +1,24 @@
 import { getClient, type HttpClient } from './openapi/client.js';
+import type { AppRuntime } from './runtime.js';
+import { UNS_V2_OPERATIONS } from './uns-v2/generated.js';
+
+// Forward data-audience delegation only to registered App data operations.
+// Unknown, management and request-execution routes fail closed, even if renamed.
+const appDataRoutes = Object.values(UNS_V2_OPERATIONS)
+  .filter(operation => operation.appAllowed && operation.method === 'POST' && operation.scope.startsWith('uns:'))
+  .map(operation => new RegExp(`^${operation.path.split('/').map(part =>
+    part.startsWith(':') ? '[^/?#]+' : part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('/')}$`));
+
+function appDataPath(path: string): boolean {
+  if (!appDataRoutes.some(route => route.test(path))) return false;
+  try {
+    if (new URL(path, 'https://route.invalid').pathname !== path) return false;
+    return path.split('/').every(part => {
+      const decoded = decodeURIComponent(part);
+      return decoded !== '.' && decoded !== '..' && !/[\\/?#\u0000-\u001f]/.test(decoded);
+    });
+  } catch { return false; }
+}
 
 export interface CloudTransportConfig {
   /** Whole HTTP exchange including the response body, in milliseconds; default 60,000. */
@@ -128,10 +148,7 @@ export class CloudTransport {
     const url = `${client.getBaseURL()}${path}`;
     const key = client.getApiKey();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    // Control routes also live under UNS v2, but must never receive data delegation.
-    // Keep this per-client proof out of shared HTTP headers and request-execution routes.
-    if (path.startsWith('/openapi/v2/uns/') &&
-        !path.startsWith('/openapi/v2/uns/controls/') &&
+    if (appDataPath(path) &&
         this.#unsV2AppDataSubject !== undefined) {
       headers['X-Tier0-App-Data-Subject'] = this.#unsV2AppDataSubject;
     }
@@ -198,22 +215,28 @@ export class CloudTransport {
     }
   }
 
-  async post(path: string, body: unknown): Promise<{ value: unknown; status: number; ok: boolean }> {
-    const client = this.resolveClient();
-    const url = `${client.getBaseURL()}${path}`;
-    const key = client.getApiKey();
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (key) {
-      headers.Authorization = `Bearer ${key}`;
-      headers['X-API-Key'] = key;
-    }
+  async post(path: string, body: unknown, signal?: AbortSignal, runtime?: AppRuntime): Promise<{ value: unknown; status: number; ok: boolean }> {
     const serialized = JSON.stringify(body);
     const controller = new AbortController();
+    const abort = () => controller.abort();
+    signal?.addEventListener('abort', abort, { once: true });
+    if (signal?.aborted) controller.abort();
     let response: Response | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const exchange = async () => {
       try {
-        response = await fetch(url, { method: 'POST', headers, body: serialized, redirect: 'manual', signal: controller.signal });
+        if (runtime) response = await runtime.request(path, body, { signal: controller.signal });
+        else {
+          const client = this.resolveClient();
+          const url = `${client.getBaseURL()}${path}`;
+          const key = client.getApiKey();
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (key) {
+            headers.Authorization = `Bearer ${key}`;
+            headers['X-API-Key'] = key;
+          }
+          response = await fetch(url, { method: 'POST', headers, body: serialized, redirect: 'manual', signal: controller.signal });
+        }
       } catch {
         throw new CloudTransportError('TRANSPORT_ERROR');
       }
@@ -227,18 +250,19 @@ export class CloudTransport {
     };
     try {
       const deadline = new Promise<never>((_resolve, reject) => {
+        const stopped = () => reject(new CloudTransportError('TRANSPORT_ERROR', response?.status));
+        controller.signal.addEventListener('abort', stopped, { once: true });
+        if (controller.signal.aborted) stopped();
         timer = setTimeout(() => {
-          controller.abort();
           reject(new CloudTransportError('TRANSPORT_TIMEOUT', response?.status));
+          controller.abort();
         }, this.timeoutMs);
       });
       // Also bounds custom transports which ignore AbortSignal.
       return await Promise.race([exchange(), deadline]);
-    } catch (error) {
-      if (controller.signal.aborted) throw new CloudTransportError('TRANSPORT_TIMEOUT', response?.status);
-      throw error;
     } finally {
       clearTimeout(timer);
+      signal?.removeEventListener('abort', abort);
     }
   }
 }

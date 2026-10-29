@@ -3,8 +3,10 @@ import { dirname, isAbsolute, join, basename } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const require = createRequire(import.meta.url);
 const output = process.argv[2];
 const runtimeImage = process.env.TIER0_APP_RUN_IMAGE;
 if (runtimeImage && (!/^[a-z0-9][a-z0-9./:_@-]*@sha256:[a-f0-9]{64}$/.test(runtimeImage) || runtimeImage.length > 1024)) {
@@ -40,11 +42,39 @@ try {
     : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, rewrite(item)])) : value;
   const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
   writeFileSync(join(sdk, 'package.json'), `${JSON.stringify(rewrite(pkg), null, 2)}\n`);
+  // Source imports strip node_modules. Vendor the exact installed WSS dependency
+  // closure under a source directory; the offline App build restores resolution.
+  const lock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
+  const runtimeDependencies = {};
+  const pending = ['@nats-io/nats-core', '@nats-io/nkeys'].map(name => ({ name, from: root }));
+  while (pending.length) {
+    const { name, from } = pending.pop();
+    let directory = dirname(require.resolve(name, { paths: [from] }));
+    while (!existsSync(join(directory, 'package.json')) ||
+        JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8')).name !== name) {
+      const parent = dirname(directory);
+      if (parent === directory) throw new Error(`Cannot locate installed runtime package ${name}`);
+      directory = parent;
+    }
+    const dependency = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'));
+    if (runtimeDependencies[name]) {
+      if (runtimeDependencies[name].version !== dependency.version) throw new Error(`Conflicting runtime versions for ${name}`);
+      continue;
+    }
+    const pinned = lock.packages[`node_modules/${name}`];
+    if (pinned?.version !== dependency.version || !pinned.integrity) throw new Error(`Unpinned runtime dependency ${name}`);
+    runtimeDependencies[name] = { version: dependency.version, integrity: pinned.integrity };
+    cpSync(directory, join(staging, 'vendor', 'runtime-dependencies', name), {
+      recursive: true, filter: path => !['node_modules', '.git'].includes(basename(path)),
+    });
+    for (const child of Object.keys(dependency.dependencies ?? {})) pending.push({ name: child, from: directory });
+  }
   if (existsSync(join(root, 'LICENSE'))) cpSync(join(root, 'LICENSE'), join(sdk, 'LICENSE'));
   writeFileSync(join(staging, 'sdk-provenance.json'), `${JSON.stringify({
     sdkVersion: pkg.version,
     sdkCommit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
     entryPoint: '@tier0/sdk/cloud',
+    runtimeDependencies,
     ...(runtimeImage ? { runtimeImage } : {}),
   }, null, 2)}\n`);
   writeFileSync(join(staging, 'meta.json'), `${JSON.stringify({ name: 'UNS 工单数据', description: 'Cloud App SDK record access and revocation example' })}\n`);

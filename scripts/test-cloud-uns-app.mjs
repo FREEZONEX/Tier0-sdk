@@ -56,13 +56,13 @@ function signedRequest(method, raw, overrides = {}, requestURI = '/api/device/te
 const gateway = createServer(async (req, res) => {
   let body = '';
   for await (const part of req) body += part;
-  if (req.url.startsWith('/openapi/v1/controls/')) {
+  if (req.url.startsWith('/openapi/v1/stream-requests/')) {
     assert.equal(req.headers['x-tier0-app-data-subject'], undefined, 'Control never receives a data proof');
     assert.equal(req.headers['x-api-key'], 'fixture-control-key-not-production');
-    if (controlMode === 'revoked') { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ errorCode: 'CONTROL_FORBIDDEN', message: 'must-not-expose-private-detail' })); }
+    if (controlMode === 'revoked') { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ errorCode: 'STREAM_REQUEST_FORBIDDEN', message: 'must-not-expose-private-detail' })); }
     res.setHeader('Content-Type', 'application/json');
     if (req.url.endsWith('/describe')) return res.end(JSON.stringify({ code: controlCode, name: 'Telemetry', description: '', contractVersion: '1.0', inputSchema: {}, outputSchema: {}, sideEffect: 'write', idempotency: 'required', timeoutMs: 5000, status: 'active' }));
-    assert.equal(req.url, `/openapi/v1/controls/${controlCode}/invoke`); controlAttempts++;
+    assert.equal(req.url, `/openapi/v1/stream-requests/${controlCode}/invoke`); controlAttempts++;
     if (controlMode === 'unknown') return req.socket.destroy();
     const payload = JSON.parse(body); assert.deepEqual(payload.input, {});
     const replayed = controlIntents.has(payload.idempotencyKey);
@@ -229,13 +229,29 @@ try {
   const app = join(dir, 'app'); mkdirSync(app);
   execFileSync('python3', ['-c', 'import sys,zipfile;zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])', archive, app]);
   assert.ok(readFileSync(join(app, 'artifact.toml'), 'utf8').includes(`image = "${image}"`));
+  const provenance = JSON.parse(readFileSync(join(app, 'sdk-provenance.json'), 'utf8'));
+  for (const name of ['@nats-io/nats-core', '@nats-io/nkeys', '@nats-io/nuid', 'tweetnacl']) {
+    assert.ok(provenance.runtimeDependencies[name].version);
+    assert.match(provenance.runtimeDependencies[name].integrity, /^sha512-/);
+  }
   execFileSync(process.execPath, ['build.mjs'], { cwd: app });
+  execFileSync(process.execPath, ['--input-type=module', '-e', `
+    const sdk = await import('@tier0/sdk/cloud');
+    const nats = await import('@nats-io/nats-core');
+    const client = sdk.createClient();
+    if (typeof client.unsV2.recordFind !== 'function' || typeof client.streams.requests.use !== 'function' ||
+        typeof client.streams.messages.use !== 'function' || typeof nats.wsconnect !== 'function' ||
+        sdk.controls !== undefined || client.controls !== undefined || client.unsV2.controlInvoke !== undefined) {
+      throw new Error('Incomplete unified Cloud SDK source artifact');
+    }
+    await client.dispose();
+  `], { cwd: join(app, '.runtime') });
   child = spawn(process.execPath, ['.runtime/server.mjs'], {
     cwd: app, stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, PORT: String(port), TIER0_API_HOST: `http://127.0.0.1:${gateway.address().port}`, TIER0_API_KEY: 'fixture-key-not-production',
       CLOUD_APP_DATA_MODE: undefined, CLOUD_APP_CORE_WRITE_ENABLED: undefined,
-      TIER0_CONTROL_API_KEY: 'fixture-control-key-not-production', CLOUD_APP_ID: appID, CLOUD_WORKSPACE_ID: workspaceID,
-      CLOUD_APP_IDENTITY_PUBLIC_KEYS: identityPublicKeys, CLOUD_DATA_USER_IDS: dataUsers.join(','), CLOUD_CONTROL_USER_IDS: '9007199254740995', CLOUD_CONTROL_CODE: controlCode },
+      TIER0_STREAM_REQUEST_API_KEY: 'fixture-control-key-not-production', CLOUD_APP_ID: appID, CLOUD_WORKSPACE_ID: workspaceID,
+      CLOUD_APP_IDENTITY_PUBLIC_KEYS: identityPublicKeys, CLOUD_DATA_USER_IDS: dataUsers.join(','), CLOUD_STREAM_REQUEST_USER_IDS: '9007199254740995', CLOUD_STREAM_REQUEST_CODE: controlCode },
   });
   captureChild();
   const host = `http://127.0.0.1:${port}`;
@@ -354,7 +370,7 @@ try {
   const repeated = await invoke(intent); assert.equal(repeated.status, 200); assert.deepEqual(await repeated.json(), { status: 'completed', replayed: true });
   assert.equal(deviceOperations, 1, 'a fresh gateway assertion must preserve the original business intent');
   controlMode = 'revoked'; const revoked = await invoke(intent); assert.equal(revoked.status, 403);
-  assert.deepEqual(await revoked.json(), { code: 'CONTROL_FORBIDDEN' }); assert.equal(deviceOperations, 1);
+  assert.deepEqual(await revoked.json(), { code: 'STREAM_REQUEST_FORBIDDEN' }); assert.equal(deviceOperations, 1);
   controlMode = 'unknown'; const beforeUnknown = controlAttempts; const unknownControl = await invoke({ intentId: randomUUID() });
   assert.equal(unknownControl.status, 504); assert.deepEqual(await unknownControl.json(), { code: 'OUTCOME_UNKNOWN' });
   assert.equal(controlAttempts, beforeUnknown + 1, 'uncertain control writes must not retry');
@@ -362,8 +378,8 @@ try {
   child = spawn(process.execPath, ['.runtime/server.mjs'], { cwd: app, stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, PORT: String(port), TIER0_API_HOST: `http://127.0.0.1:${gateway.address().port}`, TIER0_API_KEY: 'fixture-key-not-production',
       CLOUD_APP_DATA_MODE: 'legacy', CLOUD_APP_CORE_WRITE_ENABLED: 'false',
-      TIER0_CONTROL_API_KEY: '', CLOUD_APP_ID: appID, CLOUD_WORKSPACE_ID: workspaceID, CLOUD_APP_IDENTITY_PUBLIC_KEYS: identityPublicKeys,
-      CLOUD_CONTROL_USER_IDS: '9007199254740995', CLOUD_CONTROL_CODE: controlCode } });
+      TIER0_STREAM_REQUEST_API_KEY: '', CLOUD_APP_ID: appID, CLOUD_WORKSPACE_ID: workspaceID, CLOUD_APP_IDENTITY_PUBLIC_KEYS: identityPublicKeys,
+      CLOUD_STREAM_REQUEST_USER_IDS: '9007199254740995', CLOUD_STREAM_REQUEST_CODE: controlCode } });
   captureChild();
   for (let attempt = 0; attempt < 50; attempt++) {
     try { if ((await fetch(`${host}/healthz`)).ok) break; } catch { /* Wait for this owned replacement child. */ }
@@ -376,9 +392,9 @@ try {
     appDataMode = 'core'; mode = 'write'; controlMode = 'active';
     child = spawn(process.execPath, ['.runtime/server.mjs'], { cwd: app, stdio: ['ignore', 'pipe', 'pipe'], env: {
       ...process.env, PORT: String(port), TIER0_API_HOST: `http://127.0.0.1:${gateway.address().port}`,
-      TIER0_API_KEY: 'fixture-key-not-production', TIER0_CONTROL_API_KEY: 'fixture-control-key-not-production',
+      TIER0_API_KEY: 'fixture-key-not-production', TIER0_STREAM_REQUEST_API_KEY: 'fixture-control-key-not-production',
       CLOUD_APP_ID: appID, CLOUD_WORKSPACE_ID: workspaceID, CLOUD_APP_IDENTITY_PUBLIC_KEYS: identityPublicKeys,
-      CLOUD_DATA_USER_IDS: 'not-a-core-policy', CLOUD_CONTROL_USER_IDS: dataUsers[0], CLOUD_CONTROL_CODE: controlCode,
+      CLOUD_DATA_USER_IDS: 'not-a-core-policy', CLOUD_STREAM_REQUEST_USER_IDS: dataUsers[0], CLOUD_STREAM_REQUEST_CODE: controlCode,
       CLOUD_APP_DATA_MODE: 'core', CLOUD_APP_CORE_WRITE_ENABLED: writeEnabled ? 'true' : undefined,
     } });
     captureChild();
@@ -702,7 +718,7 @@ try {
   const invalidIdentity = spawn(process.execPath, ['.runtime/server.mjs'], { cwd: app, stdio: ['ignore', 'pipe', 'pipe'], env: {
     ...process.env, PORT: '0', CLOUD_APP_DATA_MODE: 'core', CLOUD_APP_CORE_WRITE_ENABLED: undefined,
     CLOUD_APP_ID: '', CLOUD_WORKSPACE_ID: '', CLOUD_APP_IDENTITY_PUBLIC_KEYS: '', CLOUD_DATA_USER_IDS: '',
-    CLOUD_CONTROL_USER_IDS: '', CLOUD_CONTROL_CODE: '',
+    CLOUD_STREAM_REQUEST_USER_IDS: '', CLOUD_STREAM_REQUEST_CODE: '',
   } });
   let configOutput = '';
   invalidIdentity.stderr.on('data', (value) => { configOutput += value; });
