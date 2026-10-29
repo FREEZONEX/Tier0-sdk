@@ -107,9 +107,12 @@ describe('StreamRequest real HTTP fixture (no external credentials)', () => {
     respond = (_req, res) => send(res, { errorCode, message: 'public error' }, status);
     const error = await control().invoke({}, { idempotencyKey: 'intent-http' }).catch(e => e);
     expect(error).toBeInstanceOf(StreamRequestError);
-    expect(error).toMatchObject({ status, errorCode, retryable: false });
+    expect(error).toMatchObject({ status, errorCode, retryable: false,
+      outcomeUnknown: errorCode === 'STREAM_REQUEST_RESULT_UNKNOWN' });
     expect(error instanceof StreamRequestResultUnknownError).toBe(errorCode === 'STREAM_REQUEST_RESULT_UNKNOWN');
     expect(received.length - start).toBe(1);
+    expect(received[start].method).toBe('POST');
+    expect(received[start].path).toBe('/openapi/v1/stream-requests/pump.start/invoke');
   });
 
   it.each(['unknown', 'failed', 'succeeded', 'running'])

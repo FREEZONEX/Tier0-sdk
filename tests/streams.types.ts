@@ -1,5 +1,12 @@
-import { client, createClient, type StreamMessage } from '../src/index.js';
+import { client, createClient, StreamRequestError, StreamRequestResultUnknownError, type StreamMessage } from '../src/index.js';
 import { installAppRuntime } from '../src/runtime.js';
+
+const knownRequestError = new StreamRequestError('conflict', { errorCode: 'IDEMPOTENCY_CONFLICT' });
+const unknownRequestError = new StreamRequestResultUnknownError({ errorCode: 'STREAM_REQUEST_RESULT_UNKNOWN' });
+const baseUnknownFlag: boolean = knownRequestError.outcomeUnknown;
+const unknownFlag: true = unknownRequestError.outcomeUnknown;
+const upcastUnknownError: StreamRequestError = unknownRequestError;
+void [baseUnknownFlag, unknownFlag, upcastUnknownError.outcomeUnknown];
 
 const request = client.streams.requests.use<{ value: number }, { accepted: boolean }>({ code: 'pump.start' });
 void request.invoke({ value: 1 }, { idempotencyKey: 'one-intent' }).then(result => {

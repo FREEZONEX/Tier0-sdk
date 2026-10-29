@@ -72,7 +72,8 @@ describe('Cloud StreamRequest single-attempt transport', () => {
     vi.stubGlobal('fetch', fetch);
     const error = await handle().invoke({}, { idempotencyKey: 'stable' }).catch(e => e);
     expect(error).toBeInstanceOf(StreamRequestError);
-    expect(error).toMatchObject({ status, errorCode, retryable: false });
+    expect(error).toMatchObject({ status, errorCode, retryable: false,
+      outcomeUnknown: errorCode === 'STREAM_REQUEST_RESULT_UNKNOWN' });
     expect(error instanceof StreamRequestResultUnknownError).toBe(errorCode === 'STREAM_REQUEST_RESULT_UNKNOWN');
     expect(fetch).toHaveBeenCalledTimes(1);
   });
@@ -82,7 +83,8 @@ describe('Cloud StreamRequest single-attempt transport', () => {
     vi.stubGlobal('fetch', fetch);
     const error = await handle().invoke({}).catch(e => e);
     expect(error).toBeInstanceOf(StreamRequestResultUnknownError);
-    expect(error).toMatchObject({ errorCode: 'STREAM_REQUEST_TRANSPORT_ERROR', status: undefined, retryable: false });
+    expect(error).toMatchObject({ errorCode: 'STREAM_REQUEST_TRANSPORT_ERROR', status: undefined,
+      outcomeUnknown: true, retryable: false });
     expect(String(error)).not.toContain('fixture-key');
     expect(JSON.stringify(error)).not.toContain('secret');
     await new Promise(resolve => setTimeout(resolve, 25));

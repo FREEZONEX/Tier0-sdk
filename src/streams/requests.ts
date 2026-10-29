@@ -69,6 +69,7 @@ export class StreamRequestError extends Error {
   readonly runStatus?: string;
   readonly replayed?: boolean;
   readonly retryable = false;
+  readonly outcomeUnknown: boolean = false;
 
   constructor(message: string, info: StreamRequestErrorInfo) {
     super(message);
