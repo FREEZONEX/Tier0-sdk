@@ -154,7 +154,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PlatformCapabilityDiscoverResp"
+                  "$ref": "#/components/schemas/PlatformCapabilityDiscoverV2Resp"
                 }
               }
             },
@@ -455,47 +455,9 @@
         ],
         "type": "object"
       },
-      "PlatformCapabilityDiscoverResp": {
-        "properties": {
-          "apiContractVersions": {
-            "description": "openapi/v1",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "capabilities": {
-            "description": "只返回当前 Key 有授权摘要的已知能力，关闭的能力仍返回状态",
-            "items": {
-              "$ref": "#/components/schemas/PlatformPublicCapability"
-            },
-            "type": "array"
-          },
-          "contractVersion": {
-            "description": "本发现响应合同版本，与单个 Stream request 的冻结合同版本独立",
-            "type": "string"
-          },
-          "deprecations": {
-            "items": {
-              "$ref": "#/components/schemas/PlatformCapabilityDeprecation"
-            },
-            "type": "array"
-          },
-          "product": {
-            "type": "string"
-          },
-          "productVersion": {
-            "description": "仅返回显式配置的可信产品发布版本，未配置时省略",
-            "type": "string"
-          },
-          "sdkContractVersions": {
-            "description": "stream-requests/v1 公共 SDK 合同，不是 npm 版本",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          }
-        },
+      "PlatformCapabilityDiscoverV2Resp": {
+        "title": "Tier0 capability discovery",
+        "type": "object",
         "required": [
           "product",
           "contractVersion",
@@ -504,67 +466,2399 @@
           "capabilities",
           "deprecations"
         ],
-        "type": "object"
-      },
-      "PlatformPublicCapability": {
         "properties": {
-          "allowed": {
-            "description": "当前 Key 的能力授权摘要，不替代具体 Stream request code 与读写权限检查",
-            "type": "boolean"
+          "product": {
+            "enum": [
+              "cloud",
+              "enterprise"
+            ]
           },
-          "availability": {
-            "description": "unavailable / unknown / available；不是设备在线或执行成功证明",
-            "type": "string"
+          "productVersion": {
+            "type": "string",
+            "minLength": 1
           },
-          "code": {
-            "type": "string"
+          "contractVersion": {
+            "enum": [
+              "1.0"
+            ]
           },
-          "contractVersions": {
+          "apiContractVersions": {
+            "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             },
-            "type": "array"
+            "x-json-schema-contains": {
+              "const": "openapi/v2"
+            },
+            "uniqueItems": true
           },
-          "enabled": {
-            "description": "仅发布、实现和 readiness 均满足时为 true",
-            "type": "boolean"
+          "sdkContractVersions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
           },
-          "releaseEnabled": {
-            "description": "公开发布开关与当前 Workspace 灰度的交集，不表示 runtime 就绪",
-            "type": "boolean"
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapabilityDiscoverycapability"
+            },
+            "allOf": [
+              {
+                "x-json-schema-contains": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "const": "namespace.v2"
+                    }
+                  }
+                },
+                "x-json-schema-minContains": 0,
+                "x-json-schema-maxContains": 1
+              },
+              {
+                "x-json-schema-contains": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "const": "source"
+                    }
+                  }
+                },
+                "x-json-schema-minContains": 0,
+                "x-json-schema-maxContains": 1
+              },
+              {
+                "x-json-schema-contains": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "const": "stream"
+                    }
+                  }
+                },
+                "x-json-schema-minContains": 0,
+                "x-json-schema-maxContains": 1
+              },
+              {
+                "x-json-schema-contains": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "const": "stream.requests.v1"
+                    }
+                  }
+                },
+                "x-json-schema-minContains": 0,
+                "x-json-schema-maxContains": 1
+              },
+              {
+                "x-json-schema-contains": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "const": "stream.requests.invoke.v1"
+                    }
+                  }
+                },
+                "x-json-schema-minContains": 0,
+                "x-json-schema-maxContains": 1
+              }
+            ]
           },
-          "state": {
-            "description": "disabled / not_supported / unavailable / readiness_unknown / ready",
-            "type": "string"
+          "deprecations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "contract"
+              ],
+              "properties": {
+                "contract": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "replacement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sunsetAt": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
           }
         },
+        "allOf": [
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "capabilities": {
+                          "type": "array",
+                          "x-json-schema-contains": {
+                            "type": "object",
+                            "required": [
+                              "code"
+                            ],
+                            "properties": {
+                              "code": {
+                                "enum": [
+                                  "stream.requests.v1",
+                                  "stream.requests.invoke.v1"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "apiContractVersions": {
+                        "type": "array",
+                        "x-json-schema-contains": {
+                          "const": "openapi/v1"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "description": "OpenAPI 3.0 wire schema. Array contains/cardinality annotations and cross-field proof ordering require the shared JSON Schema plus SDK semantic checks; this projection alone is not full contract acceptance.",
+        "x-tier0-json-schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$id": "urn:tier0:capability-discovery",
+          "title": "Tier0 capability discovery",
+          "type": "object",
+          "required": [
+            "product",
+            "contractVersion",
+            "apiContractVersions",
+            "sdkContractVersions",
+            "capabilities",
+            "deprecations"
+          ],
+          "properties": {
+            "product": {
+              "enum": [
+                "cloud",
+                "enterprise"
+              ]
+            },
+            "productVersion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "contractVersion": {
+              "const": "1.0"
+            },
+            "apiContractVersions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "contains": {
+                "const": "openapi/v2"
+              },
+              "uniqueItems": true
+            },
+            "sdkContractVersions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "capabilities": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/capability"
+              },
+              "allOf": [
+                {
+                  "contains": {
+                    "type": "object",
+                    "required": [
+                      "code"
+                    ],
+                    "properties": {
+                      "code": {
+                        "const": "namespace.v2"
+                      }
+                    }
+                  },
+                  "minContains": 0,
+                  "maxContains": 1
+                },
+                {
+                  "contains": {
+                    "type": "object",
+                    "required": [
+                      "code"
+                    ],
+                    "properties": {
+                      "code": {
+                        "const": "source"
+                      }
+                    }
+                  },
+                  "minContains": 0,
+                  "maxContains": 1
+                },
+                {
+                  "contains": {
+                    "type": "object",
+                    "required": [
+                      "code"
+                    ],
+                    "properties": {
+                      "code": {
+                        "const": "stream"
+                      }
+                    }
+                  },
+                  "minContains": 0,
+                  "maxContains": 1
+                },
+                {
+                  "contains": {
+                    "type": "object",
+                    "required": [
+                      "code"
+                    ],
+                    "properties": {
+                      "code": {
+                        "const": "stream.requests.v1"
+                      }
+                    }
+                  },
+                  "minContains": 0,
+                  "maxContains": 1
+                },
+                {
+                  "contains": {
+                    "type": "object",
+                    "required": [
+                      "code"
+                    ],
+                    "properties": {
+                      "code": {
+                        "const": "stream.requests.invoke.v1"
+                      }
+                    }
+                  },
+                  "minContains": 0,
+                  "maxContains": 1
+                }
+              ]
+            },
+            "deprecations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "contract"
+                ],
+                "properties": {
+                  "contract": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "replacement": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sunsetAt": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          "$defs": {
+            "capability": {
+              "type": "object",
+              "required": [
+                "code"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "description": "Unknown capability codes are ignored; only recognized codes use the frozen assessment contract.",
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "namespace.v2",
+                          "source",
+                          "stream",
+                          "stream.requests.v1",
+                          "stream.requests.invoke.v1"
+                        ]
+                      }
+                    }
+                  },
+                  "then": {
+                    "$ref": "#/$defs/knownCapability"
+                  }
+                }
+              ]
+            },
+            "operation": {
+              "type": "object",
+              "required": [
+                "operation"
+              ],
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "description": "Unknown operation names are ignored within their parent capability; known names are validated by that capability."
+            },
+            "knownCapability": {
+              "type": "object",
+              "required": [
+                "code",
+                "contractVersions",
+                "releaseEnabled",
+                "enabled",
+                "allowed",
+                "state",
+                "availability"
+              ],
+              "properties": {
+                "releaseEnabled": {
+                  "type": "boolean"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "allowed": {
+                  "type": "boolean"
+                },
+                "state": {
+                  "enum": [
+                    "disabled",
+                    "not_supported",
+                    "unavailable",
+                    "readiness_unknown",
+                    "ready"
+                  ]
+                },
+                "availability": {
+                  "enum": [
+                    "unavailable",
+                    "unknown",
+                    "available"
+                  ]
+                },
+                "reasonCode": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "checkedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "minLength": 1
+                },
+                "validUntil": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Proof expiry must follow checkedAt. Cross-field chronological ordering is a semantic constraint checked by consumers in addition to this structural JSON Schema.",
+                  "minLength": 1
+                },
+                "retryAfterMs": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "contractVersions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "uniqueItems": true
+                },
+                "operations": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/operation"
+                  }
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "const": "ready"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "enabled": {
+                        "const": true
+                      },
+                      "releaseEnabled": {
+                        "const": true
+                      },
+                      "allowed": {
+                        "const": true
+                      },
+                      "availability": {
+                        "const": "available"
+                      }
+                    }
+                  },
+                  "else": {
+                    "properties": {
+                      "enabled": {
+                        "const": false
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "const": "disabled"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "releaseEnabled": {
+                        "const": false
+                      }
+                    }
+                  },
+                  "else": {
+                    "properties": {
+                      "releaseEnabled": {
+                        "const": true
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "const": "readiness_unknown"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "availability": {
+                        "const": "unknown"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "enum": [
+                          "disabled",
+                          "not_supported",
+                          "unavailable"
+                        ]
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "availability": {
+                        "const": "unavailable"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "required": [
+                      "validUntil"
+                    ],
+                    "properties": {
+                      "validUntil": {}
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "checkedAt"
+                    ],
+                    "properties": {
+                      "state": {
+                        "const": "ready"
+                      },
+                      "checkedAt": {}
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "code": {
+                        "const": "source"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "operations": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "allOf": [
+                            {
+                              "if": {
+                                "properties": {
+                                  "operation": {
+                                    "enum": [
+                                      "read",
+                                      "configure",
+                                      "test",
+                                      "discover",
+                                      "enable",
+                                      "disable"
+                                    ]
+                                  }
+                                }
+                              },
+                              "then": {
+                                "$ref": "#/$defs/knownOperation"
+                              }
+                            },
+                            {
+                              "if": {
+                                "properties": {
+                                  "operation": {
+                                    "enum": [
+                                      "test",
+                                      "discover",
+                                      "enable"
+                                    ]
+                                  }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "requiresResourceCheck": {
+                                    "const": true
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "allOf": [
+                          {
+                            "contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "read"
+                                }
+                              }
+                            },
+                            "minContains": 0,
+                            "maxContains": 1
+                          },
+                          {
+                            "contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "configure"
+                                }
+                              }
+                            },
+                            "minContains": 0,
+                            "maxContains": 1
+                          },
+                          {
+                            "contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "test"
+                                }
+                              }
+                            },
+                            "minContains": 0,
+                            "maxContains": 1
+                          },
+                          {
+                            "contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "discover"
+                                }
+                              }
+                            },
+                            "minContains": 0,
+                            "maxContains": 1
+                          },
+                          {
+                            "contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "enable"
+                                }
+                              }
+                            },
+                            "minContains": 0,
+                            "maxContains": 1
+                          },
+                          {
+                            "contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "disable"
+                                }
+                              }
+                            },
+                            "minContains": 0,
+                            "maxContains": 1
+                          }
+                        ]
+                      }
+                    },
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "releaseEnabled": {
+                              "const": false
+                            }
+                          }
+                        },
+                        "then": {
+                          "properties": {
+                            "operations": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "if": {
+                                  "properties": {
+                                    "operation": {
+                                      "enum": [
+                                        "read",
+                                        "configure",
+                                        "test",
+                                        "discover",
+                                        "enable",
+                                        "disable"
+                                      ]
+                                    }
+                                  }
+                                },
+                                "then": {
+                                  "properties": {
+                                    "releaseEnabled": {
+                                      "const": false
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "code": {
+                        "const": "stream"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "operations": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "allOf": [
+                            {
+                              "if": {
+                                "properties": {
+                                  "operation": {
+                                    "enum": [
+                                      "read",
+                                      "configure",
+                                      "validate",
+                                      "deploy",
+                                      "execute",
+                                      "disable"
+                                    ]
+                                  }
+                                }
+                              },
+                              "then": {
+                                "$ref": "#/$defs/knownOperation"
+                              }
+                            },
+                            {
+                              "if": {
+                                "properties": {
+                                  "operation": {
+                                    "enum": [
+                                      "deploy",
+                                      "execute"
+                                    ]
+                                  }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "requiresResourceCheck": {
+                                    "const": true
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "allOf": [
+                          {
+                            "contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "read"
+                                }
+                              }
+                            },
+                            "minContains": 0,
+                            "maxContains": 1
+                          },
+                          {
+                            "contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "configure"
+                                }
+                              }
+                            },
+                            "minContains": 0,
+                            "maxContains": 1
+                          },
+                          {
+                            "contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "validate"
+                                }
+                              }
+                            },
+                            "minContains": 0,
+                            "maxContains": 1
+                          },
+                          {
+                            "contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "deploy"
+                                }
+                              }
+                            },
+                            "minContains": 0,
+                            "maxContains": 1
+                          },
+                          {
+                            "contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "execute"
+                                }
+                              }
+                            },
+                            "minContains": 0,
+                            "maxContains": 1
+                          },
+                          {
+                            "contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "disable"
+                                }
+                              }
+                            },
+                            "minContains": 0,
+                            "maxContains": 1
+                          }
+                        ]
+                      }
+                    },
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "releaseEnabled": {
+                              "const": false
+                            }
+                          }
+                        },
+                        "then": {
+                          "properties": {
+                            "operations": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "if": {
+                                  "properties": {
+                                    "operation": {
+                                      "enum": [
+                                        "read",
+                                        "configure",
+                                        "validate",
+                                        "deploy",
+                                        "execute",
+                                        "disable"
+                                      ]
+                                    }
+                                  }
+                                },
+                                "then": {
+                                  "properties": {
+                                    "releaseEnabled": {
+                                      "const": false
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "namespace.v2",
+                          "source",
+                          "stream"
+                        ]
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "contractVersions": {
+                        "type": "array",
+                        "contains": {
+                          "const": "openapi/v2"
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "stream.requests.v1",
+                          "stream.requests.invoke.v1"
+                        ]
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "contractVersions": {
+                        "type": "array",
+                        "allOf": [
+                          {
+                            "contains": {
+                              "const": "openapi/v1"
+                            }
+                          },
+                          {
+                            "contains": {
+                              "const": "stream-requests/v1"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "knownOperation": {
+              "type": "object",
+              "required": [
+                "operation",
+                "requiresResourceCheck",
+                "releaseEnabled",
+                "enabled",
+                "allowed",
+                "state",
+                "availability"
+              ],
+              "properties": {
+                "releaseEnabled": {
+                  "type": "boolean"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "allowed": {
+                  "type": "boolean"
+                },
+                "state": {
+                  "enum": [
+                    "disabled",
+                    "not_supported",
+                    "unavailable",
+                    "readiness_unknown",
+                    "ready"
+                  ]
+                },
+                "availability": {
+                  "enum": [
+                    "unavailable",
+                    "unknown",
+                    "available"
+                  ]
+                },
+                "reasonCode": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "checkedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "minLength": 1
+                },
+                "validUntil": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Proof expiry must follow checkedAt. Cross-field chronological ordering is a semantic constraint checked by consumers in addition to this structural JSON Schema.",
+                  "minLength": 1
+                },
+                "retryAfterMs": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "operation": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requiresResourceCheck": {
+                  "type": "boolean"
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "const": "ready"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "enabled": {
+                        "const": true
+                      },
+                      "releaseEnabled": {
+                        "const": true
+                      },
+                      "allowed": {
+                        "const": true
+                      },
+                      "availability": {
+                        "const": "available"
+                      }
+                    }
+                  },
+                  "else": {
+                    "properties": {
+                      "enabled": {
+                        "const": false
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "const": "disabled"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "releaseEnabled": {
+                        "const": false
+                      }
+                    }
+                  },
+                  "else": {
+                    "properties": {
+                      "releaseEnabled": {
+                        "const": true
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "const": "readiness_unknown"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "availability": {
+                        "const": "unknown"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "enum": [
+                          "disabled",
+                          "not_supported",
+                          "unavailable"
+                        ]
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "availability": {
+                        "const": "unavailable"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "required": [
+                      "validUntil"
+                    ],
+                    "properties": {
+                      "validUntil": {}
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "checkedAt"
+                    ],
+                    "properties": {
+                      "state": {
+                        "const": "ready"
+                      },
+                      "checkedAt": {}
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "capabilities": {
+                    "type": "array",
+                    "contains": {
+                      "type": "object",
+                      "required": [
+                        "code"
+                      ],
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "stream.requests.v1",
+                            "stream.requests.invoke.v1"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "apiContractVersions": {
+                    "type": "array",
+                    "contains": {
+                      "const": "openapi/v1"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "CapabilityDiscoverycapability": {
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "description": "Unknown capability codes are ignored; only recognized codes use the frozen assessment contract.",
+        "allOf": [
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "namespace.v2",
+                            "source",
+                            "stream",
+                            "stream.requests.v1",
+                            "stream.requests.invoke.v1"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "#/components/schemas/CapabilityDiscoveryknownCapability"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "CapabilityDiscoveryknownCapability": {
+        "type": "object",
         "required": [
           "code",
+          "contractVersions",
           "releaseEnabled",
           "enabled",
           "allowed",
           "state",
-          "availability",
-          "contractVersions"
+          "availability"
         ],
-        "type": "object"
-      },
-      "PlatformCapabilityDeprecation": {
         "properties": {
-          "contract": {
-            "type": "string"
+          "releaseEnabled": {
+            "type": "boolean"
           },
-          "replacement": {
-            "type": "string"
+          "enabled": {
+            "type": "boolean"
           },
-          "sunsetAt": {
-            "type": "string"
+          "allowed": {
+            "type": "boolean"
+          },
+          "state": {
+            "enum": [
+              "disabled",
+              "not_supported",
+              "unavailable",
+              "readiness_unknown",
+              "ready"
+            ]
+          },
+          "availability": {
+            "enum": [
+              "unavailable",
+              "unknown",
+              "available"
+            ]
+          },
+          "reasonCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time",
+            "minLength": 1
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Proof expiry must follow checkedAt. Cross-field chronological ordering is a semantic constraint checked by consumers in addition to this structural JSON Schema.",
+            "minLength": 1
+          },
+          "retryAfterMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contractVersions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapabilityDiscoveryoperation"
+            }
           }
         },
+        "allOf": [
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "state": {
+                          "enum": [
+                            "ready"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "enabled": {
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "releaseEnabled": {
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "allowed": {
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "availability": {
+                        "enum": [
+                          "available"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "state": {
+                        "enum": [
+                          "ready"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "enabled": {
+                        "enum": [
+                          false
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "state": {
+                          "enum": [
+                            "disabled"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "releaseEnabled": {
+                        "enum": [
+                          false
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "state": {
+                        "enum": [
+                          "disabled"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "releaseEnabled": {
+                        "enum": [
+                          true
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "state": {
+                          "enum": [
+                            "readiness_unknown"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "availability": {
+                        "enum": [
+                          "unknown"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "state": {
+                          "enum": [
+                            "disabled",
+                            "not_supported",
+                            "unavailable"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "availability": {
+                        "enum": [
+                          "unavailable"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "required": [
+                        "validUntil"
+                      ],
+                      "properties": {
+                        "validUntil": {}
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "checkedAt"
+                    ],
+                    "properties": {
+                      "state": {
+                        "enum": [
+                          "ready"
+                        ]
+                      },
+                      "checkedAt": {}
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "source"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "operations": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "allOf": [
+                            {
+                              "allOf": [
+                                {
+                                  "anyOf": [
+                                    {
+                                      "not": {
+                                        "properties": {
+                                          "operation": {
+                                            "enum": [
+                                              "read",
+                                              "configure",
+                                              "test",
+                                              "discover",
+                                              "enable",
+                                              "disable"
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "$ref": "#/components/schemas/CapabilityDiscoveryknownOperation"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "allOf": [
+                                {
+                                  "anyOf": [
+                                    {
+                                      "not": {
+                                        "properties": {
+                                          "operation": {
+                                            "enum": [
+                                              "test",
+                                              "discover",
+                                              "enable"
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "properties": {
+                                        "requiresResourceCheck": {
+                                          "enum": [
+                                            true
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "allOf": [
+                          {
+                            "x-json-schema-contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "read"
+                                }
+                              }
+                            },
+                            "x-json-schema-minContains": 0,
+                            "x-json-schema-maxContains": 1
+                          },
+                          {
+                            "x-json-schema-contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "configure"
+                                }
+                              }
+                            },
+                            "x-json-schema-minContains": 0,
+                            "x-json-schema-maxContains": 1
+                          },
+                          {
+                            "x-json-schema-contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "test"
+                                }
+                              }
+                            },
+                            "x-json-schema-minContains": 0,
+                            "x-json-schema-maxContains": 1
+                          },
+                          {
+                            "x-json-schema-contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "discover"
+                                }
+                              }
+                            },
+                            "x-json-schema-minContains": 0,
+                            "x-json-schema-maxContains": 1
+                          },
+                          {
+                            "x-json-schema-contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "enable"
+                                }
+                              }
+                            },
+                            "x-json-schema-minContains": 0,
+                            "x-json-schema-maxContains": 1
+                          },
+                          {
+                            "x-json-schema-contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "disable"
+                                }
+                              }
+                            },
+                            "x-json-schema-minContains": 0,
+                            "x-json-schema-maxContains": 1
+                          }
+                        ]
+                      }
+                    },
+                    "allOf": [
+                      {
+                        "allOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "not": {
+                                  "properties": {
+                                    "releaseEnabled": {
+                                      "enum": [
+                                        false
+                                      ]
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "properties": {
+                                  "operations": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "allOf": [
+                                        {
+                                          "anyOf": [
+                                            {
+                                              "not": {
+                                                "properties": {
+                                                  "operation": {
+                                                    "enum": [
+                                                      "read",
+                                                      "configure",
+                                                      "test",
+                                                      "discover",
+                                                      "enable",
+                                                      "disable"
+                                                    ]
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "properties": {
+                                                "releaseEnabled": {
+                                                  "enum": [
+                                                    false
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "stream"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "operations": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "allOf": [
+                            {
+                              "allOf": [
+                                {
+                                  "anyOf": [
+                                    {
+                                      "not": {
+                                        "properties": {
+                                          "operation": {
+                                            "enum": [
+                                              "read",
+                                              "configure",
+                                              "validate",
+                                              "deploy",
+                                              "execute",
+                                              "disable"
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "$ref": "#/components/schemas/CapabilityDiscoveryknownOperation"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "allOf": [
+                                {
+                                  "anyOf": [
+                                    {
+                                      "not": {
+                                        "properties": {
+                                          "operation": {
+                                            "enum": [
+                                              "deploy",
+                                              "execute"
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "properties": {
+                                        "requiresResourceCheck": {
+                                          "enum": [
+                                            true
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "allOf": [
+                          {
+                            "x-json-schema-contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "read"
+                                }
+                              }
+                            },
+                            "x-json-schema-minContains": 0,
+                            "x-json-schema-maxContains": 1
+                          },
+                          {
+                            "x-json-schema-contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "configure"
+                                }
+                              }
+                            },
+                            "x-json-schema-minContains": 0,
+                            "x-json-schema-maxContains": 1
+                          },
+                          {
+                            "x-json-schema-contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "validate"
+                                }
+                              }
+                            },
+                            "x-json-schema-minContains": 0,
+                            "x-json-schema-maxContains": 1
+                          },
+                          {
+                            "x-json-schema-contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "deploy"
+                                }
+                              }
+                            },
+                            "x-json-schema-minContains": 0,
+                            "x-json-schema-maxContains": 1
+                          },
+                          {
+                            "x-json-schema-contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "execute"
+                                }
+                              }
+                            },
+                            "x-json-schema-minContains": 0,
+                            "x-json-schema-maxContains": 1
+                          },
+                          {
+                            "x-json-schema-contains": {
+                              "type": "object",
+                              "required": [
+                                "operation"
+                              ],
+                              "properties": {
+                                "operation": {
+                                  "const": "disable"
+                                }
+                              }
+                            },
+                            "x-json-schema-minContains": 0,
+                            "x-json-schema-maxContains": 1
+                          }
+                        ]
+                      }
+                    },
+                    "allOf": [
+                      {
+                        "allOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "not": {
+                                  "properties": {
+                                    "releaseEnabled": {
+                                      "enum": [
+                                        false
+                                      ]
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "properties": {
+                                  "operations": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "allOf": [
+                                        {
+                                          "anyOf": [
+                                            {
+                                              "not": {
+                                                "properties": {
+                                                  "operation": {
+                                                    "enum": [
+                                                      "read",
+                                                      "configure",
+                                                      "validate",
+                                                      "deploy",
+                                                      "execute",
+                                                      "disable"
+                                                    ]
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "properties": {
+                                                "releaseEnabled": {
+                                                  "enum": [
+                                                    false
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "namespace.v2",
+                            "source",
+                            "stream"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "contractVersions": {
+                        "type": "array",
+                        "x-json-schema-contains": {
+                          "const": "openapi/v2"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "stream.requests.v1",
+                            "stream.requests.invoke.v1"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "contractVersions": {
+                        "type": "array",
+                        "allOf": [
+                          {
+                            "x-json-schema-contains": {
+                              "const": "openapi/v1"
+                            }
+                          },
+                          {
+                            "x-json-schema-contains": {
+                              "const": "stream-requests/v1"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "CapabilityDiscoveryoperation": {
+        "type": "object",
         "required": [
-          "contract"
+          "operation"
         ],
-        "type": "object"
+        "properties": {
+          "operation": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "description": "Unknown operation names are ignored within their parent capability; known names are validated by that capability."
+      },
+      "CapabilityDiscoveryknownOperation": {
+        "type": "object",
+        "required": [
+          "operation",
+          "requiresResourceCheck",
+          "releaseEnabled",
+          "enabled",
+          "allowed",
+          "state",
+          "availability"
+        ],
+        "properties": {
+          "releaseEnabled": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "allowed": {
+            "type": "boolean"
+          },
+          "state": {
+            "enum": [
+              "disabled",
+              "not_supported",
+              "unavailable",
+              "readiness_unknown",
+              "ready"
+            ]
+          },
+          "availability": {
+            "enum": [
+              "unavailable",
+              "unknown",
+              "available"
+            ]
+          },
+          "reasonCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time",
+            "minLength": 1
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Proof expiry must follow checkedAt. Cross-field chronological ordering is a semantic constraint checked by consumers in addition to this structural JSON Schema.",
+            "minLength": 1
+          },
+          "retryAfterMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "operation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "requiresResourceCheck": {
+            "type": "boolean"
+          }
+        },
+        "allOf": [
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "state": {
+                          "enum": [
+                            "ready"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "enabled": {
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "releaseEnabled": {
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "allowed": {
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "availability": {
+                        "enum": [
+                          "available"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "state": {
+                        "enum": [
+                          "ready"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "enabled": {
+                        "enum": [
+                          false
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "state": {
+                          "enum": [
+                            "disabled"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "releaseEnabled": {
+                        "enum": [
+                          false
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "state": {
+                        "enum": [
+                          "disabled"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "releaseEnabled": {
+                        "enum": [
+                          true
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "state": {
+                          "enum": [
+                            "readiness_unknown"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "availability": {
+                        "enum": [
+                          "unknown"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "properties": {
+                        "state": {
+                          "enum": [
+                            "disabled",
+                            "not_supported",
+                            "unavailable"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "availability": {
+                        "enum": [
+                          "unavailable"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "not": {
+                      "required": [
+                        "validUntil"
+                      ],
+                      "properties": {
+                        "validUntil": {}
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "checkedAt"
+                    ],
+                    "properties": {
+                      "state": {
+                        "enum": [
+                          "ready"
+                        ]
+                      },
+                      "checkedAt": {}
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "PlatformCapabilityErrorResp": {
         "properties": {

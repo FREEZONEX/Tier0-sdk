@@ -1,17 +1,17 @@
 {
   "repository": "FREEZONEX/Tier0-Backend",
-  "revision": "310bd513fd91efee78a1bf38fcce0b4128e70996",
+  "revision": "0b6fc2375cdc322318235da75effd982dd62b3e5",
   "source": "service/gwsvr/internal/handler/swaggerui/swagger.json",
-  "sourceSHA256": "e00afd8b859c4b5bcc492d600e02f6719d9d1b4582105bd6d5db02d6ee7c9b6e",
-  "snapshotSHA256": "8e0dea0d724cbf952d2643f87eda38f72c242be71efbca6f1495ddf3ea27ef85",
+  "sourceSHA256": "01ecf9903d5883f2d7534c75c171768121e767303751f4989a7c5e2702a33e9d",
+  "snapshotSHA256": "1fb7c26709202f2bde771653d5a37ae7f5054b46153a4f4155669e9283f3291a",
   "sourceInputs": [
     {
       "path": "service/gwsvr/internal/handler/swaggerui/swagger.json",
-      "sha256": "e00afd8b859c4b5bcc492d600e02f6719d9d1b4582105bd6d5db02d6ee7c9b6e"
+      "sha256": "01ecf9903d5883f2d7534c75c171768121e767303751f4989a7c5e2702a33e9d"
     },
     {
       "path": "service/gwsvr/internal/handler/openapi/v2/unsv2/swagger_generated.json",
-      "sha256": "f9038247cbc755bf79363bd8ef39d0539c3eeb5b40d9d8b11eef959d37420e45"
+      "sha256": "40a42f668104c295264e2f7312547f5ce7ee9b23789d0affb94f6c9fa4ceb69a"
     }
   ],
   "trustRevision": "5eecd2188772a73c5103f721e2ff63ce0fb3f227",

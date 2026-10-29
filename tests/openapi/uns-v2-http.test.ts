@@ -33,6 +33,15 @@ const client = (timeout = 2_000, unsV2MaxResponseBytes?: number) => createClient
   apiHost, apiKey: 'workspace-bound-key', transportTimeoutMs: timeout, unsV2MaxResponseBytes,
 });
 
+// Synthetic local response values, not runtime defaults or live readiness proof.
+const appLimits = {
+  count: { defaultMax: 10, max: 100 }, total: { defaultMax: 10, max: 100 },
+  queryBatch: { maxQueries: 2, maxRows: 10, maxBytes: 65536 }, get: { maxIds: 10 },
+  subscribe: { maxCollections: 2, maxRecordIds: 10, heartbeatMs: 1000, retentionMs: 60000 },
+  ttl: { minSeconds: 60, maxSeconds: 31536000, maxPerCollection: 2 },
+  concurrency: { reads: 2, writes: 1, queueMs: 0 }, idempotencyWindowMs: 60000,
+};
+
 describe('UNS v2 localhost HTTP fixture', () => {
   it('isolates concurrent per-request clients and snapshots their proof configuration', async () => {
     const start = received.length;
@@ -190,22 +199,52 @@ describe('UNS v2 localhost HTTP fixture', () => {
     const start = received.length;
     respond = (_req, res) => send(res, { code: 200, msg: '', requestId: 'app-context', data: {
       appId: '14bfc189-8516-4709-a4c9-865a0f1dc345', name: 'Hosted App', revision: 1,
-      collections: [], platformPermissions: [],
+      collections: [], platformPermissions: [], dataState: 'ready', limits: appLimits,
     } });
     const out = await client().unsV2.dataAppContext({});
     expect(out.data.appId).toBe('14bfc189-8516-4709-a4c9-865a0f1dc345');
     expect(out.data.name).toBe('Hosted App');
+    expect(out.data.dataState).toBe('ready');
+    expect(out.data.limits).toEqual(appLimits);
     expect(out.data.collections).toEqual([]);
     expect(received.length - start).toBe(1);
     expect(received.at(-1)?.path).toBe('/openapi/v2/uns/app/context');
     expect(received.at(-1)?.body).toBe('{}');
   });
 
+  it('reads uninitialized App context once without initializing, granting or retrying', async () => {
+    const start = received.length;
+    respond = (_req, res) => send(res, { code: 200, msg: '', requestId: 'empty-app-context', data: {
+      appId: 'fixture-app', name: 'No data policy', revision: 0, collections: [], platformPermissions: [],
+      dataState: 'uninitialized', limits: appLimits,
+    } });
+    const out = await client().unsV2.dataAppContext({});
+    expect(out.data.dataState).toBe('uninitialized');
+    expect(out.data.revision).toBe(0);
+    expect(out.data.collections).toEqual([]);
+    expect(out.data.limits).toEqual(appLimits);
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start].path).toBe('/openapi/v2/uns/app/context');
+    expect(received[start].body).toBe('{}');
+  });
+
+  it('preserves disabled App context rejection without automatic policy recovery or retries', async () => {
+    const start = received.length;
+    respond = (_req, res) => send(res, { code: 403, msg: 'App data policy disabled', requestId: 'disabled-app-context', data: null,
+      error: { code: 'FORBIDDEN', reason: 'APP_DATA_POLICY_DISABLED', execution: 'notStarted', details: [], retry: { safe: false } },
+    }, 403);
+    await expect(client().unsV2.dataAppContext({})).rejects.toMatchObject({
+      name: 'UnsV2Error', status: 403, code: 'FORBIDDEN', retryable: false,
+    });
+    expect(received.slice(start)).toHaveLength(1);
+    expect(received[start].path).toBe('/openapi/v2/uns/app/context');
+  });
+
   it('decodes current employee create capability separately from readable fields without adding a selector or binding to the request', async () => {
     const start = received.length;
     respond = (_req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end('{"code":200,"msg":"ok","requestId":"create-hint","data":{"appId":"app-1","name":"App","revision":19,"platformPermissions":[],"collections":[{"alias":"orders","collectionId":"orders","permissions":["record:read","record:write"],"recordSchema":{"type":"object","properties":{"orderNo":{"type":"string"}}},"createCapability":{"version":"cloud-app-create-capability/v1","allowed":true,"reason":"allowed","appRevision":19,"collectionRevision":9007199254740993,"binding":"' + 'a'.repeat(64) + '","inputSchema":{"type":"object","additionalProperties":false,"required":["orderNo","amount"],"properties":{"orderNo":{"type":"string"},"amount":{"type":"integer","minimum":0,"enum":[9007199254740993]}}}}}]}}');
+      res.end('{"code":200,"msg":"ok","requestId":"create-hint","data":{"appId":"app-1","name":"App","revision":19,"dataState":"ready","limits":' + JSON.stringify(appLimits) + ',"platformPermissions":[],"collections":[{"alias":"orders","collectionId":"orders","permissions":["record:read","record:write"],"recordSchema":{"type":"object","properties":{"orderNo":{"type":"string"}}},"createCapability":{"version":"cloud-app-create-capability/v1","allowed":true,"reason":"allowed","appRevision":19,"collectionRevision":9007199254740993,"binding":"' + 'a'.repeat(64) + '","inputSchema":{"type":"object","additionalProperties":false,"required":["orderNo","amount"],"properties":{"orderNo":{"type":"string"},"amount":{"type":"integer","minimum":0,"enum":[9007199254740993]}}}}}]}}');
     };
     const out = await client().unsV2.dataAppContext({});
     const grant = out.data.collections[0], cap = grant.createCapability;
@@ -303,6 +342,33 @@ describe('UNS v2 localhost HTTP fixture', () => {
     expect(received.slice(start).every(row => row.headers['x-api-key'] === 'workspace-bound-key')).toBe(true);
   });
 
+  it('preserves optional safe run diagnostics and unknown run status without retry or dispatch inference', async () => {
+    const api = client().unsV2;
+    for (const diagnostic of [undefined, {
+      code: 'FUTURE_SOURCE_DIAGNOSTIC', stage: 'source', message: 'Safe diagnostic',
+      repair: 'Review the existing scope', sourceRequest: 'notDispatched',
+    }, {
+      code: 'FUTURE_RUN_DIAGNOSTIC', stage: 'unknown', message: 'Safe diagnostic', repair: 'Reconcile the existing run',
+    }]) {
+      const start = received.length;
+      respond = (_req, res) => send(res, { code: 200, msg: '', requestId: 'run-diagnostic', data: {
+        checkedAt: 1793231792697, nextCursor: '', items: [{
+          id: 'fixture-run', kind: 'request', release: '2', entryId: 'fixture-entry', trigger: 'request',
+          status: 'unknown', createdAt: 1793231792697, finishedAt: null, durationMs: null,
+          ...(diagnostic ? { error: diagnostic } : {}),
+        }],
+      } });
+      const response = await api.streamRunsList({ id: '101', size: 1 });
+      const run = response.data.items[0];
+      expect(run.status).toBe('unknown');
+      expect(run.error).toEqual(diagnostic);
+      expect(Object.hasOwn(run, 'error')).toBe(diagnostic !== undefined);
+      expect(received.slice(start)).toHaveLength(1);
+      expect(received[start].path).toBe('/openapi/v2/uns/streams/runs/list');
+      // notDispatched describes this Source request, never prior effects of the run.
+    }
+  });
+
   it.each(['admitted', 'response-sent', 'completed', 'failed', 'unknown'] as const)(
     'preserves HTTP run %s with absent, null and epoch-ms response timestamps', async status => {
       const start = received.length;
@@ -350,7 +416,7 @@ describe('UNS v2 localhost HTTP fixture', () => {
       expect(Object.hasOwn(UNS_V2_CODEC_SCHEMAS, name)).toBe(false);
     }
     expect(UNS_V2_CONTRACT_PROVENANCE.version).toBe('5.0.0');
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('c845ba79dad47741985852423215e059d64b948b');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('397ac88a89593872cf76ad579a3c59753d832668');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
     expect(UNS_V2_CONTRACT_PROVENANCE.publicOperationCount).toBe(83);
     expect(UNS_V2_CONTRACT_PROVENANCE.manifestOperationCount).toBe(95);

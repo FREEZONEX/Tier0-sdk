@@ -22,7 +22,7 @@ const operation = (name: string) => manifest.operations.find(item => item.name =
 
 describe('Backend App UNS access contract without generic record audit', () => {
   it('pins the exact immutable canonical snapshot and all generator inputs', () => {
-    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('c845ba79dad47741985852423215e059d64b948b');
+    expect(UNS_V2_CONTRACT_PROVENANCE.revision).toBe('397ac88a89593872cf76ad579a3c59753d832668');
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudRevision).toBe(UNS_V2_CONTRACT_PROVENANCE.revision);
     expect(UNS_V2_CONTRACT_PROVENANCE.resolvedCloudContract).toBe(true);
     expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('+source-vendor/2');
@@ -42,9 +42,40 @@ describe('Backend App UNS access contract without generic record audit', () => {
       } } } } };
     };
     const row = schema.properties.data.properties.items.items;
-    expect(row.properties.kind).toEqual({ type: 'string', enum: ['delivery', 'control', 'http'] });
+    expect(row.properties.kind).toEqual({ type: 'string', enum: ['delivery', 'request', 'http'] });
     expect(row.properties.responseSentAt).toEqual({ type: 'integer', format: 'int64', nullable: true, minimum: 0 });
     expect(row.required).not.toContain('responseSentAt');
+    expect(row.properties.error).toEqual({ $ref: '#/components/schemas/CloudStreamRunError' });
+    expect(row.required).not.toContain('error');
+  });
+
+  it('pins optional safe run diagnostics without turning a Source dispatch fact into whole-run execution proof', () => {
+    const diagnostic = JSON.parse(read('manifest.json')).schemas.CloudStreamRunError;
+    expect(diagnostic.required).toEqual(['code', 'stage', 'message', 'repair']);
+    expect(diagnostic.properties.sourceRequest.enum).toEqual(['notDispatched']);
+    expect(diagnostic.required).not.toContain('sourceRequest');
+    expect(Object.keys(diagnostic.properties).sort()).toEqual(['code', 'message', 'repair', 'sourceRequest', 'stage']);
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('+stream-run-error/1');
+  });
+
+  it('requires AppContext state and preserves neutral policy enums and optional platform prerequisites', () => {
+    const schemas = manifest.schemas as Record<string, { required?: string[]; properties: Record<string, {
+      enum?: string[]; items?: { enum?: string[] }; $ref?: string;
+    }> }>;
+    expect(schemas.AppContext.required).toContain('dataState');
+    expect(schemas.AppContext.properties.dataState.enum).toEqual(['uninitialized', 'ready']);
+    expect(UNS_V2_CONTRACT_PROVENANCE.cloudContractRevision).toContain('+app-context/3');
+    expect(schemas.CloudAppStreamPolicy.properties.version.enum).toEqual(['cloud-hosted-app-stream/v1']);
+    expect(schemas.CloudStreamRequestAppProfile.properties.version.enum).toEqual(['cloud-stream-app/v1']);
+    expect(schemas.CloudStreamRequestAppCapabilities.properties.version.enum).toEqual(['cloud-stream-app/v1']);
+    expect(schemas.CloudAppStreamAccessItem.properties.blockedReasons.items?.enum).toContain('app_stream_ceiling');
+    expect(schemas.CloudAppStreamAccessItem.properties.blockedReasons.items?.enum).not.toContain('app_control_ceiling');
+    expect(schemas.CloudPlatformReadiness.required).toEqual(['ready', 'reasonCode']);
+    for (const name of ['CloudSourceDocumentSummary', 'CloudSourceDocumentView', 'CloudSourceSummaryView',
+      'CloudStreamDocumentSummary', 'CloudStreamDocumentView', 'CloudStreamProgramSummary', 'CloudStreamProgramView']) {
+      expect(schemas[name].properties.platformReadiness.$ref).toBe('#/components/schemas/CloudPlatformReadiness');
+      expect(schemas[name].required || []).not.toContain('platformReadiness');
+    }
   });
 
   it('exports exactly public v5 routes and rejects retired operations at the generation boundary', () => {
