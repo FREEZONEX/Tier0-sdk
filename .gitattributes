@@ -1,0 +1,7 @@
+# 固定合同摘要及生成器逐字节检查的换行，不归一化其他源码。
+contracts/** text eol=lf
+src/capabilities.ts text eol=lf
+src/uns-v2/generated.ts text eol=lf
+src/uns-v2/source-stream-model.generated.ts text eol=lf
+src/streams/contract.generated.ts text eol=lf
+src/app-identity-contract.generated.ts text eol=lf

@@ -17,6 +17,6 @@
   "inputs": {
     "contracts/capability-discovery/response.schema.json": "25f490aaedd45fe5a452a57b5dec062cf25a8e29561a623c5e06bfc528ea6df4",
     "contracts/capability-discovery/vectors.json": "40c1213f15897b3d8f9a4da6cf24f82c6ced1f65e46fc2a03f23733017bccfaa",
-    "src/capabilities.ts": "f2e3c6045e1a218c8d350c36ad01e610e7273c5ee32a5b4856f2601cc0252df1"
+    "src/capabilities.ts": "89c66427e34747e56d3af705c78b9eca8b4ab8138af5a5cbc38d2c424de5d0cb"
   }
 }
