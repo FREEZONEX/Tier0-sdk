@@ -139,6 +139,11 @@ const union = values => [...new Set(values.filter(Boolean))].join(' | ') || 'nev
 
 function typeFor(schema, nested = false) {
   if (!schema || typeof schema !== 'object' || Object.keys(schema).length === 0) return 'UnsV2JSONValue';
+  // 单字段排除可以准确表达，避免 SQL 凭据误带 HTTP method。
+  if (schema.properties && schema.not && Object.keys(schema.not).length === 1 && schema.not.required?.length === 1) {
+    const { not, ...shape } = schema;
+    return `(${typeFor(shape, nested)} & { ${JSON.stringify(not.required[0])}?: never })`;
+  }
   if (!schema.$ref && schema.const === undefined && !schema.enum && !schema.type && !schema.properties &&
       schema.additionalProperties === undefined && !schema.oneOf && !schema.anyOf && !schema.allOf) return 'unknown';
   // Required-only alternatives inherit the parent's field definitions.

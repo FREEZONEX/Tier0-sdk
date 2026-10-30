@@ -19,7 +19,7 @@ describe('App runtime injection', () => {
     installed.push(installAppRuntime({ appId: 'trusted-app-id', request }));
     expect(await client.streams.requests.use({ code: 'pump.start' }).describe()).toEqual(contract);
     expect(await isolated.streams.requests.use({ code: 'pump.start' }).describe()).toEqual(contract);
-    expect(request).toHaveBeenCalledWith('/openapi/v1/stream-requests/pump.start/describe', {}, { signal: expect.any(AbortSignal) });
+    expect(request).toHaveBeenCalledWith('/openapi/v2/stream-requests/pump.start/describe', {}, { signal: expect.any(AbortSignal) });
     expect(fetch).not.toHaveBeenCalled();
   });
 

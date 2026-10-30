@@ -3,150 +3,42 @@
 
 // React hooks require @tanstack/react-query to be installed
 import { useMutation } from '@tanstack/react-query';
-import { systemApi, flowApi, notificationsApi, platformApi, unsApi, appsApi } from './api.js';
+import { systemApi, notificationsApi, platformApi, appsApi } from './api.js';
 import type { components } from './types.js';
 
-export function useGwreload() {
-  return useMutation<any, Error, void>({
-    mutationFn: systemApi.gwreload,
+export function useOpenapiV2Info() {
+  return useMutation<{ code: number; msg: string; data: components["schemas"]["PlatformInfoResp"] }, Error, void>({
+    mutationFn: systemApi.openapiV2Info,
   });
 }
 
-export function useOpenapiv1authwhoami() {
-  return useMutation<any, Error, void>({
-    mutationFn: systemApi.openapiv1authwhoami,
+export function useOpenapiV2AuthWhoami() {
+  return useMutation<{ code: number; msg: string; data: components["schemas"]["PlatformAuthWhoamiResp"] }, Error, void>({
+    mutationFn: systemApi.openapiV2AuthWhoami,
   });
 }
 
-export function useOpenapiv1info() {
-  return useMutation<any, Error, components["schemas"]["InfoReq"]>({
-    mutationFn: systemApi.openapiv1info,
+export function useOpenapiV2NotificationsSend() {
+  return useMutation<components["schemas"]["PlatformSendNotificationResp"], Error, components["schemas"]["PlatformSendNotificationReq"]>({
+    mutationFn: notificationsApi.openapiV2NotificationsSend,
   });
 }
 
-export function useOpenapiv1flowcreate() {
-  return useMutation<any, Error, components["schemas"]["FlowCreateReq"]>({
-    mutationFn: flowApi.openapiv1flowcreate,
+export function useOpenapiV2NotificationsGet() {
+  return useMutation<components["schemas"]["PlatformGetNotificationResp"], Error, components["schemas"]["PlatformGetNotificationReq"]>({
+    mutationFn: notificationsApi.openapiV2NotificationsGet,
   });
 }
 
-export function useOpenapiv1flowdelete() {
-  return useMutation<any, Error, components["schemas"]["FlowDeleteReq"]>({
-    mutationFn: flowApi.openapiv1flowdelete,
+export function useOpenapiV2PlatformGetmembers() {
+  return useMutation<{ code: number; msg: string; data: components["schemas"]["PlatformPlatformMembersResp"] }, Error, components["schemas"]["PlatformPlatformGetMembersReq"]>({
+    mutationFn: platformApi.openapiV2PlatformGetmembers,
   });
 }
 
-export function useOpenapiv1flowdeploy() {
-  return useMutation<any, Error, components["schemas"]["FlowDeployReq"]>({
-    mutationFn: flowApi.openapiv1flowdeploy,
-  });
-}
-
-export function useOpenapiv1flowflowdata() {
-  return useMutation<any, Error, components["schemas"]["FlowGetReq"]>({
-    mutationFn: flowApi.openapiv1flowflowdata,
-  });
-}
-
-export function useOpenapiv1flowget() {
-  return useMutation<any, Error, components["schemas"]["FlowGetReq"]>({
-    mutationFn: flowApi.openapiv1flowget,
-  });
-}
-
-export function useOpenapiv1flowlist() {
-  return useMutation<any, Error, components["schemas"]["FlowListReq"]>({
-    mutationFn: flowApi.openapiv1flowlist,
-  });
-}
-
-export function useOpenapiv1flownodes() {
-  return useMutation<any, Error, components["schemas"]["FlowNodesReq"]>({
-    mutationFn: flowApi.openapiv1flownodes,
-  });
-}
-
-export function useOpenapiv1flowupdate() {
-  return useMutation<any, Error, components["schemas"]["FlowUpdateReq"]>({
-    mutationFn: flowApi.openapiv1flowupdate,
-  });
-}
-
-export function useOpenapiv1notificationsget() {
-  return useMutation<components["schemas"]["GetNotificationResp"], Error, components["schemas"]["GetNotificationReq"]>({
-    mutationFn: notificationsApi.openapiv1notificationsget,
-  });
-}
-
-export function useOpenapiv1notificationssend() {
-  return useMutation<components["schemas"]["SendNotificationResp"], Error, components["schemas"]["SendNotificationReq"]>({
-    mutationFn: notificationsApi.openapiv1notificationssend,
-  });
-}
-
-export function useOpenapiv1platformgetmembers() {
-  return useMutation<{ code: number; msg?: string; data?: components["schemas"]["PlatformMembersResp"] }, Error, components["schemas"]["PlatformGetMembersReq"]>({
-    mutationFn: platformApi.openapiv1platformgetmembers,
-  });
-}
-
-export function useOpenapiv1unsbrowse() {
-  return useMutation<any, Error, components["schemas"]["BrowseReq"]>({
-    mutationFn: unsApi.openapiv1unsbrowse,
-  });
-}
-
-export function useOpenapiv1unscreate() {
-  return useMutation<any, Error, components["schemas"]["NodeCreateReq"]>({
-    mutationFn: unsApi.openapiv1unscreate,
-  });
-}
-
-export function useOpenapiv1unsdelete() {
-  return useMutation<any, Error, components["schemas"]["NodeDeleteReq"]>({
-    mutationFn: unsApi.openapiv1unsdelete,
-  });
-}
-
-export function useOpenapiv1unshistory() {
-  return useMutation<any, Error, components["schemas"]["HistoryReq"]>({
-    mutationFn: unsApi.openapiv1unshistory,
-  });
-}
-
-export function useOpenapiv1unsread() {
-  return useMutation<any, Error, components["schemas"]["ReadReq"]>({
-    mutationFn: unsApi.openapiv1unsread,
-  });
-}
-
-export function useOpenapiv1unsrestore() {
-  return useMutation<any, Error, components["schemas"]["NodeRestoreReq"]>({
-    mutationFn: unsApi.openapiv1unsrestore,
-  });
-}
-
-export function useOpenapiv1unssearch() {
-  return useMutation<any, Error, components["schemas"]["SearchReq"]>({
-    mutationFn: unsApi.openapiv1unssearch,
-  });
-}
-
-export function useOpenapiv1unsupdate() {
-  return useMutation<any, Error, components["schemas"]["NodeUpdateReq"]>({
-    mutationFn: unsApi.openapiv1unsupdate,
-  });
-}
-
-export function useOpenapiv1unswrite() {
-  return useMutation<any, Error, components["schemas"]["WriteReq"]>({
-    mutationFn: unsApi.openapiv1unswrite,
-  });
-}
-
-export function useOpenapiv1appslistaccessmembers() {
-  return useMutation<components["schemas"]["AppAccessMembersListResp"], Error, components["schemas"]["AppAccessMembersListReq"]>({
-    mutationFn: appsApi.openapiV1Appslistaccessmembers,
+export function useOpenapiV2AppsAccessMembersList() {
+  return useMutation<{ code: number; msg: string; data: components["schemas"]["PlatformAppAccessMembersListResp"] }, Error, components["schemas"]["PlatformAppAccessMembersListReq"]>({
+    mutationFn: appsApi.openapiV2AppsAccessMembersList,
   });
 }
 

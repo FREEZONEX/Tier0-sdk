@@ -188,7 +188,7 @@ export class StreamRequestsClient {
         (options.search !== undefined && typeof options.search !== 'string')) {
       throw new TypeError('Tier0 SDK: invalid StreamRequest discovery options.');
     }
-    const { value, status } = await this.post('/openapi/v1/stream-requests/discover', options, false);
+    const { value, status } = await this.post('/openapi/v2/stream-requests/discover', options, false);
     if (!record(value) || !Number.isSafeInteger(value.total) || (value.total as number) < 0 ||
         !Array.isArray(value.list) || !value.list.every(definition)) {
       throw new StreamRequestError('Invalid StreamRequest discovery response.', { status, errorCode: 'STREAM_REQUEST_PROTOCOL_ERROR' });
@@ -202,7 +202,7 @@ export class StreamRequestsClient {
     if (typeof code !== 'string' || code.length > 128 || !/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/.test(code)) {
       throw new TypeError('Tier0 SDK: invalid StreamRequest code.');
     }
-    const path = `/openapi/v1/stream-requests/${encodeURIComponent(code)}`;
+    const path = `/openapi/v2/stream-requests/${encodeURIComponent(code)}`;
     return {
       describe: async () => {
         const { value, status } = await this.post(`${path}/describe`, {}, false);

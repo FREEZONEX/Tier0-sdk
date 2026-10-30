@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:tier0:capability-discovery",
-  "title": "Tier0 capability discovery",
+  "$id": "https://tier0.cn/contracts/capability-discovery/2.0/response.schema.json",
+  "title": "Tier0 capability discovery 2.0",
   "type": "object",
   "required": [
     "product",
@@ -23,7 +23,7 @@
       "minLength": 1
     },
     "contractVersion": {
-      "const": "1.0"
+      "const": "2.0"
     },
     "apiContractVersions": {
       "type": "array",
@@ -203,22 +203,10 @@
       "required": [
         "code",
         "contractVersions",
-        "releaseEnabled",
-        "enabled",
-        "allowed",
         "state",
-        "availability"
+        "reasonCode"
       ],
       "properties": {
-        "releaseEnabled": {
-          "type": "boolean"
-        },
-        "enabled": {
-          "type": "boolean"
-        },
-        "allowed": {
-          "type": "boolean"
-        },
         "state": {
           "enum": [
             "disabled",
@@ -226,13 +214,6 @@
             "unavailable",
             "readiness_unknown",
             "ready"
-          ]
-        },
-        "availability": {
-          "enum": [
-            "unavailable",
-            "unknown",
-            "available"
           ]
         },
         "reasonCode": {
@@ -274,97 +255,6 @@
         }
       },
       "allOf": [
-        {
-          "if": {
-            "properties": {
-              "state": {
-                "const": "ready"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "enabled": {
-                "const": true
-              },
-              "releaseEnabled": {
-                "const": true
-              },
-              "allowed": {
-                "const": true
-              },
-              "availability": {
-                "const": "available"
-              }
-            }
-          },
-          "else": {
-            "properties": {
-              "enabled": {
-                "const": false
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "state": {
-                "const": "disabled"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "releaseEnabled": {
-                "const": false
-              }
-            }
-          },
-          "else": {
-            "properties": {
-              "releaseEnabled": {
-                "const": true
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "state": {
-                "const": "readiness_unknown"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "availability": {
-                "const": "unknown"
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "state": {
-                "enum": [
-                  "disabled",
-                  "not_supported",
-                  "unavailable"
-                ]
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "availability": {
-                "const": "unavailable"
-              }
-            }
-          }
-        },
         {
           "if": {
             "required": [
@@ -540,8 +430,8 @@
               {
                 "if": {
                   "properties": {
-                    "releaseEnabled": {
-                      "const": false
+                    "state": {
+                      "const": "disabled"
                     }
                   }
                 },
@@ -550,7 +440,6 @@
                     "operations": {
                       "type": "array",
                       "items": {
-                        "type": "object",
                         "if": {
                           "properties": {
                             "operation": {
@@ -567,11 +456,12 @@
                         },
                         "then": {
                           "properties": {
-                            "releaseEnabled": {
-                              "const": false
+                            "state": {
+                              "const": "disabled"
                             }
                           }
-                        }
+                        },
+                        "type": "object"
                       }
                     }
                   }
@@ -733,8 +623,8 @@
               {
                 "if": {
                   "properties": {
-                    "releaseEnabled": {
-                      "const": false
+                    "state": {
+                      "const": "disabled"
                     }
                   }
                 },
@@ -743,7 +633,6 @@
                     "operations": {
                       "type": "array",
                       "items": {
-                        "type": "object",
                         "if": {
                           "properties": {
                             "operation": {
@@ -760,11 +649,12 @@
                         },
                         "then": {
                           "properties": {
-                            "releaseEnabled": {
-                              "const": false
+                            "state": {
+                              "const": "disabled"
                             }
                           }
-                        }
+                        },
+                        "type": "object"
                       }
                     }
                   }
@@ -814,7 +704,7 @@
                 "allOf": [
                   {
                     "contains": {
-                      "const": "openapi/v1"
+                      "const": "openapi/v2"
                     }
                   },
                   {
@@ -827,29 +717,18 @@
             }
           }
         }
-      ]
+      ],
+      "description": "State reports publication and assessed prerequisites only; ready never grants resource access or confirms an actual execution."
     },
     "knownOperation": {
       "type": "object",
       "required": [
         "operation",
         "requiresResourceCheck",
-        "releaseEnabled",
-        "enabled",
-        "allowed",
         "state",
-        "availability"
+        "reasonCode"
       ],
       "properties": {
-        "releaseEnabled": {
-          "type": "boolean"
-        },
-        "enabled": {
-          "type": "boolean"
-        },
-        "allowed": {
-          "type": "boolean"
-        },
         "state": {
           "enum": [
             "disabled",
@@ -857,13 +736,6 @@
             "unavailable",
             "readiness_unknown",
             "ready"
-          ]
-        },
-        "availability": {
-          "enum": [
-            "unavailable",
-            "unknown",
-            "available"
           ]
         },
         "reasonCode": {
@@ -896,97 +768,6 @@
       "allOf": [
         {
           "if": {
-            "properties": {
-              "state": {
-                "const": "ready"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "enabled": {
-                "const": true
-              },
-              "releaseEnabled": {
-                "const": true
-              },
-              "allowed": {
-                "const": true
-              },
-              "availability": {
-                "const": "available"
-              }
-            }
-          },
-          "else": {
-            "properties": {
-              "enabled": {
-                "const": false
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "state": {
-                "const": "disabled"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "releaseEnabled": {
-                "const": false
-              }
-            }
-          },
-          "else": {
-            "properties": {
-              "releaseEnabled": {
-                "const": true
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "state": {
-                "const": "readiness_unknown"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "availability": {
-                "const": "unknown"
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "state": {
-                "enum": [
-                  "disabled",
-                  "not_supported",
-                  "unavailable"
-                ]
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "availability": {
-                "const": "unavailable"
-              }
-            }
-          }
-        },
-        {
-          "if": {
             "required": [
               "validUntil"
             ],
@@ -1006,42 +787,8 @@
             }
           }
         }
-      ]
+      ],
+      "description": "State reports publication and assessed prerequisites only; ready never grants resource access or confirms an actual execution."
     }
-  },
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "capabilities": {
-            "type": "array",
-            "contains": {
-              "type": "object",
-              "required": [
-                "code"
-              ],
-              "properties": {
-                "code": {
-                  "enum": [
-                    "stream.requests.v1",
-                    "stream.requests.invoke.v1"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "apiContractVersions": {
-            "type": "array",
-            "contains": {
-              "const": "openapi/v1"
-            }
-          }
-        }
-      }
-    }
-  ]
+  }
 }

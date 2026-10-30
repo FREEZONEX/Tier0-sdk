@@ -1,6 +1,6 @@
 import type { components } from '../../src/openapi/types.js';
 
-type Channels = components['schemas']['SendNotificationReq']['channels'];
+type Channels = components['schemas']['PlatformSendNotificationReq']['channels'];
 const defaultChannels: Channels = undefined;
 const silent: Channels = [];
 const all: Channels = ['web', 'mobile'];

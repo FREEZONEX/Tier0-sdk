@@ -20,7 +20,7 @@ describe('Cloud StreamRequest single-attempt transport', () => {
     vi.stubGlobal('fetch', fetch);
     const input = { streamId: 'business', entryId: 'row', deploymentVersion: 'value', timeoutMs: 42 };
     expect(await handle().invoke(input, { idempotencyKey: 'intent-1' })).toEqual(result);
-    expect(fetch).toHaveBeenCalledExactlyOnceWith('https://cloud.example/openapi/v1/stream-requests/pump.start/invoke', {
+    expect(fetch).toHaveBeenCalledExactlyOnceWith('https://cloud.example/openapi/v2/stream-requests/pump.start/invoke', {
       method: 'POST', redirect: 'manual', signal: expect.any(AbortSignal),
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer fixture-key', 'X-API-Key': 'fixture-key' },
       body: JSON.stringify({ input, idempotencyKey: 'intent-1' }),
@@ -33,11 +33,11 @@ describe('Cloud StreamRequest single-attempt transport', () => {
     vi.stubGlobal('fetch', fetch);
     expect(await handle().describe()).toEqual(contract);
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch.mock.calls[0][0]).toBe('https://cloud.example/openapi/v1/stream-requests/pump.start/describe');
+    expect(fetch.mock.calls[0][0]).toBe('https://cloud.example/openapi/v2/stream-requests/pump.start/describe');
     expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({});
     expect(await client().streams.requests.discover({ page: 2, size: 5, search: 'pump' })).toEqual({ total: 1, list: [contract] });
     expect(fetch).toHaveBeenCalledTimes(2);
-    expect(fetch.mock.calls[1][0]).toBe('https://cloud.example/openapi/v1/stream-requests/discover');
+    expect(fetch.mock.calls[1][0]).toBe('https://cloud.example/openapi/v2/stream-requests/discover');
     expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({ page: 2, size: 5, search: 'pump' });
     await expect(handle().describe()).rejects.toMatchObject({ errorCode: 'STREAM_REQUEST_PROTOCOL_ERROR', status: 200 });
     expect(fetch).toHaveBeenCalledTimes(3);

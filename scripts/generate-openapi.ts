@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 
 interface SwaggerDoc {
   paths: Record<string, Record<string, any>>;
+  servers?: { url: string }[];
   components?: {
     schemas?: Record<string, any>;
   };
@@ -11,7 +12,12 @@ interface SwaggerDoc {
 
 function loadSwagger(path: string): SwaggerDoc {
   const content = fs.readFileSync(path, 'utf-8');
-  return JSON.parse(content);
+  const parsed: SwaggerDoc = JSON.parse(content);
+  const base = parsed.servers?.[0]?.url ? new URL(parsed.servers[0].url, 'https://schema.invalid').pathname.replace(/\/$/, '') : '';
+  parsed.paths = Object.fromEntries(Object.entries(parsed.paths).map(([route, operation]) => [
+    route.startsWith('/openapi/') || !base ? route : base + route, operation,
+  ]));
+  return parsed;
 }
 
 function toPascalCase(str: string): string {
@@ -80,30 +86,12 @@ const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete']);
 // SDK 已纳入的端点白名单：后端 swagger 里存在但尚未接入 SDK 生成面的端点
 // （assets 文件族走手写 src/files.ts、mqtt-auth、uns 附件/绑定等）明确排除，接入时逐条加入
 const INCLUDED_PATHS = new Set([
-  '/gw/reload',
-  '/openapi/v1/auth/whoami',
-  '/openapi/v1/info',
-  '/openapi/v1/flow/create',
-  '/openapi/v1/flow/delete',
-  '/openapi/v1/flow/deploy',
-  '/openapi/v1/flow/flowdata',
-  '/openapi/v1/flow/get',
-  '/openapi/v1/flow/list',
-  '/openapi/v1/flow/nodes',
-  '/openapi/v1/flow/update',
-  '/openapi/v1/uns/browse',
-  '/openapi/v1/uns/create',
-  '/openapi/v1/uns/delete',
-  '/openapi/v1/uns/history',
-  '/openapi/v1/uns/read',
-  '/openapi/v1/uns/restore',
-  '/openapi/v1/uns/search',
-  '/openapi/v1/uns/update',
-  '/openapi/v1/uns/write',
-  '/openapi/v1/apps/access-members/list',
-  '/openapi/v1/platform/getMembers',
-  '/openapi/v1/notifications/send',
-  '/openapi/v1/notifications/get',
+  '/openapi/v2/auth/whoami',
+  '/openapi/v2/info',
+  '/openapi/v2/apps/access-members/list',
+  '/openapi/v2/platform/getMembers',
+  '/openapi/v2/notifications/send',
+  '/openapi/v2/notifications/get',
 ]);
 
 // 收集一个 JSON 子树里全部 $ref 指向的 schema 名
@@ -138,14 +126,11 @@ function filterSwagger(swagger: SwaggerDoc): SwaggerDoc {
 }
 
 function getModuleName(pathStr: string): string {
-  if (pathStr.includes('/flow/')) return 'flow';
-  if (pathStr.includes('/uns/')) return 'uns';
   if (pathStr.includes('/apps/')) return 'apps';
   if (pathStr.includes('/platform/')) return 'platform';
   if (pathStr.includes('/notifications/')) return 'notifications';
   if (pathStr.includes('/auth/')) return 'system';
   if (pathStr.includes('/info')) return 'system';
-  if (pathStr.includes('/reload')) return 'system';
   return 'common';
 }
 
@@ -184,7 +169,8 @@ function getEnvelopeResponseType(spec: any): string | null {
   const ref = dataRef.split('/').pop();
   if (!ref) return null;
 
-  return `{ code: number; msg?: string; data?: components["schemas"]["${ref}"] }`;
+  const required = new Set(schema.required ?? []);
+  return `{ code${required.has('code') ? '' : '?'}: number; msg${required.has('msg') ? '' : '?'}: string; data${required.has('data') ? '' : '?'}: components["schemas"]["${ref}"] }`;
 }
 
 function getFunctionName(operationId: string, pathParameters: PathParameter[]): string {
@@ -212,13 +198,11 @@ function collectOperations(swagger: SwaggerDoc): OperationModules {
       const moduleName = getModuleName(pathStr);
       const pathParameters = getPathParameters(pathStr, pathItem, spec);
       const bodyType = getRequestBodyType(spec);
-      const responseType = moduleName === 'launchpad' || moduleName === 'platform'
-        ? getEnvelopeResponseType(spec) || getResponseType(spec)
-        : getResponseType(spec);
+      const responseType = getEnvelopeResponseType(spec) || getResponseType(spec);
 
       if (!modules[moduleName]) modules[moduleName] = [];
       modules[moduleName].push({
-        name: getFunctionName(spec.operationId, pathParameters),
+        name: getFunctionName(pathStr, pathParameters),
         method,
         path: pathStr,
         bodyType,
@@ -354,7 +338,7 @@ class HttpClient {
 
     if (apiKey) {
       // 网关各接口认证头不一致：多数接口认 Authorization Bearer，
-      // 个别接口（如 /openapi/v1/auth/whoami）只认 X-API-Key，两个都带
+      // 个别接口（如 /openapi/v2/auth/whoami）只认 X-API-Key，两个都带
       headers['Authorization'] = \`Bearer \${apiKey}\`;
       headers['X-API-Key'] = apiKey;
     }
@@ -453,7 +437,7 @@ function generateApi(swagger: SwaggerDoc): string {
           : needsBody(operation) ? 'body?: any' : '';
       const bodyExpression = hasPathParameters ? 'params.body' : 'body';
       const bodyArg = operation.bodyType || needsBody(operation)
-        ? `, ${operation.path === '/openapi/v1/notifications/send' && operation.method === 'post' ? `withDefaultChannels(${bodyExpression})` : bodyExpression}`
+        ? `, ${operation.path === '/openapi/v2/notifications/send' && operation.method === 'post' ? `withDefaultChannels(${bodyExpression})` : bodyExpression}`
         : '';
       code += `  ${operation.name}: (${args}) => getClient().${operation.method}<${operation.responseType}>(${getPathExpression(operation)}${bodyArg}),\n`;
     }
@@ -476,7 +460,7 @@ function generateReact(swagger: SwaggerDoc): string {
   for (const [moduleName, fns] of Object.entries(modules)) {
     const apiName = `${moduleName}Api`;
     for (const operation of fns) {
-      const hookName = `use${toPascalCase(operation.name)}`;
+      const hookName = `use${operation.name.charAt(0).toUpperCase() + operation.name.slice(1)}`;
       const variablesType = getVariablesType(operation);
       code += `export function ${hookName}() {\n`;
       code += `  return useMutation<${operation.responseType}, Error, ${variablesType}>({\n`;
@@ -501,7 +485,7 @@ function generateVue(swagger: SwaggerDoc): string {
   for (const [moduleName, fns] of Object.entries(modules)) {
     const apiName = `${moduleName}Api`;
     for (const operation of fns) {
-      const hookName = `use${toPascalCase(operation.name)}`;
+      const hookName = `use${operation.name.charAt(0).toUpperCase() + operation.name.slice(1)}`;
       const variablesType = getVariablesType(operation);
       const hasVariables = variablesType !== 'void';
       const variableName = operation.pathParameters.length > 0 ? 'params' : 'body';
@@ -564,12 +548,12 @@ function main() {
 
   const input = loadSwagger(swaggerPath);
   if (appMembersSwaggerPath) {
-    // Keep unrelated legacy/Enterprise SDK routes on their reviewed source.
+    // Import an explicitly supplied v2 App-members source only.
     // Import only the committed Cloud App-members operation and its schema closure.
     const appSource = loadSwagger(appMembersSwaggerPath);
-    const route = '/openapi/v1/apps/access-members/list';
+    const route = '/openapi/v2/apps/access-members/list';
     if (!appSource.paths[route]?.post) throw new Error('App access-members source route missing');
-    delete input.paths['/openapi/v1/launchpad/{projectName}/getMembers'];
+    delete input.paths['/openapi/v2/launchpad/{projectName}/getMembers'];
     input.paths[route] = appSource.paths[route];
     input.components ??= {};
     input.components.schemas ??= {};
@@ -588,7 +572,7 @@ function main() {
   }
   const swagger = filterSwagger(input);
   // SDK defaults differ from the raw backend API. Keep generated types aligned.
-  const channels = swagger.components?.schemas?.SendNotificationReq?.properties?.channels;
+  const channels = swagger.components?.schemas?.PlatformSendNotificationReq?.properties?.channels ?? swagger.components?.schemas?.SendNotificationReq?.properties?.channels;
   if (channels) {
     channels.type = 'array';
     channels.items = { type: 'string', enum: ['web', 'mobile'] };

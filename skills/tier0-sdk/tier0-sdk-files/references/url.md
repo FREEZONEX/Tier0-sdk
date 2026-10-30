@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-openapi-files-url
 version: 0.2.0
-description: "getFileUrl — GET /openapi/v1/assets/files/url 获取文件访问 URL：public 返回长期有效 URL，private 返回带 expiresAt 的 presigned URL"
+description: "getFileUrl — GET /openapi/v2/assets/files/url 获取文件访问 URL：public 返回长期有效 URL，private 返回带 expiresAt 的 presigned URL"
 ---
 
 # getFileUrl — 获取文件访问 URL
@@ -42,7 +42,7 @@ function getFileUrl(options: GetFileUrlOptions): Promise<GetFileUrlResult>;
 
 ## 底层接口
 
-`GET /openapi/v1/assets/files/url?filePath={filePath}&expiredSec={expiredSec}&responseContentDisposition={...}`
+`GET /openapi/v2/assets/files/url?filePath={filePath}&expiredSec={expiredSec}&responseContentDisposition={...}`
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|

@@ -9,44 +9,20 @@ const withDefaultChannels = <T extends { channels?: ("web" | "mobile")[] }>(body
   ({ ...body, channels: [...new Set(body.channels ?? ['web', 'mobile'])] });
 
 export const systemApi = {
-  gwreload: () => getClient().get<any>('/gw/reload'),
-  openapiv1authwhoami: (body?: any) => getClient().post<any>('/openapi/v1/auth/whoami', body),
-  openapiv1info: (body: components["schemas"]["InfoReq"]) => getClient().post<any>('/openapi/v1/info', body),
-};
-
-export const flowApi = {
-  openapiv1flowcreate: (body: components["schemas"]["FlowCreateReq"]) => getClient().post<any>('/openapi/v1/flow/create', body),
-  openapiv1flowdelete: (body: components["schemas"]["FlowDeleteReq"]) => getClient().post<any>('/openapi/v1/flow/delete', body),
-  openapiv1flowdeploy: (body: components["schemas"]["FlowDeployReq"]) => getClient().post<any>('/openapi/v1/flow/deploy', body),
-  openapiv1flowflowdata: (body: components["schemas"]["FlowGetReq"]) => getClient().post<any>('/openapi/v1/flow/flowdata', body),
-  openapiv1flowget: (body: components["schemas"]["FlowGetReq"]) => getClient().post<any>('/openapi/v1/flow/get', body),
-  openapiv1flowlist: (body: components["schemas"]["FlowListReq"]) => getClient().post<any>('/openapi/v1/flow/list', body),
-  openapiv1flownodes: (body: components["schemas"]["FlowNodesReq"]) => getClient().post<any>('/openapi/v1/flow/nodes', body),
-  openapiv1flowupdate: (body: components["schemas"]["FlowUpdateReq"]) => getClient().post<any>('/openapi/v1/flow/update', body),
+  openapiV2Info: (body?: any) => getClient().post<{ code: number; msg: string; data: components["schemas"]["PlatformInfoResp"] }>('/openapi/v2/info', body),
+  openapiV2AuthWhoami: (body?: any) => getClient().post<{ code: number; msg: string; data: components["schemas"]["PlatformAuthWhoamiResp"] }>('/openapi/v2/auth/whoami', body),
 };
 
 export const notificationsApi = {
-  openapiv1notificationsget: (body: components["schemas"]["GetNotificationReq"]) => getClient().post<components["schemas"]["GetNotificationResp"]>('/openapi/v1/notifications/get', body),
-  openapiv1notificationssend: (body: components["schemas"]["SendNotificationReq"]) => getClient().post<components["schemas"]["SendNotificationResp"]>('/openapi/v1/notifications/send', withDefaultChannels(body)),
+  openapiV2NotificationsSend: (body: components["schemas"]["PlatformSendNotificationReq"]) => getClient().post<components["schemas"]["PlatformSendNotificationResp"]>('/openapi/v2/notifications/send', withDefaultChannels(body)),
+  openapiV2NotificationsGet: (body: components["schemas"]["PlatformGetNotificationReq"]) => getClient().post<components["schemas"]["PlatformGetNotificationResp"]>('/openapi/v2/notifications/get', body),
 };
 
 export const platformApi = {
-  openapiv1platformgetmembers: (body: components["schemas"]["PlatformGetMembersReq"]) => getClient().post<{ code: number; msg?: string; data?: components["schemas"]["PlatformMembersResp"] }>('/openapi/v1/platform/getMembers', body),
-};
-
-export const unsApi = {
-  openapiv1unsbrowse: (body: components["schemas"]["BrowseReq"]) => getClient().post<any>('/openapi/v1/uns/browse', body),
-  openapiv1unscreate: (body: components["schemas"]["NodeCreateReq"]) => getClient().post<any>('/openapi/v1/uns/create', body),
-  openapiv1unsdelete: (body: components["schemas"]["NodeDeleteReq"]) => getClient().post<any>('/openapi/v1/uns/delete', body),
-  openapiv1unshistory: (body: components["schemas"]["HistoryReq"]) => getClient().post<any>('/openapi/v1/uns/history', body),
-  openapiv1unsread: (body: components["schemas"]["ReadReq"]) => getClient().post<any>('/openapi/v1/uns/read', body),
-  openapiv1unsrestore: (body: components["schemas"]["NodeRestoreReq"]) => getClient().post<any>('/openapi/v1/uns/restore', body),
-  openapiv1unssearch: (body: components["schemas"]["SearchReq"]) => getClient().post<any>('/openapi/v1/uns/search', body),
-  openapiv1unsupdate: (body: components["schemas"]["NodeUpdateReq"]) => getClient().post<any>('/openapi/v1/uns/update', body),
-  openapiv1unswrite: (body: components["schemas"]["WriteReq"]) => getClient().post<any>('/openapi/v1/uns/write', body),
+  openapiV2PlatformGetmembers: (body: components["schemas"]["PlatformPlatformGetMembersReq"]) => getClient().post<{ code: number; msg: string; data: components["schemas"]["PlatformPlatformMembersResp"] }>('/openapi/v2/platform/getMembers', body),
 };
 
 export const appsApi = {
-  openapiV1Appslistaccessmembers: (body: components["schemas"]["AppAccessMembersListReq"]) => getClient().post<components["schemas"]["AppAccessMembersListResp"]>('/openapi/v1/apps/access-members/list', body),
+  openapiV2AppsAccessMembersList: (body: components["schemas"]["PlatformAppAccessMembersListReq"]) => getClient().post<{ code: number; msg: string; data: components["schemas"]["PlatformAppAccessMembersListResp"] }>('/openapi/v2/apps/access-members/list', body),
 };
 

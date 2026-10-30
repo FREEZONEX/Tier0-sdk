@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/openapi/v1/stream-requests/discover": {
+    "/openapi/v2/stream-requests/discover": {
         parameters: {
             query?: never;
             header?: never;
@@ -17,14 +17,14 @@ export interface paths {
          * Discover Stream requests
          * @description 发现可见Stream 请求合同，只公开Stream 请求合同，不返回内部运行绑定
          */
-        post: operations["streamRequestDiscover"];
+        post: operations["PlatformV2StreamRequestDiscover"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/openapi/v1/stream-requests/{requestCode}/describe": {
+    "/openapi/v2/stream-requests/{requestCode}/describe": {
         parameters: {
             query?: never;
             header?: never;
@@ -37,14 +37,14 @@ export interface paths {
          * Describe Stream request
          * @description 读取公开Stream 请求合同，只公开Stream 请求合同，不返回内部运行绑定
          */
-        post: operations["streamRequestDescribe"];
+        post: operations["PlatformV2StreamRequestDescribe"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/openapi/v1/stream-requests/{requestCode}/invoke": {
+    "/openapi/v2/stream-requests/{requestCode}/invoke": {
         parameters: {
             query?: never;
             header?: never;
@@ -57,14 +57,14 @@ export interface paths {
          * Invoke Stream request
          * @description 按公开合同调用Stream 请求；原始 body 为有效 UTF-8，最多 1MiB 字节；可选 idempotencyKey 解码后最多 128 UTF-8 字节，是否必填由冻结合同决定。返回 code、contractVersion、result、runID、status、replayed(boolean)，不返回内部运行绑定。结果未知返回 HTTP 504，errorCode=STREAM_REQUEST_RESULT_UNKNOWN；未知内部错误返回 HTTP 500，errorCode=STREAM_REQUEST_INTERNAL_ERROR，message 不泄漏内部异常
          */
-        post: operations["streamRequestInvoke"];
+        post: operations["PlatformV2StreamRequestInvoke"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/openapi/v1/stream-messages/connect": {
+    "/openapi/v2/stream-messages/connect": {
         parameters: {
             query?: never;
             header?: never;
@@ -74,7 +74,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Connect Stream messages */
-        post: operations["streamMessagesConnect"];
+        post: operations["PlatformV2StreamMessagesConnect"];
         delete?: never;
         options?: never;
         head?: never;
@@ -92,9 +92,9 @@ export interface paths {
         put?: never;
         /**
          * 发现当前 Workspace 的公开能力与版本合同
-         * @description 需要有效 Workspace API Key，Body 仅接受空 JSON 对象，最大 4KiB UTF-8 字节，不接受查询参数或 Workspace 覆盖。成功响应直接为 CapabilityDiscoverResp，不包裹 code/msg/data。能力由默认关闭的公开发布开关、Workspace FeatureGate、Key 显式授权共同裁决；Stream request 能力仅报告当前发布与授权，运行可用性保持 readiness_unknown，不触发运行时探针。实际操作由后端执行安全检查，失败返回真实错误。响应允许客户端忽略未知扩展字段；版本标签不表示设备 ACK 或 npm 包版本。错误直接返回 CapabilityErrorResp 和真实 HTTP 状态，不泄漏内部异常。
+         * @description 需要有效 Workspace API Key，Body 仅接受空 JSON 对象，最大 4KiB UTF-8 字节，不接受查询参数或 Workspace 覆盖。成功响应直接为 CapabilityDiscoverV2Resp，不包裹 code/msg/data。能力由默认关闭的公开发布开关、Workspace FeatureGate、Key 显式授权共同裁决；Namespace 与 Stream request 能力仅报告当前发布与授权，运行可用性保持 readiness_unknown，不触发运行时探针。Source/Stream 保留独立操作前提的证据。state=ready 不替代具体资源授权或实际运行回执。合同版本 2.0 使用 state、reasonCode、operations，不再返回重复布尔状态。实际操作由后端执行安全检查，失败返回真实错误。响应允许客户端忽略未知扩展字段；版本标签不表示设备 ACK 或 npm 包版本。错误直接返回 CapabilityErrorResp 和真实 HTTP 状态，不泄漏内部异常。
          */
-        post: operations["PlatformV2CapabilityDiscover"];
+        post: operations["PlatformV2CapabilityDiscoverV2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -131,6 +131,10 @@ export interface components {
             sideEffect: string;
             status: string;
             timeoutMs: number;
+        };
+        NotificationError: {
+            errorCode: string;
+            message: string;
         };
         StreamRequestInvokeReq: {
             /** @description 解码后的 UTF-8 字节数最多 128；是否必填由冻结合同决定 */
@@ -173,40 +177,99 @@ export interface components {
             subscribeSubject: string;
             topic: string;
         };
-        PlatformCapabilityDiscoverResp: {
-            /** @description openapi/v1 */
-            apiContractVersions: string[];
-            /** @description 只返回当前 Key 有授权摘要的已知能力，关闭的能力仍返回状态 */
-            capabilities: components["schemas"]["PlatformPublicCapability"][];
-            /** @description 本发现响应合同版本，与单个 Stream request 的冻结合同版本独立 */
-            contractVersion: string;
-            deprecations: components["schemas"]["PlatformCapabilityDeprecation"][];
-            product: string;
-            /** @description 仅返回显式配置的可信产品发布版本，未配置时省略 */
+        /**
+         * Tier0 capability discovery 2.0
+         * @description OpenAPI 3.0 wire schema. Array contains/cardinality annotations and cross-field proof ordering require the shared JSON Schema plus SDK semantic checks; this projection alone is not full contract acceptance.
+         */
+        CapabilityDiscoverV2Resp: {
+            /** @enum {unknown} */
+            product: "cloud" | "enterprise";
             productVersion?: string;
-            /** @description stream-requests/v1 公共 SDK 合同，不是 npm 版本 */
+            /** @enum {unknown} */
+            contractVersion: "2.0";
+            apiContractVersions: string[];
             sdkContractVersions: string[];
+            capabilities: components["schemas"]["CapabilityDiscoverycapability"][] & (unknown & unknown & unknown & unknown & unknown);
+            deprecations: {
+                contract: string;
+                replacement?: string;
+                sunsetAt?: string;
+            }[];
         };
-        PlatformPublicCapability: {
-            /** @description 当前 Key 的能力授权摘要，不替代具体 Stream request code 与读写权限检查 */
-            allowed: boolean;
-            /** @description unavailable / unknown / available；不是设备在线或执行成功证明 */
-            availability: string;
+        /** @description Unknown capability codes are ignored; only recognized codes use the frozen assessment contract. */
+        CapabilityDiscoverycapability: {
+            code: string;
+        } & (unknown | components["schemas"]["CapabilityDiscoveryknownCapability"]);
+        /** @description State reports publication and assessed prerequisites only; ready never grants resource access or confirms an actual execution. */
+        CapabilityDiscoveryknownCapability: {
+            /** @enum {unknown} */
+            state: "disabled" | "not_supported" | "unavailable" | "readiness_unknown" | "ready";
+            reasonCode: string;
+            /** Format: date-time */
+            checkedAt?: string;
+            /**
+             * Format: date-time
+             * @description Proof expiry must follow checkedAt. Cross-field chronological ordering is a semantic constraint checked by consumers in addition to this structural JSON Schema.
+             */
+            validUntil?: string;
+            retryAfterMs?: number;
             code: string;
             contractVersions: string[];
-            /** @description 仅发布、实现和 readiness 均满足时为 true */
-            enabled: boolean;
-            /** @description 公开发布开关与当前 Workspace 灰度的交集，不表示 runtime 就绪 */
-            releaseEnabled: boolean;
-            /** @description disabled / not_supported / unavailable / readiness_unknown / ready */
-            state: string;
+            operations?: components["schemas"]["CapabilityDiscoveryoperation"][];
+        } & ((unknown | {
+            /** @enum {unknown} */
+            state?: "ready";
+            checkedAt: unknown;
+        }) & (unknown | ({
+            operations?: ((unknown | components["schemas"]["CapabilityDiscoveryknownOperation"]) & (unknown | {
+                /** @enum {unknown} */
+                requiresResourceCheck?: true;
+            }))[] & (unknown & unknown & unknown & unknown & unknown & unknown);
+        } & (unknown | {
+            operations?: (unknown | {
+                /** @enum {unknown} */
+                state?: "disabled";
+            })[];
+        }))) & (unknown | ({
+            operations?: ((unknown | components["schemas"]["CapabilityDiscoveryknownOperation"]) & (unknown | {
+                /** @enum {unknown} */
+                requiresResourceCheck?: true;
+            }))[] & (unknown & unknown & unknown & unknown & unknown & unknown);
+        } & (unknown | {
+            operations?: (unknown | {
+                /** @enum {unknown} */
+                state?: "disabled";
+            })[];
+        }))) & (unknown | {
+            contractVersions?: unknown[];
+        }) & (unknown | {
+            contractVersions?: unknown[] & (unknown & unknown);
+        }));
+        /** @description Unknown operation names are ignored within their parent capability; known names are validated by that capability. */
+        CapabilityDiscoveryoperation: {
+            operation: string;
         };
-        PlatformCapabilityDeprecation: {
-            contract: string;
-            replacement?: string;
-            sunsetAt?: string;
-        };
-        PlatformCapabilityErrorResp: {
+        /** @description State reports publication and assessed prerequisites only; ready never grants resource access or confirms an actual execution. */
+        CapabilityDiscoveryknownOperation: {
+            /** @enum {unknown} */
+            state: "disabled" | "not_supported" | "unavailable" | "readiness_unknown" | "ready";
+            reasonCode: string;
+            /** Format: date-time */
+            checkedAt?: string;
+            /**
+             * Format: date-time
+             * @description Proof expiry must follow checkedAt. Cross-field chronological ordering is a semantic constraint checked by consumers in addition to this structural JSON Schema.
+             */
+            validUntil?: string;
+            retryAfterMs?: number;
+            operation: string;
+            requiresResourceCheck: boolean;
+        } & (unknown | {
+            /** @enum {unknown} */
+            state?: "ready";
+            checkedAt: unknown;
+        });
+        CapabilityErrorResp: {
             /** @description INVALID_CREDENTIAL / CAPABILITY_INVALID_REQUEST / CAPABILITY_FORBIDDEN / CAPABILITY_UNAVAILABLE / CAPABILITY_INTERNAL_ERROR */
             errorCode: string;
             /** @description 固定公开消息，不透传内部异常 */
@@ -221,7 +284,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    streamRequestDiscover: {
+    PlatformV2StreamRequestDiscover: {
         parameters: {
             query?: never;
             header?: never;
@@ -242,9 +305,99 @@ export interface operations {
                     "application/json": components["schemas"]["StreamRequestDiscoverResp"];
                 };
             };
+            /** @description Platform operation failed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
         };
     };
-    streamRequestDescribe: {
+    PlatformV2StreamRequestDescribe: {
         parameters: {
             query?: never;
             header?: never;
@@ -263,9 +416,99 @@ export interface operations {
                     "application/json": components["schemas"]["PublicStreamRequest"];
                 };
             };
+            /** @description Platform operation failed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
         };
     };
-    streamRequestInvoke: {
+    PlatformV2StreamRequestInvoke: {
         parameters: {
             query?: never;
             header?: never;
@@ -288,9 +531,99 @@ export interface operations {
                     "application/json": components["schemas"]["StreamRequestInvokeResp"];
                 };
             };
+            /** @description Platform operation failed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
         };
     };
-    streamMessagesConnect: {
+    PlatformV2StreamMessagesConnect: {
         parameters: {
             query?: never;
             header?: never;
@@ -311,9 +644,99 @@ export interface operations {
                     "application/json": components["schemas"]["StreamMessagesConnectResp"];
                 };
             };
+            /** @description Platform operation failed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationError"];
+                };
+            };
         };
     };
-    PlatformV2CapabilityDiscover: {
+    PlatformV2CapabilityDiscoverV2: {
         parameters: {
             query?: never;
             header?: never;
@@ -327,7 +750,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlatformCapabilityDiscoverResp"];
+                    "application/json": components["schemas"]["CapabilityDiscoverV2Resp"];
                 };
             };
             /** @description Platform operation failed. */
@@ -336,7 +759,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlatformCapabilityErrorResp"];
+                    "application/json": components["schemas"]["CapabilityErrorResp"];
                 };
             };
             /** @description Platform operation failed. */
@@ -345,7 +768,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlatformCapabilityErrorResp"];
+                    "application/json": components["schemas"]["CapabilityErrorResp"];
                 };
             };
             /** @description Platform operation failed. */
@@ -354,7 +777,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlatformCapabilityErrorResp"];
+                    "application/json": components["schemas"]["CapabilityErrorResp"];
                 };
             };
             /** @description Platform operation failed. */
@@ -363,7 +786,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlatformCapabilityErrorResp"];
+                    "application/json": components["schemas"]["CapabilityErrorResp"];
                 };
             };
             /** @description Platform operation failed. */
@@ -372,7 +795,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlatformCapabilityErrorResp"];
+                    "application/json": components["schemas"]["CapabilityErrorResp"];
                 };
             };
         };

@@ -136,7 +136,7 @@ describe('files module', () => {
       // 第一步：申请 presigned POST URL
       expect(mockFetch).toHaveBeenNthCalledWith(
         1,
-        'https://api.example.com/openapi/v1/assets/files',
+        'https://api.example.com/openapi/v2/assets/files',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -254,7 +254,7 @@ describe('files module', () => {
 
       const [url] = mockFetch.mock.calls[0];
       expect(url).toBe(
-        'https://api.example.com/openapi/v1/assets/files/url?filePath=workspace%2F10086%2Fattachment%2F20260706%2Fabcdef-report.csv&expiredSec=3600'
+        'https://api.example.com/openapi/v2/assets/files/url?filePath=workspace%2F10086%2Fattachment%2F20260706%2Fabcdef-report.csv&expiredSec=3600'
       );
       expect(result).toEqual({
         fileUrl: 'https://bucket.s3.amazonaws.com/get?sig',
@@ -291,7 +291,7 @@ describe('files module', () => {
 
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe(
-        'https://api.example.com/openapi/v1/assets/files/download?filePath=workspace%2F10086%2Fattachment%2F20260706%2Fabcdef-report.csv&responseContentDisposition=attachment%3Bfilename%3Dreport.csv'
+        'https://api.example.com/openapi/v2/assets/files/download?filePath=workspace%2F10086%2Fattachment%2F20260706%2Fabcdef-report.csv&responseContentDisposition=attachment%3Bfilename%3Dreport.csv'
       );
       expect(init.method).toBe('GET');
       expect(init.redirect).toBe('follow');
@@ -322,7 +322,7 @@ describe('files module', () => {
       const result = await deleteFile({ filePath: 'workspace/10086/attachment/20260706/abcdef-report.csv' });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.example.com/openapi/v1/assets/files/delete',
+        'https://api.example.com/openapi/v2/assets/files/delete',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ filePath: 'workspace/10086/attachment/20260706/abcdef-report.csv' }),

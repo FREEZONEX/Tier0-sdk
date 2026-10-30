@@ -1,10 +1,10 @@
 ---
 name: tier0-sdk-openapi-platform-get-members
 version: 0.2.0
-description: "POST /openapi/v1/platform/getMembers - query Workspace members and roles, including human-readable member selection"
+description: "POST /openapi/v2/platform/getMembers - query Workspace members and roles, including human-readable member selection"
 ---
 
-# getMembers - `POST /openapi/v1/platform/getMembers`
+# getMembers - `POST /openapi/v2/platform/getMembers`
 
 Query users in the API key's Workspace together with their platform roles. This endpoint has no project path parameter.
 
@@ -15,7 +15,7 @@ Cloud API keys need the `uns:read` resource key. Enterprise API keys need the `l
 ```typescript
 import { platformApi } from '@tier0/sdk/openapi';
 
-const result = await platformApi.openapiv1platformgetmembers({
+const result = await platformApi.openapiV2PlatformGetmembers({
   keyword: 'alice',
   roles: ['builder', 'operator'],
   statuses: ['active'],

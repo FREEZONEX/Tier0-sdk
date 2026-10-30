@@ -24,6 +24,8 @@ See the complete [paired App and Stream example](examples/app-streams/README.md)
 Validation:
 
 - `npm run typecheck` and `npm test`
-- `npm run check:uns-v2-contract` and `npm run check:stream-contract`
+- `npm run check:uns-v2-contract`, `npm run check:stream-contract`, `npm run check:platform-contract` and `npm run check:capability-contract`
 - `npm run test:streams:artifact`: production Go issuer + native TLS NATS tests, offline ESM/CJS delivery and browser bundle dependency checks. Requires Go, `nats-server`, Node 22+ and a backend checkout (`TIER0_STREAM_MESSAGES_BACKEND_DIR`). This fixture uses fixed authority and does not exercise SYS Connect RPC, SQL roles/App policy, GW authentication or browser E2E.
 - `npm run test:cloud-app`: offline App packaging and retained Cloud behavior using local HTTP fixtures.
+
+Sync a reviewed Backend commit with `npm run sync:platform-contract -- <backend-checkout> <commit>` (six platform routes and App-member projection), `npm run sync:stream-contract -- <backend-checkout> <commit>` and `npm run sync:capability-contract -- <backend-checkout> <commit>`. Then regenerate the platform and Stream types and run the checks above. Each sync command accepts `--worktree` instead of a commit for explicit local previews. Package and publish hooks reject preview provenance; re-sync the committed sources before release rather than editing provenance by hand. These platform changes leave the independently pinned UNS model unchanged.

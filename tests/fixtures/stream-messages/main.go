@@ -275,7 +275,7 @@ func run() error {
 		Topics:       []streammessages.TopicPermission{{Topic: *topic, Publish: true, Subscribe: true}},
 	}
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /openapi/v1/stream-messages/connect", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /openapi/v2/stream-messages/connect", func(w http.ResponseWriter, r *http.Request) {
 		var request streammessages.ConnectRequest
 		decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16*1024))
 		decoder.DisallowUnknownFields()

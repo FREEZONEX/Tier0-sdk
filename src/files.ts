@@ -377,7 +377,7 @@ function toResumeSession(session: MultipartSession): MultipartResumeSession {
 /** 尽力调用 multipart/abort 清理会话；清理失败不掩盖原始错误 */
 async function abortMultipartSession(client: HttpClient, session: MultipartSession): Promise<void> {
   await client
-    .post<unknown>('/openapi/v1/assets/files/multipart/abort', {
+    .post<unknown>('/openapi/v2/assets/files/multipart/abort', {
       fileKey: session.fileKey,
       uploadId: session.uploadId,
     })
@@ -411,7 +411,7 @@ async function postMultipartCompleteWithRetry(
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const resp = await client.post<unknown>(
-        '/openapi/v1/assets/files/multipart/complete',
+        '/openapi/v2/assets/files/multipart/complete',
         { fileKey: session.fileKey, uploadId: session.uploadId, parts },
         { signal }
       );
@@ -437,12 +437,12 @@ async function postMultipartCompleteWithRetry(
  * multipart 分片上传大文件，解决单发上传（presigned POST）在 >100MB 场景的超时问题。
  *
  * 调用流程（均走既有 x-api-key 认证与 HttpClient）：
- * 1. `POST /openapi/v1/assets/files/multipart/init` 初始化分片会话（可选传 partSize，后端裁定为准；
+ * 1. `POST /openapi/v2/assets/files/multipart/init` 初始化分片会话（可选传 partSize，后端裁定为准；
  *    客户端传入低于 5MB 的 partSize 会自动抬升到 5MB，避免非末片小于 S3 最小分片导致 complete 被拒）；
- * 2. `POST /openapi/v1/assets/files/multipart/part-urls` 申请未完成分片的直传 URL（已完成分片跳过）；
+ * 2. `POST /openapi/v2/assets/files/multipart/part-urls` 申请未完成分片的直传 URL（已完成分片跳过）；
  * 3. 并发 `PUT` 直传分片（默认并发 4，可配）：浏览器/Node 均用 `file.slice` 切片，
  *    单片失败指数退避重试 3 次；已上传分片记录在内存中，重试/续传不重传；
- * 4. `POST /openapi/v1/assets/files/multipart/complete` 组装文件（幂等，失败可重试）。
+ * 4. `POST /openapi/v2/assets/files/multipart/complete` 组装文件（幂等，失败可重试）。
  *
  * 失败语义（分片上传与 complete 一致）：
  * - 用户取消（`options.signal` 中止 / AbortError）：会话尽力 abort 清理后原样抛回 AbortError，
@@ -473,7 +473,7 @@ export async function uploadFileMultipart(
 
   // 1. 初始化分片会话
   const initResp = await client.post<unknown>(
-    '/openapi/v1/assets/files/multipart/init',
+    '/openapi/v2/assets/files/multipart/init',
     {
       fileName,
       contentType,
@@ -529,7 +529,7 @@ async function runMultipartUpload(
   try {
     if (partNumbers.length > 0) {
       const partUrlsResp = await client.post<unknown>(
-        '/openapi/v1/assets/files/multipart/part-urls',
+        '/openapi/v2/assets/files/multipart/part-urls',
         { fileKey: session.fileKey, uploadId: session.uploadId, partNumbers },
         { signal: options.signal }
       );
@@ -753,7 +753,7 @@ function buildQuery(params: Record<string, string | number | undefined>): string
  * Cloud 和企业版接口完全统一，无需区分部署环境：
  * 1. 文件 >100MB 时自动切换 multipart 分片直传（见 `uploadFileMultipart`）；
  *    小文件也可显式传 `options.multipart` 走分片；
- * 2. 其余场景走 `POST /openapi/v1/assets/files` 申请 presigned POST URL、表单字段与 filePath；
+ * 2. 其余场景走 `POST /openapi/v2/assets/files` 申请 presigned POST URL、表单字段与 filePath；
  * 3. SDK 以 `multipart/form-data` 直传文件内容到对象存储（Cloud 为 AWS S3，企业版为 RustFS）：
  *    `postFields` 全部先写入表单，`file` 字段必须最后 appended，不额外添加 `Content-Type` 表单字段；
  * 4. 返回 { filePath, fileUrl, ... }，业务侧保存 filePath 即可。
@@ -780,7 +780,7 @@ export async function uploadFile(file: File, options: UploadOptions = {}): Promi
   const contentType = file.type || 'application/octet-stream';
 
   const resp = await client.post<unknown>(
-    '/openapi/v1/assets/files',
+    '/openapi/v2/assets/files',
     {
       fileName,
       contentType,
@@ -849,7 +849,7 @@ export async function getFileUrl(options: GetFileUrlOptions): Promise<GetFileUrl
     responseContentDisposition: options.responseContentDisposition,
   });
 
-  const resp = await client.get<unknown>(`/openapi/v1/assets/files/url?${query}`, {
+  const resp = await client.get<unknown>(`/openapi/v2/assets/files/url?${query}`, {
     signal: options.signal,
   });
   const data = unwrapData<GetFileUrlApiResp>(resp);
@@ -864,7 +864,7 @@ export async function getFileUrl(options: GetFileUrlOptions): Promise<GetFileUrl
 /**
  * 直接下载文件。
  *
- * 调用 `GET /openapi/v1/assets/files/download?filePath=...`，后端按 visibility
+ * 调用 `GET /openapi/v2/assets/files/download?filePath=...`，后端按 visibility
  * 返回文件流或 302 跳转（public 到公开 URL，private 到短期 presigned URL），
  * SDK 自动跟随重定向，返回原始 Response：
  * - 浏览器：`response.blob()` 后创建 object URL 触发保存；
@@ -888,7 +888,7 @@ export async function downloadFile(options: DownloadFileOptions): Promise<Downlo
     headers['X-API-Key'] = apiKey;
   }
 
-  const response = await fetch(`${baseURL}/openapi/v1/assets/files/download?${query}`, {
+  const response = await fetch(`${baseURL}/openapi/v2/assets/files/download?${query}`, {
     method: 'GET',
     headers,
     redirect: 'follow',
@@ -916,7 +916,7 @@ export async function deleteFile(options: DeleteFileOptions): Promise<DeleteFile
   }
   const client = getClient();
   const resp = await client.post<unknown>(
-    '/openapi/v1/assets/files/delete',
+    '/openapi/v2/assets/files/delete',
     { filePath: options.filePath },
     { signal: options.signal }
   );

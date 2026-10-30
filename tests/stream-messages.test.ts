@@ -78,7 +78,7 @@ describe('Stream messages trusted runtime and NATS Core lifecycle', () => {
     const result = await handle.publish({ hello: 'world' }, { messageId: id, correlationId: 'intent-1' });
     expect(request).toHaveBeenCalledOnce();
     const [path, body] = request.mock.calls[0];
-    expect(path).toBe('/openapi/v1/stream-messages/connect');
+    expect(path).toBe('/openapi/v2/stream-messages/connect');
     expect(body).toEqual({ appId: expect.any(String), topics: [{ topic, publish: true, subscribe: false }], clientPublicKey: expect.stringMatching(/^U[A-Z2-7]{55}$/) });
     expect(JSON.stringify(body)).not.toMatch(/seed|private|apiKey|subject/i);
     const options = vi.mocked(wsconnect).mock.calls[0][0]!;

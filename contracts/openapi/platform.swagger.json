@@ -1,0 +1,1052 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Tier0 Cloud OpenAPI v2",
+    "version": "5.0.0",
+    "description": "云端集合、业务数据、时序数据及数据源、处理流与 App 策略管理接口。使用绑定工作空间的 API Key。\n\n### UNS 接口错误\n各接口只展开成功结果；失败统一使用 default 响应。HTTP 状态码：401 未认证、403 无权限或未开通、404 对象不存在、409 状态、版本、唯一键冲突或凭据已变化、413 内容超限、422 参数或业务校验失败、429 过载、500 服务端错误、503 暂不可用、504 查询超时。具体原因以 error.code 为准。error.execution 说明执行到哪一步：notStarted、rolledBack 可证明没有副作用，committed 表示已提交，unknown 只出现在写操作上、表示无法证明是否提交。error.retry.safe=true 时可原样重发（写入复用原幂等键），retry.afterMs 与 Retry-After 给出最短等待时间；safe=false 时先修正请求或恢复授权。\n\n### 平台接口\n通知、文件、成员、身份、MQTT 凭证和 Agent 接口复用已有业务规则。平台接口保留各自响应格式：文件下载返回 302，通知、能力发现、Stream 请求及消息连接直接返回业务 JSON，其他平台接口使用 code/msg/data。上面的 UNS 错误格式仅适用于 /uns/ 路径。"
+  },
+  "paths": {
+    "/openapi/v2/info": {
+      "post": {
+        "operationId": "PlatformV2Info",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "integer"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PlatformInfoResp"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "info",
+        "tags": [
+          "平台信息"
+        ],
+        "security": [],
+        "x-tier0-readonly": true,
+        "x-tier0-destructive": false,
+        "x-tier0-audience": "builder",
+        "x-tier0-platform": true,
+        "x-tier0-permission": "",
+        "x-tier0-min-permission": 1
+      }
+    },
+    "/openapi/v2/auth/whoami": {
+      "post": {
+        "operationId": "PlatformV2Whoami",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "integer"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PlatformAuthWhoamiResp"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "whoami",
+        "tags": [
+          "身份"
+        ],
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-tier0-readonly": true,
+        "x-tier0-destructive": false,
+        "x-tier0-audience": "builder",
+        "x-tier0-platform": true,
+        "x-tier0-permission": "uns.read",
+        "x-tier0-min-permission": 1
+      }
+    },
+    "/openapi/v2/notifications/send": {
+      "post": {
+        "description": "发送消息通知：向 Key 所属 Workspace 内的用户发送站内信，并按需触发终端提醒（Web Push/移动推送）",
+        "operationId": "PlatformV2SendNotification",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatformSendNotificationReq"
+              }
+            }
+          },
+          "required": true,
+          "x-originalParamName": "body"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformSendNotificationResp"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          }
+        },
+        "summary": "发送消息通知",
+        "tags": [
+          "通知"
+        ],
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-tier0-readonly": false,
+        "x-tier0-destructive": false,
+        "x-tier0-audience": "builder",
+        "x-tier0-platform": true,
+        "x-tier0-permission": "notifications.send",
+        "x-tier0-min-permission": 2
+      }
+    },
+    "/openapi/v2/notifications/get": {
+      "post": {
+        "description": "查询消息通知发送状态：按 messageId 查询，归属校验锚定发起请求的 API Key",
+        "operationId": "PlatformV2GetNotification",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatformGetNotificationReq"
+              }
+            }
+          },
+          "required": true,
+          "x-originalParamName": "body"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformGetNotificationResp"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformNotificationError"
+                }
+              }
+            }
+          }
+        },
+        "summary": "查询消息通知发送状态",
+        "tags": [
+          "通知"
+        ],
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-tier0-readonly": true,
+        "x-tier0-destructive": false,
+        "x-tier0-audience": "builder",
+        "x-tier0-platform": true,
+        "x-tier0-permission": "notifications.read",
+        "x-tier0-min-permission": 1
+      }
+    },
+    "/openapi/v2/platform/getMembers": {
+      "post": {
+        "operationId": "PlatformV2GetMembers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatformPlatformGetMembersReq"
+              }
+            }
+          },
+          "required": true,
+          "x-originalParamName": "body"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "integer"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PlatformPlatformMembersResp"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "getMembers",
+        "tags": [
+          "成员"
+        ],
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-tier0-readonly": true,
+        "x-tier0-destructive": false,
+        "x-tier0-audience": "builder",
+        "x-tier0-platform": true,
+        "x-tier0-permission": "uns.read",
+        "x-tier0-min-permission": 1
+      }
+    },
+    "/openapi/v2/apps/access-members/list": {
+      "post": {
+        "operationId": "PlatformV2ListAccessMembers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatformAppAccessMembersListReq"
+              }
+            }
+          },
+          "required": true,
+          "x-originalParamName": "body"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "integer"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PlatformAppAccessMembersListResp"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "listAccessMembers",
+        "tags": [
+          "成员"
+        ],
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-tier0-readonly": true,
+        "x-tier0-destructive": false,
+        "x-tier0-audience": "builder",
+        "x-tier0-platform": true,
+        "x-tier0-permission": "uns.read",
+        "x-tier0-min-permission": 1
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PlatformInfoResp": {
+        "properties": {
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "mqttBroker": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "description": "API version of the requested HTTP entry point",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "mqttBroker",
+          "capabilities"
+        ],
+        "type": "object"
+      },
+      "PlatformAuthWhoamiResp": {
+        "properties": {
+          "apiKeyName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "keyPrefix": {
+            "type": "string"
+          },
+          "keyType": {
+            "type": "string"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "userID": {
+            "type": "integer"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "workspaceID": {
+            "type": "integer"
+          },
+          "workspaceName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userID",
+          "userName",
+          "email",
+          "workspaceID",
+          "workspaceName",
+          "apiKeyName",
+          "keyPrefix",
+          "permissions",
+          "roles",
+          "keyType"
+        ],
+        "type": "object"
+      },
+      "PlatformSendNotificationReq": {
+        "properties": {
+          "channels": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "web",
+                "mobile"
+              ]
+            },
+            "type": "array"
+          },
+          "content": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "link": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "recipientUserId": {
+            "type": "string"
+          },
+          "sender": {
+            "$ref": "#/components/schemas/PlatformNotificationSender"
+          },
+          "source": {
+            "description": "已废弃：过渡期作 sender.name 别名（sender.name 优先），后续移除",
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipientUserId",
+          "type",
+          "title",
+          "content",
+          "idempotencyKey"
+        ],
+        "type": "object"
+      },
+      "PlatformNotificationSender": {
+        "properties": {
+          "id": {
+            "description": "app 必填=appId（agent-platform UUID）；other 可选；system 可选；字符集 [0-9a-zA-Z-]{1,128}",
+            "type": "string"
+          },
+          "meta": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "类型专属附加信息，序列化后≤500字节",
+            "type": "object"
+          },
+          "name": {
+            "description": "人读显示名（接替废弃的 source），≤100字符",
+            "type": "string"
+          },
+          "type": {
+            "description": "枚举 app/other/system，缺省 other；system=平台内部服务，仅 usage_type=internal 的 API key 可用（否则 400），建信归 workspace 分组（System tab）",
+            "type": "string",
+            "enum": [
+              "app",
+              "other",
+              "system"
+            ],
+            "default": "other"
+          }
+        },
+        "type": "object"
+      },
+      "PlatformSendNotificationResp": {
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "messageId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "messageId",
+          "status",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "PlatformNotificationError": {
+        "type": "object",
+        "required": [
+          "errorCode",
+          "message"
+        ],
+        "properties": {
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PlatformGetNotificationReq": {
+        "properties": {
+          "messageId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "messageId"
+        ],
+        "type": "object"
+      },
+      "PlatformGetNotificationResp": {
+        "properties": {
+          "completedAt": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "messageId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "messageId",
+          "type",
+          "status",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "PlatformPlatformGetMembersReq": {
+        "properties": {
+          "keyword": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "roleKey": {
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "statuses": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "updatedAtEnd": {
+            "type": "string"
+          },
+          "updatedAtStart": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PlatformPlatformMembersResp": {
+        "properties": {
+          "list": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformPlatformMemberResp"
+            },
+            "type": "array"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "list",
+          "total",
+          "page",
+          "size"
+        ],
+        "type": "object"
+      },
+      "PlatformPlatformMemberResp": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "nickName": {
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformPlatformMemberRoleResp"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "status",
+          "roles",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "PlatformPlatformMemberRoleResp": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "string"
+          },
+          "roleKey": {
+            "type": "string"
+          },
+          "roleName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "roleId",
+          "roleKey"
+        ],
+        "type": "object"
+      },
+      "PlatformAppAccessMembersListReq": {
+        "properties": {
+          "appId": {
+            "type": "string"
+          },
+          "grantedAtEnd": {
+            "description": "毫秒，闭区间，精度为秒",
+            "type": "integer"
+          },
+          "grantedAtStart": {
+            "description": "毫秒，闭区间，精度为秒",
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "roleKeys": {
+            "description": "任一命中即可，大小写不敏感",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "size": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "appId"
+        ],
+        "type": "object"
+      },
+      "PlatformAppAccessMembersListResp": {
+        "properties": {
+          "allActiveMembers": {
+            "description": "1:所有 active 成员都可访问 2:按角色授权",
+            "type": "integer"
+          },
+          "appId": {
+            "type": "string"
+          },
+          "list": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformAppAccessMemberResp"
+            },
+            "type": "array"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "productionVersionId": {
+            "type": "string"
+          },
+          "published": {
+            "description": "1:已发布 2:未发布",
+            "type": "integer"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformAppAccessRoleResp"
+            },
+            "type": "array"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "appId",
+          "published",
+          "allActiveMembers",
+          "roles",
+          "list",
+          "total",
+          "page",
+          "size"
+        ],
+        "type": "object"
+      },
+      "PlatformAppAccessMemberResp": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "grantedAt": {
+            "description": "毫秒",
+            "type": "integer"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformAppAccessMemberRoleResp"
+            },
+            "type": "array"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "grantedAt",
+          "roles"
+        ],
+        "type": "object"
+      },
+      "PlatformAppAccessMemberRoleResp": {
+        "properties": {
+          "roleId": {
+            "type": "string"
+          },
+          "roleKey": {
+            "type": "string"
+          },
+          "roleName": {
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformAppAccessRoleSourceResp"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "roleId",
+          "roleKey",
+          "roleName",
+          "sources"
+        ],
+        "type": "object"
+      },
+      "PlatformAppAccessRoleSourceResp": {
+        "properties": {
+          "groupId": {
+            "type": "string"
+          },
+          "groupName": {
+            "type": "string"
+          },
+          "type": {
+            "description": "direct / group",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "PlatformAppAccessRoleResp": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "memberCount": {
+            "type": "integer"
+          },
+          "roleId": {
+            "type": "string"
+          },
+          "roleKey": {
+            "type": "string"
+          },
+          "roleName": {
+            "type": "string"
+          },
+          "status": {
+            "description": "active / retired",
+            "type": "string"
+          }
+        },
+        "required": [
+          "roleId",
+          "roleKey",
+          "roleName",
+          "status",
+          "memberCount"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

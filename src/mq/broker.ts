@@ -1,7 +1,7 @@
 /**
  * MQTT broker 地址归一化工具。
  *
- * 平台 `/openapi/v1/info` 返回的 `mqttBroker` 格式随环境变化，不保证统一：
+ * 平台 `/openapi/v2/info` 返回的 `mqttBroker` 格式随环境变化，不保证统一：
  * - enterprise：env 为空时后端兜底返回 `tcp://<host>:1883`（面向边缘/服务端客户端的连接串）；
  * - SaaS（Tier0 Cloud）：env 原样透传，常见为 `host:port` 或裸 `host`。
  *

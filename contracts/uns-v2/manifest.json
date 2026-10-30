@@ -5854,7 +5854,8 @@
         },
         "dryRun": {
           "type": "boolean",
-          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。",
+          "default": false
         },
         "allowPartial": {
           "type": "boolean",
@@ -5913,7 +5914,6 @@
         }
       },
       "required": [
-        "dryRun",
         "items"
       ]
     },
@@ -6428,7 +6428,8 @@
         },
         "dryRun": {
           "type": "boolean",
-          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。"
+          "description": "true 仅校验，不提交；校验不会预留资源，执行时仍重新检查。",
+          "default": false
         },
         "id": {
           "type": "string",
@@ -6446,7 +6447,6 @@
         }
       },
       "required": [
-        "dryRun",
         "id"
       ]
     },
@@ -14856,7 +14856,8 @@
       "additionalProperties": false,
       "properties": {
         "dryRun": {
-          "type": "boolean"
+          "type": "boolean",
+          "default": false
         },
         "idempotencyKey": {
           "type": "string",
@@ -14869,7 +14870,7 @@
         "credentials": {
           "$ref": "#/components/schemas/CloudSourceCreateCredentials",
           "writeOnly": true,
-          "description": "仅用于本次创建的 HTTP 凭据，endpoint 从 document.config 取得。与已有 auth/TLS 引用互斥；不写入 Source 文档。"
+          "description": "仅用于本次创建的 HTTP 或 SQL 凭据，endpoint 从 document.config 取得。SQL 使用 usernamePassword 且省略 method。与已有 auth 引用互斥；HTTP/SQL 暂不支持 TLS 凭据引用。秘密只进入 Vault，不写入 Source 文档、历史或回执。"
         },
         "items": {
           "type": "array",
@@ -14894,9 +14895,7 @@
           }
         }
       },
-      "required": [
-        "dryRun"
-      ],
+      "required": [],
       "oneOf": [
         {
           "required": [
@@ -14952,6 +14951,18 @@
                   "type": "string",
                   "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$"
                 },
+                "credentials": {
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "basic",
+                        "bearer",
+                        "apiKey",
+                        "oauth2ClientCredentials"
+                      ]
+                    }
+                  }
+                },
                 "document": {
                   "properties": {
                     "protocol": {
@@ -14983,11 +14994,58 @@
                   }
                 }
               }
+            },
+            {
+              "required": [
+                "credentials",
+                "idempotencyKey"
+              ],
+              "properties": {
+                "idempotencyKey": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$"
+                },
+                "credentials": {
+                  "properties": {
+                    "kind": {
+                      "const": "usernamePassword"
+                    }
+                  },
+                  "not": {
+                    "required": [
+                      "method"
+                    ]
+                  }
+                },
+                "document": {
+                  "properties": {
+                    "protocol": {
+                      "const": "sql"
+                    },
+                    "config": {
+                      "not": {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "auth"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "tls"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
             }
           ]
         }
       ],
-      "description": "单条 document 或原子批量 items 二选一；批量最多 200 项。单条保留只写 credentials 创建能力，批量使用已有凭据引用。"
+      "description": "单条 document 或原子批量 items 二选一；批量最多 200 项。dryRun 默认 false；true 只做预检。单条支持只写 HTTP/SQL credentials，批量使用已有凭据引用。"
     },
     "CloudSourceDocumentCreateResponse": {
       "type": "object",
@@ -15028,7 +15086,8 @@
       "additionalProperties": false,
       "properties": {
         "dryRun": {
-          "type": "boolean"
+          "type": "boolean",
+          "default": false
         },
         "idempotencyKey": {
           "type": "string",
@@ -15126,9 +15185,7 @@
           }
         }
       },
-      "required": [
-        "dryRun"
-      ],
+      "required": [],
       "oneOf": [
         {
           "required": [
@@ -15306,7 +15363,8 @@
       "additionalProperties": false,
       "properties": {
         "dryRun": {
-          "type": "boolean"
+          "type": "boolean",
+          "default": false
         },
         "idempotencyKey": {
           "type": "string",
@@ -15325,9 +15383,7 @@
           "minimum": 0
         }
       },
-      "required": [
-        "dryRun"
-      ],
+      "required": [],
       "oneOf": [
         {
           "required": [
@@ -15400,7 +15456,8 @@
       "additionalProperties": false,
       "properties": {
         "dryRun": {
-          "type": "boolean"
+          "type": "boolean",
+          "default": false
         },
         "idempotencyKey": {
           "type": "string",
@@ -15430,8 +15487,7 @@
         }
       },
       "required": [
-        "id",
-        "dryRun"
+        "id"
       ],
       "oneOf": [
         {
@@ -23846,7 +23902,8 @@
             "basic",
             "bearer",
             "apiKey",
-            "oauth2ClientCredentials"
+            "oauth2ClientCredentials",
+            "usernamePassword"
           ]
         },
         "material": {
@@ -24005,6 +24062,41 @@
                 "clientSecret"
               ]
             }
+          }
+        },
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "usernamePassword"
+              ]
+            },
+            "material": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "username": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256,
+                  "writeOnly": true
+                },
+                "password": {
+                  "type": "string",
+                  "maxLength": 16384,
+                  "writeOnly": true
+                }
+              },
+              "required": [
+                "username",
+                "password"
+              ]
+            }
+          },
+          "not": {
+            "required": [
+              "method"
+            ]
           }
         }
       ]

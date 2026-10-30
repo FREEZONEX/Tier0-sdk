@@ -24,7 +24,7 @@ App API Key 是应用服务端使用的共享业务凭证，不代表正在访�
 ## API
 
 ```
-POST /openapi/v1/auth/whoami
+POST /openapi/v2/auth/whoami
 ```
 
 ## 请求参数
@@ -36,7 +36,7 @@ POST /openapi/v1/auth/whoami
 ```typescript
 import { systemApi } from '@tier0/sdk/openapi';
 
-const result = await systemApi.openapiv1authwhoami();
+const result = await systemApi.openapiV2AuthWhoami();
 console.log(result);
 ```
 

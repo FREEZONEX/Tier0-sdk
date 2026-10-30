@@ -94,11 +94,10 @@ describe('single-root Skill routing', () => {
     expect(description).toMatch(/历史数据|history/i);
     expect(description).toMatch(/趋势图|trend/i);
     expect(rootSkill).toContain('tier0-sdk-uns/references/history.md');
-    expect(historyReference).toContain('getTier0UnsApi()');
-    expect(historyReference).toContain('openapiv1unshistory');
-    expect(historyReference).toContain("countMode: 'none'");
-    expect(historyReference).toContain('meta.hasMore');
-    expect(monoAppReference).toContain('../../tier0-sdk-uns/references/history.md');
-    expect(monoAppReference).toContain('OpenAPI `history` is for bounded time-range queries');
+    expect(historyReference).toContain('unsV2.sampleFind');
+    expect(historyReference).toContain('from: rangeStartMs');
+    expect(historyReference).toContain('pageInfo/cursor');
+    expect(monoAppReference).toContain('../tier0-sdk-uns/references/history.md');
+    expect(monoAppReference).toContain('sampleFind is for bounded time-range queries');
   });
 });

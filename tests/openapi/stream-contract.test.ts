@@ -7,19 +7,19 @@ const raw = read('streams.swagger.json');
 const source = JSON.parse(raw);
 const provenance = JSON.parse(read('streams-provenance.json'));
 
-describe('committed public Stream contract projection', () => {
-  it('pins the public contract and independently reviewed trust commit', () => {
-    expect(provenance.revision).toBe('0b6fc2375cdc322318235da75effd982dd62b3e5');
-    expect(provenance.trustRevision).toMatch(/^5eecd2188[0-9a-f]+$/);
+describe('public Stream contract projection', () => {
+  it('records the upstream revision and exact public contract content', () => {
+    expect(provenance.revision).toMatch(/^[0-9a-f]{40}$/);
+    expect(provenance.source).toBe('service/gwsvr/internal/handler/openapi/v2/unsv2/swagger_generated.json');
     expect(provenance.snapshotSHA256).toBe(createHash('sha256').update(raw).digest('hex'));
     expect(provenance.sourceSHA256).toMatch(/^[0-9a-f]{64}$/);
   });
   it('projects only neutral direct request, connection and capability POST routes', () => {
     expect(Object.keys(source.paths)).toEqual([
-      '/openapi/v1/stream-requests/discover',
-      '/openapi/v1/stream-requests/{requestCode}/describe',
-      '/openapi/v1/stream-requests/{requestCode}/invoke',
-      '/openapi/v1/stream-messages/connect',
+      '/openapi/v2/stream-requests/discover',
+      '/openapi/v2/stream-requests/{requestCode}/describe',
+      '/openapi/v2/stream-requests/{requestCode}/invoke',
+      '/openapi/v2/stream-messages/connect',
       '/openapi/v2/capabilities/discover',
     ]);
     for (const route of Object.values(source.paths) as { post?: unknown }[]) expect(route.post).toBeDefined();

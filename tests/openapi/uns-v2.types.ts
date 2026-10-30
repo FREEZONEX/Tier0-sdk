@@ -287,10 +287,10 @@ import type { PlatformV2ProjectMembersListReq } from '../../src/index.js';
 import type { PlatformV2ProjectMembersListResponse } from '../../src/index.js';
 
 import { appsApi } from '../../src/openapi/api.js';
-const appMembersBody: Parameters<typeof appsApi.openapiV1Appslistaccessmembers>[0] = {
+const appMembersBody: Parameters<typeof appsApi.openapiV2AppsAccessMembersList>[0] = {
   appId: 'owned-app', roleKeys: ['operator'], grantedAtStart: 1782864000000, page: 1, size: 20,
 };
-const invalidAppMembersBody: Parameters<typeof appsApi.openapiV1Appslistaccessmembers>[0] = {
+const invalidAppMembersBody: Parameters<typeof appsApi.openapiV2AppsAccessMembersList>[0] = {
   appId: 'owned-app',
   // @ts-expect-error App access members has no Project path/body selector.
   projectName: 'legacy-project',
@@ -306,3 +306,8 @@ const nativeSource: UnsV2Request<'sourceDocumentCreate'> = { dryRun: true, docum
 // @ts-expect-error Single document and batch items are mutually exclusive.
 client.unsV2.sourceDocumentCreate({ ...nativeSource, items: [{ document: nativeSource.document }] });
 void nativeSource;
+
+client.unsV2.sourceDocumentCreate({ document: { name: 'PG', protocol: 'sql', config: { endpoint: 'postgres://fixture.invalid/database', options: {} } }, credentials: { kind: 'usernamePassword', material: { username: 'fixture', password: 'fixture-only' } }, idempotencyKey: 'sql-create' });
+// @ts-expect-error SQL 连接不接受 HTTP method。
+const sqlHTTPMethod: import('../../src/index.js').CloudSourceCreateCredentials = { kind: 'usernamePassword', method: 'GET', material: { username: 'fixture', password: 'fixture-only' } };
+void sqlHTTPMethod;

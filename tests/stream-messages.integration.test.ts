@@ -6,7 +6,7 @@ import { createClient } from '../src/client.js';
 import type { AppRuntime } from '../src/runtime.js';
 import type { StreamMessage } from '../src/streams/messages.js';
 
-// Fixture HTTP adapter: POST /openapi/v1/stream-messages/connect uses the production Go issuer.
+// Fixture HTTP adapter: POST /openapi/v2/stream-messages/connect uses the production Go issuer.
 // Fixed fixture Authority; this does not exercise SYS Connect RPC, SQL roles/App policy,
 // Gateway authentication, production topic-policy checks, or browser end-to-end flows.
 // Request: {appId, topics:[{topic,publish,subscribe}],clientPublicKey}; response:
@@ -32,7 +32,7 @@ interface NativeTicket {
 }
 
 async function mintNativeTicket(publicKey: string): Promise<NativeTicket> {
-  const response = await fetch(new URL('/openapi/v1/stream-messages/connect', fixture!), {
+  const response = await fetch(new URL('/openapi/v2/stream-messages/connect', fixture!), {
     method: 'POST', signal: AbortSignal.timeout(3_000),
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

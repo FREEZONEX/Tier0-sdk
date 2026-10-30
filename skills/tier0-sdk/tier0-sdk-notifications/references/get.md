@@ -1,10 +1,10 @@
 ---
 name: tier0-sdk-openapi-notifications-get
 version: 0.1.0
-description: "POST /openapi/v1/notifications/get - query delivery status of a sent notification"
+description: "POST /openapi/v2/notifications/get - query delivery status of a sent notification"
 ---
 
-# get - `POST /openapi/v1/notifications/get`
+# get - `POST /openapi/v2/notifications/get`
 
 Query a notification's delivery status by messageId. Ownership is anchored to the API key: **only messages sent by this key are visible**.
 
@@ -19,7 +19,7 @@ Same as [send](./send.md): success is bare JSON without `{code,msg,data}`; failu
 ```typescript
 import { notificationsApi } from '@tier0/sdk/openapi';
 
-const resp = await notificationsApi.openapiv1notificationsget({ messageId: '7123456789012345' });
+const resp = await notificationsApi.openapiV2NotificationsGet({ messageId: '7123456789012345' });
 ```
 
 ## Request
@@ -62,7 +62,7 @@ Correct wording when reporting to the user: `sent` = "sent", never "received/rea
 ```typescript
 async function waitForTerminal(messageId: string, maxAttempts = 10) {
   for (let i = 0; i < maxAttempts; i++) {
-    const resp = await notificationsApi.openapiv1notificationsget({ messageId });
+    const resp = await notificationsApi.openapiV2NotificationsGet({ messageId });
     if (resp.status !== 'accepted') return resp; // sent or failed: terminal
     if (i < maxAttempts - 1) await new Promise(r => setTimeout(r, 1500)); // no pointless sleep after the final poll
   }

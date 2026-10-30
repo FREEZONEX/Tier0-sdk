@@ -6,19 +6,19 @@ description: "Cloud App access members by App ID, without Project ownership"
 
 # Cloud App access members
 
-Use `POST /openapi/v1/apps/access-members/list`. The SDK no longer exports the retired Cloud Launchpad Project member endpoint. This does not change Enterprise server permissions or the workspace-wide platform member endpoint.
+Use `POST /openapi/v2/apps/access-members/list`. The SDK no longer exports the retired Cloud Launchpad Project member endpoint. This does not change Enterprise server permissions or the workspace-wide platform member endpoint.
 
 ```typescript
 import { appsApi } from '@tier0/sdk/openapi';
 
-const result = await appsApi.openapiV1Appslistaccessmembers({
+const result = await appsApi.openapiV2AppsAccessMembersList({
   appId: currentAppId,
   roleKeys: ['operator'],
   page: 1,
   size: 20,
 });
-// This endpoint's public response is the AppAccessMembersListResp itself.
-const options = result.list.map(member => ({
+// The v2 response wraps AppAccessMembersListResp in code/msg/data.
+const options = result.data.list.map(member => ({
   value: member.userId,
   label: member.userName || member.email || 'Unnamed member',
   roles: member.roles.map(role => role.roleName),

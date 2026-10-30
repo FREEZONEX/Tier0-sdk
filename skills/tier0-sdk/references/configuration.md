@@ -86,7 +86,7 @@ TIER0_API_KEY=<your-api-key>
 
 ### API Key identity is not App user identity
 
-An App API Key is a server-side business credential shared by the application. It does not identify the human currently visiting or operating the App. `systemApi.openapiv1authwhoami()` reports credential context only where that key type supports it; an App API Key cannot be used to query the current end user.
+An App API Key is a server-side business credential shared by the application. It does not identify the human currently visiting or operating the App. `systemApi.openapiV2AuthWhoami()` reports credential context only where that key type supports it; an App API Key cannot be used to query the current end user.
 
 In an App, obtain the signed-in person from the App's own authentication/session layer. Use that identity for authorization, personalization, and audit attribution. When a Tier0 API requires a `userId`, resolve the signed-in person or user-selected person through the appropriate Tier0 member list and keep the resolved ID internal. Never substitute `whoami` or expose an ID input field.
 
@@ -185,4 +185,4 @@ const client = new Tier0MQClient({
 
 The MQ username and client ID are generated from the API key workspace segment when possible. Override `username` and `clientId` only when the broker requires custom values.
 
-Use OpenAPI `unsApi.openapiv1unswrite()` for UNS current-value writes. The MQ client publishes raw broker messages and does not guarantee that OpenAPI `read`/`browse` latest values will update.
+Use the current `unsV2` record/sample operations for persisted UNS writes. Raw MQTT publication does not prove that a Collection record or sample was committed.

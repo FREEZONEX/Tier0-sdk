@@ -78,7 +78,7 @@ function uploadFile(file: File, options?: UploadOptions): Promise<UploadResult>;
 
 标准上传虽然使用 HTTP `multipart/form-data` 提交文件，但它不是对象存储的 multipart 分片上传；后者仅指 [`multipart.md`](multipart.md) 中的切片、并发 PUT 和 complete 流程。
 
-`POST /openapi/v1/assets/files`，请求体（JSON）：
+`POST /openapi/v2/assets/files`，请求体（JSON）：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|

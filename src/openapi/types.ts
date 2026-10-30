@@ -4,23 +4,7 @@
  */
 
 export interface paths {
-    "/gw/reload": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getGwReload"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/auth/whoami": {
+    "/openapi/v2/info": {
         parameters: {
             query?: never;
             header?: never;
@@ -29,14 +13,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["postOpenapiV1AuthWhoami"];
+        /** info */
+        post: operations["PlatformV2Info"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/openapi/v1/flow/create": {
+    "/openapi/v2/auth/whoami": {
         parameters: {
             query?: never;
             header?: never;
@@ -45,162 +30,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["postOpenapiV1FlowCreate"];
+        /** whoami */
+        post: operations["PlatformV2Whoami"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/openapi/v1/flow/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1FlowDelete"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/flow/deploy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1FlowDeploy"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/flow/flowdata": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1FlowFlowdata"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/flow/get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1FlowGet"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/flow/list": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1FlowList"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/flow/nodes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1FlowNodes"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/flow/update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1FlowUpdate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/info": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1Info"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/notifications/get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * 查询消息通知发送状态
-         * @description 查询消息通知发送状态：按 messageId 查询，归属校验锚定发起请求的 API Key
-         */
-        post: operations["postOpenapiV1NotificationsGet"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/notifications/send": {
+    "/openapi/v2/notifications/send": {
         parameters: {
             query?: never;
             header?: never;
@@ -213,14 +51,14 @@ export interface paths {
          * 发送消息通知
          * @description 发送消息通知：向 Key 所属 Workspace 内的用户发送站内信，并按需触发终端提醒（Web Push/移动推送）
          */
-        post: operations["postOpenapiV1NotificationsSend"];
+        post: operations["PlatformV2SendNotification"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/openapi/v1/platform/getMembers": {
+    "/openapi/v2/notifications/get": {
         parameters: {
             query?: never;
             header?: never;
@@ -229,14 +67,18 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["postOpenapiV1PlatformGetMembers"];
+        /**
+         * 查询消息通知发送状态
+         * @description 查询消息通知发送状态：按 messageId 查询，归属校验锚定发起请求的 API Key
+         */
+        post: operations["PlatformV2GetNotification"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/openapi/v1/uns/browse": {
+    "/openapi/v2/platform/getMembers": {
         parameters: {
             query?: never;
             header?: never;
@@ -245,142 +87,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["postOpenapiV1UnsBrowse"];
+        /** getMembers */
+        post: operations["PlatformV2GetMembers"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/openapi/v1/uns/create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1UnsCreate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/uns/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1UnsDelete"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/uns/history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1UnsHistory"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/uns/read": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1UnsRead"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/uns/restore": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1UnsRestore"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/uns/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1UnsSearch"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/uns/update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1UnsUpdate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/uns/write": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["postOpenapiV1UnsWrite"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/openapi/v1/apps/access-members/list": {
+    "/openapi/v2/apps/access-members/list": {
         parameters: {
             query?: never;
             header?: never;
@@ -390,7 +105,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** listAccessMembers */
-        post: operations["openapi/V1/AppsListAccessMembers"];
+        post: operations["PlatformV2ListAccessMembers"];
         delete?: never;
         options?: never;
         head?: never;
@@ -401,522 +116,108 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AuthWhoamiResp */
-        AuthWhoamiResp: {
+        PlatformInfoResp: {
+            capabilities: string[];
+            mqttBroker: string;
+            name: string;
+            /** @description API version of the requested HTTP entry point */
+            version: string;
+        };
+        PlatformAuthWhoamiResp: {
             apiKeyName: string;
             email: string;
             keyPrefix: string;
             keyType: string;
             permissions: string[];
             roles: string[];
-            /** Format: int64 */
             userID: number;
             userName: string;
-            /** Format: int64 */
             workspaceID: number;
             workspaceName: string;
         };
-        /** BrowseReq */
-        BrowseReq: {
-            /** Format: boolean */
-            include_leaf_value?: boolean;
-            /** Format: boolean */
-            include_metadata?: boolean;
-            /** Format: int64 */
-            max_depth?: number;
-            path?: string;
-        };
-        /** BrowseResp */
-        BrowseResp: {
-            tree: components["schemas"]["OpenapiNodeInfo"][];
-        };
-        /** CreateResp */
-        CreateResp: {
-            results: components["schemas"]["OpenapiCreateResult"][];
-            /** Format: boolean */
-            success: boolean;
-        };
-        /** FlowCreateReq */
-        FlowCreateReq: {
-            description?: string;
-            flowName: string;
-            flowType: string;
-            template?: string;
-        };
-        /** FlowCreateResp */
-        FlowCreateResp: {
-            brokerID: string;
-            /** Format: int64 */
-            id: number;
-        };
-        /** FlowDataResp */
-        FlowDataResp: {
-            flows: Record<string, never>[];
-            rev: string;
-        };
-        /** FlowDeleteReq */
-        FlowDeleteReq: {
-            ids: number[];
-        };
-        /** FlowDeployReq */
-        FlowDeployReq: {
-            flowsJson: string;
-            /** Format: int64 */
-            id: number;
-        };
-        /** FlowDeployResp */
-        FlowDeployResp: {
-            flowId: string;
-        };
-        /** FlowEmptyResp */
-        FlowEmptyResp: {
-            /** Format: boolean */
-            success: boolean;
-        };
-        /** FlowGetReq */
-        FlowGetReq: {
-            /** Format: int64 */
-            id: number;
-        };
-        /** FlowInfo */
-        FlowInfo: {
-            /** Format: int64 */
-            createdTime: number;
-            /** Format: int64 */
-            currentVersionId: number;
-            currentVersionName: string;
-            currentVersionType: string;
-            description: string;
-            flowId: string;
-            flowName: string;
-            flowStatus: string;
-            flowType: string;
-            /** Format: int64 */
-            id: number;
-            /** Format: int64 */
-            isFavorite: number;
-            template: string;
-            /** Format: int64 */
-            updatedTime: number;
-        };
-        /** FlowListReq */
-        FlowListReq: {
-            flowType?: string;
-            keyword?: string;
-        };
-        /** FlowListResp */
-        FlowListResp: {
-            list: components["schemas"]["FlowInfo"][];
-        };
-        /** FlowNodesReq */
-        FlowNodesReq: {
-            flowType: string;
-        };
-        /** FlowNodesResp */
-        FlowNodesResp: {
-            nodes: components["schemas"]["NodeRedNodeSet"][];
-        };
-        /** FlowUpdateReq */
-        FlowUpdateReq: {
-            description?: string;
-            flowName?: string;
-            /** Format: int64 */
-            id: number;
-            /** Format: int64 */
-            isFavorite?: number;
-            template?: string;
-        };
-        /** GetNotificationReq */
-        GetNotificationReq: {
-            messageId: string;
-        };
-        /** GetNotificationResp */
-        GetNotificationResp: {
-            messageId: string;
+        PlatformSendNotificationReq: {
+            /** @description SDK 提醒渠道：web 覆盖 Web 与 Desktop，mobile 覆盖 Mobile；不传时 SDK 展开为 [web, mobile]；[] 仅创建站内信；显式渠道去重且不补充其他渠道 */
+            channels?: ("web" | "mobile")[];
+            content: string;
+            idempotencyKey: string;
+            link?: string;
+            mode?: string;
+            recipientUserId: string;
+            sender?: components["schemas"]["PlatformNotificationSender"];
+            /** @description 已废弃：过渡期作 sender.name 别名（sender.name 优先），后续移除 */
+            source?: string;
+            title: string;
             type: string;
-            /**
-             * @description accepted 排队中 / sent 已送达 / failed 终态失败
-             * @enum {string}
-             */
-            status: "accepted" | "sent" | "failed";
-            createdAt: string;
-            completedAt?: string;
-            errorCode?: string;
-            message?: string;
         };
-        /** HistoryAggregation */
-        HistoryAggregation: {
-            field?: string;
-            fields?: components["schemas"]["HistoryAggregationField"][];
-            function?: string;
-            interval: string;
-        };
-        /** HistoryAggregationField */
-        HistoryAggregationField: {
-            function?: string;
-            name: string;
-        };
-        /** HistoryQueryMeta */
-        HistoryQueryMeta: {
-            /** Format: int64 */
-            actualIntervalMs?: number;
-            /** Format: boolean */
-            aggregated: boolean;
-            /** Format: int64 */
-            rawTotal: number;
-            /** Format: int64 */
-            requestedIntervalMs?: number;
-            /** Format: int64 */
-            returnedTotal: number;
-            /** Format: boolean */
-            sampled: boolean;
-            strategy?: string;
-            /** Format: boolean */
-            totalExact: boolean;
-            /** Format: boolean */
-            hasMore: boolean;
-        };
-        /** HistoryReq */
-        HistoryReq: {
-            aggregation?: components["schemas"]["HistoryAggregation"];
-            end_time: string;
-            /** Format: int64 */
-            page?: number;
-            /** Format: int64 */
-            size?: number;
-            start_time: string;
-            topics: string[];
-            countMode?: string;
-        };
-        /** HistoryResp */
-        HistoryResp: {
-            /** Format: int64 */
-            page: number;
-            results: components["schemas"]["OpenapiHistoryItem"][];
-            /** Format: int64 */
-            size: number;
-            /** Format: boolean */
-            success: boolean;
-            /** Format: int64 */
-            total: number;
-            /** Format: boolean */
-            totalExact: boolean;
-        };
-        /** InfoReq */
-        InfoReq: Record<string, never>;
-        /** NamespaceNode */
-        NamespaceNode: {
-            alias?: string;
-            children?: components["schemas"]["NamespaceNode"][];
-            description?: string;
-            displayName?: string;
-            /** Format: boolean */
-            enableHistory?: boolean;
-            extendProperties?: {
-                [key: string]: string;
-            };
-            fields?: components["schemas"]["SchemaField"][];
-            name: string;
-            topicType?: string;
-            type?: string;
-        };
-        /** NodeCreateReq */
-        NodeCreateReq: {
-            namespace: components["schemas"]["NamespaceNode"][];
-        };
-        /** NodeDeleteReq */
-        NodeDeleteReq: {
-            /** Format: boolean */
-            hard_delete?: boolean;
-            topics: string[];
-        };
-        /** NodeRedNodeSet */
-        NodeRedNodeSet: {
-            /** Format: boolean */
-            enabled: boolean;
-            id: string;
-            module: string;
-            name: string;
-            types: string[];
-            version: string;
-        };
-        /** NodeRestoreReq */
-        NodeRestoreReq: {
-            path: string;
-        };
-        /** NodeUpdateReq */
-        NodeUpdateReq: {
-            alias?: string;
-            description?: string;
-            displayName?: string;
-            /** Format: boolean */
-            enableHistory?: boolean;
-            extendProperties?: {
-                [key: string]: string;
-            };
-            fields?: components["schemas"]["SchemaField"][];
-            name?: string;
-            path: string;
-            updateMask?: string[];
-        };
-        /** NotificationError */
-        NotificationError: {
-            /** @description 机器可读错误码：INVALID_REQUEST / INVALID_NOTIFICATION_TYPE / INVALID_CREDENTIAL / NOTIFICATION_NOT_ALLOWED / RECIPIENT_NOT_AVAILABLE / CONTENT_LIMIT_EXCEEDED / NOTIFICATION_RATE_LIMITED / IDEMPOTENCY_KEY_CONFLICT / MESSAGE_NOT_FOUND / INTERNAL_ERROR */
-            errorCode: string;
-            /** @description 人读错误信息 */
-            message: string;
-        };
-        /** NotificationSender */
-        NotificationSender: {
-            /**
-             * @description 枚举 app/other，缺省 other
-             * @default other
-             * @enum {string}
-             */
-            type?: "app" | "other";
-            /** @description app 必填=appId（agent-platform UUID）；other 可选；字符集 [0-9a-zA-Z-]{1,128} */
+        PlatformNotificationSender: {
+            /** @description app 必填=appId（agent-platform UUID）；other 可选；system 可选；字符集 [0-9a-zA-Z-]{1,128} */
             id?: string;
-            /** @description 人读显示名（接替废弃的 source），≤100字符 */
-            name?: string;
-            /** @description 类型专属附加信息（app: {"projectId":"..."}），序列化后≤500字节 */
+            /** @description 类型专属附加信息，序列化后≤500字节 */
             meta?: {
                 [key: string]: string;
             };
+            /** @description 人读显示名（接替废弃的 source），≤100字符 */
+            name?: string;
+            /**
+             * @description 枚举 app/other/system，缺省 other；system=平台内部服务，仅 usage_type=internal 的 API key 可用（否则 400），建信归 workspace 分组（System tab）
+             * @default other
+             * @enum {string}
+             */
+            type?: "app" | "other" | "system";
         };
-        /** OpenapiCreateResult */
-        OpenapiCreateResult: {
-            error?: components["schemas"]["OpenapiItemError"];
-            /** Format: boolean */
-            success: boolean;
-            topic: string;
+        PlatformSendNotificationResp: {
+            createdAt: string;
+            messageId: string;
+            status: string;
         };
-        /** OpenapiEmptyResp */
-        OpenapiEmptyResp: {
-            /** Format: boolean */
-            success: boolean;
-        };
-        /** OpenapiHistoryItem */
-        OpenapiHistoryItem: {
-            error?: components["schemas"]["OpenapiItemError"];
-            result?: components["schemas"]["OpenapiHistoryResult"];
-            /** Format: boolean */
-            success: boolean;
-            topic: string;
-        };
-        /** OpenapiHistoryResult */
-        OpenapiHistoryResult: {
-            meta?: components["schemas"]["HistoryQueryMeta"];
-            values: components["schemas"]["OpenapiHistoryValue"][];
-        };
-        /** OpenapiHistoryValue */
-        OpenapiHistoryValue: {
-            quality: string;
-            /** Format: int64 */
-            timeStamp: number;
-            value?: Record<string, never>;
-        };
-        /** OpenapiItemError */
-        OpenapiItemError: {
-            /** Format: int64 */
-            code: number;
+        PlatformNotificationError: {
+            errorCode: string;
             message: string;
         };
-        /** OpenapiNodeInfo */
-        OpenapiNodeInfo: {
-            alias?: string;
-            /** Format: int64 */
-            bindEventFlowID?: number;
-            /** Format: int64 */
-            bindFlowID?: number;
-            children?: components["schemas"]["OpenapiNodeInfo"][];
-            description?: string;
-            displayName?: string;
-            /** Format: boolean */
-            enableHistory?: boolean;
-            extendProperties?: {
-                [key: string]: string;
-            };
-            fields?: components["schemas"]["SchemaField"][];
-            /** Format: int64 */
-            id: number;
-            name: string;
-            path: string;
-            payload?: components["schemas"]["OpenapiVQT"];
-            topicType: string;
+        PlatformGetNotificationReq: {
+            messageId: string;
+        };
+        PlatformGetNotificationResp: {
+            completedAt?: string;
+            createdAt: string;
+            errorCode?: string;
+            message?: string;
+            messageId: string;
+            status: string;
             type: string;
         };
-        /** OpenapiReadItem */
-        OpenapiReadItem: {
-            error?: components["schemas"]["OpenapiItemError"];
-            metadata?: components["schemas"]["OpenapiNodeInfo"];
-            result?: components["schemas"]["OpenapiVQT"];
-            /** Format: boolean */
-            success: boolean;
-            topic: string;
-        };
-        /** OpenapiVQT */
-        OpenapiVQT: {
-            quality: string;
-            /** Format: int64 */
-            timeStamp: number;
-            value?: Record<string, never>;
-        };
-        /** OpenapiWriteResult */
-        OpenapiWriteResult: {
-            error?: components["schemas"]["OpenapiItemError"];
-            /** Format: boolean */
-            success: boolean;
-            topic: string;
-        };
-        /** PlatformGetMembersReq */
-        PlatformGetMembersReq: {
+        PlatformPlatformGetMembersReq: {
             keyword?: string;
-            /** Format: int64 */
             page?: number;
             roleKey?: string;
             roles?: string[];
-            /** Format: int64 */
             size?: number;
             statuses?: string[];
             updatedAtEnd?: string;
             updatedAtStart?: string;
         };
-        /** PlatformMemberResp */
-        PlatformMemberResp: {
+        PlatformPlatformMembersResp: {
+            list: components["schemas"]["PlatformPlatformMemberResp"][];
+            page: number;
+            size: number;
+            total: number;
+        };
+        PlatformPlatformMemberResp: {
             email?: string;
             nickName?: string;
-            roles: components["schemas"]["PlatformMemberRoleResp"][];
+            roles: components["schemas"]["PlatformPlatformMemberRoleResp"][];
             status: string;
             updatedAt: string;
             userId: string;
             userName?: string;
         };
-        /** PlatformMemberRoleResp */
-        PlatformMemberRoleResp: {
+        PlatformPlatformMemberRoleResp: {
             description?: string;
             roleId: string;
             roleKey: string;
             roleName?: string;
         };
-        /** PlatformMembersResp */
-        PlatformMembersResp: {
-            list: components["schemas"]["PlatformMemberResp"][];
-            /** Format: int64 */
-            page: number;
-            /** Format: int64 */
-            size: number;
-            /** Format: int64 */
-            total: number;
-        };
-        /** ReadReq */
-        ReadReq: {
-            /** Format: boolean */
-            include_leaf_value?: boolean;
-            /** Format: boolean */
-            include_metadata?: boolean;
-            topics: string[];
-        };
-        /** ReadResp */
-        ReadResp: {
-            results: components["schemas"]["OpenapiReadItem"][];
-            /** Format: boolean */
-            success: boolean;
-        };
-        /** Response */
-        Response: {
-            message: string;
-        };
-        /** SchemaField */
-        SchemaField: {
-            name: string;
-            type: string;
-            unit?: string;
-        };
-        /** SearchReq */
-        SearchReq: {
-            /** Format: boolean */
-            include_leaf_value?: boolean;
-            /** Format: boolean */
-            include_metadata?: boolean;
-            keyword?: string;
-            /** Format: int64 */
-            page?: number;
-            path_prefix?: string;
-            /** Format: int64 */
-            size?: number;
-            topicType?: string;
-        };
-        /** SearchResp */
-        SearchResp: {
-            objects: components["schemas"]["OpenapiNodeInfo"][];
-            /** Format: int64 */
-            page: number;
-            /** Format: int64 */
-            size: number;
-            /** Format: int64 */
-            total: number;
-        };
-        /** SendNotificationReq */
-        SendNotificationReq: {
-            /** @description 收件人用户 ID（大整数按 string 承载，避免 JS 精度丢失） */
-            recipientUserId: string;
-            /**
-             * @description 消息类型，本期仅接受 "inbox"
-             * @enum {string}
-             */
-            type: "inbox";
-            /** @description 标题，1-50 字符 */
-            title: string;
-            /** @description 内容，1-800 字符 */
-            content: string;
-            /** @description 幂等键，≤128 字符，锚定 API Key，24 小时窗口 */
-            idempotencyKey: string;
-            /** @description 已废弃：过渡期作 sender.name 别名（sender.name 优先） */
-            source?: string;
-            /**
-             * @description test/live，缺省 live；test 模式由响应/MessageInfo.mode 字段标识，标题不加前缀
-             * @default live
-             * @enum {string}
-             */
-            mode?: "test" | "live";
-            /** @description SDK 提醒渠道：web 覆盖 Web 与 Desktop，mobile 覆盖 Mobile；不传时 SDK 展开为 [web, mobile]；[] 仅创建站内信；显式渠道去重且不补充其他渠道 */
-            channels?: ("web" | "mobile")[];
-            sender?: components["schemas"]["NotificationSender"];
-            /** @description Open 跳转地址，可选；非空时须 https:// 或 / 开头、≤500 字符；不含任何空白/控制/不可见格式字符（含 U+00A0、U+200B、U+FEFF 等非 ASCII 形态），不含反斜杠；协议相对地址 //host 及其反斜杠变体视为跨站绝对地址一并拒绝。缺省=本字段不提供跳转（若 sender.type=app 且 id 与 meta.projectId 齐全，仍会渲染「打开发送 App」按钮；两者皆无才不渲染）。自报值仅导航提示，不可作安全判断依据 */
-            link?: string;
-        };
-        /** SendNotificationResp */
-        SendNotificationResp: {
-            messageId: string;
-            /**
-             * @description 首次提交返回 accepted（站内信异步创建中）；同一 idempotencyKey 在 24h 窗口内重放时返回已有记录的当前状态，可能为终态 sent/failed
-             * @enum {string}
-             */
-            status: "accepted" | "sent" | "failed";
-            createdAt: string;
-        };
-        /** WriteItem */
-        WriteItem: {
-            /** Format: int64 */
-            timeStamp?: number;
-            topic: string;
-            value?: Record<string, never>;
-        };
-        /** WriteReq */
-        WriteReq: {
-            /** Format: int64 */
-            qos?: number;
-            /** Format: boolean */
-            retain?: boolean;
-            writes: components["schemas"]["WriteItem"][];
-        };
-        /** WriteResp */
-        WriteResp: {
-            results: components["schemas"]["OpenapiWriteResult"][];
-            /** Format: boolean */
-            success: boolean;
-        };
-        AppAccessMembersListReq: {
+        PlatformAppAccessMembersListReq: {
             appId: string;
             /** @description 毫秒，闭区间，精度为秒 */
             grantedAtEnd?: number;
@@ -927,28 +228,40 @@ export interface components {
             roleKeys?: string[];
             size?: number;
         };
-        AppAccessMembersListResp: {
+        PlatformAppAccessMembersListResp: {
             /** @description 1:所有 active 成员都可访问 2:按角色授权 */
             allActiveMembers: number;
             appId: string;
-            list: components["schemas"]["AppAccessMemberResp"][];
+            list: components["schemas"]["PlatformAppAccessMemberResp"][];
             page: number;
             productionVersionId?: string;
             /** @description 1:已发布 2:未发布 */
             published: number;
-            roles: components["schemas"]["AppAccessRoleResp"][];
+            roles: components["schemas"]["PlatformAppAccessRoleResp"][];
             size: number;
             total: number;
         };
-        AppAccessMemberResp: {
+        PlatformAppAccessMemberResp: {
             email?: string;
             /** @description 毫秒 */
             grantedAt: number;
-            roles: components["schemas"]["AppAccessMemberRoleResp"][];
+            roles: components["schemas"]["PlatformAppAccessMemberRoleResp"][];
             userId: string;
             userName?: string;
         };
-        AppAccessRoleResp: {
+        PlatformAppAccessMemberRoleResp: {
+            roleId: string;
+            roleKey: string;
+            roleName: string;
+            sources: components["schemas"]["PlatformAppAccessRoleSourceResp"][];
+        };
+        PlatformAppAccessRoleSourceResp: {
+            groupId?: string;
+            groupName?: string;
+            /** @description direct / group */
+            type: string;
+        };
+        PlatformAppAccessRoleResp: {
             description?: string;
             memberCount: number;
             roleId: string;
@@ -956,18 +269,6 @@ export interface components {
             roleName: string;
             /** @description active / retired */
             status: string;
-        };
-        AppAccessMemberRoleResp: {
-            roleId: string;
-            roleKey: string;
-            roleName: string;
-            sources: components["schemas"]["AppAccessRoleSourceResp"][];
-        };
-        AppAccessRoleSourceResp: {
-            groupId?: string;
-            groupName?: string;
-            /** @description direct / group */
-            type: string;
         };
     };
     responses: never;
@@ -978,7 +279,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getGwReload: {
+    PlatformV2Info: {
         parameters: {
             query?: never;
             header?: never;
@@ -987,27 +288,21 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description A successful response. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["Response"];
-                        /** 返回的消息 */
-                        msg?: string;
+                        code: number;
+                        msg: string;
+                        data: components["schemas"]["PlatformInfoResp"];
                     };
                 };
             };
         };
     };
-    postOpenapiV1AuthWhoami: {
+    PlatformV2Whoami: {
         parameters: {
             query?: never;
             header?: never;
@@ -1016,27 +311,21 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description A successful response. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["AuthWhoamiResp"];
-                        /** 返回的消息 */
-                        msg?: string;
+                        code: number;
+                        msg: string;
+                        data: components["schemas"]["PlatformAuthWhoamiResp"];
                     };
                 };
             };
         };
     };
-    postOpenapiV1FlowCreate: {
+    PlatformV2SendNotification: {
         parameters: {
             query?: never;
             header?: never;
@@ -1045,450 +334,111 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["FlowCreateReq"];
+                "application/json": components["schemas"]["PlatformSendNotificationReq"];
             };
         };
         responses: {
-            /** @description A successful response. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["FlowCreateResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
+                    "application/json": components["schemas"]["PlatformSendNotificationResp"];
                 };
             };
-        };
-    };
-    postOpenapiV1FlowDelete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FlowDeleteReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["FlowEmptyResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1FlowDeploy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FlowDeployReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["FlowDeployResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1FlowFlowdata: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FlowGetReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["FlowDataResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1FlowGet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FlowGetReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["FlowInfo"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1FlowList: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FlowListReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["FlowListResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1FlowNodes: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FlowNodesReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["FlowNodesResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1FlowUpdate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FlowUpdateReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["FlowEmptyResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1Info: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["InfoReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1NotificationsGet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GetNotificationReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetNotificationResp"];
-                };
-            };
-            /** @description INVALID_REQUEST：参数校验失败 */
+            /** @description Platform operation failed. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotificationError"];
+                    "application/json": components["schemas"]["PlatformNotificationError"];
                 };
             };
-            /** @description INVALID_CREDENTIAL：API Key 缺失或无效 */
+            /** @description Platform operation failed. */
             401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotificationError"];
+                    "application/json": components["schemas"]["PlatformNotificationError"];
                 };
             };
-            /** @description MESSAGE_NOT_FOUND：messageId 不存在或不属于当前 API Key */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotificationError"];
-                };
-            };
-            /** @description INTERNAL_ERROR：内部错误 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotificationError"];
-                };
-            };
-        };
-    };
-    postOpenapiV1NotificationsSend: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SendNotificationReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SendNotificationResp"];
-                };
-            };
-            /** @description INVALID_REQUEST / INVALID_NOTIFICATION_TYPE：参数校验失败（含 link 前缀/长度/空白控制字符非法）或 type 非 inbox */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotificationError"];
-                };
-            };
-            /** @description INVALID_CREDENTIAL：API Key 缺失或无效 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotificationError"];
-                };
-            };
-            /** @description NOTIFICATION_NOT_ALLOWED：Key 无 notifications:send 权限 */
+            /** @description Platform operation failed. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotificationError"];
+                    "application/json": components["schemas"]["PlatformNotificationError"];
                 };
             };
-            /** @description RECIPIENT_NOT_AVAILABLE：收件人不是 Key 所属 Workspace 的 active 成员 */
+            /** @description Platform operation failed. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotificationError"];
+                    "application/json": components["schemas"]["PlatformNotificationError"];
                 };
             };
-            /** @description IDEMPOTENCY_KEY_CONFLICT：同一 idempotencyKey 但请求内容不同 */
+            /** @description Platform operation failed. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotificationError"];
+                    "application/json": components["schemas"]["PlatformNotificationError"];
                 };
             };
-            /** @description CONTENT_LIMIT_EXCEEDED：标题/内容/sender 超长 */
+            /** @description Platform operation failed. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotificationError"];
+                    "application/json": components["schemas"]["PlatformNotificationError"];
                 };
             };
-            /** @description NOTIFICATION_RATE_LIMITED：触发限流 */
+            /** @description Platform operation failed. */
             429: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotificationError"];
+                    "application/json": components["schemas"]["PlatformNotificationError"];
                 };
             };
-            /** @description INTERNAL_ERROR：内部错误 */
+            /** @description Platform operation failed. */
             500: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotificationError"];
+                    "application/json": components["schemas"]["PlatformNotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformNotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformNotificationError"];
                 };
             };
         };
     };
-    postOpenapiV1PlatformGetMembers: {
+    PlatformV2GetNotification: {
         parameters: {
             query?: never;
             header?: never;
@@ -1497,31 +447,138 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PlatformGetMembersReq"];
+                "application/json": components["schemas"]["PlatformGetNotificationReq"];
             };
         };
         responses: {
-            /** @description A successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformGetNotificationResp"];
+                };
+            };
+            /** @description Platform operation failed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformNotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformNotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformNotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformNotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformNotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformNotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformNotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformNotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformNotificationError"];
+                };
+            };
+            /** @description Platform operation failed. */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformNotificationError"];
+                };
+            };
+        };
+    };
+    PlatformV2GetMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformPlatformGetMembersReq"];
+            };
+        };
+        responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["PlatformMembersResp"];
-                        /** 返回的消息 */
-                        msg?: string;
+                        code: number;
+                        msg: string;
+                        data: components["schemas"]["PlatformPlatformMembersResp"];
                     };
                 };
             };
         };
     };
-    postOpenapiV1UnsBrowse: {
+    PlatformV2ListAccessMembers: {
         parameters: {
             query?: never;
             header?: never;
@@ -1530,313 +587,20 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["BrowseReq"];
+                "application/json": components["schemas"]["PlatformAppAccessMembersListReq"];
             };
         };
         responses: {
-            /** @description A successful response. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["BrowseResp"];
-                        /** 返回的消息 */
-                        msg?: string;
+                        code: number;
+                        msg: string;
+                        data: components["schemas"]["PlatformAppAccessMembersListResp"];
                     };
-                };
-            };
-        };
-    };
-    postOpenapiV1UnsCreate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NodeCreateReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["CreateResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1UnsDelete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NodeDeleteReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["OpenapiEmptyResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1UnsHistory: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HistoryReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["HistoryResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1UnsRead: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReadReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["ReadResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1UnsRestore: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NodeRestoreReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["OpenapiEmptyResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1UnsSearch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SearchReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["SearchResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1UnsUpdate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NodeUpdateReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["OpenapiEmptyResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    postOpenapiV1UnsWrite: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WriteReq"];
-            };
-        };
-        responses: {
-            /** @description A successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * 返回code
-                         * @default 200
-                         */
-                        code?: number;
-                        data?: components["schemas"]["WriteResp"];
-                        /** 返回的消息 */
-                        msg?: string;
-                    };
-                };
-            };
-        };
-    };
-    "openapi/V1/AppsListAccessMembers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AppAccessMembersListReq"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AppAccessMembersListResp"];
                 };
             };
         };

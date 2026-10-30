@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk
 version: 0.3.9
-description: "Tier0 SDK 单根聚合路由及 TypeScript/JavaScript 共享配置。用于 App/Stream requests 调用与 messages 发布订阅、Tier0 配置、UNS 当前数据、历史数据/history、趋势图/trend、时间范围查询、MQTT 实时订阅、Flow/Node-RED HTTP 接口、成员、通知和系统能力；当应用需要文件上传/upload、附件/attachment、头像/avatar、文件导入/import、生成或导出文件/报表、持久化文件、访问链接、下载或删除时也必须触发，即使用户未提到 Tier0、SDK、S3 或对象存储。业务运行时文件必须路由到 tier0-sdk-files 并使用 @tier0/sdk/files，不能持久化到 Sandbox/本地目录、public/ 或数据库 Blob。源码、随版本发布的静态资源、构建产物和可丢弃的临时处理文件除外。"
+description: "Tier0 SDK 单根聚合路由及 TypeScript/JavaScript 共享配置。用于 App/Stream requests 调用与 messages 发布订阅、Tier0 配置、UNS 当前数据、历史数据/history、趋势图/trend、时间范围查询、MQTT 实时订阅、Source/Stream 数据采集、成员、通知和系统能力；当应用需要文件上传/upload、附件/attachment、头像/avatar、文件导入/import、生成或导出文件/报表、持久化文件、访问链接、下载或删除时也必须触发，即使用户未提到 Tier0、SDK、S3 或对象存储。业务运行时文件必须路由到 tier0-sdk-files 并使用 @tier0/sdk/files，不能持久化到 Sandbox/本地目录、public/ 或数据库 Blob。源码、随版本发布的静态资源、构建产物和可丢弃的临时处理文件除外。"
 metadata:
   requires:
     npm: ["@tier0/sdk"]
@@ -31,36 +31,19 @@ This rule does not apply to source files, static assets intentionally shipped wi
 ## 可调用接口总览（OpenAPI，`@tier0/sdk/openapi`）
 
 > 完整接口清单（方法名 → Path）。AI 据此选接口，详细参数/示例见对应领域 Skill 与
-> 安装包内的类型声明 `@tier0/sdk/openapi`（`dist/esm/openapi/types.d.ts`，含 `FlowInfo`、
-> `NodeRedNodeSet` 等类型）。方法均经
+> 安装包内的类型声明 `@tier0/sdk/openapi`（`dist/esm/openapi/types.d.ts`）。方法均经
 > `getClient()` 自动鉴权（`Authorization: Bearer <TIER0_API_KEY>` + `X-API-Key`）。
 
 | 领域 | 方法 | Path |
 |---|---|---|
-| system | `systemApi.openapiv1info` | `POST /openapi/v1/info` |
-| system | `systemApi.openapiv1authwhoami` | `POST /openapi/v1/auth/whoami` |
-| system | `systemApi.gwreload` | `GET /gw/reload` |
-| flow | `flowApi.openapiv1flowlist` | `POST /openapi/v1/flow/list` |
-| flow | `flowApi.openapiv1flowget` | `POST /openapi/v1/flow/get` |
-| flow | `flowApi.openapiv1flowcreate` | `POST /openapi/v1/flow/create` |
-| flow | `flowApi.openapiv1flowupdate` | `POST /openapi/v1/flow/update` |
-| flow | `flowApi.openapiv1flowdelete` | `POST /openapi/v1/flow/delete` |
-| flow | `flowApi.openapiv1flowflowdata` | `POST /openapi/v1/flow/flowdata` |
-| flow | `flowApi.openapiv1flownodes` | `POST /openapi/v1/flow/nodes` |
-| flow | `flowApi.openapiv1flowdeploy` | `POST /openapi/v1/flow/deploy` |
-| uns | `unsApi.openapiv1unsbrowse` | `POST /openapi/v1/uns/browse` |
-| uns | `unsApi.openapiv1unsread` | `POST /openapi/v1/uns/read` |
-| uns | `unsApi.openapiv1unswrite` | `POST /openapi/v1/uns/write` |
-| uns | `unsApi.openapiv1unshistory` | `POST /openapi/v1/uns/history` |
-| uns | `unsApi.openapiv1unssearch` | `POST /openapi/v1/uns/search` |
-| uns | `unsApi.openapiv1unscreate` | `POST /openapi/v1/uns/create` |
-| uns | `unsApi.openapiv1unsupdate` | `POST /openapi/v1/uns/update` |
-| uns | `unsApi.openapiv1unsdelete` | `POST /openapi/v1/uns/delete` |
-| uns | `unsApi.openapiv1unsrestore` | `POST /openapi/v1/uns/restore` |
-| apps | `appsApi.openapiV1Appslistaccessmembers` | `POST /openapi/v1/apps/access-members/list` |
-| platform | `platformApi.openapiv1platformgetmembers` | `POST /openapi/v1/platform/getMembers` |
-| notifications | `notificationsApi.openapiv1notificationssend` | `POST /openapi/v1/notifications/send` |
-| notifications | `notificationsApi.openapiv1notificationsget` | `POST /openapi/v1/notifications/get` |
+| system | `systemApi.openapiV2Info` | `POST /openapi/v2/info` |
+| system | `systemApi.openapiV2AuthWhoami` | `POST /openapi/v2/auth/whoami` |
+| apps | `appsApi.openapiV2AppsAccessMembersList` | `POST /openapi/v2/apps/access-members/list` |
+| platform | `platformApi.openapiV2PlatformGetmembers` | `POST /openapi/v2/platform/getMembers` |
+| notifications | `notificationsApi.openapiV2NotificationsSend` | `POST /openapi/v2/notifications/send` |
+| notifications | `notificationsApi.openapiV2NotificationsGet` | `POST /openapi/v2/notifications/get` |
+
+Cloud UNS operations are exported as `unsV2` from `@tier0/sdk/cloud` or `@tier0/sdk`. Retired Flow, old Namespace and gateway-reload APIs have no aliases; use @tier0/sdk-v2 for Source/Stream management and current Collection contracts for App data.
 
 ## Domain Routing
 
@@ -70,11 +53,10 @@ This rule does not apply to source files, static assets intentionally shipped wi
 | App history, trend chart, bounded time-range data, aggregate history, or MQTT reconnect backfill | [`tier0-sdk-uns/references/history.md`](tier0-sdk-uns/references/history.md); for MonoApp also read [`references/scaffold-monoapp.md`](references/scaffold-monoapp.md) |
 | App/Stream request describe/invoke/discover, logical-topic messages publish/subscribe, trusted App runtime | [`tier0-sdk-streams/SKILL.md`](tier0-sdk-streams/SKILL.md) |
 | UNS telemetry realtime receive, MQTT subscribe/publish, connection lifecycle | [`tier0-sdk-mq/SKILL.md`](tier0-sdk-mq/SKILL.md) |
-| Flow/Node-RED create, inspect, edit, deploy, delete, or expose/invoke an `http in` endpoint or webhook | [`tier0-sdk-flow/SKILL.md`](tier0-sdk-flow/SKILL.md) |
 | File upload, attachment, avatar, import, generated/exported file or report, persistent storage, access URL, download, or deletion—even without an explicit SDK request | [`tier0-sdk-files/SKILL.md`](tier0-sdk-files/SKILL.md) |
 | Cloud App access members or platform/workspace members and roles | [`tier0-sdk-members/SKILL.md`](tier0-sdk-members/SKILL.md) |
 | Select a recipient by human identity, send an in-app notification (inbox + optional web/mobile push), or query delivery status. Never ask an end user for a user ID | [`tier0-sdk-notifications/SKILL.md`](tier0-sdk-notifications/SKILL.md) |
-| API-key credential diagnostics (not an App end-user identity), service info/capabilities, gateway reload | [`tier0-sdk-system/SKILL.md`](tier0-sdk-system/SKILL.md) |
+| API-key credential diagnostics (not an App end-user identity), service info/capabilities | [`tier0-sdk-system/SKILL.md`](tier0-sdk-system/SKILL.md) |
 | Client configuration, generic OpenAPI, React/Vue, MonoApp | This Skill and its `references/` |
 
 ## Package Entry Points
@@ -117,4 +99,4 @@ This rule does not apply to source files, static assets intentionally shipped wi
 4. No platform-supplied host, credential, workspace, or project ID is hard-coded.
 5. SDK calls stay in the service/data layer and UI components receive domain objects.
 6. MonoApp attachment downloads resolve `filePath` from an authorized business record, stream `downloadFile().response.body` through the app route, and use Blob plus `<a download>` in the UI.
-7. App history and trend queries call `openapiv1unshistory` from a server-side service, use server-owned exact topic paths, and return UI-facing DTOs; realtime updates use MQTT instead of polling history.
+7. App history and trend queries use `unsV2.sampleFind` or `unsV2.sampleAggregate` with verified Collection/record IDs and bounded time ranges; return UI-facing DTOs and use the declared subscription contract for live updates.

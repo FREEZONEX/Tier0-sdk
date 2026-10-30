@@ -40,9 +40,9 @@ describe('shared Cloud and Enterprise discovery vectors', () => {
     expect(validateSchema(response), JSON.stringify(validateSchema.errors)).toBe(true);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(response))));
     const actual = await client().discover();
-    expect(actual.capabilities[0].enabled).toBe(false);
+    expect(actual.capabilities[0].state).toBe('unavailable');
     expect(actual.capabilities[0].operations).toHaveLength(2);
     expect(actual.capabilities[0].operations?.[0]).not.toHaveProperty('internal');
-    expect(actual.capabilities[0].operations?.[0].enabled).toBe(true);
+    expect(actual.capabilities[0].operations?.[0].state).toBe('ready');
   });
 });

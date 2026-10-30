@@ -1,0 +1,7 @@
+{
+  "repository": "FREEZONEX/Tier0-Backend",
+  "revision": "de5cd3c6cdb2b571b72012b0a76f5812139b1c22",
+  "source": "service/gwsvr/internal/handler/openapi/v2/unsv2/swagger_generated.json",
+  "sourceSHA256": "1c105cfdb49307a6142917f0275f0b06f2f6ea43f91a66654e052323f54e00b5",
+  "snapshotSHA256": "4fa658ccfc5edf448a189da0e382c13452051f5028f9ebfba87bf2ebf648235f"
+}

@@ -1,14 +1,15 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Tier0 OpenAPI",
-    "version": "v1"
+    "title": "Tier0 Cloud OpenAPI v2",
+    "version": "5.0.0",
+    "description": "云端集合、业务数据、时序数据及数据源、处理流与 App 策略管理接口。使用绑定工作空间的 API Key。\n\n### UNS 接口错误\n各接口只展开成功结果；失败统一使用 default 响应。HTTP 状态码：401 未认证、403 无权限或未开通、404 对象不存在、409 状态、版本、唯一键冲突或凭据已变化、413 内容超限、422 参数或业务校验失败、429 过载、500 服务端错误、503 暂不可用、504 查询超时。具体原因以 error.code 为准。error.execution 说明执行到哪一步：notStarted、rolledBack 可证明没有副作用，committed 表示已提交，unknown 只出现在写操作上、表示无法证明是否提交。error.retry.safe=true 时可原样重发（写入复用原幂等键），retry.afterMs 与 Retry-After 给出最短等待时间；safe=false 时先修正请求或恢复授权。\n\n### 平台接口\n通知、文件、成员、身份、MQTT 凭证和 Agent 接口复用已有业务规则。平台接口保留各自响应格式：文件下载返回 302，通知、能力发现、Stream 请求及消息连接直接返回业务 JSON，其他平台接口使用 code/msg/data。上面的 UNS 错误格式仅适用于 /uns/ 路径。"
   },
   "paths": {
-    "/openapi/v1/stream-requests/discover": {
+    "/openapi/v2/stream-requests/discover": {
       "post": {
         "description": "发现可见Stream 请求合同，只公开Stream 请求合同，不返回内部运行绑定",
-        "operationId": "streamRequestDiscover",
+        "operationId": "PlatformV2StreamRequestDiscover",
         "requestBody": {
           "content": {
             "application/json": {
@@ -30,18 +31,129 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
           }
         },
         "summary": "Discover Stream requests",
         "tags": [
-          "Stream requests"
-        ]
+          "Stream 请求"
+        ],
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-tier0-readonly": true,
+        "x-tier0-destructive": false,
+        "x-tier0-audience": "builder",
+        "x-tier0-platform": true,
+        "x-tier0-permission": "stream.requests.read",
+        "x-tier0-min-permission": 1
       }
     },
-    "/openapi/v1/stream-requests/{requestCode}/describe": {
+    "/openapi/v2/stream-requests/{requestCode}/describe": {
       "post": {
         "description": "读取公开Stream 请求合同，只公开Stream 请求合同，不返回内部运行绑定",
-        "operationId": "streamRequestDescribe",
+        "operationId": "PlatformV2StreamRequestDescribe",
         "parameters": [
           {
             "in": "path",
@@ -62,18 +174,129 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
           }
         },
         "summary": "Describe Stream request",
         "tags": [
-          "Stream requests"
-        ]
+          "Stream 请求"
+        ],
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-tier0-readonly": true,
+        "x-tier0-destructive": false,
+        "x-tier0-audience": "builder",
+        "x-tier0-platform": true,
+        "x-tier0-permission": "stream.requests.read",
+        "x-tier0-min-permission": 1
       }
     },
-    "/openapi/v1/stream-requests/{requestCode}/invoke": {
+    "/openapi/v2/stream-requests/{requestCode}/invoke": {
       "post": {
         "description": "按公开合同调用Stream 请求；原始 body 为有效 UTF-8，最多 1MiB 字节；可选 idempotencyKey 解码后最多 128 UTF-8 字节，是否必填由冻结合同决定。返回 code、contractVersion、result、runID、status、replayed(boolean)，不返回内部运行绑定。结果未知返回 HTTP 504，errorCode=STREAM_REQUEST_RESULT_UNKNOWN；未知内部错误返回 HTTP 500，errorCode=STREAM_REQUEST_INTERNAL_ERROR，message 不泄漏内部异常",
-        "operationId": "streamRequestInvoke",
+        "operationId": "PlatformV2StreamRequestInvoke",
         "parameters": [
           {
             "in": "path",
@@ -105,17 +328,128 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
           }
         },
         "summary": "Invoke Stream request",
         "tags": [
-          "Stream requests"
-        ]
+          "Stream 请求"
+        ],
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-tier0-readonly": false,
+        "x-tier0-destructive": false,
+        "x-tier0-audience": "builder",
+        "x-tier0-platform": true,
+        "x-tier0-permission": "stream.requests.invoke",
+        "x-tier0-min-permission": 1
       }
     },
-    "/openapi/v1/stream-messages/connect": {
+    "/openapi/v2/stream-messages/connect": {
       "post": {
-        "operationId": "streamMessagesConnect",
+        "operationId": "PlatformV2StreamMessagesConnect",
         "requestBody": {
           "content": {
             "application/json": {
@@ -137,24 +471,135 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Platform operation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationError"
+                }
+              }
+            }
           }
         },
         "summary": "Connect Stream messages",
         "tags": [
-          "Stream messages"
-        ]
+          "Stream 消息"
+        ],
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-tier0-readonly": false,
+        "x-tier0-destructive": false,
+        "x-tier0-audience": "builder",
+        "x-tier0-platform": true,
+        "x-tier0-permission": "",
+        "x-tier0-min-permission": 1
       }
     },
     "/openapi/v2/capabilities/discover": {
       "post": {
-        "description": "需要有效 Workspace API Key，Body 仅接受空 JSON 对象，最大 4KiB UTF-8 字节，不接受查询参数或 Workspace 覆盖。成功响应直接为 CapabilityDiscoverResp，不包裹 code/msg/data。能力由默认关闭的公开发布开关、Workspace FeatureGate、Key 显式授权共同裁决；Stream request 能力仅报告当前发布与授权，运行可用性保持 readiness_unknown，不触发运行时探针。实际操作由后端执行安全检查，失败返回真实错误。响应允许客户端忽略未知扩展字段；版本标签不表示设备 ACK 或 npm 包版本。错误直接返回 CapabilityErrorResp 和真实 HTTP 状态，不泄漏内部异常。",
-        "operationId": "PlatformV2CapabilityDiscover",
+        "description": "需要有效 Workspace API Key，Body 仅接受空 JSON 对象，最大 4KiB UTF-8 字节，不接受查询参数或 Workspace 覆盖。成功响应直接为 CapabilityDiscoverV2Resp，不包裹 code/msg/data。能力由默认关闭的公开发布开关、Workspace FeatureGate、Key 显式授权共同裁决；Namespace 与 Stream request 能力仅报告当前发布与授权，运行可用性保持 readiness_unknown，不触发运行时探针。Source/Stream 保留独立操作前提的证据。state=ready 不替代具体资源授权或实际运行回执。合同版本 2.0 使用 state、reasonCode、operations，不再返回重复布尔状态。实际操作由后端执行安全检查，失败返回真实错误。响应允许客户端忽略未知扩展字段；版本标签不表示设备 ACK 或 npm 包版本。错误直接返回 CapabilityErrorResp 和真实 HTTP 状态，不泄漏内部异常。",
+        "operationId": "PlatformV2CapabilityDiscoverV2",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PlatformCapabilityDiscoverV2Resp"
+                  "$ref": "#/components/schemas/CapabilityDiscoverV2Resp"
                 }
               }
             },
@@ -165,7 +610,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PlatformCapabilityErrorResp"
+                  "$ref": "#/components/schemas/CapabilityErrorResp"
                 }
               }
             }
@@ -175,7 +620,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PlatformCapabilityErrorResp"
+                  "$ref": "#/components/schemas/CapabilityErrorResp"
                 }
               }
             }
@@ -185,7 +630,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PlatformCapabilityErrorResp"
+                  "$ref": "#/components/schemas/CapabilityErrorResp"
                 }
               }
             }
@@ -195,7 +640,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PlatformCapabilityErrorResp"
+                  "$ref": "#/components/schemas/CapabilityErrorResp"
                 }
               }
             }
@@ -205,7 +650,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PlatformCapabilityErrorResp"
+                  "$ref": "#/components/schemas/CapabilityErrorResp"
                 }
               }
             }
@@ -224,7 +669,8 @@
         "x-tier0-destructive": false,
         "x-tier0-audience": "builder",
         "x-tier0-platform": true,
-        "x-tier0-source-operation": "/openapi/v1/capabilities/discover"
+        "x-tier0-permission": "",
+        "x-tier0-min-permission": 1
       }
     }
   },
@@ -312,6 +758,21 @@
           "status"
         ],
         "type": "object"
+      },
+      "NotificationError": {
+        "type": "object",
+        "required": [
+          "errorCode",
+          "message"
+        ],
+        "properties": {
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
       },
       "StreamRequestInvokeReq": {
         "properties": {
@@ -455,8 +916,8 @@
         ],
         "type": "object"
       },
-      "PlatformCapabilityDiscoverV2Resp": {
-        "title": "Tier0 capability discovery",
+      "CapabilityDiscoverV2Resp": {
+        "title": "Tier0 capability discovery 2.0",
         "type": "object",
         "required": [
           "product",
@@ -479,7 +940,7 @@
           },
           "contractVersion": {
             "enum": [
-              "1.0"
+              "2.0"
             ]
           },
           "apiContractVersions": {
@@ -608,54 +1069,11 @@
             }
           }
         },
-        "allOf": [
-          {
-            "allOf": [
-              {
-                "anyOf": [
-                  {
-                    "not": {
-                      "properties": {
-                        "capabilities": {
-                          "type": "array",
-                          "x-json-schema-contains": {
-                            "type": "object",
-                            "required": [
-                              "code"
-                            ],
-                            "properties": {
-                              "code": {
-                                "enum": [
-                                  "stream.requests.v1",
-                                  "stream.requests.invoke.v1"
-                                ]
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "apiContractVersions": {
-                        "type": "array",
-                        "x-json-schema-contains": {
-                          "const": "openapi/v1"
-                        }
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          }
-        ],
         "description": "OpenAPI 3.0 wire schema. Array contains/cardinality annotations and cross-field proof ordering require the shared JSON Schema plus SDK semantic checks; this projection alone is not full contract acceptance.",
         "x-tier0-json-schema": {
           "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$id": "urn:tier0:capability-discovery",
-          "title": "Tier0 capability discovery",
+          "$id": "https://tier0.cn/contracts/capability-discovery/2.0/response.schema.json",
+          "title": "Tier0 capability discovery 2.0",
           "type": "object",
           "required": [
             "product",
@@ -677,7 +1095,7 @@
               "minLength": 1
             },
             "contractVersion": {
-              "const": "1.0"
+              "const": "2.0"
             },
             "apiContractVersions": {
               "type": "array",
@@ -857,22 +1275,10 @@
               "required": [
                 "code",
                 "contractVersions",
-                "releaseEnabled",
-                "enabled",
-                "allowed",
                 "state",
-                "availability"
+                "reasonCode"
               ],
               "properties": {
-                "releaseEnabled": {
-                  "type": "boolean"
-                },
-                "enabled": {
-                  "type": "boolean"
-                },
-                "allowed": {
-                  "type": "boolean"
-                },
                 "state": {
                   "enum": [
                     "disabled",
@@ -880,13 +1286,6 @@
                     "unavailable",
                     "readiness_unknown",
                     "ready"
-                  ]
-                },
-                "availability": {
-                  "enum": [
-                    "unavailable",
-                    "unknown",
-                    "available"
                   ]
                 },
                 "reasonCode": {
@@ -928,97 +1327,6 @@
                 }
               },
               "allOf": [
-                {
-                  "if": {
-                    "properties": {
-                      "state": {
-                        "const": "ready"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "enabled": {
-                        "const": true
-                      },
-                      "releaseEnabled": {
-                        "const": true
-                      },
-                      "allowed": {
-                        "const": true
-                      },
-                      "availability": {
-                        "const": "available"
-                      }
-                    }
-                  },
-                  "else": {
-                    "properties": {
-                      "enabled": {
-                        "const": false
-                      }
-                    }
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "state": {
-                        "const": "disabled"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "releaseEnabled": {
-                        "const": false
-                      }
-                    }
-                  },
-                  "else": {
-                    "properties": {
-                      "releaseEnabled": {
-                        "const": true
-                      }
-                    }
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "state": {
-                        "const": "readiness_unknown"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "availability": {
-                        "const": "unknown"
-                      }
-                    }
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "state": {
-                        "enum": [
-                          "disabled",
-                          "not_supported",
-                          "unavailable"
-                        ]
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "availability": {
-                        "const": "unavailable"
-                      }
-                    }
-                  }
-                },
                 {
                   "if": {
                     "required": [
@@ -1194,8 +1502,8 @@
                       {
                         "if": {
                           "properties": {
-                            "releaseEnabled": {
-                              "const": false
+                            "state": {
+                              "const": "disabled"
                             }
                           }
                         },
@@ -1204,7 +1512,6 @@
                             "operations": {
                               "type": "array",
                               "items": {
-                                "type": "object",
                                 "if": {
                                   "properties": {
                                     "operation": {
@@ -1221,11 +1528,12 @@
                                 },
                                 "then": {
                                   "properties": {
-                                    "releaseEnabled": {
-                                      "const": false
+                                    "state": {
+                                      "const": "disabled"
                                     }
                                   }
-                                }
+                                },
+                                "type": "object"
                               }
                             }
                           }
@@ -1387,8 +1695,8 @@
                       {
                         "if": {
                           "properties": {
-                            "releaseEnabled": {
-                              "const": false
+                            "state": {
+                              "const": "disabled"
                             }
                           }
                         },
@@ -1397,7 +1705,6 @@
                             "operations": {
                               "type": "array",
                               "items": {
-                                "type": "object",
                                 "if": {
                                   "properties": {
                                     "operation": {
@@ -1414,11 +1721,12 @@
                                 },
                                 "then": {
                                   "properties": {
-                                    "releaseEnabled": {
-                                      "const": false
+                                    "state": {
+                                      "const": "disabled"
                                     }
                                   }
-                                }
+                                },
+                                "type": "object"
                               }
                             }
                           }
@@ -1468,7 +1776,7 @@
                         "allOf": [
                           {
                             "contains": {
-                              "const": "openapi/v1"
+                              "const": "openapi/v2"
                             }
                           },
                           {
@@ -1481,29 +1789,18 @@
                     }
                   }
                 }
-              ]
+              ],
+              "description": "State reports publication and assessed prerequisites only; ready never grants resource access or confirms an actual execution."
             },
             "knownOperation": {
               "type": "object",
               "required": [
                 "operation",
                 "requiresResourceCheck",
-                "releaseEnabled",
-                "enabled",
-                "allowed",
                 "state",
-                "availability"
+                "reasonCode"
               ],
               "properties": {
-                "releaseEnabled": {
-                  "type": "boolean"
-                },
-                "enabled": {
-                  "type": "boolean"
-                },
-                "allowed": {
-                  "type": "boolean"
-                },
                 "state": {
                   "enum": [
                     "disabled",
@@ -1511,13 +1808,6 @@
                     "unavailable",
                     "readiness_unknown",
                     "ready"
-                  ]
-                },
-                "availability": {
-                  "enum": [
-                    "unavailable",
-                    "unknown",
-                    "available"
                   ]
                 },
                 "reasonCode": {
@@ -1550,97 +1840,6 @@
               "allOf": [
                 {
                   "if": {
-                    "properties": {
-                      "state": {
-                        "const": "ready"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "enabled": {
-                        "const": true
-                      },
-                      "releaseEnabled": {
-                        "const": true
-                      },
-                      "allowed": {
-                        "const": true
-                      },
-                      "availability": {
-                        "const": "available"
-                      }
-                    }
-                  },
-                  "else": {
-                    "properties": {
-                      "enabled": {
-                        "const": false
-                      }
-                    }
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "state": {
-                        "const": "disabled"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "releaseEnabled": {
-                        "const": false
-                      }
-                    }
-                  },
-                  "else": {
-                    "properties": {
-                      "releaseEnabled": {
-                        "const": true
-                      }
-                    }
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "state": {
-                        "const": "readiness_unknown"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "availability": {
-                        "const": "unknown"
-                      }
-                    }
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "state": {
-                        "enum": [
-                          "disabled",
-                          "not_supported",
-                          "unavailable"
-                        ]
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "availability": {
-                        "const": "unavailable"
-                      }
-                    }
-                  }
-                },
-                {
-                  "if": {
                     "required": [
                       "validUntil"
                     ],
@@ -1660,44 +1859,10 @@
                     }
                   }
                 }
-              ]
+              ],
+              "description": "State reports publication and assessed prerequisites only; ready never grants resource access or confirms an actual execution."
             }
-          },
-          "allOf": [
-            {
-              "if": {
-                "properties": {
-                  "capabilities": {
-                    "type": "array",
-                    "contains": {
-                      "type": "object",
-                      "required": [
-                        "code"
-                      ],
-                      "properties": {
-                        "code": {
-                          "enum": [
-                            "stream.requests.v1",
-                            "stream.requests.invoke.v1"
-                          ]
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "then": {
-                "properties": {
-                  "apiContractVersions": {
-                    "type": "array",
-                    "contains": {
-                      "const": "openapi/v1"
-                    }
-                  }
-                }
-              }
-            }
-          ]
+          }
         }
       },
       "CapabilityDiscoverycapability": {
@@ -1746,22 +1911,10 @@
         "required": [
           "code",
           "contractVersions",
-          "releaseEnabled",
-          "enabled",
-          "allowed",
           "state",
-          "availability"
+          "reasonCode"
         ],
         "properties": {
-          "releaseEnabled": {
-            "type": "boolean"
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "allowed": {
-            "type": "boolean"
-          },
           "state": {
             "enum": [
               "disabled",
@@ -1769,13 +1922,6 @@
               "unavailable",
               "readiness_unknown",
               "ready"
-            ]
-          },
-          "availability": {
-            "enum": [
-              "unavailable",
-              "unknown",
-              "available"
             ]
           },
           "reasonCode": {
@@ -1817,179 +1963,6 @@
           }
         },
         "allOf": [
-          {
-            "allOf": [
-              {
-                "anyOf": [
-                  {
-                    "not": {
-                      "properties": {
-                        "state": {
-                          "enum": [
-                            "ready"
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "enabled": {
-                        "enum": [
-                          true
-                        ]
-                      },
-                      "releaseEnabled": {
-                        "enum": [
-                          true
-                        ]
-                      },
-                      "allowed": {
-                        "enum": [
-                          true
-                        ]
-                      },
-                      "availability": {
-                        "enum": [
-                          "available"
-                        ]
-                      }
-                    }
-                  }
-                ]
-              },
-              {
-                "anyOf": [
-                  {
-                    "properties": {
-                      "state": {
-                        "enum": [
-                          "ready"
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "enabled": {
-                        "enum": [
-                          false
-                        ]
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "allOf": [
-              {
-                "anyOf": [
-                  {
-                    "not": {
-                      "properties": {
-                        "state": {
-                          "enum": [
-                            "disabled"
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "releaseEnabled": {
-                        "enum": [
-                          false
-                        ]
-                      }
-                    }
-                  }
-                ]
-              },
-              {
-                "anyOf": [
-                  {
-                    "properties": {
-                      "state": {
-                        "enum": [
-                          "disabled"
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "releaseEnabled": {
-                        "enum": [
-                          true
-                        ]
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "allOf": [
-              {
-                "anyOf": [
-                  {
-                    "not": {
-                      "properties": {
-                        "state": {
-                          "enum": [
-                            "readiness_unknown"
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "availability": {
-                        "enum": [
-                          "unknown"
-                        ]
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "allOf": [
-              {
-                "anyOf": [
-                  {
-                    "not": {
-                      "properties": {
-                        "state": {
-                          "enum": [
-                            "disabled",
-                            "not_supported",
-                            "unavailable"
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "availability": {
-                        "enum": [
-                          "unavailable"
-                        ]
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
           {
             "allOf": [
               {
@@ -2204,9 +2177,9 @@
                               {
                                 "not": {
                                   "properties": {
-                                    "releaseEnabled": {
+                                    "state": {
                                       "enum": [
-                                        false
+                                        "disabled"
                                       ]
                                     }
                                   }
@@ -2239,9 +2212,9 @@
                                             },
                                             {
                                               "properties": {
-                                                "releaseEnabled": {
+                                                "state": {
                                                   "enum": [
-                                                    false
+                                                    "disabled"
                                                   ]
                                                 }
                                               }
@@ -2445,9 +2418,9 @@
                               {
                                 "not": {
                                   "properties": {
-                                    "releaseEnabled": {
+                                    "state": {
                                       "enum": [
-                                        false
+                                        "disabled"
                                       ]
                                     }
                                   }
@@ -2480,9 +2453,9 @@
                                             },
                                             {
                                               "properties": {
-                                                "releaseEnabled": {
+                                                "state": {
                                                   "enum": [
-                                                    false
+                                                    "disabled"
                                                   ]
                                                 }
                                               }
@@ -2558,7 +2531,7 @@
                         "allOf": [
                           {
                             "x-json-schema-contains": {
-                              "const": "openapi/v1"
+                              "const": "openapi/v2"
                             }
                           },
                           {
@@ -2574,7 +2547,8 @@
               }
             ]
           }
-        ]
+        ],
+        "description": "State reports publication and assessed prerequisites only; ready never grants resource access or confirms an actual execution."
       },
       "CapabilityDiscoveryoperation": {
         "type": "object",
@@ -2594,22 +2568,10 @@
         "required": [
           "operation",
           "requiresResourceCheck",
-          "releaseEnabled",
-          "enabled",
-          "allowed",
           "state",
-          "availability"
+          "reasonCode"
         ],
         "properties": {
-          "releaseEnabled": {
-            "type": "boolean"
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "allowed": {
-            "type": "boolean"
-          },
           "state": {
             "enum": [
               "disabled",
@@ -2617,13 +2579,6 @@
               "unavailable",
               "readiness_unknown",
               "ready"
-            ]
-          },
-          "availability": {
-            "enum": [
-              "unavailable",
-              "unknown",
-              "available"
             ]
           },
           "reasonCode": {
@@ -2660,179 +2615,6 @@
                 "anyOf": [
                   {
                     "not": {
-                      "properties": {
-                        "state": {
-                          "enum": [
-                            "ready"
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "enabled": {
-                        "enum": [
-                          true
-                        ]
-                      },
-                      "releaseEnabled": {
-                        "enum": [
-                          true
-                        ]
-                      },
-                      "allowed": {
-                        "enum": [
-                          true
-                        ]
-                      },
-                      "availability": {
-                        "enum": [
-                          "available"
-                        ]
-                      }
-                    }
-                  }
-                ]
-              },
-              {
-                "anyOf": [
-                  {
-                    "properties": {
-                      "state": {
-                        "enum": [
-                          "ready"
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "enabled": {
-                        "enum": [
-                          false
-                        ]
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "allOf": [
-              {
-                "anyOf": [
-                  {
-                    "not": {
-                      "properties": {
-                        "state": {
-                          "enum": [
-                            "disabled"
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "releaseEnabled": {
-                        "enum": [
-                          false
-                        ]
-                      }
-                    }
-                  }
-                ]
-              },
-              {
-                "anyOf": [
-                  {
-                    "properties": {
-                      "state": {
-                        "enum": [
-                          "disabled"
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "releaseEnabled": {
-                        "enum": [
-                          true
-                        ]
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "allOf": [
-              {
-                "anyOf": [
-                  {
-                    "not": {
-                      "properties": {
-                        "state": {
-                          "enum": [
-                            "readiness_unknown"
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "availability": {
-                        "enum": [
-                          "unknown"
-                        ]
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "allOf": [
-              {
-                "anyOf": [
-                  {
-                    "not": {
-                      "properties": {
-                        "state": {
-                          "enum": [
-                            "disabled",
-                            "not_supported",
-                            "unavailable"
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "availability": {
-                        "enum": [
-                          "unavailable"
-                        ]
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "allOf": [
-              {
-                "anyOf": [
-                  {
-                    "not": {
                       "required": [
                         "validUntil"
                       ],
@@ -2858,9 +2640,10 @@
               }
             ]
           }
-        ]
+        ],
+        "description": "State reports publication and assessed prerequisites only; ready never grants resource access or confirms an actual execution."
       },
-      "PlatformCapabilityErrorResp": {
+      "CapabilityErrorResp": {
         "properties": {
           "errorCode": {
             "description": "INVALID_CREDENTIAL / CAPABILITY_INVALID_REQUEST / CAPABILITY_FORBIDDEN / CAPABILITY_UNAVAILABLE / CAPABILITY_INTERNAL_ERROR",

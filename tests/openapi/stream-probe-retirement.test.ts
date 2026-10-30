@@ -51,7 +51,7 @@ describe('Stream Control readiness probe retirement', () => {
         expect(UNS_V2_OPERATIONS[name].path, name).toMatch(/^\/openapi\/v2\/uns\//);
       }
     }
-    expect(systemApi.openapiv1info).toBeTypeOf('function');
+    expect(systemApi.openapiV2Info).toBeTypeOf('function');
     expect(capabilities.discover).toBeTypeOf('function');
   });
 

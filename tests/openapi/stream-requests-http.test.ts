@@ -62,8 +62,8 @@ describe('StreamRequest real HTTP fixture (no external credentials)', () => {
         .rejects.toMatchObject({ errorCode: 'STREAM_MESSAGE_CONNECT_DENIED' });
       const rows = received.slice(start);
       expect(rows.map(row => row.path)).toEqual([
-        '/openapi/v1/stream-requests/discover', '/openapi/v1/stream-requests/pump.start/describe',
-        '/openapi/v1/stream-requests/pump.start/invoke', '/openapi/v1/stream-messages/connect',
+        '/openapi/v2/stream-requests/discover', '/openapi/v2/stream-requests/pump.start/describe',
+        '/openapi/v2/stream-requests/pump.start/invoke', '/openapi/v2/stream-messages/connect',
       ]);
       for (const row of rows) {
         expect(row.headers.authorization).toBe(`Bearer ${key}`);
@@ -87,7 +87,7 @@ describe('StreamRequest real HTTP fixture (no external credentials)', () => {
     const requests = received.slice(start);
     expect(requests).toHaveLength(3);
     expect(requests.map(r => r.path)).toEqual([
-      '/openapi/v1/stream-requests/discover', '/openapi/v1/stream-requests/pump.start/describe', '/openapi/v1/stream-requests/pump.start/invoke',
+      '/openapi/v2/stream-requests/discover', '/openapi/v2/stream-requests/pump.start/describe', '/openapi/v2/stream-requests/pump.start/invoke',
     ]);
     expect(requests.map(r => r.body)).toEqual([{ search: 'pump' }, {}, { input, idempotencyKey: 'intent-http' }]);
     for (const request of requests) {
@@ -112,7 +112,7 @@ describe('StreamRequest real HTTP fixture (no external credentials)', () => {
     expect(error instanceof StreamRequestResultUnknownError).toBe(errorCode === 'STREAM_REQUEST_RESULT_UNKNOWN');
     expect(received.length - start).toBe(1);
     expect(received[start].method).toBe('POST');
-    expect(received[start].path).toBe('/openapi/v1/stream-requests/pump.start/invoke');
+    expect(received[start].path).toBe('/openapi/v2/stream-requests/pump.start/invoke');
   });
 
   it.each(['unknown', 'failed', 'succeeded', 'running'])

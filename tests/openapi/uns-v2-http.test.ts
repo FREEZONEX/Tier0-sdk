@@ -79,12 +79,12 @@ describe('UNS v2 localhost HTTP fixture', () => {
     const config = { apiHost, apiKey: 'workspace-bound-key', unsV2AppDataSubject: 'gateway.user.signature' };
     const api = createClient(config);
     respond = (req, res) => {
-      if (req.url === '/openapi/v1/stream-requests/discover') send(res, { total: 0, list: [] });
-      else if (req.url === '/openapi/v1/stream-requests/pump.start/invoke') send(res, {
+      if (req.url === '/openapi/v2/stream-requests/discover') send(res, { total: 0, list: [] });
+      else if (req.url === '/openapi/v2/stream-requests/pump.start/invoke') send(res, {
         code: 'pump.start', contractVersion: '1', result: {}, runID: 'fixture-run', status: 'completed', replayed: false,
       });
       else if (req.url === '/openapi/v2/capabilities/discover') send(res, {
-        product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v1', 'openapi/v2'],
+        product: 'cloud', contractVersion: '2.0', apiContractVersions: ['openapi/v2'],
         sdkContractVersions: ['stream-requests/v1'], capabilities: [], deprecations: [],
       });
       else send(res, {});
@@ -93,9 +93,9 @@ describe('UNS v2 localhost HTTP fixture', () => {
     const transport = new CloudTransport(() => http, config);
     await Promise.all([
       api.streams.requests.discover(), api.streams.requests.use({ code: 'pump.start' }).invoke({}), api.capabilities.discover(),
-      http.post('/openapi/v1/uns/query', {}), http.post('/openapi/v1/assets/files/url', {}),
+      http.post('/openapi/v2/uns/query', {}), http.post('/openapi/v2/assets/files/url', {}),
       transport.post('/openapi/v2/uns/test', {}),
-      ...['/openapi/v1/uns/query', '/openapi/v2/assets/test', '/openapi/v2/uns-other/test', '/openapi/v2/uns']
+      ...['/openapi/v2/uns/query', '/openapi/v2/assets/test', '/openapi/v2/uns-other/test', '/openapi/v2/uns']
         .map(path => transport.postText(path, '{}')),
     ]);
     expect(received.slice(start)).toHaveLength(10);

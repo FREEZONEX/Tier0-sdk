@@ -78,7 +78,7 @@ node node_modules/@tier0/sdk/skills/tier0-sdk/scripts/check-api-key-compat.mjs -
 
 For MQTT, workspace-encoded App/personal/agent and other non-service keys require `@tier0/sdk >= 0.5.2`. If the diagnostic reports an older installed version, upgrade to `@tier0/sdk@latest` and restart the runtime. If it reports a compatible version, check runtime environment injection, key status/permissions, the broker endpoint and `ws`/`wss`, then backend support. Do not print the complete key or bypass SDK identity derivation with a hard-coded Workspace ID.
 
-> Use `unsApi.openapiv1unswrite()` when you need the API to validate and write a UNS topic current value. If publishing to a UNS-ingested MQTT topic directly, the MQTT topic must already exist in UNS and the JSON payload keys must match that topic's `fields` schema exactly. For example, a topic with field `temperature` must receive `{"temperature":26.4}`, not `{"value":26.4,"unit":"C"}` unless `value` and `unit` are the actual field names in that topic schema.
+> Persist business data through the current unsV2 record/sample operations. Raw MQTT publication requires a verified ingestion contract and does not itself prove that Collection data was committed.
 >
 > **No lazy creation**: never publish to a topic that has not been explicitly modeled. Create it first with the `create` endpoint (declaring `fields`) — do not treat publishing as a way to create topics. A publish to an unmodeled topic is a bug, not a provisioning mechanism.
 >
@@ -95,7 +95,7 @@ const client = new Tier0MQClient({ host: 'broker.example.com', secure: true });
 
 ## Broker Address Resolution（浏览器 wss）
 
-平台 `/openapi/v1/info` 返回的 `data.mqttBroker` **格式随环境变化，不保证统一**（enterprise 常见
+平台 `/openapi/v2/info` 返回的 `data.mqttBroker` **格式随环境变化，不保证统一**（enterprise 常见
 `tcp://host:1883`，Cloud/SaaS 常见裸 `host` 或 `host:port`），且它是面向服务端/边缘客户端的连接串，
 **浏览器 wss 客户端不能直接把它当 hostname 拼 URL**（`` `wss://${mqttBroker}` `` 会得到
 `wss://tcp://...` 这类非法地址）。用 SDK 的 broker 工具归一：

@@ -1,14 +1,19 @@
 {
   "openapi": "3.0.3",
+  "info": {
+    "title": "Tier0 Cloud OpenAPI v2",
+    "version": "5.0.0",
+    "description": "云端集合、业务数据、时序数据及数据源、处理流与 App 策略管理接口。使用绑定工作空间的 API Key。\n\n### UNS 接口错误\n各接口只展开成功结果；失败统一使用 default 响应。HTTP 状态码：401 未认证、403 无权限或未开通、404 对象不存在、409 状态、版本、唯一键冲突或凭据已变化、413 内容超限、422 参数或业务校验失败、429 过载、500 服务端错误、503 暂不可用、504 查询超时。具体原因以 error.code 为准。error.execution 说明执行到哪一步：notStarted、rolledBack 可证明没有副作用，committed 表示已提交，unknown 只出现在写操作上、表示无法证明是否提交。error.retry.safe=true 时可原样重发（写入复用原幂等键），retry.afterMs 与 Retry-After 给出最短等待时间；safe=false 时先修正请求或恢复授权。\n\n### 平台接口\n通知、文件、成员、身份、MQTT 凭证和 Agent 接口复用已有业务规则。平台接口保留各自响应格式：文件下载返回 302，通知、能力发现、Stream 请求及消息连接直接返回业务 JSON，其他平台接口使用 code/msg/data。上面的 UNS 错误格式仅适用于 /uns/ 路径。"
+  },
   "paths": {
-    "/openapi/v1/apps/access-members/list": {
+    "/openapi/v2/apps/access-members/list": {
       "post": {
-        "operationId": "openapi/V1/AppsListAccessMembers",
+        "operationId": "PlatformV2ListAccessMembers",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AppAccessMembersListReq"
+                "$ref": "#/components/schemas/PlatformAppAccessMembersListReq"
               }
             }
           },
@@ -20,75 +25,50 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppAccessMembersListResp"
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "integer"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PlatformAppAccessMembersListResp"
+                    }
+                  }
                 }
               }
             },
             "description": ""
           }
         },
-        "summary": "listAccessMembers"
+        "summary": "listAccessMembers",
+        "tags": [
+          "成员"
+        ],
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-tier0-readonly": true,
+        "x-tier0-destructive": false,
+        "x-tier0-audience": "builder",
+        "x-tier0-platform": true,
+        "x-tier0-permission": "uns.read",
+        "x-tier0-min-permission": 1
       }
     }
   },
   "components": {
     "schemas": {
-      "AppAccessMemberResp": {
-        "properties": {
-          "email": {
-            "type": "string"
-          },
-          "grantedAt": {
-            "description": "毫秒",
-            "type": "integer"
-          },
-          "roles": {
-            "items": {
-              "$ref": "#/components/schemas/AppAccessMemberRoleResp"
-            },
-            "type": "array"
-          },
-          "userId": {
-            "type": "string"
-          },
-          "userName": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "userId",
-          "grantedAt",
-          "roles"
-        ],
-        "type": "object"
-      },
-      "AppAccessMemberRoleResp": {
-        "properties": {
-          "roleId": {
-            "type": "string"
-          },
-          "roleKey": {
-            "type": "string"
-          },
-          "roleName": {
-            "type": "string"
-          },
-          "sources": {
-            "items": {
-              "$ref": "#/components/schemas/AppAccessRoleSourceResp"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "roleId",
-          "roleKey",
-          "roleName",
-          "sources"
-        ],
-        "type": "object"
-      },
-      "AppAccessMembersListReq": {
+      "PlatformAppAccessMembersListReq": {
         "properties": {
           "appId": {
             "type": "string"
@@ -120,7 +100,7 @@
         ],
         "type": "object"
       },
-      "AppAccessMembersListResp": {
+      "PlatformAppAccessMembersListResp": {
         "properties": {
           "allActiveMembers": {
             "description": "1:所有 active 成员都可访问 2:按角色授权",
@@ -131,7 +111,7 @@
           },
           "list": {
             "items": {
-              "$ref": "#/components/schemas/AppAccessMemberResp"
+              "$ref": "#/components/schemas/PlatformAppAccessMemberResp"
             },
             "type": "array"
           },
@@ -147,7 +127,7 @@
           },
           "roles": {
             "items": {
-              "$ref": "#/components/schemas/AppAccessRoleResp"
+              "$ref": "#/components/schemas/PlatformAppAccessRoleResp"
             },
             "type": "array"
           },
@@ -170,7 +150,80 @@
         ],
         "type": "object"
       },
-      "AppAccessRoleResp": {
+      "PlatformAppAccessMemberResp": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "grantedAt": {
+            "description": "毫秒",
+            "type": "integer"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformAppAccessMemberRoleResp"
+            },
+            "type": "array"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "grantedAt",
+          "roles"
+        ],
+        "type": "object"
+      },
+      "PlatformAppAccessMemberRoleResp": {
+        "properties": {
+          "roleId": {
+            "type": "string"
+          },
+          "roleKey": {
+            "type": "string"
+          },
+          "roleName": {
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformAppAccessRoleSourceResp"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "roleId",
+          "roleKey",
+          "roleName",
+          "sources"
+        ],
+        "type": "object"
+      },
+      "PlatformAppAccessRoleSourceResp": {
+        "properties": {
+          "groupId": {
+            "type": "string"
+          },
+          "groupName": {
+            "type": "string"
+          },
+          "type": {
+            "description": "direct / group",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "PlatformAppAccessRoleResp": {
         "properties": {
           "description": {
             "type": "string"
@@ -198,24 +251,6 @@
           "roleName",
           "status",
           "memberCount"
-        ],
-        "type": "object"
-      },
-      "AppAccessRoleSourceResp": {
-        "properties": {
-          "groupId": {
-            "type": "string"
-          },
-          "groupName": {
-            "type": "string"
-          },
-          "type": {
-            "description": "direct / group",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type"
         ],
         "type": "object"
       }

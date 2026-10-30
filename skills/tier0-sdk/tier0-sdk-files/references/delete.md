@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-openapi-files-delete
 version: 0.2.0
-description: "deleteFile — POST /openapi/v1/assets/files/delete 按 filePath 删除存储对象与文件记录"
+description: "deleteFile — POST /openapi/v2/assets/files/delete 按 filePath 删除存储对象与文件记录"
 ---
 
 # deleteFile — 删除文件
@@ -27,7 +27,7 @@ function deleteFile(options: DeleteFileOptions): Promise<DeleteFileResult>;
 
 ## 底层接口
 
-`POST /openapi/v1/assets/files/delete`，请求体（JSON）：
+`POST /openapi/v2/assets/files/delete`，请求体（JSON）：
 
 ```json
 {

@@ -1,7 +1,7 @@
 ---
 name: tier0-sdk-openapi-files-download
 version: 0.2.0
-description: "downloadFile — GET /openapi/v1/assets/files/download 直接下载文件，返回跟随重定向后的原始 Response，浏览器触发保存或 Node 写入本地"
+description: "downloadFile — GET /openapi/v2/assets/files/download 直接下载文件，返回跟随重定向后的原始 Response，浏览器触发保存或 Node 写入本地"
 ---
 
 # downloadFile — 直接下载文件
@@ -36,7 +36,7 @@ function downloadFile(options: DownloadFileOptions): Promise<DownloadFileResult>
 
 ## 底层接口
 
-`GET /openapi/v1/assets/files/download?filePath={filePath}&responseContentDisposition={...}`
+`GET /openapi/v2/assets/files/download?filePath={filePath}&responseContentDisposition={...}`
 
 后端根据文件 `visibility` 决定下载方式：
 

@@ -117,11 +117,11 @@ describe('files multipart module', () => {
       const calls = mockFetch.mock.calls as Array<[string, RequestInit]>;
 
       // 调用序列：init -> part-urls -> 3 次 PUT -> complete
-      expect(calls[0][0]).toBe('https://api.example.com/openapi/v1/assets/files/multipart/init');
-      expect(calls[1][0]).toBe('https://api.example.com/openapi/v1/assets/files/multipart/part-urls');
+      expect(calls[0][0]).toBe('https://api.example.com/openapi/v2/assets/files/multipart/init');
+      expect(calls[1][0]).toBe('https://api.example.com/openapi/v2/assets/files/multipart/part-urls');
       const putCalls = calls.filter(([, init]) => init.method === 'PUT');
       expect(putCalls).toHaveLength(3);
-      expect(calls[calls.length - 1][0]).toBe('https://api.example.com/openapi/v1/assets/files/multipart/complete');
+      expect(calls[calls.length - 1][0]).toBe('https://api.example.com/openapi/v2/assets/files/multipart/complete');
 
       // init body：分片参数 + 既有业务字段
       expect(JSON.parse(calls[0][1].body as string)).toEqual({
@@ -591,7 +591,7 @@ describe('files multipart module', () => {
 
       const calls = mockFetch.mock.calls as Array<[string, RequestInit]>;
       expect(calls).toHaveLength(1);
-      expect(calls[0][0]).toBe('https://api.example.com/openapi/v1/assets/files/multipart/complete');
+      expect(calls[0][0]).toBe('https://api.example.com/openapi/v2/assets/files/multipart/complete');
       expect(JSON.parse(calls[0][1].body as string).parts).toEqual([
         { partNumber: 1, etag: '"etag-1"' },
         { partNumber: 2, etag: '"etag-2"' },
@@ -628,7 +628,7 @@ describe('files multipart module', () => {
       const file = new File(['a'], 'f.csv', { type: 'text/csv' });
       const result = await uploadFile(file);
 
-      expect(mockFetch.mock.calls[0][0]).toBe('https://api.example.com/openapi/v1/assets/files');
+      expect(mockFetch.mock.calls[0][0]).toBe('https://api.example.com/openapi/v2/assets/files');
       expect(result.filePath).toBe('p/f.csv');
     });
 
@@ -650,7 +650,7 @@ describe('files multipart module', () => {
 
       const result = await uploadFile(file, { multipart: { partSize, concurrency: 2, onProgress } });
 
-      expect(mockFetch.mock.calls[0][0]).toBe('https://api.example.com/openapi/v1/assets/files/multipart/init');
+      expect(mockFetch.mock.calls[0][0]).toBe('https://api.example.com/openapi/v2/assets/files/multipart/init');
       expect(onProgress).toHaveBeenCalled();
       expect(result.filePath).toBe('m/small.bin');
       expect(result.uploadId).toBe(UPLOAD_ID);

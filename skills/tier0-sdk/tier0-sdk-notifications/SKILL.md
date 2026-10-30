@@ -48,11 +48,11 @@ Resolve the recipient and message from the user intent. Apply the SDK channel co
 For a resolved notification `body`, choose one request shape:
 
 ```typescript
-notificationsApi.openapiv1notificationssend(body); // default: Web & Desktop + Mobile
-notificationsApi.openapiv1notificationssend({ ...body, channels: ['web', 'mobile'] }); // all
-notificationsApi.openapiv1notificationssend({ ...body, channels: ['web'] }); // Web & Desktop
-notificationsApi.openapiv1notificationssend({ ...body, channels: ['mobile'] }); // Mobile
-notificationsApi.openapiv1notificationssend({ ...body, channels: [] }); // inbox only
+notificationsApi.openapiV2NotificationsSend(body); // default: Web & Desktop + Mobile
+notificationsApi.openapiV2NotificationsSend({ ...body, channels: ['web', 'mobile'] }); // all
+notificationsApi.openapiV2NotificationsSend({ ...body, channels: ['web'] }); // Web & Desktop
+notificationsApi.openapiV2NotificationsSend({ ...body, channels: ['mobile'] }); // Mobile
+notificationsApi.openapiV2NotificationsSend({ ...body, channels: [] }); // inbox only
 ```
 
 These are alternatives, not five sends for the same event. See [send.md](references/send.md) for the full request and upgrade notes.

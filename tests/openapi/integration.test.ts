@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { configureClient, ApiError } from '../../src/openapi/client.js';
-import { systemApi, flowApi, notificationsApi, unsApi } from '../../src/openapi/api.js';
+import { systemApi, notificationsApi } from '../../src/openapi/api.js';
 
 const apiHost = process.env.TIER0_API_HOST;
 const apiKey = process.env.TIER0_API_KEY;
@@ -15,38 +15,17 @@ run('OpenAPI Integration Tests', () => {
   });
 
   it('should call info and return service info', async () => {
-    const result = await systemApi.openapiv1info({});
+    const result = await systemApi.openapiV2Info({});
     expect(result).toBeDefined();
     expect(result.code).toBe(200);
   });
 
   it('should call whoami and return user info', async () => {
-    const result = await systemApi.openapiv1authwhoami();
+    const result = await systemApi.openapiV2AuthWhoami();
     expect(result).toBeDefined();
     expect(result.code).toBe(200);
     expect(result.data).toBeDefined();
     expect(result.data.userID).toBeGreaterThan(0);
-  });
-
-  it('should browse root namespace', async () => {
-    const result = await unsApi.openapiv1unsbrowse({});
-    expect(result).toBeDefined();
-    expect(result.code).toBe(200);
-    expect(Array.isArray(result.data?.tree)).toBe(true);
-  });
-
-  it('should list flows', async () => {
-    const result = await flowApi.openapiv1flowlist({});
-    expect(result).toBeDefined();
-    expect(result.code).toBe(200);
-    expect(Array.isArray(result.data?.list || result.data)).toBe(true);
-  });
-
-  it('should get flow nodes', async () => {
-    const result = await flowApi.openapiv1flownodes({ flowType: 'SourceFlow' });
-    expect(result).toBeDefined();
-    expect(result.code).toBe(200);
-    expect(Array.isArray(result.data?.nodes || result.data)).toBe(true);
   });
 
   // notifications 权限位（notifications:send/read）独立于 uns/flow——通用 Key 可能没有：
@@ -56,7 +35,7 @@ run('OpenAPI Integration Tests', () => {
 
   // notifications 端到端：发给 Key 主人自己 + test 模式 + 静默（channels: []），不打扰任何真实用户
   it('should send a silent test notification to self and reach a terminal status', async (ctx) => {
-    const who = await systemApi.openapiv1authwhoami();
+    const who = await systemApi.openapiV2AuthWhoami();
     expect(who.code).toBe(200);
     // whoami 契约把 userID 作为 number 返回，JSON.parse 后精度已定——String() 无法恢复
     // 超过 MAX_SAFE_INTEGER 的原值。显式护栏：超界时 fail（而非静默发给取整后的错误收件人）。
@@ -66,7 +45,7 @@ run('OpenAPI Integration Tests', () => {
 
     let sendResp;
     try {
-      sendResp = await notificationsApi.openapiv1notificationssend({
+      sendResp = await notificationsApi.openapiV2NotificationsSend({
         recipientUserId,
         type: 'inbox',
         title: 'SDK integration check',
@@ -89,7 +68,7 @@ run('OpenAPI Integration Tests', () => {
       await new Promise(r => setTimeout(r, 1500));
       let got;
       try {
-        got = await notificationsApi.openapiv1notificationsget({ messageId: sendResp.messageId });
+        got = await notificationsApi.openapiV2NotificationsGet({ messageId: sendResp.messageId });
       } catch (e) {
         if (isNotifyForbidden(e)) return ctx.skip(); // key lacks notifications:read
         throw e;
@@ -103,13 +82,13 @@ run('OpenAPI Integration Tests', () => {
   // link 端到端（2026-08-27 open-link 契约）：合法值被写入侧接受，非法值必须 400 而不是静默丢字段。
   // 不验回显——get 契约不含 actionPath，读回走 BFF/web 那条链路。
   it('should accept a valid link and reject a malformed one', async (ctx) => {
-    const who = await systemApi.openapiv1authwhoami();
+    const who = await systemApi.openapiV2AuthWhoami();
     expect(Number.isSafeInteger(who.data.userID)).toBe(true);
     const recipientUserId = String(who.data.userID);
 
     let sendResp;
     try {
-      sendResp = await notificationsApi.openapiv1notificationssend({
+      sendResp = await notificationsApi.openapiV2NotificationsSend({
         recipientUserId,
         type: 'inbox',
         title: 'SDK link check',
@@ -127,7 +106,7 @@ run('OpenAPI Integration Tests', () => {
 
     // 协议相对地址：有前导斜杠但浏览器按跨站绝对地址解析，写入侧必须拒
     const err = await notificationsApi
-      .openapiv1notificationssend({
+      .openapiV2NotificationsSend({
         recipientUserId,
         type: 'inbox',
         title: 'SDK link check',
@@ -144,7 +123,7 @@ run('OpenAPI Integration Tests', () => {
 
   it('should return structured 404 for a foreign messageId', async (ctx) => {
     const err = await notificationsApi
-      .openapiv1notificationsget({ messageId: '1' })
+      .openapiV2NotificationsGet({ messageId: '1' })
       .catch((e: unknown) => e);
     if (isNotifyForbidden(err)) return ctx.skip(); // key lacks notifications:read
     expect(err).toBeInstanceOf(ApiError);

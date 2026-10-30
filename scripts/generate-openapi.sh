@@ -6,7 +6,7 @@ SDK_DIR="$(dirname "$SCRIPT_DIR")"
 ROOT_DIR="$(dirname "$(dirname "$SDK_DIR")")"
 
 # 可用环境变量覆盖，适配 backend 仓不在默认相对位置的布局
-SWAGGER_PATH="${SWAGGER_PATH:-$ROOT_DIR/backend/service/gwsvr/internal/handler/swaggerui/swagger.json}"
+SWAGGER_PATH="${SWAGGER_PATH:-$SDK_DIR/contracts/openapi/platform.swagger.json}"
 OUTPUT_DIR="$SDK_DIR/src/openapi"
 
 echo "[1/4] Installing dependencies..."

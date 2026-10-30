@@ -148,7 +148,7 @@ class MessageSession implements StreamMessageSubscription {
         appId, topics: [{ topic: this.topic, publish: this.mode === 'publish', subscribe: this.mode === 'subscribe' }],
         clientPublicKey: connectionKey.getPublicKey(),
       };
-      const { value, ok } = await this.transport.post('/openapi/v1/stream-messages/connect', request, this.abort.signal);
+      const { value, ok } = await this.transport.post('/openapi/v2/stream-messages/connect', request, this.abort.signal);
       const ticket = this.ticket(value, ok);
       if (this.disposed) return;
       const expiresAt = Date.parse(ticket.expiresAt);

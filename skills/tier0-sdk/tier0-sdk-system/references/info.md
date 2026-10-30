@@ -1,10 +1,10 @@
 ---
 name: tier0-sdk-openapi-info
 version: 0.3.1
-description: "POST /openapi/v1/info — 获取 Tier0 服务信息（连通性验证；mqttBroker 为服务端连接串，浏览器 wss 勿直接当 hostname 用）"
+description: "POST /openapi/v2/info — 获取 Tier0 服务信息（连通性验证；mqttBroker 为服务端连接串，浏览器 wss 勿直接当 hostname 用）"
 ---
 
-# info — `POST /openapi/v1/info`
+# info — `POST /openapi/v2/info`
 
 获取 Tier0 网关服务的基本信息。常用于验证 API 连通性和认证配置是否正确。
 
@@ -13,7 +13,7 @@ description: "POST /openapi/v1/info — 获取 Tier0 服务信息（连通性验
 ```typescript
 import { systemApi } from '@tier0/sdk/openapi';
 
-const result = await systemApi.openapiv1info({});
+const result = await systemApi.openapiV2Info({});
 ```
 
 ## 请求参数
@@ -65,7 +65,7 @@ const result = await systemApi.openapiv1info({});
 import { systemApi } from '@tier0/sdk/openapi';
 
 try {
-  const result = await systemApi.openapiv1info({});
+  const result = await systemApi.openapiV2Info({});
   console.log('连接成功');
   console.log('  服务:', result.data.name);      // "Tier0 UNS OpenAPI"
   console.log('  版本:', result.data.version);    // "v1"

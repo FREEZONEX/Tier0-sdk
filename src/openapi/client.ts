@@ -87,7 +87,7 @@ class HttpClient {
 
     if (apiKey) {
       // 网关各接口认证头不一致：多数接口认 Authorization Bearer，
-      // 个别接口（如 /openapi/v1/auth/whoami）只认 X-API-Key，两个都带
+      // 个别接口（如 /openapi/v2/auth/whoami）只认 X-API-Key，两个都带
       headers['Authorization'] = `Bearer ${apiKey}`;
       headers['X-API-Key'] = apiKey;
     }

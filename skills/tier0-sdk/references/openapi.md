@@ -1,181 +1,21 @@
----
-name: tier0-sdk-openapi-quickstart
-version: 0.1.1
-description: "OpenAPI module quickstart: configuration, configureClient, basic API calls"
----
+# Public OpenAPI v2 clients
 
-# OpenAPI Quickstart
+Read [configuration](configuration.md) before calls. Cloud endpoints use /openapi/v2 only; missing or denied operations must not trigger a prefix or credential fallback.
 
-> UNS is a data source, not a UI. The calls below are how you get/put data; keep topic paths and raw responses in a service/data layer and render business domain objects. `browse`/`search` are for dev-time discovery, not for building a user-facing namespace tree. See [`../../tier0-sdk-uns/references/concepts.md`](../../tier0-sdk-uns/references/concepts.md) → "UNS In Applications".
-
-## Contents
-
-- Client and runtime configuration
-- Basic calls for UNS, Flow, and files
-- Generated types
-- Error handling
-
-## Retired Stream readiness query
-
-The former Control readiness probe `unsV2.streamRuntimeCapabilitiesGet` is retired. Do not call it or recreate `stream.runtime.capabilities()` as an alias. Stream creation, publishing, execution, rollback and history use their documented operations and actual operation errors; do not gate them on this preflight query.
-
-General service capabilities and broker information remain supported by the [System Skill](../tier0-sdk-system/references/info.md).
-
-## Configuration
-
-In Node.js, the SDK can read `TIER0_*` environment variables.
-
-| Variable | Required | Description |
-|------|------|------|
-| `TIER0_API_HOST` | Yes | OpenAPI base URL injected by the platform/deployment, preferably including scheme |
-| `TIER0_API_KEY` | Yes | API key |
-
-For browser/Vite projects, pass values explicitly from `import.meta.env`; do not rely on automatic `VITE_*` lookup.
-
-### Runtime Configuration
+The generated platform clients are systemApi, appsApi, platformApi and notificationsApi. Files use @tier0/sdk/files. Data uses unsV2 from @tier0/sdk/cloud. Stream requests and messages use client.streams. There are no exported Flow, legacy Namespace or gateway-reload clients.
 
 ```typescript
-import { configureClient } from '@tier0/sdk/openapi';
-
-configureClient({
-  apiHost: process.env.TIER0_API_HOST,
-  apiKey: process.env.TIER0_API_KEY,
-});
+import { systemApi } from '@tier0/sdk/openapi';
+const info = await systemApi.openapiV2Info({});
 ```
 
-### Dynamic Configuration
+For credential diagnostics read [system info](../tier0-sdk-system/references/info.md) and the whoami reference. App business credentials do not identify a human user.
 
 ```typescript
-import { configureClient } from '@tier0/sdk/openapi';
-
-configureClient({
-  getApiHost: () => process.env.TIER0_API_HOST,
-  getApiKey: () => {
-    // Read from secure storage or an auth service.
-    return localStorage.getItem('tier0_api_key') || undefined;
-  },
-});
+import { unsV2 } from '@tier0/sdk/cloud';
+const records = await unsV2.recordFind({ collectionId: verifiedCollectionId, filter: {}, limit: 20 });
 ```
 
-## Basic Calls
+Keep verified IDs and data access in the service layer; map response records into business objects for UI. Handle actual HTTP/business errors and mutation receipts; an uncertain mutation must be read back before retrying with the same idempotency key.
 
-### Read UNS Current Values
-
-```typescript
-import { unsApi } from '@tier0/sdk/openapi';
-
-const result = await unsApi.openapiv1unsread({
-  topics: ['Plant/Line1/Metric/Temperature'],
-});
-
-// HTTP 200 does not mean every item succeeded; check results[i].success.
-const item = result.data.results[0];
-if (item.success && item.result?.quality === 'Good') {
-  // item.result.value: business object, e.g. { temperature: 27.5 }
-  // item.result.timeStamp: timestamp in milliseconds
-  console.log(item.result.value);
-}
-```
-
-### Browse Namespace
-
-```typescript
-import { unsApi } from '@tier0/sdk/openapi';
-
-const nodes = await unsApi.openapiv1unsbrowse({
-  path: 'Plant/Line1',
-  include_metadata: true,
-});
-```
-
-### Write Data
-
-```typescript
-import { unsApi } from '@tier0/sdk/openapi';
-
-// value must be an object; do not write bare numbers/strings.
-// Use top-level timeStamp for collection time; do not put _timestamp in value.
-const result = await unsApi.openapiv1unswrite({
-  writes: [
-    {
-      topic: 'Plant/Line1/Metric/Temperature',
-      value: { temperature: 27.5 },
-      timeStamp: Date.now(),
-    },
-  ],
-});
-
-// Check business results.
-if (!result.data.success) {
-  result.data.results.filter(r => !r.success)
-    .forEach(r => console.error(r.topic, r.error?.message));
-}
-```
-
-### List Flows
-
-```typescript
-import { flowApi } from '@tier0/sdk/openapi';
-
-const flows = await flowApi.openapiv1flowlist({
-  flowType: 'source',
-});
-```
-
-### Upload / Download / Delete Files
-
-```typescript
-import { uploadFile, downloadFile, getFileUrl, deleteFile } from '@tier0/sdk/files';
-
-// Upload
-const uploaded = await uploadFile(file, { visibility: 'private', business: 'attachment' });
-
-// Get URL (public returns long-lived URL; private returns presigned URL)
-const { fileUrl } = await getFileUrl({ filePath: uploaded.filePath, expiredSec: 3600 });
-
-// Download to browser/Node.js
-const { response } = await downloadFile({ filePath: uploaded.filePath });
-
-// Delete
-await deleteFile({ filePath: uploaded.filePath });
-```
-
-> See [`../../tier0-sdk-files/SKILL.md`](../../tier0-sdk-files/SKILL.md) for managed file rules, parameter details, and advanced usage.
-
-## Types
-
-Types are exported from the OpenAPI module:
-
-```typescript
-import type { components } from '@tier0/sdk/openapi';
-
-type BrowseReq = components['schemas']['BrowseReq'];
-type FlowInfo = components['schemas']['FlowInfo'];
-```
-
-## Error Handling
-
-Handle two error layers:
-
-```typescript
-import { unsApi } from '@tier0/sdk/openapi';
-
-// Layer 1: network/auth errors -> try/catch
-try {
-  const result = await unsApi.openapiv1unsread({
-    topics: ['Plant/Line1/Metric/Temperature'],
-  });
-
-  // Layer 2: per-item business errors -> check results[i].success
-  for (const item of result.data.results) {
-    if (!item.success) {
-      console.error(`${item.topic} failed: ${item.error?.message}`);
-    }
-  }
-} catch (error) {
-  if (error instanceof Error) {
-    // HTTP 4xx/5xx or network error
-    console.error(error.message); // "HTTP 401: Unauthorized"
-  }
-}
-```
+unsV2.streamRuntimeCapabilitiesGet is retired. Capability discovery uses contract 2.0 state, reasonCode and operations; ready does not authorize an arbitrary resource or prove a run completed, and namespace readiness_unknown / READINESS_NOT_ASSESSED is not a permission denial.

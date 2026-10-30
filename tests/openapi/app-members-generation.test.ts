@@ -24,24 +24,26 @@ function prepare(overlay = source) {
   return { dir, args };
 }
 describe('scoped formal App-members generation', () => {
-  it('pins the formal Cloud source separately from retained unrelated legacy SDK routes', () => {
+  it('pins the v2 App source with explicit provenance', () => {
     const provenance = JSON.parse(readFileSync(join(root, 'contracts/openapi/app-members-provenance.json'), 'utf8'));
-    expect(provenance.revision).toBe('6c111671a2172eb14c38f2f6d9ec329f4ee08a3d');
-    expect(provenance.sourceSHA256).toBe('59e09129666b52a71abec7ee38ed0d224c128f51026efbbcee45d3051460f4b9');
+    expect(['working-tree-preview', 'committed']).toContain(provenance.mode);
+    expect(provenance.revision).toMatch(/^[0-9a-f]{40}$/);
+    expect(provenance.sourceSHA256).toMatch(/^[0-9a-f]{64}$/);
     expect(provenance.appMembersSwaggerSHA256).toBe(createHash('sha256').update(readFileSync(join(root, 'contracts/openapi/app-members.swagger.json'))).digest('hex'));
-    expect(Object.keys(source.paths)).toEqual(['/openapi/v1/apps/access-members/list']);
+    expect(Object.keys(source.paths)).toEqual(['/openapi/v2/apps/access-members/list']);
   });
-  it('imports the formal App-only route/schema closure and keeps unrelated legacy operations', () => {
+  it('imports the v2 App route/schema closure and excludes retired operations', () => {
     const { dir, args } = prepare(); execFileSync(process.execPath, args);
     const filtered = JSON.parse(readFileSync(join(dir, 'scripts/swagger.filtered.json'), 'utf8'));
-    const route = '/openapi/v1/apps/access-members/list';
+    const route = '/openapi/v2/apps/access-members/list';
     expect(filtered.paths[route]).toEqual(source.paths[route]);
-    expect(filtered.paths).toHaveProperty('/openapi/v1/flow/list');
+    expect(filtered.paths).not.toHaveProperty('/openapi/v1/flow/list');
     expect(filtered.paths).not.toHaveProperty('/openapi/v1/launchpad/{projectName}/getMembers');
     expect(filtered.components.schemas).toEqual(source.components.schemas);
     const api = readFileSync(join(dir, 'out/api.ts'), 'utf8');
-    expect(api).toContain('appsApi'); expect(api).toContain('flowApi'); expect(api).not.toContain('launchpadApi');
+    expect(api).toContain('appsApi'); expect(api).not.toContain('flowApi'); expect(api).not.toContain('launchpadApi');
     expect(api).toContain('AppAccessMembersListReq');
+    expect(api).toContain('post<{ code: number; msg: string; data: components["schemas"]["PlatformAppAccessMembersListResp"] }>');
   });
   it('fails closed if the formal App-members route is absent', () => {
     const { args } = prepare({ paths: {}, components: { schemas: {} } });
@@ -51,13 +53,13 @@ describe('scoped formal App-members generation', () => {
   it('refuses to overwrite an unrelated retained schema with different fields', () => {
     const { dir, args } = prepare();
     const baseline = JSON.parse(readFileSync(join(dir, 'base.json'), 'utf8'));
-    baseline.components.schemas.AppAccessMemberResp = { type: 'string' };
+    baseline.components.schemas.PlatformAppAccessMemberResp = { type: 'string' };
     writeFileSync(join(dir, 'base.json'), JSON.stringify(baseline));
     const result = spawnSync(process.execPath, args, { encoding: 'utf8' });
     expect(result.status).not.toBe(0); expect(result.stderr).toContain('schema conflicts with retained SDK');
   });
   it('fails closed for a missing referenced formal schema', () => {
-    const overlay = structuredClone(source); delete overlay.components.schemas.AppAccessMemberResp;
+    const overlay = structuredClone(source); delete overlay.components.schemas.PlatformAppAccessMemberResp;
     const { args } = prepare(overlay); const result = spawnSync(process.execPath, args, { encoding: 'utf8' });
     expect(result.status).not.toBe(0); expect(result.stderr).toContain('App access-members source schema missing');
   });

@@ -56,13 +56,13 @@ function signedRequest(method, raw, overrides = {}, requestURI = '/api/device/te
 const gateway = createServer(async (req, res) => {
   let body = '';
   for await (const part of req) body += part;
-  if (req.url.startsWith('/openapi/v1/stream-requests/')) {
+  if (req.url.startsWith('/openapi/v2/stream-requests/')) {
     assert.equal(req.headers['x-tier0-app-data-subject'], undefined, 'Control never receives a data proof');
     assert.equal(req.headers['x-api-key'], 'fixture-control-key-not-production');
     if (controlMode === 'revoked') { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ errorCode: 'STREAM_REQUEST_FORBIDDEN', message: 'must-not-expose-private-detail' })); }
     res.setHeader('Content-Type', 'application/json');
     if (req.url.endsWith('/describe')) return res.end(JSON.stringify({ code: controlCode, name: 'Telemetry', description: '', contractVersion: '1.0', inputSchema: {}, outputSchema: {}, sideEffect: 'write', idempotency: 'required', timeoutMs: 5000, status: 'active' }));
-    assert.equal(req.url, `/openapi/v1/stream-requests/${controlCode}/invoke`); controlAttempts++;
+    assert.equal(req.url, `/openapi/v2/stream-requests/${controlCode}/invoke`); controlAttempts++;
     if (controlMode === 'unknown') return req.socket.destroy();
     const payload = JSON.parse(body); assert.deepEqual(payload.input, {});
     const replayed = controlIntents.has(payload.idempotencyKey);

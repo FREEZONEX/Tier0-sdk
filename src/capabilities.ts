@@ -3,7 +3,6 @@ import { getClient, type HttpClient } from './openapi/client.js';
 
 export type CapabilityCode = 'namespace.v2' | 'source' | 'stream' | 'stream.requests.v1' | 'stream.requests.invoke.v1';
 export type CapabilityState = 'disabled' | 'not_supported' | 'unavailable' | 'readiness_unknown' | 'ready';
-export type CapabilityAvailability = 'unavailable' | 'unknown' | 'available';
 
 export interface CapabilityDiagnostics {
   reasonCode?: string;
@@ -14,25 +13,16 @@ export interface CapabilityDiagnostics {
 
 export interface CapabilityOperation extends CapabilityDiagnostics {
   operation: string;
-  releaseEnabled: boolean;
-  enabled: boolean;
-  allowed: boolean;
   state: CapabilityState;
-  availability: CapabilityAvailability;
+  reasonCode: string;
   requiresResourceCheck: boolean;
 }
 
 export interface PublicCapability extends CapabilityDiagnostics {
   code: CapabilityCode;
-  /** Public release and workspace gates; does not establish runtime readiness. */
-  releaseEnabled: boolean;
-  /** Server-assessed implementation/readiness, never inferred from releaseEnabled. */
-  enabled: boolean;
-  /** Authorization summary, not a grant for every individual request code. */
-  allowed: boolean;
+  /** Discovery does not grant access to a resource or confirm a successful run. */
   state: CapabilityState;
-  /** Not device online status or execution/ACK confirmation. */
-  availability: CapabilityAvailability;
+  reasonCode: string;
   contractVersions: string[];
   operations?: CapabilityOperation[];
 }
@@ -47,7 +37,7 @@ export interface CapabilityDiscoverResponse {
   product: 'cloud' | 'enterprise';
   /** Trusted server configuration only; absent when unconfigured. */
   productVersion?: string;
-  contractVersion: '1.0';
+  contractVersion: '2.0';
   apiContractVersions: string[];
   /** Public SDK contract labels, not npm package versions. */
   sdkContractVersions: string[];
@@ -78,8 +68,8 @@ const contracts: Record<CapabilityCode, string[]> = {
   'namespace.v2': ['openapi/v2'],
   'source': ['openapi/v2'],
   'stream': ['openapi/v2'],
-  'stream.requests.v1': ['openapi/v1', 'stream-requests/v1'],
-  'stream.requests.invoke.v1': ['openapi/v1', 'stream-requests/v1'],
+  'stream.requests.v1': ['openapi/v2', 'stream-requests/v1'],
+  'stream.requests.invoke.v1': ['openapi/v2', 'stream-requests/v1'],
 };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -129,18 +119,11 @@ function operationFields(value: Record<string, unknown>, code: CapabilityCode, f
     if (!supported.includes(item.operation)) continue;
     if (seen.has(item.operation)) return fail();
     seen.add(item.operation);
-    const ready = item.state === 'ready';
-    const expected = ready ? 'available' : item.state === 'readiness_unknown' ? 'unknown' : 'unavailable';
-    if (typeof item.releaseEnabled !== 'boolean' || typeof item.enabled !== 'boolean' || typeof item.allowed !== 'boolean' ||
-        typeof item.requiresResourceCheck !== 'boolean' ||
+    if (!text(item.reasonCode) || typeof item.requiresResourceCheck !== 'boolean' ||
+        (value.state === 'disabled' && item.state !== 'disabled') ||
         (resourceOperations[code]?.includes(item.operation) && !item.requiresResourceCheck) ||
-        (value.releaseEnabled === false && item.releaseEnabled !== false) ||
-        !['disabled', 'not_supported', 'unavailable', 'readiness_unknown', 'ready'].includes(item.state as string) ||
-        item.availability !== expected || item.enabled !== ready ||
-        (ready && (!item.releaseEnabled || !item.allowed)) ||
-        (item.state === 'disabled' ? item.releaseEnabled : !item.releaseEnabled)) return fail();
-    operations.push({operation: item.operation, releaseEnabled: item.releaseEnabled, enabled: item.enabled,
-      allowed: item.allowed, state: item.state as CapabilityState, availability: item.availability as CapabilityAvailability,
+        !['disabled', 'not_supported', 'unavailable', 'readiness_unknown', 'ready'].includes(item.state as string)) return fail();
+    operations.push({operation: item.operation, state: item.state as CapabilityState, reasonCode: item.reasonCode,
       requiresResourceCheck: item.requiresResourceCheck, ...diagnostics(item, fail)});
   }
   return { operations };
@@ -158,7 +141,7 @@ function discovery(value: unknown, status: number): CapabilityDiscoverResponse {
       !strings(value.apiContractVersions) || !strings(value.sdkContractVersions) ||
       !Array.isArray(value.capabilities) || !Array.isArray(value.deprecations) ||
       (value.productVersion !== undefined && !text(value.productVersion))) return fail();
-  if (!['cloud', 'enterprise'].includes(value.product) || value.contractVersion !== '1.0' ||
+  if (!['cloud', 'enterprise'].includes(value.product) || value.contractVersion !== '2.0' ||
       !value.apiContractVersions.includes('openapi/v2')) return fail(true);
 
   const capabilities: PublicCapability[] = [];
@@ -169,20 +152,14 @@ function discovery(value: unknown, status: number): CapabilityDiscoverResponse {
     const code = item.code as CapabilityCode;
     if (seen.has(code)) return fail();
     seen.add(code);
-    if (typeof item.releaseEnabled !== 'boolean' || typeof item.enabled !== 'boolean' || typeof item.allowed !== 'boolean' ||
+    if (!text(item.reasonCode) ||
         !['disabled', 'not_supported', 'unavailable', 'readiness_unknown', 'ready'].includes(item.state as string) ||
-        !['unavailable', 'unknown', 'available'].includes(item.availability as string) || !strings(item.contractVersions)) return fail();
+        !strings(item.contractVersions)) return fail();
     if (contracts[code].some(version =>
       !(item.contractVersions as string[]).includes(version) ||
       (version.startsWith('openapi/') && !(value.apiContractVersions as string[]).includes(version)))) return fail(true);
-    const ready = item.state === 'ready';
-    const expectedAvailability = ready ? 'available' : item.state === 'readiness_unknown' ? 'unknown' : 'unavailable';
-    if (item.enabled !== ready || item.availability !== expectedAvailability ||
-        (ready && (!item.releaseEnabled || !item.allowed)) ||
-        (item.state === 'disabled' ? item.releaseEnabled : !item.releaseEnabled)) return fail();
     capabilities.push({
-      code, releaseEnabled: item.releaseEnabled, enabled: item.enabled, allowed: item.allowed,
-      state: item.state as CapabilityState, availability: item.availability as CapabilityAvailability,
+      code, state: item.state as CapabilityState, reasonCode: item.reasonCode,
       contractVersions: [...item.contractVersions],
       ...diagnostics(item, fail),
       ...operationFields(item, code, fail),
@@ -200,7 +177,7 @@ function discovery(value: unknown, status: number): CapabilityDiscoverResponse {
   }
   return {
     product: value.product as CapabilityDiscoverResponse['product'], ...(value.productVersion === undefined ? {} : { productVersion: value.productVersion as string }),
-    contractVersion: '1.0', apiContractVersions: [...value.apiContractVersions],
+    contractVersion: '2.0', apiContractVersions: [...value.apiContractVersions],
     sdkContractVersions: [...value.sdkContractVersions],
     capabilities, deprecations,
   };

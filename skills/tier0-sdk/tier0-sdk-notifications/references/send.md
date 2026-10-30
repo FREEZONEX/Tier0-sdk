@@ -1,10 +1,10 @@
 ---
 name: tier0-sdk-openapi-notifications-send
 version: 0.8.5
-description: "POST /openapi/v1/notifications/send - send an in-app notification with optional web/mobile push"
+description: "POST /openapi/v2/notifications/send - send an in-app notification with optional web/mobile push"
 ---
 
-# send - `POST /openapi/v1/notifications/send`
+# send - `POST /openapi/v2/notifications/send`
 
 Send an inbox message to a user in the API key's Workspace, optionally triggering terminal push reminders (Web Push / mobile push).
 
@@ -18,7 +18,7 @@ Success is HTTP 200 with a **bare JSON body** — there is no `{code, msg, data}
 import { notificationsApi, ApiError } from '@tier0/sdk/openapi';
 
 try {
-  const resp = await notificationsApi.openapiv1notificationssend(body);
+  const resp = await notificationsApi.openapiV2NotificationsSend(body);
   // resp IS { messageId, status, createdAt } — no envelope
 } catch (e) {
   if (e instanceof ApiError) {
@@ -62,8 +62,8 @@ The inbox message is always created (it IS the message); `channels` only decides
 The product interaction selects a person; only application code handles the ID.
 
 1. **Existing trusted relation**: if a work order, assignment, or stored member selection already contains a Tier0 `userId`, reuse it internally as a string. Do not expose it or accept an arbitrary replacement from an end-user text field.
-2. **Project-scoped selection**: use `launchpadApi.openapiv1launchpadgetmembers` with `getCurrentProjectId()` when recipients must belong to the current project. Build picker labels from `userName`, `email`, and roles; keep `userId` only as the option value.
-3. **Workspace-wide selection**: use `platformApi.openapiv1platformgetmembers({ keyword, statuses: ['active'], page: 1, size: 20 })`. It searches the API key's Workspace by username, nickname, or email and returns `userId` in the required string form.
+2. **App-scoped selection**: use `appsApi.openapiV2AppsAccessMembersList` with the verified current App ID when recipients must have App access. Build picker labels from returned names, email and roles; keep the returned user ID as the option value. Retired project/launchpad membership calls have no aliases.
+3. **Workspace-wide selection**: use `platformApi.openapiV2PlatformGetmembers({ keyword, statuses: ['active'], page: 1, size: 20 })`. It searches the API key's Workspace by username, nickname, or email and returns `userId` in the required string form.
 4. **Ambiguity**: when more than one member matches, show names, email, and relevant roles. Do not display IDs as the differentiator and never pick the first result silently.
 
 Cloud member queries currently require `uns:read`; notification send separately requires `notifications:send`. If the key lacks member-read permission, surface a configuration error to the app owner or administrator. Never make the end user supply `recipientUserId` as a workaround.
@@ -76,7 +76,7 @@ The notification endpoint accepts only active members of the API key's Workspace
 import { platformApi } from '@tier0/sdk/openapi';
 
 async function searchActiveRecipients(keyword: string) {
-  const result = await platformApi.openapiv1platformgetmembers({
+  const result = await platformApi.openapiV2PlatformGetmembers({
     keyword,
     statuses: ['active'],
     page: 1,
@@ -280,11 +280,11 @@ This SDK expands channels before HTTP serialization. Native, React and Vue send 
 Given a resolved request `body`, these are alternative calls:
 
 ```typescript
-await notificationsApi.openapiv1notificationssend(body); // default all reminders
-await notificationsApi.openapiv1notificationssend({ ...body, channels: ['web', 'mobile'] }); // all
-await notificationsApi.openapiv1notificationssend({ ...body, channels: ['web'] }); // Web & Desktop
-await notificationsApi.openapiv1notificationssend({ ...body, channels: ['mobile'] }); // Mobile
-await notificationsApi.openapiv1notificationssend({ ...body, channels: [] }); // inbox only
+await notificationsApi.openapiV2NotificationsSend(body); // default all reminders
+await notificationsApi.openapiV2NotificationsSend({ ...body, channels: ['web', 'mobile'] }); // all
+await notificationsApi.openapiV2NotificationsSend({ ...body, channels: ['web'] }); // Web & Desktop
+await notificationsApi.openapiV2NotificationsSend({ ...body, channels: ['mobile'] }); // Mobile
+await notificationsApi.openapiV2NotificationsSend({ ...body, channels: [] }); // inbox only
 ```
 
 ## Examples
@@ -296,7 +296,7 @@ The examples assume `recipientUserId` came from the selected member option or a 
 ```typescript
 import { notificationsApi } from '@tier0/sdk/openapi';
 
-const resp = await notificationsApi.openapiv1notificationssend({
+const resp = await notificationsApi.openapiV2NotificationsSend({
   recipientUserId: selectedRecipient.value,
   type: 'inbox',
   title: 'Weekly inventory report ready',
@@ -314,7 +314,7 @@ console.log(resp.messageId, resp.status); // "71234..." "accepted"
 ```typescript
 import { getCurrentAppId, getCurrentProjectId } from '@tier0/sdk';
 
-const resp = await notificationsApi.openapiv1notificationssend({
+const resp = await notificationsApi.openapiV2NotificationsSend({
   recipientUserId: selectedRecipient.value,
   type: 'inbox',
   title: 'Equipment alert',
@@ -352,7 +352,7 @@ async function sendWithRetry(maxAttempts = 3) {
   for (let attempt = 1; ; attempt++) {
     try {
       // if an earlier attempt actually succeeded, this is an idempotent hit — same messageId, no duplicate
-      return await notificationsApi.openapiv1notificationssend(body);
+      return await notificationsApi.openapiV2NotificationsSend(body);
     } catch (e) {
       // Retryable: server-side 5xx / rate limit — and transport failures with no HTTP response
       // (fetch throws TypeError on connection reset/DNS): the caller cannot know whether the

@@ -67,7 +67,7 @@ describe('single Source/Stream model requests', () => {
 
   it('discovers current capabilities without selecting or exposing an interpreter generation', async () => {
     const fetch = vi.fn(async () => new Response(JSON.stringify({
-      product: 'cloud', contractVersion: '1.0', apiContractVersions: ['openapi/v2'], sdkContractVersions: [],
+      product: 'cloud', contractVersion: '2.0', apiContractVersions: ['openapi/v2'], sdkContractVersions: [],
       interpreterContractVersions: ['historical-selector'], capabilities: [], deprecations: [],
     })));
     vi.stubGlobal('fetch', fetch);

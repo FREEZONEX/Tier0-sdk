@@ -98,16 +98,16 @@ function resumeMultipartUpload(
 
 ## 上传流程与后端契约
 
-1. **init**：`POST /openapi/v1/assets/files/multipart/init`
+1. **init**：`POST /openapi/v2/assets/files/multipart/init`
    body `{ fileName, contentType, size, partSize?, business?, useBy?, visibility?, appInstanceId?, sessionId? }`
    → `data { fileKey, filePath, uploadId, partSize, partCount, expiresAt }`；
-2. **part-urls**：`POST /openapi/v1/assets/files/multipart/part-urls`
+2. **part-urls**：`POST /openapi/v2/assets/files/multipart/part-urls`
    body `{ fileKey, uploadId, partNumbers: number[] }`（SDK 一次性申请全部分片）
    → `data { partUrls: [{ partNumber, url, expiresAt }] }`；
 3. **直传分片**：对每片 `fetch(url, { method: 'PUT', body: file.slice(offset, offset + partSize), signal: 60s 超时 })`；
    默认并发 4（手写并发池，无额外依赖）；单片失败指数退避重试 3 次（500ms 起、封顶 8s + 随机抖动），
    成功从响应头取 `ETag`；已上传分片记录在内存 `Map`（partNumber -> etag），重试/续传不重传；
-4. **complete**：`POST /openapi/v1/assets/files/multipart/complete`
+4. **complete**：`POST /openapi/v2/assets/files/multipart/complete`
    body `{ fileKey, uploadId, parts: [{ partNumber, etag }] }`（SDK 按 partNumber 升序上报）
    → `data { filePath, fileUrl, sizeBytes, expiresAt }`；幂等，失败退避重试。
 

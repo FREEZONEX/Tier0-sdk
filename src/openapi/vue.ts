@@ -3,11 +3,11 @@
 
 // Vue composables require vue to be installed
 import { ref } from 'vue';
-import { systemApi, flowApi, notificationsApi, platformApi, unsApi, appsApi } from './api.js';
+import { systemApi, notificationsApi, platformApi, appsApi } from './api.js';
 import type { components } from './types.js';
 
-export function useGwreload() {
-  const data = ref<any | null>(null);
+export function useOpenapiV2Info() {
+  const data = ref<{ code: number; msg: string; data: components["schemas"]["PlatformInfoResp"] } | null>(null);
   const loading = ref(false);
   const error = ref<Error | null>(null);
 
@@ -15,7 +15,7 @@ export function useGwreload() {
     loading.value = true;
     error.value = null;
     try {
-      data.value = await systemApi.gwreload();
+      data.value = await systemApi.openapiV2Info();
       return data.value;
     } catch (e) {
       error.value = e as Error;
@@ -28,8 +28,8 @@ export function useGwreload() {
   return { data, loading, error, execute };
 }
 
-export function useOpenapiv1authwhoami() {
-  const data = ref<any | null>(null);
+export function useOpenapiV2AuthWhoami() {
+  const data = ref<{ code: number; msg: string; data: components["schemas"]["PlatformAuthWhoamiResp"] } | null>(null);
   const loading = ref(false);
   const error = ref<Error | null>(null);
 
@@ -37,7 +37,7 @@ export function useOpenapiv1authwhoami() {
     loading.value = true;
     error.value = null;
     try {
-      data.value = await systemApi.openapiv1authwhoami();
+      data.value = await systemApi.openapiV2AuthWhoami();
       return data.value;
     } catch (e) {
       error.value = e as Error;
@@ -50,16 +50,16 @@ export function useOpenapiv1authwhoami() {
   return { data, loading, error, execute };
 }
 
-export function useOpenapiv1info() {
-  const data = ref<any | null>(null);
+export function useOpenapiV2NotificationsSend() {
+  const data = ref<components["schemas"]["PlatformSendNotificationResp"] | null>(null);
   const loading = ref(false);
   const error = ref<Error | null>(null);
 
-  const execute = async (body: components["schemas"]["InfoReq"]) => {
+  const execute = async (body: components["schemas"]["PlatformSendNotificationReq"]) => {
     loading.value = true;
     error.value = null;
     try {
-      data.value = await systemApi.openapiv1info(body);
+      data.value = await notificationsApi.openapiV2NotificationsSend(body);
       return data.value;
     } catch (e) {
       error.value = e as Error;
@@ -72,16 +72,16 @@ export function useOpenapiv1info() {
   return { data, loading, error, execute };
 }
 
-export function useOpenapiv1flowcreate() {
-  const data = ref<any | null>(null);
+export function useOpenapiV2NotificationsGet() {
+  const data = ref<components["schemas"]["PlatformGetNotificationResp"] | null>(null);
   const loading = ref(false);
   const error = ref<Error | null>(null);
 
-  const execute = async (body: components["schemas"]["FlowCreateReq"]) => {
+  const execute = async (body: components["schemas"]["PlatformGetNotificationReq"]) => {
     loading.value = true;
     error.value = null;
     try {
-      data.value = await flowApi.openapiv1flowcreate(body);
+      data.value = await notificationsApi.openapiV2NotificationsGet(body);
       return data.value;
     } catch (e) {
       error.value = e as Error;
@@ -94,16 +94,16 @@ export function useOpenapiv1flowcreate() {
   return { data, loading, error, execute };
 }
 
-export function useOpenapiv1flowdelete() {
-  const data = ref<any | null>(null);
+export function useOpenapiV2PlatformGetmembers() {
+  const data = ref<{ code: number; msg: string; data: components["schemas"]["PlatformPlatformMembersResp"] } | null>(null);
   const loading = ref(false);
   const error = ref<Error | null>(null);
 
-  const execute = async (body: components["schemas"]["FlowDeleteReq"]) => {
+  const execute = async (body: components["schemas"]["PlatformPlatformGetMembersReq"]) => {
     loading.value = true;
     error.value = null;
     try {
-      data.value = await flowApi.openapiv1flowdelete(body);
+      data.value = await platformApi.openapiV2PlatformGetmembers(body);
       return data.value;
     } catch (e) {
       error.value = e as Error;
@@ -116,412 +116,16 @@ export function useOpenapiv1flowdelete() {
   return { data, loading, error, execute };
 }
 
-export function useOpenapiv1flowdeploy() {
-  const data = ref<any | null>(null);
+export function useOpenapiV2AppsAccessMembersList() {
+  const data = ref<{ code: number; msg: string; data: components["schemas"]["PlatformAppAccessMembersListResp"] } | null>(null);
   const loading = ref(false);
   const error = ref<Error | null>(null);
 
-  const execute = async (body: components["schemas"]["FlowDeployReq"]) => {
+  const execute = async (body: components["schemas"]["PlatformAppAccessMembersListReq"]) => {
     loading.value = true;
     error.value = null;
     try {
-      data.value = await flowApi.openapiv1flowdeploy(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1flowflowdata() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["FlowGetReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await flowApi.openapiv1flowflowdata(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1flowget() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["FlowGetReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await flowApi.openapiv1flowget(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1flowlist() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["FlowListReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await flowApi.openapiv1flowlist(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1flownodes() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["FlowNodesReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await flowApi.openapiv1flownodes(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1flowupdate() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["FlowUpdateReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await flowApi.openapiv1flowupdate(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1notificationsget() {
-  const data = ref<components["schemas"]["GetNotificationResp"] | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["GetNotificationReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await notificationsApi.openapiv1notificationsget(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1notificationssend() {
-  const data = ref<components["schemas"]["SendNotificationResp"] | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["SendNotificationReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await notificationsApi.openapiv1notificationssend(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1platformgetmembers() {
-  const data = ref<{ code: number; msg?: string; data?: components["schemas"]["PlatformMembersResp"] } | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["PlatformGetMembersReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await platformApi.openapiv1platformgetmembers(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1unsbrowse() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["BrowseReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await unsApi.openapiv1unsbrowse(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1unscreate() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["NodeCreateReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await unsApi.openapiv1unscreate(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1unsdelete() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["NodeDeleteReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await unsApi.openapiv1unsdelete(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1unshistory() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["HistoryReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await unsApi.openapiv1unshistory(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1unsread() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["ReadReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await unsApi.openapiv1unsread(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1unsrestore() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["NodeRestoreReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await unsApi.openapiv1unsrestore(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1unssearch() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["SearchReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await unsApi.openapiv1unssearch(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1unsupdate() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["NodeUpdateReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await unsApi.openapiv1unsupdate(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1unswrite() {
-  const data = ref<any | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["WriteReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await unsApi.openapiv1unswrite(body);
-      return data.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { data, loading, error, execute };
-}
-
-export function useOpenapiv1appslistaccessmembers() {
-  const data = ref<components["schemas"]["AppAccessMembersListResp"] | null>(null);
-  const loading = ref(false);
-  const error = ref<Error | null>(null);
-
-  const execute = async (body: components["schemas"]["AppAccessMembersListReq"]) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      data.value = await appsApi.openapiV1Appslistaccessmembers(body);
+      data.value = await appsApi.openapiV2AppsAccessMembersList(body);
       return data.value;
     } catch (e) {
       error.value = e as Error;
