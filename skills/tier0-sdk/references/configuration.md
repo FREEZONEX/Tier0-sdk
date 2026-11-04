@@ -125,18 +125,17 @@ configureClient({
 
 ## Browser and Vite
 
-The SDK does not automatically read `VITE_*` variables at runtime. In Vite/browser code, pass values explicitly from `import.meta.env`.
+The SDK does not automatically read `VITE_*` variables at runtime. Vite embeds `VITE_*` values in the browser bundle, where every visitor can read them. Never put a Personal, Service, App, or legacy session API key in a `VITE_*` variable or browser storage.
 
 ```typescript
 import { configureClient } from '@tier0/sdk/openapi';
 
 configureClient({
   apiHost: import.meta.env.VITE_TIER0_API_HOST,
-  apiKey: import.meta.env.VITE_TIER0_API_KEY,
 });
 ```
 
-Do not expose long-lived production API keys in browser apps unless the deployment is explicitly designed for that trust model. Prefer short-lived or scoped keys when available.
+This configures only the public host; it does not authenticate requests. For user operations, send requests to your application's server using its authenticated user session and enforce the user's workspace and resource permissions there. Keep any explicitly authorized backend credential on the server. An App key identifies the App, not the current user.
 
 ## Dynamic Configuration
 
@@ -148,6 +147,8 @@ configureClient({
   getApiKey: () => getKeyFromSecureStore(),
 });
 ```
+
+The getter is synchronous. If it returns an empty value, this SDK falls back to `TIER0_API_KEY`; do not use it as a fail-closed per-user credential selector in a shared runtime.
 
 ## MQTT
 
