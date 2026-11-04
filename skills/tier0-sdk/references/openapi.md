@@ -24,7 +24,7 @@ In Node.js, the SDK can read `TIER0_*` environment variables.
 | `TIER0_API_HOST` | Yes | OpenAPI base URL injected by the platform/deployment, preferably including scheme |
 | `TIER0_API_KEY` | Yes | API key |
 
-For browser/Vite projects, pass values explicitly from `import.meta.env`; do not rely on automatic `VITE_*` lookup.
+For browser/Vite projects, `VITE_*` values are public in the bundle. Do not place API keys in them or in browser storage. Route user operations through an authenticated server session and enforce workspace and resource permissions server-side.
 
 ### Runtime Configuration
 
@@ -45,11 +45,13 @@ import { configureClient } from '@tier0/sdk/openapi';
 configureClient({
   getApiHost: () => process.env.TIER0_API_HOST,
   getApiKey: () => {
-    // Read from secure storage or an auth service.
-    return localStorage.getItem('tier0_api_key') || undefined;
+    // Server-side only; inject this variable securely into the runtime.
+    return process.env.APP_API_KEY;
   },
 });
 ```
+
+The getter is synchronous; an empty result falls back to `TIER0_API_KEY`. Do not use it to select user credentials in a shared runtime when failure must stop the request.
 
 ## Basic Calls
 
