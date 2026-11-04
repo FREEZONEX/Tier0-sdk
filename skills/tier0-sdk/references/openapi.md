@@ -45,8 +45,8 @@ import { configureClient } from '@tier0/sdk/openapi';
 configureClient({
   getApiHost: () => process.env.TIER0_API_HOST,
   getApiKey: () => {
-    // Server-side only: read from the application's secure credential store.
-    return getKeyFromSecureStore();
+    // Server-side only; inject this variable securely into the runtime.
+    return process.env.APP_API_KEY;
   },
 });
 ```

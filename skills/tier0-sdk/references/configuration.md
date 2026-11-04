@@ -144,11 +144,11 @@ Use getters when the host or key can rotate:
 ```typescript
 configureClient({
   getApiHost: () => process.env.TIER0_API_HOST,
-  getApiKey: () => getKeyFromSecureStore(),
+  getApiKey: () => process.env.APP_API_KEY,
 });
 ```
 
-The getter is synchronous. If it returns an empty value, this SDK falls back to `TIER0_API_KEY`; do not use it as a fail-closed per-user credential selector in a shared runtime.
+Here `APP_API_KEY` is a server-side environment variable; use your deployment's secure secret injection to provide it. The getter is synchronous. If it returns an empty value, this SDK falls back to `TIER0_API_KEY`; do not use it as a fail-closed per-user credential selector in a shared runtime.
 
 ## MQTT
 
