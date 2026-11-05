@@ -172,9 +172,11 @@ export class Tier0MQClient {
       this.client = client;
       this.connectionSettingsLocked = true;
       this.rejectPendingConnect = reject;
+      let disconnectNotified = false;
 
       client.on('connect', () => {
         if (this.client !== client) return;
+        disconnectNotified = false;
         this._connected = true;
         this.connectingPromise = null;
         this.rejectPendingConnect = null;
@@ -191,17 +193,25 @@ export class Tier0MQClient {
         this.lazyConnectPromise = null;
         this.reportedConnectionErrors.add(err);
         reject(err);
+        if (this.config.reconnectPeriod === 0) {
+          this.generation++;
+          this.client = null;
+          this._connected = false;
+          client.end(true);
+        }
         this.emit('error', err);
       });
 
       client.on('disconnect', () => {
         if (this.client !== client) return;
         this._connected = false;
+        disconnectNotified = true;
         this.emit('disconnect');
       });
 
       client.on('close', () => {
         if (this.client !== client) return;
+        const notifyDisconnect = this._connected && !disconnectNotified;
         this._connected = false;
         if (this.config.reconnectPeriod === 0) {
           this.generation++;
@@ -211,6 +221,10 @@ export class Tier0MQClient {
           this.rejectPendingConnect = null;
           reject?.(new Error('MQTT connection closed'));
           client.end(true);
+        }
+        if (notifyDisconnect) {
+          disconnectNotified = true;
+          this.emit('disconnect');
         }
       });
 

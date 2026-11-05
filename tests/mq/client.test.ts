@@ -379,6 +379,47 @@ describe('Tier0MQClient', () => {
     await expect(next).rejects.toThrow(/closed/);
   });
 
+  it('permits a synchronous retry on error before the old socket closes', async () => {
+    const client = new Tier0MQClient({ host: 'broker', reconnectPeriod: 0 });
+    let next: Promise<void> | undefined;
+    client.on('error', () => {
+      (mqtt.connect as any).mockReturnValue({ ...mockMqttClient });
+      next = client.connect();
+    });
+    client.subscribe('first', vi.fn());
+    eventHandlers.error[0](new Error('connection refused'));
+    eventHandlers.close[0]();
+    expect(mqtt.connect).toHaveBeenCalledTimes(2);
+    eventHandlers.connect[1]();
+    await expect(next).resolves.toBeUndefined();
+  });
+
+  it('notifies a silent transport close once and retains subscriptions', async () => {
+    const client = new Tier0MQClient({ host: 'broker', reconnectPeriod: 0 });
+    const disconnected = vi.fn();
+    client.on('disconnect', disconnected);
+    const first = client.connect();
+    emit('connect');
+    await first;
+    client.subscribe('topic', vi.fn());
+    eventHandlers.close[0]();
+    expect(disconnected).toHaveBeenCalledOnce();
+    expect(client.subscribedTopics).toEqual(['topic']);
+    expect(client.isConnected).toBe(false);
+  });
+
+  it('does not repeat disconnect when protocol disconnect precedes close', async () => {
+    const client = new Tier0MQClient({ host: 'broker' });
+    const disconnected = vi.fn();
+    client.on('disconnect', disconnected);
+    const first = client.connect();
+    emit('connect');
+    await first;
+    eventHandlers.disconnect[0]();
+    eventHandlers.close[0]();
+    expect(disconnected).toHaveBeenCalledOnce();
+  });
+
   it.each([
     [undefined, 'sk-per-ws1_test', '1'],
     ['sk-svc-ws2_old', 'sk-svc-ws10_test', '36'],
