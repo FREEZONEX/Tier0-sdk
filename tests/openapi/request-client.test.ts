@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createTier0Client, configureClient, systemApi, uploadFile } from '../../src/index.js';
+import { createTier0Client, configureClient, systemApi, uploadFile, getFileUrl, downloadFile, deleteFile } from '../../src/index.js';
 
 describe('request-scoped client', () => {
   afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); configureClient({}); });
@@ -87,6 +87,24 @@ describe('request-scoped client', () => {
       '/openapi/v1/assets/files/multipart/abort',
     ]);
     expect(requests.every(r => r.url.startsWith('https://a.test/') && r.key === 'a-key')).toBe(true);
+  });
+
+  it('preserves legacy file helpers as Array.map callbacks', async () => {
+    configureClient({ apiHost: 'https://legacy.test', apiKey: 'legacy-key' });
+    const calls: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (input: string, init?: RequestInit) => {
+      const url = String(input);
+      expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer legacy-key');
+      calls.push(url);
+      if (url.includes('/files/url')) return Response.json({ fileUrl: 'https://storage.test/a' });
+      if (url.includes('/files/download')) return new Response('file');
+      return Response.json({ deleted: true });
+    }));
+    const options = [{ filePath: 'a' }, { filePath: 'b' }];
+    expect(await Promise.all(options.map(getFileUrl))).toHaveLength(2);
+    expect(await Promise.all(options.map(downloadFile))).toHaveLength(2);
+    expect(await Promise.all(options.map(deleteFile))).toEqual([{ deleted: true }, { deleted: true }]);
+    expect(calls).toHaveLength(6);
   });
 
   it('rejects missing explicit keys even when a process key exists', () => {

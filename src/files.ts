@@ -456,10 +456,14 @@ async function postMultipartCompleteWithRetry(
  *
  * `uploadFile` 在文件 >100MB 时自动调用本方法；小文件也可显式传 `options.multipart` 走分片。
  */
-export async function uploadFileMultipart(
+export async function uploadFileMultipart(file: File, options: MultipartUploadOptions = {}): Promise<MultipartUploadResult> {
+  return uploadFileMultipartWithClient(file, options, getClient());
+}
+
+async function uploadFileMultipartWithClient(
   file: File,
-  options: MultipartUploadOptions = {},
-  client: HttpClient = getClient()
+  options: MultipartUploadOptions,
+  client: HttpClient
 ): Promise<MultipartUploadResult> {
   assertUploadFile(file);
   if (file.size <= 0) {
@@ -608,8 +612,16 @@ async function runMultipartUpload(
 export async function resumeMultipartUpload(
   file: File,
   session: MultipartResumeSession,
-  options: ResumeMultipartUploadOptions = {},
-  client: HttpClient = getClient()
+  options: ResumeMultipartUploadOptions = {}
+): Promise<MultipartUploadResult> {
+  return resumeMultipartUploadWithClient(file, session, options, getClient());
+}
+
+async function resumeMultipartUploadWithClient(
+  file: File,
+  session: MultipartResumeSession,
+  options: ResumeMultipartUploadOptions,
+  client: HttpClient
 ): Promise<MultipartUploadResult> {
   assertUploadFile(file);
   if (!session || !session.fileKey || !session.uploadId) {
@@ -762,12 +774,16 @@ function buildQuery(params: Record<string, string | number | undefined>): string
  * 调用前需先通过 `configureClient` 配置 apiHost/apiKey，或设置环境变量
  * `TIER0_API_HOST` / `TIER0_API_KEY`。
  */
-export async function uploadFile(file: File, options: UploadOptions = {}, client: HttpClient = getClient()): Promise<UploadResult> {
+export async function uploadFile(file: File, options: UploadOptions = {}): Promise<UploadResult> {
+  return uploadFileWithClient(file, options, getClient());
+}
+
+async function uploadFileWithClient(file: File, options: UploadOptions, client: HttpClient): Promise<UploadResult> {
   assertUploadFile(file);
   // 大文件（>100MB）自动切换 multipart 分片直传；小文件显式传 options.multipart 也走分片
   if (shouldUseMultipart(file.size, options.multipart)) {
     const { multipart, ...rest } = options;
-    return uploadFileMultipart(file, {
+    return uploadFileMultipartWithClient(file, {
       ...rest,
       partSize: multipart?.partSize,
       concurrency: multipart?.concurrency,
@@ -838,7 +854,11 @@ export async function uploadFile(file: File, options: UploadOptions = {}, client
  * 适用于需要外发 URL 或前端直接展示 private 图片的场景；
  * 需要下载文件内容时请用 `downloadFile`。
  */
-export async function getFileUrl(options: GetFileUrlOptions, client: HttpClient = getClient()): Promise<GetFileUrlResult> {
+export async function getFileUrl(options: GetFileUrlOptions): Promise<GetFileUrlResult> {
+  return getFileUrlWithClient(options, getClient());
+}
+
+async function getFileUrlWithClient(options: GetFileUrlOptions, client: HttpClient): Promise<GetFileUrlResult> {
   if (!options.filePath) {
     throw new Error('Tier0 SDK: getFileUrl requires filePath');
   }
@@ -869,7 +889,11 @@ export async function getFileUrl(options: GetFileUrlOptions, client: HttpClient 
  * - 浏览器：`response.blob()` 后创建 object URL 触发保存；
  * - Node.js：`response.arrayBuffer()` 后写入本地文件系统。
  */
-export async function downloadFile(options: DownloadFileOptions, client: HttpClient = getClient()): Promise<DownloadFileResult> {
+export async function downloadFile(options: DownloadFileOptions): Promise<DownloadFileResult> {
+  return downloadFileWithClient(options, getClient());
+}
+
+async function downloadFileWithClient(options: DownloadFileOptions, client: HttpClient): Promise<DownloadFileResult> {
   if (!options.filePath) {
     throw new Error('Tier0 SDK: downloadFile requires filePath');
   }
@@ -908,7 +932,11 @@ export async function downloadFile(options: DownloadFileOptions, client: HttpCli
 /**
  * 删除文件。按上传时返回的 filePath 删除存储对象与文件记录。
  */
-export async function deleteFile(options: DeleteFileOptions, client: HttpClient = getClient()): Promise<DeleteFileResult> {
+export async function deleteFile(options: DeleteFileOptions): Promise<DeleteFileResult> {
+  return deleteFileWithClient(options, getClient());
+}
+
+async function deleteFileWithClient(options: DeleteFileOptions, client: HttpClient): Promise<DeleteFileResult> {
   if (!options.filePath) {
     throw new Error('Tier0 SDK: deleteFile requires filePath');
   }
@@ -924,12 +952,12 @@ export async function deleteFile(options: DeleteFileOptions, client: HttpClient 
 /** Bind all managed file operations to one client, including multipart continuation. */
 export function createFilesClient(client: HttpClient) {
   return {
-    uploadFile: (file: File, options?: UploadOptions) => uploadFile(file, options, client),
-    uploadFileMultipart: (file: File, options?: MultipartUploadOptions) => uploadFileMultipart(file, options, client),
+    uploadFile: (file: File, options?: UploadOptions) => uploadFileWithClient(file, options ?? {}, client),
+    uploadFileMultipart: (file: File, options?: MultipartUploadOptions) => uploadFileMultipartWithClient(file, options ?? {}, client),
     resumeMultipartUpload: (file: File, session: MultipartResumeSession, options?: ResumeMultipartUploadOptions) =>
-      resumeMultipartUpload(file, session, options, client),
-    getFileUrl: (options: GetFileUrlOptions) => getFileUrl(options, client),
-    downloadFile: (options: DownloadFileOptions) => downloadFile(options, client),
-    deleteFile: (options: DeleteFileOptions) => deleteFile(options, client),
+      resumeMultipartUploadWithClient(file, session, options ?? {}, client),
+    getFileUrl: (options: GetFileUrlOptions) => getFileUrlWithClient(options, client),
+    downloadFile: (options: DownloadFileOptions) => downloadFileWithClient(options, client),
+    deleteFile: (options: DeleteFileOptions) => deleteFileWithClient(options, client),
   };
 }
