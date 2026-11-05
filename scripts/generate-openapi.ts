@@ -340,7 +340,9 @@ class HttpClient {
   }
 
   private getApiKeyInternal(): string | undefined {
-    return this.config.apiKey || this.config.getApiKey?.() || defaultGetApiKey();
+    if (this.config.apiKey !== undefined) return this.config.apiKey;
+    if (this.config.getApiKey) return this.config.getApiKey();
+    return defaultGetApiKey();
   }
 
   private async request<T>(method: string, path: string, body?: any, options?: { signal?: AbortSignal }): Promise<T> {

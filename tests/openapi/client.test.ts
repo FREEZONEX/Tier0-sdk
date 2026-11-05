@@ -134,6 +134,39 @@ describe('HttpClient', () => {
     );
   });
 
+  it('does not fall back to a process key when a dynamic user key is unavailable', async () => {
+    vi.stubEnv('TIER0_API_KEY', 'shared-process-key');
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({}),
+    } as Response);
+    globalThis.fetch = mockFetch;
+    let currentKey: string | undefined;
+    const client = new HttpClient({ apiHost: 'api.example.com', getApiKey: () => currentKey });
+
+    await client.get('/test');
+    expect(mockFetch.mock.calls[0][1].headers).toEqual({ 'Content-Type': 'application/json' });
+    expect(client.getApiKey()).toBeUndefined();
+
+    currentKey = 'user-key';
+    await client.get('/test');
+    expect(mockFetch.mock.calls[1][1].headers).toMatchObject({
+      Authorization: 'Bearer user-key',
+      'X-API-Key': 'user-key',
+    });
+    currentKey = '';
+    await client.get('/test');
+    expect(mockFetch.mock.calls[2][1].headers).toEqual({ 'Content-Type': 'application/json' });
+  });
+
+  it('uses the environment key only when no explicit key source is configured', () => {
+    vi.stubEnv('TIER0_API_KEY', 'shared-process-key');
+    expect(new HttpClient().getApiKey()).toBe('shared-process-key');
+    expect(new HttpClient({ apiKey: '' }).getApiKey()).toBe('');
+    expect(new HttpClient({ apiKey: '', getApiKey: () => 'other-key' }).getApiKey()).toBe('');
+  });
+
   it('should send POST request with body', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
