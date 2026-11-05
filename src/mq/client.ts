@@ -53,6 +53,7 @@ export class Tier0MQClient {
   private connectingPromise: Promise<void> | null = null;
   private rejectPendingConnect: ((error: Error) => void) | null = null;
   private generation = 0;
+  private cancellationGeneration = 0;
   private connectionSettingsLocked = false;
   private _connected = false;
 
@@ -204,6 +205,7 @@ export class Tier0MQClient {
                 const accepted = (
                   sub.handler as (t: string, p: string) => unknown
                 )(topic, payloadStr);
+                if (this.client !== client || !this.subscriptions.includes(sub)) return;
                 if (accepted === false) {
                   sub.backpressuredCount = (sub.backpressuredCount ?? 0) + 1;
                   const limit = this.config.maxBackpressuredDeliveries ?? 0;
@@ -218,7 +220,7 @@ export class Tier0MQClient {
                   sub.backpressuredCount = 0;
                 }
               } catch (e) {
-                this.emit('error', e as Error);
+                if (this.client === client && this.subscriptions.includes(sub)) this.emit('error', e as Error);
               }
             }
           });
@@ -299,9 +301,13 @@ export class Tier0MQClient {
       });
     } else if (!this.client || this.connectingPromise) {
       // 未连接时触发懒连接，连接成功后 resubscribeAll 会自动 subscribe
-      const generation = this.generation;
-      this.ensureConnected().catch((err) => {
-        if (this.generation === generation) this.emit('error', err);
+      const cancellationGeneration = this.cancellationGeneration;
+      const pending = this.ensureConnected();
+      const client = this.client;
+      pending.catch((err) => {
+        if (this.cancellationGeneration === cancellationGeneration && (!this.client || this.client === client)) {
+          this.emit('error', err);
+        }
       });
     }
   }
@@ -321,7 +327,9 @@ export class Tier0MQClient {
     // 如果该 topic 下已无任何 handler，则向 broker 发送 unsubscribe
     const stillHasHandler = this.subscriptions.some((s) => s.topic === topic);
     if (!stillHasHandler) {
-      this.client.unsubscribe(topic, (err) => {
+    const client = this.client;
+    client.unsubscribe(topic, (err) => {
+      if (this.client !== client) return;
         if (err) {
           this.emit('error', err);
         }
@@ -341,15 +349,21 @@ export class Tier0MQClient {
       throw new Error('MQTT connection changed before publish; message was not submitted');
     }
 
+    const client = this.client;
     const message =
       typeof payload === 'string' ? payload : JSON.stringify(payload);
-    this.client!.publish(topic, message, {
+    const publishOptions = {
       qos: (options?.qos ?? 0) as 0 | 1 | 2,
       retain: options?.retain ?? false,
-    });
+    };
+    if (this.generation !== generation || this.client !== client || !this._connected) {
+      throw new Error('MQTT connection changed before publish; message was not submitted');
+    }
+    client.publish(topic, message, publishOptions);
   }
 
   disconnect(): void {
+    this.cancellationGeneration++;
     const generation = ++this.generation;
     const client = this.client;
     this.client = null;
