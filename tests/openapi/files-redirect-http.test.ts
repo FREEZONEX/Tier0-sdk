@@ -56,7 +56,9 @@ describe('downloadFile real HTTP redirects', () => {
       } else if (url.pathname === '/sdk/final') {
         res.writeHead(200, { 'Content-Type': 'application/json' }).end('{"value":"origin"}');
       } else if (url.pathname === '/openapi/v1/auth/whoami' || url.pathname === '/openapi/v2/auth/whoami') {
-        if (url.searchParams.get('redirect') === 'true') {
+        if (req.headers['x-api-key'] !== key || req.headers.authorization !== undefined) {
+          res.writeHead(401).end('invalid or ambiguous credential');
+        } else if (url.searchParams.get('redirect') === 'true') {
           res.writeHead(307, { Location: `${storageURL}/json` }).end();
         } else {
           res.writeHead(200, { 'Content-Type': 'application/json' }).end('{"value":"whoami"}');
@@ -172,6 +174,7 @@ describe('downloadFile real HTTP redirects', () => {
       const client = new HttpClient({ apiHost: originURL, apiKey: key });
       await expect(client.post(path, {})).resolves.toEqual({ value: 'whoami' });
       expect(originRequests[0].headers['x-api-key']).toBe(key);
+      expect(originRequests[0].headers.authorization).toBeUndefined();
       await expect(client.post(`${path}?redirect=true`, {})).rejects.toThrow();
       expect(storageRequests).toHaveLength(0);
     }

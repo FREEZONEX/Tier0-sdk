@@ -352,14 +352,14 @@ class HttpClient {
       'Content-Type': 'application/json',
     };
 
-    if (apiKey) {
-      // Authorization is stripped by Fetch when redirecting to another origin.
-      headers['Authorization'] = \`Bearer \${apiKey}\`;
-    }
     // Whoami handlers may require X-API-Key; never forward it on redirects.
     const requestPath = path.split('?')[0];
     const whoami = requestPath === '/openapi/v1/auth/whoami' || requestPath === '/openapi/v2/auth/whoami';
-    if (apiKey && whoami) headers['X-API-Key'] = apiKey;
+    if (apiKey) {
+      if (whoami) headers['X-API-Key'] = apiKey;
+      // Authorization is stripped by Fetch when redirecting to another origin.
+      else headers['Authorization'] = \`Bearer \${apiKey}\`;
+    }
 
     const response = await fetch(url, {
       method,
