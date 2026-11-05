@@ -51,6 +51,8 @@ export class Tier0MQClient {
   private listeners: { [K in keyof MQTTEventMap]?: Array<MQTTEventMap[K]> } = {};
   private subscriptions: Subscription[] = [];
   private connectingPromise: Promise<void> | null = null;
+  private rejectPendingConnect: ((error: Error) => void) | null = null;
+  private generation = 0;
   private _connected = false;
 
   constructor(config?: MQTTConfig) {
@@ -119,9 +121,17 @@ export class Tier0MQClient {
   private async ensureConnected(): Promise<void> {
     if (this._connected) return;
     if (this.connectingPromise) return this.connectingPromise;
+    if (this.client) {
+      throw new Error('MQTT client is reconnecting; wait for reconnect or disconnect first');
+    }
 
-    this.connectingPromise = this.doConnect();
-    return this.connectingPromise;
+    const pending = this.doConnect();
+    if (!this.client) return pending;
+    this.connectingPromise = pending;
+    void pending.catch(() => {
+      if (this.connectingPromise === pending) this.connectingPromise = null;
+    });
+    return pending;
   }
 
   private doConnect(): Promise<void> {
@@ -136,35 +146,44 @@ export class Tier0MQClient {
         clean: this.config.clean,
       };
 
-      this.client = mqtt.connect(this.mqttUrl, options);
+      const client = mqtt.connect(this.mqttUrl, options);
+      this.client = client;
+      this.rejectPendingConnect = reject;
 
-      this.client.on('connect', () => {
+      client.on('connect', () => {
+        if (this.client !== client) return;
         this._connected = true;
         this.connectingPromise = null;
+        this.rejectPendingConnect = null;
+        resolve();
         this.emit('connect');
         // 断连重连后自动恢复所有订阅
-        this.resubscribeAll();
-        resolve();
+        if (this.client === client) this.resubscribeAll();
       });
 
-      this.client.on('error', (err) => {
-        this.emit('error', err);
+      client.on('error', (err) => {
+        if (this.client !== client) return;
         this.connectingPromise = null;
+        this.rejectPendingConnect = null;
         reject(err);
+        this.emit('error', err);
       });
 
-      this.client.on('disconnect', () => {
+      client.on('disconnect', () => {
+        if (this.client !== client) return;
         this._connected = false;
         this.emit('disconnect');
       });
 
-      this.client.on('close', () => {
+      client.on('close', () => {
+        if (this.client !== client) return;
         this._connected = false;
       });
 
-      this.client.on(
+      client.on(
         'message',
         (topic: string, payload: Buffer, _packet: mqtt.IPublishPacket) => {
+          if (this.client !== client) return;
           const payloadStr = payload.toString();
           // 复制一份快照：handler 触发背压自动退订时会重建 this.subscriptions
           this.subscriptions.slice().forEach((sub) => {
@@ -200,6 +219,21 @@ export class Tier0MQClient {
   // 显式连接（需要等待连接完成时使用）
   async connect(config?: MQTTConfig): Promise<void> {
     if (config) {
+      // Read caller-provided properties once before checking and storing them.
+      const snapshot = { ...config };
+      config = snapshot;
+      if (Object.prototype.hasOwnProperty.call(config, 'password') && config.password === undefined) {
+        throw new TypeError('MQTT password was explicitly undefined; provide a credential or omit the password field');
+      }
+      const connectionFields: (keyof MQTTConfig)[] = [
+        'host', 'port', 'secure', 'clientId', 'username', 'password',
+        'keepAlive', 'reconnectPeriod', 'connectTimeout', 'clean',
+      ];
+      if (this.client && connectionFields.some((field) =>
+        Object.prototype.hasOwnProperty.call(snapshot, field) && snapshot[field] !== this.config[field]
+      )) {
+        throw new Error('MQTT connection settings cannot change while a client exists; disconnect first');
+      }
       const previousPassword = this.config.password;
       this.config = { ...this.config, ...config };
       if (config.clientId !== undefined) this.explicitClientId = true;
@@ -215,7 +249,11 @@ export class Tier0MQClient {
         if (!this.explicitUsername) this.config.username = prefix + '&open';
       }
     }
-    return this.ensureConnected();
+    const generation = this.generation;
+    await this.ensureConnected();
+    if (this.generation !== generation || !this._connected || !this.client) {
+      throw new Error('MQTT connection changed before connect completed');
+    }
   }
 
   // 订阅 topic，内部 qos 固定为 1，handler 接收 (topic, payload)
@@ -276,7 +314,11 @@ export class Tier0MQClient {
     payload: string | object,
     options?: { qos?: number; retain?: boolean }
   ): Promise<void> {
+    const generation = this.generation;
     await this.ensureConnected();
+    if (this.generation !== generation || !this._connected || !this.client) {
+      throw new Error('MQTT connection changed before publish; message was not submitted');
+    }
 
     const message =
       typeof payload === 'string' ? payload : JSON.stringify(payload);
@@ -289,13 +331,18 @@ export class Tier0MQClient {
   disconnect(): void {
     if (!this.client) return;
 
-    this.client.end(true, () => {
-      this.emit('disconnect');
-    });
+    const generation = ++this.generation;
+    const client = this.client;
     this.client = null;
     this._connected = false;
     this.connectingPromise = null;
+    const reject = this.rejectPendingConnect;
+    this.rejectPendingConnect = null;
     this.subscriptions = [];
+    reject?.(new Error('MQTT connection cancelled by disconnect'));
+    client.end(true, () => {
+      if (!this.client && this.generation === generation) this.emit('disconnect');
+    });
   }
 
   on<K extends keyof MQTTEventMap>(event: K, handler: MQTTEventMap[K]): void {

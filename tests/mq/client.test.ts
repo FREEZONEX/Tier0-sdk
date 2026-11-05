@@ -58,6 +58,72 @@ describe('Tier0MQClient', () => {
     handlers.forEach((h) => h(...args));
   }
 
+  it.each(['connected', 'connecting', 'reconnecting'] as const)(
+    'rejects a credential change while %s without changing the original connection', async (state) => {
+      const client = new Tier0MQClient({ host: 'broker', password: 'sk-per-ws1_a' });
+      const pending = client.connect();
+      if (state !== 'connecting') {
+        emit('connect');
+        await pending;
+      }
+      if (state === 'reconnecting') emit('close');
+      await expect(client.connect({ password: 'sk-per-ws2_b' })).rejects.toThrow(/disconnect/i);
+      expect(mqtt.connect).toHaveBeenCalledTimes(1);
+      if (state === 'connecting') {
+        emit('connect');
+        await pending;
+      }
+      expect((mqtt.connect as any).mock.calls[0][1].password).toBe('sk-per-ws1_a');
+    },
+  );
+
+  it('cancels an in-flight connection and ignores callbacks from its old socket', async () => {
+    const client = new Tier0MQClient({ host: 'broker', password: 'sk-per-ws1_a' });
+    const pending = client.connect();
+    const oldConnect = eventHandlers.connect[0];
+    const oldClose = eventHandlers.close[0];
+    client.disconnect();
+    await expect(pending).rejects.toThrow(/cancelled/);
+    (mqtt.connect as any).mockReturnValue({ ...mockMqttClient });
+    const next = client.connect({ password: 'sk-per-ws2_b' });
+    eventHandlers.connect[1]();
+    await next;
+    oldConnect();
+    oldClose();
+    expect(client.isConnected).toBe(true);
+    expect((mqtt.connect as any).mock.calls[1][1].password).toBe('sk-per-ws2_b');
+  });
+
+  it('does not report a successful connection if a connect listener disconnects', async () => {
+    const client = new Tier0MQClient({ host: 'broker' });
+    client.on('connect', () => client.disconnect());
+    const pending = client.connect();
+    emit('connect');
+    await expect(pending).rejects.toThrow(/connection changed/);
+  });
+
+  it.each([{ host: 'other' }, { username: 'other' }, { clientId: 'other' },
+    { password: undefined }, { clean: false }])('rejects changed connection options %j', async (options) => {
+    const client = new Tier0MQClient({ host: 'broker', password: 'key-a' });
+    const pending = client.connect();
+    emit('connect');
+    await pending;
+    await expect(client.connect(options)).rejects.toThrow();
+    await expect(client.connect({ password: 'key-a' })).resolves.toBeUndefined();
+    expect(mqtt.connect).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads a changing credential getter only once', async () => {
+    const client = new Tier0MQClient({ host: 'broker', password: 'key-a' });
+    const pending = client.connect();
+    emit('connect');
+    await pending;
+    let reads = 0;
+    await client.connect({ get password() { return ++reads === 1 ? 'key-a' : 'key-b'; } });
+    expect(reads).toBe(1);
+    expect((mqtt.connect as any).mock.calls[0][1].password).toBe('key-a');
+  });
+
   it.each([
     [undefined, 'sk-per-ws1_test', '1'],
     ['sk-svc-ws2_old', 'sk-svc-ws10_test', '36'],
