@@ -53,6 +53,7 @@ export class Tier0MQClient {
   private connectingPromise: Promise<void> | null = null;
   private rejectPendingConnect: ((error: Error) => void) | null = null;
   private generation = 0;
+  private connectionSettingsLocked = false;
   private _connected = false;
 
   constructor(config?: MQTTConfig) {
@@ -148,6 +149,7 @@ export class Tier0MQClient {
 
       const client = mqtt.connect(this.mqttUrl, options);
       this.client = client;
+      this.connectionSettingsLocked = true;
       this.rejectPendingConnect = reject;
 
       client.on('connect', () => {
@@ -178,6 +180,15 @@ export class Tier0MQClient {
       client.on('close', () => {
         if (this.client !== client) return;
         this._connected = false;
+        if (this.config.reconnectPeriod === 0) {
+          this.generation++;
+          this.client = null;
+          this.connectingPromise = null;
+          const reject = this.rejectPendingConnect;
+          this.rejectPendingConnect = null;
+          reject?.(new Error('MQTT connection closed'));
+          client.end(true);
+        }
       });
 
       client.on(
@@ -229,7 +240,7 @@ export class Tier0MQClient {
         'host', 'port', 'secure', 'clientId', 'username', 'password',
         'keepAlive', 'reconnectPeriod', 'connectTimeout', 'clean',
       ];
-      if (this.client && connectionFields.some((field) =>
+      if (this.connectionSettingsLocked && connectionFields.some((field) =>
         Object.prototype.hasOwnProperty.call(snapshot, field) && snapshot[field] !== this.config[field]
       )) {
         throw new Error('MQTT connection settings cannot change while a client exists; disconnect first');
@@ -270,7 +281,9 @@ export class Tier0MQClient {
     this.subscriptions.push({ topic, handler });
 
     if (this._connected && this.client) {
-      this.client.subscribe(topic, { qos: 1 as 0 | 1 | 2 }, (err) => {
+      const client = this.client;
+      client.subscribe(topic, { qos: 1 as 0 | 1 | 2 }, (err) => {
+        if (this.client !== client) return;
         if (err) {
           this.emit('error', err);
           // 订阅失败时回滚
@@ -279,7 +292,7 @@ export class Tier0MQClient {
           );
         }
       });
-    } else {
+    } else if (!this.client || this.connectingPromise) {
       // 未连接时触发懒连接，连接成功后 resubscribeAll 会自动 subscribe
       this.ensureConnected().catch((err) => this.emit('error', err));
     }
@@ -329,17 +342,17 @@ export class Tier0MQClient {
   }
 
   disconnect(): void {
-    if (!this.client) return;
-
     const generation = ++this.generation;
     const client = this.client;
     this.client = null;
+    this.connectionSettingsLocked = false;
     this._connected = false;
     this.connectingPromise = null;
     const reject = this.rejectPendingConnect;
     this.rejectPendingConnect = null;
     this.subscriptions = [];
     reject?.(new Error('MQTT connection cancelled by disconnect'));
+    if (!client) return;
     client.end(true, () => {
       if (!this.client && this.generation === generation) this.emit('disconnect');
     });
@@ -373,13 +386,15 @@ export class Tier0MQClient {
   // 断连后自动重新订阅所有已注册的 topic
   private resubscribeAll(): void {
     if (!this.client) return;
+    const client = this.client;
 
     // 按 topic 去重，每个 topic 只订阅一次
     const uniqueTopics = Array.from(
       new Set(this.subscriptions.map((s) => s.topic))
     );
     uniqueTopics.forEach((topic) => {
-      this.client!.subscribe(topic, { qos: 1 as 0 | 1 | 2 }, (err) => {
+      client.subscribe(topic, { qos: 1 as 0 | 1 | 2 }, (err) => {
+        if (this.client !== client) return;
         if (err) {
           this.emit('error', err);
         }

@@ -124,6 +124,74 @@ describe('Tier0MQClient', () => {
     expect((mqtt.connect as any).mock.calls[0][1].password).toBe('key-a');
   });
 
+  it('can reconnect without losing subscriptions when automatic reconnect is disabled', async () => {
+    const client = new Tier0MQClient({ host: 'broker', reconnectPeriod: 0 });
+    const first = client.connect();
+    emit('connect');
+    await first;
+    const handler = vi.fn();
+    client.subscribe('topic', handler);
+    eventHandlers.close[0]();
+    expect(client.subscribedTopics).toEqual(['topic']);
+    await expect(client.connect({ password: 'new-key' })).rejects.toThrow(/disconnect/i);
+    const nextSocket = { ...mockMqttClient, subscribe: vi.fn((_topic, _opts, cb) => cb(null)) };
+    (mqtt.connect as any).mockReturnValue(nextSocket);
+    const next = client.connect();
+    eventHandlers.connect[1]();
+    await next;
+    expect(nextSocket.subscribe).toHaveBeenCalledWith('topic', expect.any(Object), expect.any(Function));
+    client.disconnect();
+    expect(client.subscribedTopics).toEqual([]);
+  });
+
+  it('queues a subscription without an error while the existing socket reconnects', async () => {
+    const client = new Tier0MQClient({ host: 'broker' });
+    const errors = vi.fn();
+    client.on('error', errors);
+    const pending = client.connect();
+    emit('connect');
+    await pending;
+    emit('close');
+    client.subscribe('new-topic', vi.fn());
+    await Promise.resolve();
+    expect(errors).not.toHaveBeenCalled();
+    emit('connect');
+    expect(mockMqttClient.subscribe).toHaveBeenCalledWith('new-topic', expect.any(Object), expect.any(Function));
+  });
+
+  it('can retry after the initial transport closes with auto reconnect disabled', async () => {
+    const client = new Tier0MQClient({ host: 'broker', reconnectPeriod: 0 });
+    const first = client.connect();
+    emit('close');
+    await expect(first).rejects.toThrow(/closed/);
+    (mqtt.connect as any).mockReturnValue({ ...mockMqttClient });
+    const retry = client.connect();
+    eventHandlers.connect[1]();
+    await expect(retry).resolves.toBeUndefined();
+  });
+
+  it('ignores a late subscription failure from a retired socket', async () => {
+    const callbacks: Function[] = [];
+    mockMqttClient.subscribe = vi.fn((_topic, _opts, cb) => callbacks.push(cb));
+    const client = new Tier0MQClient({ host: 'broker' });
+    const first = client.connect();
+    emit('connect');
+    await first;
+    const handler = vi.fn();
+    client.subscribe('topic', handler);
+    client.disconnect();
+    const nextSocket = { ...mockMqttClient, subscribe: vi.fn((_topic, _opts, cb) => cb(null)) };
+    (mqtt.connect as any).mockReturnValue(nextSocket);
+    const next = client.connect({ password: 'key-b' });
+    eventHandlers.connect[1]();
+    await next;
+    client.subscribe('topic', handler);
+    callbacks[0](new Error('late failure'));
+    expect(client.subscribedTopics).toEqual(['topic']);
+    eventHandlers.message[1]('topic', Buffer.from('hello'), {});
+    expect(handler).toHaveBeenCalledWith('topic', 'hello');
+  });
+
   it.each([
     [undefined, 'sk-per-ws1_test', '1'],
     ['sk-svc-ws2_old', 'sk-svc-ws10_test', '36'],
