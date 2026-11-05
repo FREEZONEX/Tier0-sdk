@@ -49,8 +49,7 @@ describe('request-scoped client', () => {
       const expected = call.url.startsWith('https://a.test') ? 'ws-a-key'
         : call.url.startsWith('https://b.test') ? 'ws-b-key'
           : call.url.startsWith('https://global.test') ? 'global-key' : null;
-      if (!call.url.includes('/files/download')) expect(call.key, call.url).toBe(expected);
-      else expect([expected, null]).toContain(call.key);
+      expect([expected, null], call.url).toContain(call.key);
       expect(call.authorization, call.url).toBe(expected ? `Bearer ${expected}` : null);
     }
     expect(calls.filter(c => c.url.includes('/multipart/complete'))).toHaveLength(2);
@@ -63,10 +62,10 @@ describe('request-scoped client', () => {
     let signalStarted!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; });
     const started = new Promise<void>((resolve) => { signalStarted = resolve; });
-    const requests: { url: string; key: string | null }[] = [];
+    const requests: { url: string; authorization: string | null }[] = [];
     vi.stubGlobal('fetch', vi.fn(async (input: string, init?: RequestInit) => {
       const url = String(input);
-      requests.push({ url, key: new Headers(init?.headers).get('X-API-Key') });
+      requests.push({ url, authorization: new Headers(init?.headers).get('Authorization') });
       if (url.endsWith('/multipart/init')) {
         signalStarted();
         await gate;
@@ -86,7 +85,7 @@ describe('request-scoped client', () => {
       '/openapi/v1/assets/files/multipart/part-urls',
       '/openapi/v1/assets/files/multipart/abort',
     ]);
-    expect(requests.every(r => r.url.startsWith('https://a.test/') && r.key === 'a-key')).toBe(true);
+    expect(requests.every(r => r.url.startsWith('https://a.test/') && r.authorization === 'Bearer a-key')).toBe(true);
   });
 
   it('preserves legacy file helpers as Array.map callbacks', async () => {
