@@ -318,7 +318,7 @@ describe('Tier0MQClient', () => {
     ['sk-svc-ws2_old', 'sk-app-ws' + (9007199254740993n).toString(36) + '_test', '9007199254740993'],
     ['sk-svc-ws2_old', 'legacy-key', 'enterprise'],
   ])('derives identity from connect-time key %s -> %s', async (initial, password, workspace) => {
-    const client = new Tier0MQClient({ host: 'broker', password: initial });
+    const client = new Tier0MQClient({ host: 'broker', ...(initial === undefined ? {} : { password: initial }) });
     const connected = client.connect({ password });
     emit('connect');
     await connected;
@@ -326,6 +326,64 @@ describe('Tier0MQClient', () => {
       password, username: workspace + '&open',
       clientId: expect.stringMatching(new RegExp('^' + workspace + '&[a-z0-9]{8}$')),
     }));
+  });
+
+  it('snapshots constructor credentials before deriving identity', async () => {
+    let reads = 0;
+    const client = new Tier0MQClient({ host: 'broker', get password() {
+      return ++reads === 1 ? 'sk-per-ws1_a' : 'sk-per-ws2_b';
+    } });
+    const pending = client.connect();
+    emit('connect');
+    await pending;
+    expect(reads).toBe(1);
+    expect((mqtt.connect as any).mock.calls[0][1]).toEqual(expect.objectContaining({
+      username: '1&open', password: 'sk-per-ws1_a',
+    }));
+  });
+
+  it('does not fall back to an environment key for explicitly missing or empty credentials', async () => {
+    vi.stubEnv('TIER0_API_KEY', 'sk-per-ws2_environment');
+    expect(() => new Tier0MQClient({ host: 'broker', password: undefined })).toThrow(/explicitly undefined/);
+    const client = new Tier0MQClient({ host: 'broker', password: '' });
+    const pending = client.connect();
+    emit('connect');
+    await pending;
+    expect((mqtt.connect as any).mock.calls[0][1]).toEqual(expect.objectContaining({
+      username: 'enterprise&open', password: '',
+    }));
+  });
+
+  it('preserves a non-enumerable explicit password instead of using the environment key', async () => {
+    vi.stubEnv('TIER0_API_KEY', 'sk-per-ws2_environment');
+    const config = { host: 'broker' };
+    Object.defineProperty(config, 'password', { value: 'sk-per-ws1_a', enumerable: false });
+    const client = new Tier0MQClient(config);
+    const pending = client.connect();
+    emit('connect');
+    await pending;
+    expect((mqtt.connect as any).mock.calls[0][1]).toEqual(expect.objectContaining({
+      username: '1&open', password: 'sk-per-ws1_a',
+    }));
+  });
+
+  it('stops delivering a previous identity message after a handler reconnects', async () => {
+    const client = new Tier0MQClient({ host: 'broker', password: 'key-a' });
+    const first = client.connect();
+    emit('connect');
+    await first;
+    let next: Promise<void> | undefined;
+    client.subscribe('topic', () => {
+      client.disconnect();
+      (mqtt.connect as any).mockReturnValue({ ...mockMqttClient });
+      next = client.connect({ password: 'key-b' });
+    });
+    const oldHandler = vi.fn();
+    client.subscribe('topic', oldHandler);
+    eventHandlers.message[0]('topic', Buffer.from('hello'), {});
+    eventHandlers.connect[1]();
+    await next;
+    expect(oldHandler).not.toHaveBeenCalled();
   });
 
   it.each(['constructor', 'connect'] as const)(

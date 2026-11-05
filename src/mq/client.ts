@@ -43,6 +43,20 @@ interface Subscription {
   backpressuredCount?: number;
 }
 
+function snapshotConfig(config: MQTTConfig): MQTTConfig {
+  const snapshot = { ...config };
+  const fields: (keyof MQTTConfig)[] = [
+    'host', 'port', 'secure', 'clientId', 'username', 'password', 'keepAlive',
+    'reconnectPeriod', 'connectTimeout', 'clean', 'maxBackpressuredDeliveries',
+  ];
+  for (const field of fields) {
+    if (!(field in snapshot) && field in config) {
+      Object.defineProperty(snapshot, field, { value: config[field], enumerable: true, configurable: true, writable: true });
+    }
+  }
+  return snapshot;
+}
+
 export class Tier0MQClient {
   private client: MqttClient | null = null;
   private config: MQTTConfig;
@@ -58,6 +72,10 @@ export class Tier0MQClient {
   private _connected = false;
 
   constructor(config?: MQTTConfig) {
+    config = config ? snapshotConfig(config) : undefined;
+    if (config && Object.prototype.hasOwnProperty.call(config, 'password') && config.password === undefined) {
+      throw new TypeError('MQTT password was explicitly undefined; provide a credential or omit the password field');
+    }
     this.explicitClientId = config?.clientId !== undefined;
     this.explicitUsername = config?.username !== undefined;
     const envHost = getEnvVar('TIER0_MQTT_HOST');
@@ -65,7 +83,7 @@ export class Tier0MQClient {
 
     const host = config?.host || envHost || '';
     const port = config?.port || parseInt(envPort || '8084') || 8084;
-    const password = config?.password || getEnvVar('TIER0_API_KEY') || '';
+    const password = config?.password ?? getEnvVar('TIER0_API_KEY') ?? '';
 
     // 从 apiKey 解析 workspaceID，自动生成 clientId 和 username
     const workspaceID = config?.clientId && config?.username
@@ -199,6 +217,7 @@ export class Tier0MQClient {
           const payloadStr = payload.toString();
           // 复制一份快照：handler 触发背压自动退订时会重建 this.subscriptions
           this.subscriptions.slice().forEach((sub) => {
+            if (this.client !== client || !this.subscriptions.includes(sub)) return;
             if (this.topicMatch(sub.topic, topic)) {
               try {
                 // 公开类型为 void 返回（兼容 async/简写 handler），运行时仅识别严格的 false
@@ -233,7 +252,7 @@ export class Tier0MQClient {
   async connect(config?: MQTTConfig): Promise<void> {
     if (config) {
       // Read caller-provided properties once before checking and storing them.
-      const snapshot = { ...config };
+      const snapshot = snapshotConfig(config);
       config = snapshot;
       if (Object.prototype.hasOwnProperty.call(config, 'password') && config.password === undefined) {
         throw new TypeError('MQTT password was explicitly undefined; provide a credential or omit the password field');
