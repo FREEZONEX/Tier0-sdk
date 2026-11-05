@@ -150,9 +150,9 @@ describe('HttpClient', () => {
 
     currentKey = 'user-key';
     await client.get('/test');
-    expect(mockFetch.mock.calls[1][1].headers).toMatchObject({
+    expect(mockFetch.mock.calls[1][1].headers).toEqual({
+      'Content-Type': 'application/json',
       Authorization: 'Bearer user-key',
-      'X-API-Key': 'user-key',
     });
     currentKey = '';
     await client.get('/test');
