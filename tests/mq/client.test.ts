@@ -479,6 +479,18 @@ describe('Tier0MQClient', () => {
     await expect(client.connect()).rejects.toThrow(/reconnecting/);
   });
 
+  it('forwards MQTT errors with numeric reason codes without throwing', async () => {
+    const client = new Tier0MQClient({ host: 'broker' });
+    const errors = vi.fn();
+    client.on('error', errors);
+    const first = client.connect();
+    emit('connect');
+    await first;
+    const error = Object.assign(new Error('broker refused'), { code: 135 });
+    expect(() => eventHandlers.error[0](error)).not.toThrow();
+    expect(errors).toHaveBeenCalledWith(error);
+  });
+
   it('does not repeat disconnect when protocol disconnect precedes close', async () => {
     const client = new Tier0MQClient({ host: 'broker' });
     const disconnected = vi.fn();

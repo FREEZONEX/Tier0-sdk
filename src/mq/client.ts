@@ -37,11 +37,11 @@ function generateRandomString(length = 8): string {
 }
 
 function isTransportLoss(error: Error): boolean {
-  const code = (error as NodeJS.ErrnoException).code;
-  return (code !== undefined && [
+  const code = (error as Error & { code?: unknown }).code;
+  return (typeof code === 'string' && ([
     'ECONNRESET', 'ECONNABORTED', 'EPIPE', 'ETIMEDOUT', 'ENETDOWN', 'ENETRESET',
     'ENETUNREACH', 'EHOSTUNREACH', 'ECONNREFUSED',
-  ].includes(code)) || (code?.startsWith('WS_ERR_') ?? false) || error.message === 'Keepalive timeout';
+  ].includes(code) || code.startsWith('WS_ERR_'))) || error.message === 'Keepalive timeout';
 }
 
 interface Subscription {
