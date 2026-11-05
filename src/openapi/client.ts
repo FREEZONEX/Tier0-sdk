@@ -73,7 +73,9 @@ class HttpClient {
   }
 
   private getApiKeyInternal(): string | undefined {
-    return this.config.apiKey || this.config.getApiKey?.() || defaultGetApiKey();
+    if (Object.prototype.hasOwnProperty.call(this.config, 'apiKey')) return this.config.apiKey;
+    if (Object.prototype.hasOwnProperty.call(this.config, 'getApiKey')) return this.config.getApiKey?.();
+    return defaultGetApiKey();
   }
 
   private async request<T>(method: string, path: string, body?: any, options?: { signal?: AbortSignal }): Promise<T> {
