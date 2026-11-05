@@ -55,7 +55,7 @@ describe('downloadFile real HTTP redirects', () => {
         res.writeHead(307, { Location: '/sdk/final' }).end();
       } else if (url.pathname === '/sdk/final') {
         res.writeHead(200, { 'Content-Type': 'application/json' }).end('{"value":"origin"}');
-      } else if (url.pathname === '/openapi/v1/auth/whoami') {
+      } else if (url.pathname === '/openapi/v1/auth/whoami' || url.pathname === '/openapi/v2/auth/whoami') {
         if (url.searchParams.get('redirect') === 'true') {
           res.writeHead(307, { Location: `${storageURL}/json` }).end();
         } else {
@@ -166,11 +166,14 @@ describe('downloadFile real HTTP redirects', () => {
     expect(storageRequests[0].headers['x-api-key']).toBeUndefined();
   });
 
-  it('keeps legacy whoami authentication but rejects its redirects before forwarding the key', async () => {
-    const client = new HttpClient({ apiHost: originURL, apiKey: key });
-    await expect(client.post('/openapi/v1/auth/whoami', {})).resolves.toEqual({ value: 'whoami' });
-    expect(originRequests[0].headers['x-api-key']).toBe(key);
-    await expect(client.post('/openapi/v1/auth/whoami?redirect=true', {})).rejects.toThrow();
-    expect(storageRequests).toHaveLength(0);
-  });
+  it.each(['/openapi/v1/auth/whoami', '/openapi/v2/auth/whoami'])(
+    'keeps %s authentication but rejects its redirects before forwarding the key',
+    async (path) => {
+      const client = new HttpClient({ apiHost: originURL, apiKey: key });
+      await expect(client.post(path, {})).resolves.toEqual({ value: 'whoami' });
+      expect(originRequests[0].headers['x-api-key']).toBe(key);
+      await expect(client.post(`${path}?redirect=true`, {})).rejects.toThrow();
+      expect(storageRequests).toHaveLength(0);
+    }
+  );
 });
