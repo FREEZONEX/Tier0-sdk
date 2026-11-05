@@ -69,6 +69,8 @@ export class Tier0MQClient {
   private generation = 0;
   private cancellationGeneration = 0;
   private connectionSettingsLocked = false;
+  private lazyConnectPromise: Promise<void> | null = null;
+  private reportedConnectionErrors = new WeakSet<Error>();
   private _connected = false;
 
   constructor(config?: MQTTConfig) {
@@ -186,6 +188,7 @@ export class Tier0MQClient {
         if (this.client !== client) return;
         this.connectingPromise = null;
         this.rejectPendingConnect = null;
+        this.reportedConnectionErrors.add(err);
         reject(err);
         this.emit('error', err);
       });
@@ -318,15 +321,19 @@ export class Tier0MQClient {
           this.emit('error', err);
         }
       });
-    } else if (!this.client || this.connectingPromise) {
+    } else if ((!this.client || this.connectingPromise) && !this.lazyConnectPromise) {
       // 未连接时触发懒连接，连接成功后 resubscribeAll 会自动 subscribe
       const cancellationGeneration = this.cancellationGeneration;
       const pending = this.ensureConnected();
+      this.lazyConnectPromise = pending;
       const client = this.client;
       pending.catch((err) => {
-        if (this.cancellationGeneration === cancellationGeneration && (!this.client || this.client === client)) {
+        if (this.cancellationGeneration === cancellationGeneration && (!this.client || this.client === client)
+          && !(err instanceof Error && this.reportedConnectionErrors.has(err))) {
           this.emit('error', err);
         }
+      }).finally(() => {
+        if (this.lazyConnectPromise === pending) this.lazyConnectPromise = null;
       });
     }
   }
@@ -389,6 +396,7 @@ export class Tier0MQClient {
     this.connectionSettingsLocked = false;
     this._connected = false;
     this.connectingPromise = null;
+    this.lazyConnectPromise = null;
     const reject = this.rejectPendingConnect;
     this.rejectPendingConnect = null;
     this.subscriptions = [];
@@ -421,7 +429,11 @@ export class Tier0MQClient {
   ): void {
     const handlers = this.listeners[event];
     if (!handlers) return;
-    handlers.forEach((h) => (h as any)(...args));
+    const generation = this.generation;
+    for (const handler of handlers.slice()) {
+      if (this.generation !== generation) break;
+      (handler as any)(...args);
+    }
   }
 
   // 断连后自动重新订阅所有已注册的 topic

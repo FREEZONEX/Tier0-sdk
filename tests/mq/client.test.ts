@@ -312,6 +312,37 @@ describe('Tier0MQClient', () => {
     expect(client.isConnected).toBe(true);
   });
 
+  it('stops delivering an old connection event after a listener switches identity', async () => {
+    const client = new Tier0MQClient({ host: 'broker', password: 'key-a' });
+    const first = client.connect();
+    emit('connect');
+    await first;
+    let next: Promise<void> | undefined;
+    client.on('error', () => {
+      client.disconnect();
+      (mqtt.connect as any).mockReturnValue({ ...mockMqttClient });
+      next = client.connect({ password: 'key-b' });
+    });
+    const secondListener = vi.fn(() => client.disconnect());
+    client.on('error', secondListener);
+    eventHandlers.error[0](new Error('old connection'));
+    eventHandlers.connect[1]();
+    await next;
+    expect(secondListener).not.toHaveBeenCalled();
+    expect(client.isConnected).toBe(true);
+  });
+
+  it('reports one error for multiple subscriptions awaiting the same failed connection', async () => {
+    const client = new Tier0MQClient({ host: 'broker' });
+    const errors = vi.fn();
+    client.on('error', errors);
+    client.subscribe('one', vi.fn());
+    client.subscribe('two', vi.fn());
+    eventHandlers.error[0](new Error('socket failed'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(errors).toHaveBeenCalledOnce();
+  });
+
   it.each([
     [undefined, 'sk-per-ws1_test', '1'],
     ['sk-svc-ws2_old', 'sk-svc-ws10_test', '36'],
