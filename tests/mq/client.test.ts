@@ -408,6 +408,37 @@ describe('Tier0MQClient', () => {
     expect(client.isConnected).toBe(false);
   });
 
+  it('stops an old error event after a listener creates a replacement transport', async () => {
+    const client = new Tier0MQClient({ host: 'broker', reconnectPeriod: 0 });
+    const first = client.connect();
+    emit('connect');
+    await first;
+    let retry: Promise<void> | undefined;
+    client.on('error', () => {
+      (mqtt.connect as any).mockReturnValue({ ...mockMqttClient });
+      retry = client.connect();
+    });
+    const staleListener = vi.fn(() => client.disconnect());
+    client.on('error', staleListener);
+    eventHandlers.error[0](new Error('socket failed'));
+    eventHandlers.connect[1]();
+    await expect(retry).resolves.toBeUndefined();
+    expect(staleListener).not.toHaveBeenCalled();
+  });
+
+  it('emits disconnect once after an established non-reconnecting transport errors', async () => {
+    const client = new Tier0MQClient({ host: 'broker', reconnectPeriod: 0 });
+    const disconnected = vi.fn();
+    client.on('disconnect', disconnected);
+    const first = client.connect();
+    emit('connect');
+    await first;
+    eventHandlers.error[0](new Error('socket failed'));
+    eventHandlers.close[0]();
+    expect(disconnected).toHaveBeenCalledOnce();
+    expect(client.isConnected).toBe(false);
+  });
+
   it('does not repeat disconnect when protocol disconnect precedes close', async () => {
     const client = new Tier0MQClient({ host: 'broker' });
     const disconnected = vi.fn();

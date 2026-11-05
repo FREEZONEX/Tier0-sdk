@@ -67,6 +67,7 @@ export class Tier0MQClient {
   private connectingPromise: Promise<void> | null = null;
   private rejectPendingConnect: ((error: Error) => void) | null = null;
   private generation = 0;
+  private transportGeneration = 0;
   private cancellationGeneration = 0;
   private connectionSettingsLocked = false;
   private lazyConnectPromise: Promise<void> | null = null;
@@ -169,6 +170,7 @@ export class Tier0MQClient {
       };
 
       const client = mqtt.connect(this.mqttUrl, options);
+      this.transportGeneration++;
       this.client = client;
       this.connectionSettingsLocked = true;
       this.rejectPendingConnect = reject;
@@ -193,13 +195,20 @@ export class Tier0MQClient {
         this.lazyConnectPromise = null;
         this.reportedConnectionErrors.add(err);
         reject(err);
+        const notifyDisconnect = this._connected && this.config.reconnectPeriod === 0;
         if (this.config.reconnectPeriod === 0) {
           this.generation++;
           this.client = null;
           this._connected = false;
           client.end(true);
         }
+        const eventGeneration = this.generation;
+        const eventTransport = this.transportGeneration;
         this.emit('error', err);
+        if (notifyDisconnect && this.generation === eventGeneration && this.transportGeneration === eventTransport) {
+          disconnectNotified = true;
+          this.emit('disconnect');
+        }
       });
 
       client.on('disconnect', () => {
@@ -446,8 +455,9 @@ export class Tier0MQClient {
     const handlers = this.listeners[event];
     if (!handlers) return;
     const generation = this.generation;
+    const transportGeneration = this.transportGeneration;
     for (const handler of handlers.slice()) {
-      if (this.generation !== generation) break;
+      if (this.generation !== generation || this.transportGeneration !== transportGeneration) break;
       (handler as any)(...args);
     }
   }
