@@ -141,7 +141,6 @@ describe('files module', () => {
           method: 'POST',
           headers: expect.objectContaining({
             Authorization: 'Bearer test-key',
-            'X-API-Key': 'test-key',
           }),
         })
       );
@@ -297,7 +296,6 @@ describe('files module', () => {
       expect(init.redirect).toBe('follow');
       expect(init.headers).toEqual({
         Authorization: 'Bearer test-key',
-        'X-API-Key': 'test-key',
       });
 
       expect(result.contentType).toBe('text/csv');

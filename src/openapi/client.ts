@@ -87,17 +87,20 @@ class HttpClient {
       'Content-Type': 'application/json',
     };
 
+    // Whoami handlers may require X-API-Key; never forward it on redirects.
+    const requestPath = path.split('?')[0];
+    const whoami = requestPath === '/openapi/v1/auth/whoami' || requestPath === '/openapi/v2/auth/whoami';
     if (apiKey) {
-      // 网关各接口认证头不一致：多数接口认 Authorization Bearer，
-      // 个别接口（如 /openapi/v1/auth/whoami）只认 X-API-Key，两个都带
-      headers['Authorization'] = `Bearer ${apiKey}`;
-      headers['X-API-Key'] = apiKey;
+      if (whoami) headers['X-API-Key'] = apiKey;
+      // Authorization is stripped by Fetch when redirecting to another origin.
+      else headers['Authorization'] = `Bearer ${apiKey}`;
     }
 
     const response = await fetch(url, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
+      redirect: whoami && apiKey ? 'error' : 'follow',
       signal: options?.signal,
     });
 
