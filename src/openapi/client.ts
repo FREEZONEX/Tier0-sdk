@@ -86,16 +86,18 @@ class HttpClient {
     };
 
     if (apiKey) {
-      // 网关各接口认证头不一致：多数接口认 Authorization Bearer，
-      // 个别接口（如 /openapi/v1/auth/whoami）只认 X-API-Key，两个都带
+      // Authorization is stripped by Fetch when redirecting to another origin.
       headers['Authorization'] = `Bearer ${apiKey}`;
-      headers['X-API-Key'] = apiKey;
     }
+    // Older whoami deployments require X-API-Key; never forward it on redirects.
+    const legacyWhoami = path.split('?')[0] === '/openapi/v1/auth/whoami';
+    if (apiKey && legacyWhoami) headers['X-API-Key'] = apiKey;
 
     const response = await fetch(url, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
+      redirect: legacyWhoami && apiKey ? 'error' : 'follow',
       signal: options?.signal,
     });
 
