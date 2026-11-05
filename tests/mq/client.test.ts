@@ -338,7 +338,7 @@ describe('Tier0MQClient', () => {
     client.on('error', errors);
     client.subscribe('one', vi.fn());
     client.subscribe('two', vi.fn());
-    eventHandlers.error[0](new Error('socket failed'));
+    eventHandlers.error[0](Object.assign(new Error('socket failed'), { code: 'ECONNRESET' }));
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(errors).toHaveBeenCalledOnce();
   });
@@ -420,7 +420,7 @@ describe('Tier0MQClient', () => {
     });
     const staleListener = vi.fn(() => client.disconnect());
     client.on('error', staleListener);
-    eventHandlers.error[0](new Error('socket failed'));
+    eventHandlers.error[0](Object.assign(new Error('socket failed'), { code: 'ECONNRESET' }));
     eventHandlers.connect[1]();
     await expect(retry).resolves.toBeUndefined();
     expect(staleListener).not.toHaveBeenCalled();
@@ -433,7 +433,7 @@ describe('Tier0MQClient', () => {
     const first = client.connect();
     emit('connect');
     await first;
-    eventHandlers.error[0](new Error('socket failed'));
+    eventHandlers.error[0](Object.assign(new Error('socket failed'), { code: 'ECONNRESET' }));
     eventHandlers.close[0]();
     expect(disconnected).toHaveBeenCalledOnce();
     expect(client.isConnected).toBe(false);
@@ -457,8 +457,8 @@ describe('Tier0MQClient', () => {
     expect(client.isConnected).toBe(true);
   });
 
-  it('does not classify an unrelated MQTT protocol error as transport loss', async () => {
-    const client = new Tier0MQClient({ host: 'broker' });
+  it.each([0, 5000])('does not classify a protocol error as transport loss with reconnect period %i', async (reconnectPeriod) => {
+    const client = new Tier0MQClient({ host: 'broker', reconnectPeriod });
     const disconnected = vi.fn();
     client.on('disconnect', disconnected);
     const first = client.connect();
@@ -467,6 +467,16 @@ describe('Tier0MQClient', () => {
     eventHandlers.error[0](new Error('Received unregistered Topic Alias'));
     expect(client.isConnected).toBe(true);
     expect(disconnected).not.toHaveBeenCalled();
+  });
+
+  it('recognizes a fatal WebSocket protocol error before the close event', async () => {
+    const client = new Tier0MQClient({ host: 'broker' });
+    const first = client.connect();
+    emit('connect');
+    await first;
+    eventHandlers.error[0](Object.assign(new Error('invalid opcode'), { code: 'WS_ERR_INVALID_OPCODE' }));
+    expect(client.isConnected).toBe(false);
+    await expect(client.connect()).rejects.toThrow(/reconnecting/);
   });
 
   it('does not repeat disconnect when protocol disconnect precedes close', async () => {

@@ -41,7 +41,7 @@ function isTransportLoss(error: Error): boolean {
   return (code !== undefined && [
     'ECONNRESET', 'ECONNABORTED', 'EPIPE', 'ETIMEDOUT', 'ENETDOWN', 'ENETRESET',
     'ENETUNREACH', 'EHOSTUNREACH', 'ECONNREFUSED',
-  ].includes(code)) || error.message === 'Keepalive timeout';
+  ].includes(code)) || (code?.startsWith('WS_ERR_') ?? false) || error.message === 'Keepalive timeout';
 }
 
 interface Subscription {
@@ -203,9 +203,10 @@ export class Tier0MQClient {
         this.lazyConnectPromise = null;
         this.reportedConnectionErrors.add(err);
         reject(err);
-        const notifyDisconnect = this._connected && (this.config.reconnectPeriod === 0 || isTransportLoss(err));
+        const transportLoss = !this._connected || isTransportLoss(err);
+        const notifyDisconnect = this._connected && transportLoss;
         if (notifyDisconnect) this._connected = false;
-        if (this.config.reconnectPeriod === 0) {
+        if (this.config.reconnectPeriod === 0 && transportLoss) {
           this.generation++;
           this.client = null;
           this._connected = false;
