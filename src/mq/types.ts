@@ -16,7 +16,7 @@ export interface MQTTConfig {
   secure?: boolean;
   clientId?: string;
   username?: string;
-  /** Original API key; connect-time changes refresh automatically derived identity fields. */
+  /** API key. Disconnect before changing connection settings; derived identity refreshes on the next connection. */
   password?: string;
   keepAlive?: number;
   reconnectPeriod?: number;

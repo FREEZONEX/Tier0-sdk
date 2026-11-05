@@ -36,11 +36,33 @@ function generateRandomString(length = 8): string {
   return result;
 }
 
+function isTransportLoss(error: Error): boolean {
+  const code = (error as Error & { code?: unknown }).code;
+  return (typeof code === 'string' && ([
+    'ECONNRESET', 'ECONNABORTED', 'EPIPE', 'ETIMEDOUT', 'ENETDOWN', 'ENETRESET',
+    'ENETUNREACH', 'EHOSTUNREACH', 'ECONNREFUSED',
+  ].includes(code) || code.startsWith('WS_ERR_'))) || error.message === 'Keepalive timeout';
+}
+
 interface Subscription {
   topic: string;
   handler: TopicHandler;
   /** handler 连续返回 false（背压）的次数，正常返回时清零。 */
   backpressuredCount?: number;
+}
+
+function snapshotConfig(config: MQTTConfig): MQTTConfig {
+  const snapshot = { ...config };
+  const fields: (keyof MQTTConfig)[] = [
+    'host', 'port', 'secure', 'clientId', 'username', 'password', 'keepAlive',
+    'reconnectPeriod', 'connectTimeout', 'clean', 'maxBackpressuredDeliveries',
+  ];
+  for (const field of fields) {
+    if (!(field in snapshot) && field in config) {
+      Object.defineProperty(snapshot, field, { value: config[field], enumerable: true, configurable: true, writable: true });
+    }
+  }
+  return snapshot;
 }
 
 export class Tier0MQClient {
@@ -51,9 +73,20 @@ export class Tier0MQClient {
   private listeners: { [K in keyof MQTTEventMap]?: Array<MQTTEventMap[K]> } = {};
   private subscriptions: Subscription[] = [];
   private connectingPromise: Promise<void> | null = null;
+  private rejectPendingConnect: ((error: Error) => void) | null = null;
+  private generation = 0;
+  private transportGeneration = 0;
+  private cancellationGeneration = 0;
+  private connectionSettingsLocked = false;
+  private lazyConnectPromise: Promise<void> | null = null;
+  private reportedConnectionErrors = new WeakSet<Error>();
   private _connected = false;
 
   constructor(config?: MQTTConfig) {
+    config = config ? snapshotConfig(config) : undefined;
+    if (config && Object.prototype.hasOwnProperty.call(config, 'password') && config.password === undefined) {
+      throw new TypeError('MQTT password was explicitly undefined; provide a credential or omit the password field');
+    }
     this.explicitClientId = config?.clientId !== undefined;
     this.explicitUsername = config?.username !== undefined;
     const envHost = getEnvVar('TIER0_MQTT_HOST');
@@ -61,7 +94,7 @@ export class Tier0MQClient {
 
     const host = config?.host || envHost || '';
     const port = config?.port || parseInt(envPort || '8084') || 8084;
-    const password = config?.password || getEnvVar('TIER0_API_KEY') || '';
+    const password = config?.password ?? getEnvVar('TIER0_API_KEY') ?? '';
 
     // 从 apiKey 解析 workspaceID，自动生成 clientId 和 username
     const workspaceID = config?.clientId && config?.username
@@ -119,9 +152,17 @@ export class Tier0MQClient {
   private async ensureConnected(): Promise<void> {
     if (this._connected) return;
     if (this.connectingPromise) return this.connectingPromise;
+    if (this.client) {
+      throw new Error('MQTT client is reconnecting; wait for reconnect or disconnect first');
+    }
 
-    this.connectingPromise = this.doConnect();
-    return this.connectingPromise;
+    const pending = this.doConnect();
+    if (!this.client) return pending;
+    this.connectingPromise = pending;
+    void pending.catch(() => {
+      if (this.connectingPromise === pending) this.connectingPromise = null;
+    });
+    return pending;
   }
 
   private doConnect(): Promise<void> {
@@ -136,44 +177,91 @@ export class Tier0MQClient {
         clean: this.config.clean,
       };
 
-      this.client = mqtt.connect(this.mqttUrl, options);
+      const client = mqtt.connect(this.mqttUrl, options);
+      this.transportGeneration++;
+      this.client = client;
+      this.connectionSettingsLocked = true;
+      this.rejectPendingConnect = reject;
+      let disconnectNotified = false;
 
-      this.client.on('connect', () => {
+      client.on('connect', () => {
+        if (this.client !== client) return;
+        disconnectNotified = false;
         this._connected = true;
         this.connectingPromise = null;
+        this.rejectPendingConnect = null;
+        resolve();
         this.emit('connect');
         // 断连重连后自动恢复所有订阅
-        this.resubscribeAll();
-        resolve();
+        if (this.client === client) this.resubscribeAll();
       });
 
-      this.client.on('error', (err) => {
-        this.emit('error', err);
+      client.on('error', (err) => {
+        if (this.client !== client) return;
         this.connectingPromise = null;
+        this.rejectPendingConnect = null;
+        this.lazyConnectPromise = null;
+        this.reportedConnectionErrors.add(err);
         reject(err);
+        const transportLoss = !this._connected || isTransportLoss(err);
+        const notifyDisconnect = this._connected && transportLoss;
+        if (notifyDisconnect) this._connected = false;
+        if (this.config.reconnectPeriod === 0 && transportLoss) {
+          this.generation++;
+          this.client = null;
+          this._connected = false;
+          client.end(true);
+        }
+        const eventGeneration = this.generation;
+        const eventTransport = this.transportGeneration;
+        this.emit('error', err);
+        if (notifyDisconnect && this.generation === eventGeneration && this.transportGeneration === eventTransport) {
+          disconnectNotified = true;
+          this.emit('disconnect');
+        }
       });
 
-      this.client.on('disconnect', () => {
+      client.on('disconnect', () => {
+        if (this.client !== client) return;
         this._connected = false;
+        disconnectNotified = true;
         this.emit('disconnect');
       });
 
-      this.client.on('close', () => {
+      client.on('close', () => {
+        if (this.client !== client) return;
+        const notifyDisconnect = this._connected && !disconnectNotified;
         this._connected = false;
+        if (this.config.reconnectPeriod === 0) {
+          this.generation++;
+          this.client = null;
+          this.connectingPromise = null;
+          const reject = this.rejectPendingConnect;
+          this.rejectPendingConnect = null;
+          reject?.(new Error('MQTT connection closed'));
+          client.end(true);
+        }
+        if (notifyDisconnect) {
+          disconnectNotified = true;
+          this.emit('disconnect');
+        }
       });
 
-      this.client.on(
+      client.on(
         'message',
         (topic: string, payload: Buffer, _packet: mqtt.IPublishPacket) => {
+          if (this.client !== client) return;
           const payloadStr = payload.toString();
           // 复制一份快照：handler 触发背压自动退订时会重建 this.subscriptions
           this.subscriptions.slice().forEach((sub) => {
+            if (this.client !== client || !this.subscriptions.includes(sub)) return;
             if (this.topicMatch(sub.topic, topic)) {
               try {
                 // 公开类型为 void 返回（兼容 async/简写 handler），运行时仅识别严格的 false
                 const accepted = (
                   sub.handler as (t: string, p: string) => unknown
                 )(topic, payloadStr);
+                if (this.client !== client || !this.subscriptions.includes(sub)) return;
                 if (accepted === false) {
                   sub.backpressuredCount = (sub.backpressuredCount ?? 0) + 1;
                   const limit = this.config.maxBackpressuredDeliveries ?? 0;
@@ -188,7 +276,7 @@ export class Tier0MQClient {
                   sub.backpressuredCount = 0;
                 }
               } catch (e) {
-                this.emit('error', e as Error);
+                if (this.client === client && this.subscriptions.includes(sub)) this.emit('error', e as Error);
               }
             }
           });
@@ -200,6 +288,27 @@ export class Tier0MQClient {
   // 显式连接（需要等待连接完成时使用）
   async connect(config?: MQTTConfig): Promise<void> {
     if (config) {
+      // Read caller-provided properties once before checking and storing them.
+      const snapshot = snapshotConfig(config);
+      config = snapshot;
+      if (Object.prototype.hasOwnProperty.call(config, 'password') && config.password === undefined) {
+        throw new TypeError('MQTT password was explicitly undefined; provide a credential or omit the password field');
+      }
+      const connectionFields: (keyof MQTTConfig)[] = [
+        'host', 'port', 'secure', 'clientId', 'username', 'password',
+        'keepAlive', 'reconnectPeriod', 'connectTimeout', 'clean',
+      ];
+      const identityFields: (keyof MQTTConfig)[] = ['clientId', 'username', 'password'];
+      if (this.subscriptions.length > 0 && identityFields.some((field) =>
+        Object.prototype.hasOwnProperty.call(snapshot, field) && snapshot[field] !== this.config[field]
+      )) {
+        throw new Error('MQTT identity cannot change while subscriptions exist; disconnect first');
+      }
+      if (this.connectionSettingsLocked && connectionFields.some((field) =>
+        Object.prototype.hasOwnProperty.call(snapshot, field) && snapshot[field] !== this.config[field]
+      )) {
+        throw new Error('MQTT connection settings cannot change while a client exists; disconnect first');
+      }
       const previousPassword = this.config.password;
       this.config = { ...this.config, ...config };
       if (config.clientId !== undefined) this.explicitClientId = true;
@@ -215,7 +324,11 @@ export class Tier0MQClient {
         if (!this.explicitUsername) this.config.username = prefix + '&open';
       }
     }
-    return this.ensureConnected();
+    const generation = this.generation;
+    await this.ensureConnected();
+    if (this.generation !== generation || !this._connected || !this.client) {
+      throw new Error('MQTT connection changed before connect completed');
+    }
   }
 
   // 订阅 topic，内部 qos 固定为 1，handler 接收 (topic, payload)
@@ -229,21 +342,34 @@ export class Tier0MQClient {
       return;
     }
 
-    this.subscriptions.push({ topic, handler });
+    const subscription: Subscription = { topic, handler };
+    this.subscriptions.push(subscription);
 
     if (this._connected && this.client) {
-      this.client.subscribe(topic, { qos: 1 as 0 | 1 | 2 }, (err) => {
+      const client = this.client;
+      client.subscribe(topic, { qos: 1 as 0 | 1 | 2 }, (err) => {
+        if (this.client !== client) return;
         if (err) {
-          this.emit('error', err);
           // 订阅失败时回滚
-          this.subscriptions = this.subscriptions.filter(
-            (s) => !(s.topic === topic && s.handler === handler)
-          );
+          this.subscriptions = this.subscriptions.filter((s) => s !== subscription);
+          this.emit('error', err);
         }
       });
-    } else {
+    } else if ((!this.client || this.connectingPromise) && !this.lazyConnectPromise) {
       // 未连接时触发懒连接，连接成功后 resubscribeAll 会自动 subscribe
-      this.ensureConnected().catch((err) => this.emit('error', err));
+      const cancellationGeneration = this.cancellationGeneration;
+      const pending = this.ensureConnected();
+      this.lazyConnectPromise = pending;
+      const client = this.client;
+      pending.catch((err) => {
+        if (this.lazyConnectPromise === pending) this.lazyConnectPromise = null;
+        if (this.cancellationGeneration === cancellationGeneration && (!this.client || this.client === client)
+          && !(err instanceof Error && this.reportedConnectionErrors.has(err))) {
+          this.emit('error', err);
+        }
+      }).finally(() => {
+        if (this.lazyConnectPromise === pending) this.lazyConnectPromise = null;
+      });
     }
   }
 
@@ -262,7 +388,9 @@ export class Tier0MQClient {
     // 如果该 topic 下已无任何 handler，则向 broker 发送 unsubscribe
     const stillHasHandler = this.subscriptions.some((s) => s.topic === topic);
     if (!stillHasHandler) {
-      this.client.unsubscribe(topic, (err) => {
+    const client = this.client;
+    client.unsubscribe(topic, (err) => {
+      if (this.client !== client) return;
         if (err) {
           this.emit('error', err);
         }
@@ -276,26 +404,42 @@ export class Tier0MQClient {
     payload: string | object,
     options?: { qos?: number; retain?: boolean }
   ): Promise<void> {
+    const generation = this.generation;
     await this.ensureConnected();
+    if (this.generation !== generation || !this._connected || !this.client) {
+      throw new Error('MQTT connection changed before publish; message was not submitted');
+    }
 
+    const client = this.client;
     const message =
       typeof payload === 'string' ? payload : JSON.stringify(payload);
-    this.client!.publish(topic, message, {
+    const publishOptions = {
       qos: (options?.qos ?? 0) as 0 | 1 | 2,
       retain: options?.retain ?? false,
-    });
+    };
+    if (this.generation !== generation || this.client !== client || !this._connected) {
+      throw new Error('MQTT connection changed before publish; message was not submitted');
+    }
+    client.publish(topic, message, publishOptions);
   }
 
   disconnect(): void {
-    if (!this.client) return;
-
-    this.client.end(true, () => {
-      this.emit('disconnect');
-    });
+    this.cancellationGeneration++;
+    const generation = ++this.generation;
+    const client = this.client;
     this.client = null;
+    this.connectionSettingsLocked = false;
     this._connected = false;
     this.connectingPromise = null;
+    this.lazyConnectPromise = null;
+    const reject = this.rejectPendingConnect;
+    this.rejectPendingConnect = null;
     this.subscriptions = [];
+    reject?.(new Error('MQTT connection cancelled by disconnect'));
+    if (!client) return;
+    client.end(true, () => {
+      if (!this.client && this.generation === generation) this.emit('disconnect');
+    });
   }
 
   on<K extends keyof MQTTEventMap>(event: K, handler: MQTTEventMap[K]): void {
@@ -320,19 +464,26 @@ export class Tier0MQClient {
   ): void {
     const handlers = this.listeners[event];
     if (!handlers) return;
-    handlers.forEach((h) => (h as any)(...args));
+    const generation = this.generation;
+    const transportGeneration = this.transportGeneration;
+    for (const handler of handlers.slice()) {
+      if (this.generation !== generation || this.transportGeneration !== transportGeneration) break;
+      (handler as any)(...args);
+    }
   }
 
   // 断连后自动重新订阅所有已注册的 topic
   private resubscribeAll(): void {
     if (!this.client) return;
+    const client = this.client;
 
     // 按 topic 去重，每个 topic 只订阅一次
     const uniqueTopics = Array.from(
       new Set(this.subscriptions.map((s) => s.topic))
     );
     uniqueTopics.forEach((topic) => {
-      this.client!.subscribe(topic, { qos: 1 as 0 | 1 | 2 }, (err) => {
+      client.subscribe(topic, { qos: 1 as 0 | 1 | 2 }, (err) => {
+        if (this.client !== client) return;
         if (err) {
           this.emit('error', err);
         }
