@@ -164,6 +164,8 @@ describe('HttpClient', () => {
     vi.stubEnv('TIER0_API_KEY', 'shared-process-key');
     expect(new HttpClient().getApiKey()).toBe('shared-process-key');
     expect(new HttpClient({ apiKey: '' }).getApiKey()).toBe('');
+    expect(new HttpClient({ apiKey: undefined }).getApiKey()).toBeUndefined();
+    expect(new HttpClient({ getApiKey: undefined }).getApiKey()).toBeUndefined();
     expect(new HttpClient({ apiKey: '', getApiKey: () => 'other-key' }).getApiKey()).toBe('');
   });
 

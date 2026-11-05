@@ -73,8 +73,8 @@ class HttpClient {
   }
 
   private getApiKeyInternal(): string | undefined {
-    if (this.config.apiKey !== undefined) return this.config.apiKey;
-    if (this.config.getApiKey) return this.config.getApiKey();
+    if (Object.prototype.hasOwnProperty.call(this.config, 'apiKey')) return this.config.apiKey;
+    if (Object.prototype.hasOwnProperty.call(this.config, 'getApiKey')) return this.config.getApiKey?.();
     return defaultGetApiKey();
   }
 
