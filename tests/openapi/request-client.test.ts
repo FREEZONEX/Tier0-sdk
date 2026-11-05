@@ -45,16 +45,24 @@ describe('request-scoped client', () => {
     release();
     await uploadA;
     await a.files.resumeMultipartUpload(file, { fileKey: 'file-a', uploadId: 'up-a', partSize: 8 * 1024 * 1024, completedParts: [{ partNumber: 1, etag: 'etag' }] });
-    for (const call of calls) {
-      const expected = call.url.startsWith('https://a.test') ? 'ws-a-key'
-        : call.url.startsWith('https://b.test') ? 'ws-b-key'
-          : call.url.startsWith('https://global.test') ? 'global-key' : null;
-      expect([expected, null], call.url).toContain(call.key);
-      expect(call.authorization, call.url).toBe(expected ? `Bearer ${expected}` : null);
-    }
-    expect(calls.filter(c => c.url.includes('/multipart/complete'))).toHaveLength(2);
-    expect(calls.some(c => c.url.includes('/files/download'))).toBe(true);
-    expect(calls.some(c => c.url === 'https://storage.test/post')).toBe(true);
+    // List every operation's intended destination and principal; never infer the
+    // expected identity from the host that the implementation actually used.
+    const expectedCalls = [
+      ['https://a.test/openapi/v1/assets/files/multipart/init', 'ws-a-key'],
+      ['https://a.test/openapi/v1/auth/whoami', 'ws-a-key'],
+      ['https://b.test/openapi/v1/auth/whoami', 'ws-b-key'],
+      ['https://global.test/openapi/v1/auth/whoami', 'global-key'],
+      ['https://b.test/openapi/v1/assets/files', 'ws-b-key'],
+      ['https://storage.test/post', null],
+      ['https://b.test/openapi/v1/assets/files/url?filePath=ws-b%2Ffile', 'ws-b-key'],
+      ['https://a.test/openapi/v1/assets/files/download?filePath=ws-a%2Ffile', 'ws-a-key'],
+      ['https://b.test/openapi/v1/assets/files/delete', 'ws-b-key'],
+      ['https://a.test/openapi/v1/assets/files/multipart/part-urls', 'ws-a-key'],
+      ['https://storage.test/part', null],
+      ['https://a.test/openapi/v1/assets/files/multipart/complete', 'ws-a-key'],
+      ['https://a.test/openapi/v1/assets/files/multipart/complete', 'ws-a-key'],
+    ].map(([url, key]) => JSON.stringify({ url, key, authorization: key ? `Bearer ${key}` : null })).sort();
+    expect(calls.map(call => JSON.stringify(call)).sort()).toEqual(expectedCalls);
   });
 
   it('keeps the legacy multipart operation on its initial client during failure cleanup', async () => {
