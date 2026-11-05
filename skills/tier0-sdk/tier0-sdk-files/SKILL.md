@@ -11,6 +11,8 @@ metadata:
 
 **Before starting, read the root SDK Skill at [`../SKILL.md`](../SKILL.md).**
 
+For concurrent users or workspaces, use `createTier0Client({ apiHost, apiKey }).files` for every file operation. Do not change `configureClient` per request; see [configuration](../references/configuration.md).
+
 ## Required Flow
 
 When a user asks for an upload-and-save feature, use platform-managed object storage through `@tier0/sdk/files` by default. Do not persist uploaded files on the app server's local filesystem, in the repository or `public/` directory, or as database blobs. Local temporary files are allowed only for short-lived processing before upload and must not become the source of truth.

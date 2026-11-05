@@ -456,16 +456,20 @@ async function postMultipartCompleteWithRetry(
  *
  * `uploadFile` 在文件 >100MB 时自动调用本方法；小文件也可显式传 `options.multipart` 走分片。
  */
-export async function uploadFileMultipart(
+export async function uploadFileMultipart(file: File, options: MultipartUploadOptions = {}): Promise<MultipartUploadResult> {
+  return uploadFileMultipartWithClient(file, options, getClient());
+}
+
+async function uploadFileMultipartWithClient(
   file: File,
-  options: MultipartUploadOptions = {}
+  options: MultipartUploadOptions,
+  client: HttpClient
 ): Promise<MultipartUploadResult> {
   assertUploadFile(file);
   if (file.size <= 0) {
     throw new Error('Tier0 SDK: multipart upload requires a non-empty file');
   }
   const fileName = checkFileName(file.name);
-  const client = getClient();
   const contentType = file.type || 'application/octet-stream';
   // 客户端显式传入的分片大小，低于 S3 最小分片（5MB）时抬升，避免非末片在 complete 阶段被拒（EntityTooSmall）
   const requestedPartSize = options.partSize && options.partSize > 0 ? options.partSize : DEFAULT_MULTIPART_PART_SIZE;
@@ -506,7 +510,7 @@ export async function uploadFileMultipart(
     completed: new Map(),
   };
 
-  return runMultipartUpload(file, session, options);
+  return runMultipartUpload(file, session, options, client);
 }
 
 /**
@@ -516,9 +520,9 @@ export async function uploadFileMultipart(
 async function runMultipartUpload(
   file: File,
   session: MultipartSession,
-  options: MultipartUploadOptions
+  options: MultipartUploadOptions,
+  client: HttpClient
 ): Promise<MultipartUploadResult> {
-  const client = getClient();
   const retain = options.retainSessionOnFailure === true;
 
   // 2. 申请未完成分片的直传 URL（已完成分片跳过；续传场景只申请缺失分片）
@@ -610,6 +614,15 @@ export async function resumeMultipartUpload(
   session: MultipartResumeSession,
   options: ResumeMultipartUploadOptions = {}
 ): Promise<MultipartUploadResult> {
+  return resumeMultipartUploadWithClient(file, session, options, getClient());
+}
+
+async function resumeMultipartUploadWithClient(
+  file: File,
+  session: MultipartResumeSession,
+  options: ResumeMultipartUploadOptions,
+  client: HttpClient
+): Promise<MultipartUploadResult> {
   assertUploadFile(file);
   if (!session || !session.fileKey || !session.uploadId) {
     throw new Error('Tier0 SDK: resumeMultipartUpload requires a valid multipart session (fileKey/uploadId)');
@@ -635,7 +648,7 @@ export async function resumeMultipartUpload(
     onProgress: options.onProgress,
     signal: options.signal,
     retainSessionOnFailure: options.retainSessionOnFailure,
-  });
+  }, client);
 }
 
 export interface GetFileUrlOptions {
@@ -762,21 +775,24 @@ function buildQuery(params: Record<string, string | number | undefined>): string
  * `TIER0_API_HOST` / `TIER0_API_KEY`。
  */
 export async function uploadFile(file: File, options: UploadOptions = {}): Promise<UploadResult> {
+  return uploadFileWithClient(file, options, getClient());
+}
+
+async function uploadFileWithClient(file: File, options: UploadOptions, client: HttpClient): Promise<UploadResult> {
   assertUploadFile(file);
   // 大文件（>100MB）自动切换 multipart 分片直传；小文件显式传 options.multipart 也走分片
   if (shouldUseMultipart(file.size, options.multipart)) {
     const { multipart, ...rest } = options;
-    return uploadFileMultipart(file, {
+    return uploadFileMultipartWithClient(file, {
       ...rest,
       partSize: multipart?.partSize,
       concurrency: multipart?.concurrency,
       onProgress: multipart?.onProgress,
       retainSessionOnFailure: multipart?.retainSessionOnFailure,
-    });
+    }, client);
   }
   const fileName = checkFileName(file.name);
 
-  const client = getClient();
   const contentType = file.type || 'application/octet-stream';
 
   const resp = await client.post<unknown>(
@@ -839,10 +855,13 @@ export async function uploadFile(file: File, options: UploadOptions = {}): Promi
  * 需要下载文件内容时请用 `downloadFile`。
  */
 export async function getFileUrl(options: GetFileUrlOptions): Promise<GetFileUrlResult> {
+  return getFileUrlWithClient(options, getClient());
+}
+
+async function getFileUrlWithClient(options: GetFileUrlOptions, client: HttpClient): Promise<GetFileUrlResult> {
   if (!options.filePath) {
     throw new Error('Tier0 SDK: getFileUrl requires filePath');
   }
-  const client = getClient();
   const query = buildQuery({
     filePath: options.filePath,
     expiredSec: options.expiredSec,
@@ -871,10 +890,13 @@ export async function getFileUrl(options: GetFileUrlOptions): Promise<GetFileUrl
  * - Node.js：`response.arrayBuffer()` 后写入本地文件系统。
  */
 export async function downloadFile(options: DownloadFileOptions): Promise<DownloadFileResult> {
+  return downloadFileWithClient(options, getClient());
+}
+
+async function downloadFileWithClient(options: DownloadFileOptions, client: HttpClient): Promise<DownloadFileResult> {
   if (!options.filePath) {
     throw new Error('Tier0 SDK: downloadFile requires filePath');
   }
-  const client = getClient();
   const baseURL = client.getBaseURL();
   const apiKey = client.getApiKey();
   const query = buildQuery({
@@ -911,10 +933,13 @@ export async function downloadFile(options: DownloadFileOptions): Promise<Downlo
  * 删除文件。按上传时返回的 filePath 删除存储对象与文件记录。
  */
 export async function deleteFile(options: DeleteFileOptions): Promise<DeleteFileResult> {
+  return deleteFileWithClient(options, getClient());
+}
+
+async function deleteFileWithClient(options: DeleteFileOptions, client: HttpClient): Promise<DeleteFileResult> {
   if (!options.filePath) {
     throw new Error('Tier0 SDK: deleteFile requires filePath');
   }
-  const client = getClient();
   const resp = await client.post<unknown>(
     '/openapi/v1/assets/files/delete',
     { filePath: options.filePath },
@@ -922,4 +947,17 @@ export async function deleteFile(options: DeleteFileOptions): Promise<DeleteFile
   );
   const data = unwrapData<DeleteFileApiResp>(resp);
   return { deleted: data?.deleted ?? true };
+}
+
+/** Bind all managed file operations to one client, including multipart continuation. */
+export function createFilesClient(client: HttpClient) {
+  return {
+    uploadFile: (file: File, options?: UploadOptions) => uploadFileWithClient(file, options ?? {}, client),
+    uploadFileMultipart: (file: File, options?: MultipartUploadOptions) => uploadFileMultipartWithClient(file, options ?? {}, client),
+    resumeMultipartUpload: (file: File, session: MultipartResumeSession, options?: ResumeMultipartUploadOptions) =>
+      resumeMultipartUploadWithClient(file, session, options ?? {}, client),
+    getFileUrl: (options: GetFileUrlOptions) => getFileUrlWithClient(options, client),
+    downloadFile: (options: DownloadFileOptions) => downloadFileWithClient(options, client),
+    deleteFile: (options: DeleteFileOptions) => deleteFileWithClient(options, client),
+  };
 }

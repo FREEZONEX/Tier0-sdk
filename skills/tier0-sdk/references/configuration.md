@@ -78,6 +78,23 @@ TIER0_API_HOST=https://<your-tier0-api-host>
 TIER0_API_KEY=<your-api-key>
 ```
 
+### Concurrent users and workspaces
+
+`configureClient` changes a process-wide default. Configure it only for a single shared identity at startup; never call it per request in a multi-user server. Create an isolated client for each request or identity instead, using a key obtained from trusted server-side authentication:
+
+```typescript
+import { createTier0Client } from '@tier0/sdk';
+
+async function handleRequest(apiKey: string, filePath: string) {
+  const tier0 = createTier0Client({ apiHost: process.env.TIER0_API_HOST, apiKey });
+  const identity = await tier0.systemApi.openapiv1authwhoami();
+  const download = await tier0.files.downloadFile({ filePath });
+  return { identity, download };
+}
+```
+
+The client binds all generated API modules and `files` operations, including multipart upload and resume, to that identity. Its key must be non-empty; never expose it to the browser or reuse a client across identities. The existing standalone APIs, file functions, and React/Vue hooks continue to use the process-wide default; use the bound client for multi-user requests. An App key still represents the App, not the signed-in person.
+
 ### API Key identity is not App user identity
 
 An App API Key is a server-side business credential shared by the application. It does not identify the human currently visiting or operating the App. `systemApi.openapiv1authwhoami()` reports credential context only where that key type supports it; an App API Key cannot be used to query the current end user.
