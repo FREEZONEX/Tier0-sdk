@@ -61,7 +61,10 @@ describe('request-scoped client', () => {
       ['https://storage.test/part', null],
       ['https://a.test/openapi/v1/assets/files/multipart/complete', 'ws-a-key'],
       ['https://a.test/openapi/v1/assets/files/multipart/complete', 'ws-a-key'],
-    ].map(([url, key]) => JSON.stringify({ url, key, authorization: key ? `Bearer ${key}` : null })).sort();
+    ].map(([url, key]) => {
+      const whoami = url!.endsWith('/auth/whoami');
+      return JSON.stringify({ url, key: whoami ? key : null, authorization: key && !whoami ? `Bearer ${key}` : null });
+    }).sort();
     expect(calls.map(call => JSON.stringify(call)).sort()).toEqual(expectedCalls);
   });
 
