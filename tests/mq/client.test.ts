@@ -439,6 +439,36 @@ describe('Tier0MQClient', () => {
     expect(client.isConnected).toBe(false);
   });
 
+  it('does not report a broken transport as connected before close arrives', async () => {
+    const client = new Tier0MQClient({ host: 'broker' });
+    const disconnected = vi.fn();
+    client.on('disconnect', disconnected);
+    let retry: Promise<void> | undefined;
+    client.on('error', () => { retry = client.connect(); });
+    const first = client.connect();
+    emit('connect');
+    await first;
+    eventHandlers.error[0](Object.assign(new Error('reset'), { code: 'ECONNRESET' }));
+    await expect(retry).rejects.toThrow(/reconnecting/);
+    expect(client.isConnected).toBe(false);
+    eventHandlers.close[0]();
+    expect(disconnected).toHaveBeenCalledOnce();
+    eventHandlers.connect[0]();
+    expect(client.isConnected).toBe(true);
+  });
+
+  it('does not classify an unrelated MQTT protocol error as transport loss', async () => {
+    const client = new Tier0MQClient({ host: 'broker' });
+    const disconnected = vi.fn();
+    client.on('disconnect', disconnected);
+    const first = client.connect();
+    emit('connect');
+    await first;
+    eventHandlers.error[0](new Error('Received unregistered Topic Alias'));
+    expect(client.isConnected).toBe(true);
+    expect(disconnected).not.toHaveBeenCalled();
+  });
+
   it('does not repeat disconnect when protocol disconnect precedes close', async () => {
     const client = new Tier0MQClient({ host: 'broker' });
     const disconnected = vi.fn();

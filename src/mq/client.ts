@@ -36,6 +36,14 @@ function generateRandomString(length = 8): string {
   return result;
 }
 
+function isTransportLoss(error: Error): boolean {
+  const code = (error as NodeJS.ErrnoException).code;
+  return (code !== undefined && [
+    'ECONNRESET', 'ECONNABORTED', 'EPIPE', 'ETIMEDOUT', 'ENETDOWN', 'ENETRESET',
+    'ENETUNREACH', 'EHOSTUNREACH', 'ECONNREFUSED',
+  ].includes(code)) || error.message === 'Keepalive timeout';
+}
+
 interface Subscription {
   topic: string;
   handler: TopicHandler;
@@ -195,7 +203,8 @@ export class Tier0MQClient {
         this.lazyConnectPromise = null;
         this.reportedConnectionErrors.add(err);
         reject(err);
-        const notifyDisconnect = this._connected && this.config.reconnectPeriod === 0;
+        const notifyDisconnect = this._connected && (this.config.reconnectPeriod === 0 || isTransportLoss(err));
+        if (notifyDisconnect) this._connected = false;
         if (this.config.reconnectPeriod === 0) {
           this.generation++;
           this.client = null;
