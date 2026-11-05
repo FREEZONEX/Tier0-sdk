@@ -192,6 +192,55 @@ describe('Tier0MQClient', () => {
     expect(handler).toHaveBeenCalledWith('topic', 'hello');
   });
 
+  it('does not move a subscription to another identity after connection creation fails', async () => {
+    const client = new Tier0MQClient({ password: 'key-a' });
+    client.subscribe('topic', vi.fn());
+    await Promise.resolve();
+    await expect(client.connect({ host: 'broker', password: 'key-b' })).rejects.toThrow(/disconnect/i);
+    const pending = client.connect({ host: 'broker' });
+    emit('connect');
+    await pending;
+    expect((mqtt.connect as any).mock.calls[0][1].password).toBe('key-a');
+  });
+
+  it('rolls back the failed subscription before invoking a reentrant error listener', async () => {
+    const callbacks: Function[] = [];
+    mockMqttClient.subscribe = vi.fn((_topic, _opts, cb) => callbacks.push(cb));
+    const client = new Tier0MQClient({ host: 'broker', password: 'key-a' });
+    const first = client.connect();
+    emit('connect');
+    await first;
+    const handler = vi.fn();
+    client.subscribe('topic', handler);
+    let next: Promise<void> | undefined;
+    client.on('error', () => {
+      client.disconnect();
+      (mqtt.connect as any).mockReturnValue({ ...mockMqttClient });
+      next = client.connect({ password: 'key-b' });
+      client.subscribe('topic', handler);
+    });
+    callbacks[0](new Error('failed'));
+    eventHandlers.connect[1]();
+    await next;
+    expect(client.subscribedTopics).toEqual(['topic']);
+    eventHandlers.message[1]('topic', Buffer.from('hello'), {});
+    expect(handler).toHaveBeenCalledWith('topic', 'hello');
+  });
+
+  it('does not emit a retired lazy connection cancellation into a new connection', async () => {
+    const client = new Tier0MQClient({ host: 'broker', password: 'key-a' });
+    const errors = vi.fn();
+    client.on('error', errors);
+    client.subscribe('topic', vi.fn());
+    client.disconnect();
+    (mqtt.connect as any).mockReturnValue({ ...mockMqttClient });
+    const next = client.connect({ password: 'key-b' });
+    await Promise.resolve();
+    eventHandlers.connect[1]();
+    await next;
+    expect(errors).not.toHaveBeenCalled();
+  });
+
   it.each([
     [undefined, 'sk-per-ws1_test', '1'],
     ['sk-svc-ws2_old', 'sk-svc-ws10_test', '36'],

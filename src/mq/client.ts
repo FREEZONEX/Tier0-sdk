@@ -240,6 +240,12 @@ export class Tier0MQClient {
         'host', 'port', 'secure', 'clientId', 'username', 'password',
         'keepAlive', 'reconnectPeriod', 'connectTimeout', 'clean',
       ];
+      const identityFields: (keyof MQTTConfig)[] = ['clientId', 'username', 'password'];
+      if (this.subscriptions.length > 0 && identityFields.some((field) =>
+        Object.prototype.hasOwnProperty.call(snapshot, field) && snapshot[field] !== this.config[field]
+      )) {
+        throw new Error('MQTT identity cannot change while subscriptions exist; disconnect first');
+      }
       if (this.connectionSettingsLocked && connectionFields.some((field) =>
         Object.prototype.hasOwnProperty.call(snapshot, field) && snapshot[field] !== this.config[field]
       )) {
@@ -278,23 +284,25 @@ export class Tier0MQClient {
       return;
     }
 
-    this.subscriptions.push({ topic, handler });
+    const subscription: Subscription = { topic, handler };
+    this.subscriptions.push(subscription);
 
     if (this._connected && this.client) {
       const client = this.client;
       client.subscribe(topic, { qos: 1 as 0 | 1 | 2 }, (err) => {
         if (this.client !== client) return;
         if (err) {
-          this.emit('error', err);
           // 订阅失败时回滚
-          this.subscriptions = this.subscriptions.filter(
-            (s) => !(s.topic === topic && s.handler === handler)
-          );
+          this.subscriptions = this.subscriptions.filter((s) => s !== subscription);
+          this.emit('error', err);
         }
       });
     } else if (!this.client || this.connectingPromise) {
       // 未连接时触发懒连接，连接成功后 resubscribeAll 会自动 subscribe
-      this.ensureConnected().catch((err) => this.emit('error', err));
+      const generation = this.generation;
+      this.ensureConnected().catch((err) => {
+        if (this.generation === generation) this.emit('error', err);
+      });
     }
   }
 
