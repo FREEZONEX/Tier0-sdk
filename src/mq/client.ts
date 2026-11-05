@@ -188,6 +188,7 @@ export class Tier0MQClient {
         if (this.client !== client) return;
         this.connectingPromise = null;
         this.rejectPendingConnect = null;
+        this.lazyConnectPromise = null;
         this.reportedConnectionErrors.add(err);
         reject(err);
         this.emit('error', err);
@@ -328,6 +329,7 @@ export class Tier0MQClient {
       this.lazyConnectPromise = pending;
       const client = this.client;
       pending.catch((err) => {
+        if (this.lazyConnectPromise === pending) this.lazyConnectPromise = null;
         if (this.cancellationGeneration === cancellationGeneration && (!this.client || this.client === client)
           && !(err instanceof Error && this.reportedConnectionErrors.has(err))) {
           this.emit('error', err);

@@ -343,6 +343,42 @@ describe('Tier0MQClient', () => {
     expect(errors).toHaveBeenCalledOnce();
   });
 
+  it('can start a new lazy connection from the previous connection error listener', async () => {
+    const client = new Tier0MQClient({ host: 'broker', reconnectPeriod: 0 });
+    const errors = vi.fn(() => {
+      if (errors.mock.calls.length === 1) {
+        (mqtt.connect as any).mockReturnValue({ ...mockMqttClient });
+        client.subscribe('second', vi.fn());
+      }
+    });
+    client.on('error', errors);
+    client.subscribe('first', vi.fn());
+    eventHandlers.close[0]();
+    await vi.waitFor(() => expect(mqtt.connect).toHaveBeenCalledTimes(2));
+    eventHandlers.close[1]();
+    await vi.waitFor(() => expect(errors).toHaveBeenCalledTimes(2));
+  });
+
+  it('reports a new lazy connection failure when the listener explicitly reconnects first', async () => {
+    const client = new Tier0MQClient({ host: 'broker', reconnectPeriod: 0 });
+    let next: Promise<void> | undefined;
+    const errors = vi.fn(() => {
+      if (errors.mock.calls.length === 1) {
+        (mqtt.connect as any).mockReturnValue({ ...mockMqttClient });
+        next = client.connect();
+        void next.catch(() => {});
+        client.subscribe('second', vi.fn());
+      }
+    });
+    client.on('error', errors);
+    client.subscribe('first', vi.fn());
+    eventHandlers.close[0]();
+    await vi.waitFor(() => expect(mqtt.connect).toHaveBeenCalledTimes(2));
+    eventHandlers.close[1]();
+    await vi.waitFor(() => expect(errors).toHaveBeenCalledTimes(2));
+    await expect(next).rejects.toThrow(/closed/);
+  });
+
   it.each([
     [undefined, 'sk-per-ws1_test', '1'],
     ['sk-svc-ws2_old', 'sk-svc-ws10_test', '36'],
