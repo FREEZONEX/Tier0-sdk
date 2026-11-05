@@ -79,7 +79,6 @@ describe('HttpClient', () => {
         headers: {
           'Content-Type': 'application/json',
           Authorization: 'Bearer test-api-key',
-          'X-API-Key': 'test-api-key',
         },
       })
     );

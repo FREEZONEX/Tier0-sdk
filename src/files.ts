@@ -884,8 +884,8 @@ export async function downloadFile(options: DownloadFileOptions): Promise<Downlo
 
   const headers: Record<string, string> = {};
   if (apiKey) {
+    // Fetch strips Authorization on cross-origin redirects, unlike X-API-Key.
     headers['Authorization'] = `Bearer ${apiKey}`;
-    headers['X-API-Key'] = apiKey;
   }
 
   const response = await fetch(`${baseURL}/openapi/v1/assets/files/download?${query}`, {
